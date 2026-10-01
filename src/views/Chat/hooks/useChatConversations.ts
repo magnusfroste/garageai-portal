@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { Conversation, ChatMessage } from "../types";
 
 export const useChatConversations = () => {
@@ -58,7 +59,7 @@ export const useChatConversations = () => {
   const saveToDb = useCallback((convId: string, title: string, messages: ChatMessage[], model: string) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
-      await supabase
+      const { error } = await supabase
         .from("chat_conversations")
         .update({
           title,
@@ -67,6 +68,12 @@ export const useChatConversations = () => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", convId);
+      if (error) {
+        toast.error("Couldn't save conversation", {
+          id: "chat-save-error",
+          description: "Your latest messages may not be stored in history.",
+        });
+      }
     }, 500);
   }, []);
 
