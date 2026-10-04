@@ -283,6 +283,24 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_secrets: {
+        Row: {
+          created_at: string
+          name: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          name: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          name?: string
+          value?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company: string | null
@@ -384,6 +402,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      verify_cron_secret: { Args: { secret: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"

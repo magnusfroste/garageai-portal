@@ -22,6 +22,13 @@
       "when": 1791137283054,
       "tag": "0002_curated_models_garage_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791157708046,
+      "tag": "0003_cron_secret_verifier",
+      "breakpoints": true
     }
   ]
 }
