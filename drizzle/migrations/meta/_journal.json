@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791132634730,
+      "tag": "0000_restrict_profiles_update_columns",
+      "breakpoints": true
+    }
+  ]
+}
