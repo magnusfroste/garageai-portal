@@ -1,0 +1,319 @@
+import { useState } from "react";
+import { Server, RefreshCw, Plus, Copy, Check, KeyRound } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
+import { useGarages, Garage, CreateGarageResult } from "../hooks/useGarages";
+
+const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
+const RUNTIMES = ["ollama", "lmstudio", "llamacpp", "vllm", "other"] as const;
+
+const relativeTime = (iso: string | null): string => {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+};
+
+const CopyButton = ({ value }: { value: string }) => {
+  const [copied, setCopied] = useState(false);
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-7 w-7 shrink-0"
+      onClick={() => {
+        navigator.clipboard.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+    >
+      {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+    </Button>
+  );
+};
+
+const SecretRow = ({ label, value }: { label: string; value: string }) => (
+  <div className="space-y-1">
+    <Label className="text-xs text-muted-foreground">{label}</Label>
+    <div className="flex items-center gap-1">
+      <code className="flex-1 text-xs font-mono bg-muted/50 rounded px-2 py-1.5 break-all">{value}</code>
+      <CopyButton value={value} />
+    </div>
+  </div>
+);
+
+const buildCommand = (result: CreateGarageResult, runtime: string): string => {
+  const lines = [
+    "curl -fsSLO https://raw.githubusercontent.com/magnusfroste/garageai/main/scripts/garageai-connect.sh",
+  ];
+  const parts = ["bash garageai-connect.sh"];
+  if (result.setup_key) {
+    parts.push(`--setup-key ${result.setup_key}`, `--management-url ${result.management_url}`);
+  } else {
+    parts.push("--skip-install");
+  }
+  parts.push(
+    `--runtime ${runtime}`,
+    `--name ${result.garage.name}`,
+    `--register-url ${result.register_url}`,
+    `--register-token ${result.register_token}`
+  );
+  if (runtime === "vllm") parts.push("--runtime-api-key <YOUR_VLLM_API_KEY>");
+  lines.push(parts.join(" \\\n  "));
+  return lines.join("\n");
+};
+
+interface ResultViewProps {
+  result: CreateGarageResult;
+  runtime: string;
+  onClose: () => void;
+}
+
+const ResultView = ({ result, runtime, onClose }: ResultViewProps) => {
+  const command = buildCommand(result, runtime);
+  return (
+    <div className="space-y-4">
+      <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
+        Copy these now — the token and setup key cannot be shown again.
+      </div>
+      <SecretRow label="Register token" value={result.register_token} />
+      {result.setup_key && <SecretRow label="NetBird setup key" value={result.setup_key} />}
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Run on the garage machine</Label>
+        <div className="relative">
+          <pre className="text-xs font-mono bg-muted/50 rounded p-3 pr-10 overflow-x-auto whitespace-pre-wrap break-all">
+            {command}
+          </pre>
+          <div className="absolute top-1.5 right-1.5">
+            <CopyButton value={command} />
+          </div>
+        </div>
+      </div>
+      <Button className="w-full" onClick={onClose}>
+        Done — I've copied everything
+      </Button>
+    </div>
+  );
+};
+
+export const GaragePanel = () => {
+  const { garages, isLoading, isError, refetch, isRefetching, createGarage } = useGarages();
+  const { toast } = useToast();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [runtime, setRuntime] = useState<string>("ollama");
+  const [apiHost, setApiHost] = useState("");
+  const [createSetupKey, setCreateSetupKey] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<CreateGarageResult | null>(null);
+  const [resultRuntime, setResultRuntime] = useState("ollama");
+
+  const resetForm = () => {
+    setName("");
+    setRuntime("ollama");
+    setApiHost("");
+    setCreateSetupKey(true);
+    setResult(null);
+  };
+
+  const handleDialogChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) resetForm(); // clears token/setup key from state
+  };
+
+  const submit = async (garageName: string, host: string, setupKey: boolean, rt: string) => {
+    setSubmitting(true);
+    try {
+      const res = await createGarage({
+        name: garageName,
+        ...(host.trim() ? { api_host: host.trim() } : {}),
+        create_setup_key: setupKey,
+      });
+      setResult(res);
+      setResultRuntime(rt);
+    } catch (e) {
+      toast({
+        title: "Failed to create garage",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!NAME_RE.test(name)) {
+      toast({
+        title: "Invalid name",
+        description: "Lowercase letters, digits and dashes, 2–41 chars, starting with a letter or digit.",
+        variant: "destructive",
+      });
+      return;
+    }
+    submit(name, apiHost, createSetupKey, runtime);
+  };
+
+  const handleNewToken = (garage: Garage) => {
+    setName(garage.name);
+    setRuntime(garage.runtime || "ollama");
+    setApiHost(garage.api_host || "");
+    setCreateSetupKey(false);
+    setDialogOpen(true);
+    submit(garage.name, garage.api_host || "", false, garage.runtime || "ollama");
+  };
+
+  return (
+    <Card className="glass-card">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Server className="w-5 h-5 text-primary" />
+            Garages
+          </CardTitle>
+          <CardDescription>
+            {garages.length} registered · GPU nodes that join the mesh and serve models via LiteLLM
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefetching ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add garage
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground py-4">Loading garages...</p>
+        ) : isError ? (
+          <p className="text-sm text-destructive py-4">Failed to load garages.</p>
+        ) : garages.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">No garages yet — click "Add garage" to register one.</p>
+        ) : (
+          <div className="divide-y divide-border/50">
+            {garages.map((g) => (
+              <div key={g.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                <Badge
+                  variant={g.status === "online" ? "default" : "secondary"}
+                  className={`text-[10px] shrink-0 ${g.status === "online" ? "bg-emerald-600 hover:bg-emerald-600" : ""}`}
+                >
+                  {g.status}
+                </Badge>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-sm truncate">{g.name}</span>
+                    {g.runtime && (
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {g.runtime}
+                        {g.port ? `:${g.port}` : ""}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                    <span>Models: {g.models.length > 0 ? g.models.join(", ") : "—"}</span>
+                    {g.mesh_ip && <span>Mesh: {g.mesh_ip}</span>}
+                    {g.api_host && <span>Host: {g.api_host}</span>}
+                    <span>Registered: {relativeTime(g.last_registered_at)}</span>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => handleNewToken(g)}>
+                  <KeyRound className="w-3.5 h-3.5 mr-1.5" />
+                  New token
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{result ? "Garage credentials" : "Add garage"}</DialogTitle>
+            <DialogDescription>
+              {result
+                ? `Credentials for ${result.garage.name}`
+                : "Register a new GPU node. You'll get a one-time token and connect command."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {result ? (
+            <ResultView result={result} runtime={resultRuntime} onClose={() => handleDialogChange(false)} />
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="garage-name">Name</Label>
+                <Input
+                  id="garage-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="my-gpu-box"
+                  disabled={submitting}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Lowercase letters, digits and dashes (2–41 chars).
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Runtime</Label>
+                <Select value={runtime} onValueChange={setRuntime} disabled={submitting}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RUNTIMES.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="garage-host">API host override (optional)</Label>
+                <Input
+                  id="garage-host"
+                  value={apiHost}
+                  onChange={(e) => setApiHost(e.target.value)}
+                  placeholder="Only for nodes that route to another host, e.g. 192.168.100.1"
+                  disabled={submitting}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="garage-setup-key"
+                  checked={createSetupKey}
+                  onCheckedChange={(c) => setCreateSetupKey(c === true)}
+                  disabled={submitting}
+                />
+                <Label htmlFor="garage-setup-key" className="text-sm font-normal">
+                  Create NetBird setup key
+                </Label>
+              </div>
+              <Button className="w-full" onClick={handleSubmit} disabled={submitting || !name}>
+                {submitting ? "Creating..." : "Create garage"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
