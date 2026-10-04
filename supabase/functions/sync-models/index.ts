@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
+import { getNetbirdApiUrl, netbirdHeaders } from "../_shared/netbirdConfig.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,6 +19,8 @@ interface LiteLLMModelInfo {
     input_cost_per_token?: number;
     output_cost_per_token?: number;
     mode?: string;
+    garage?: string;
+    garage_tier?: string;
   };
 }
 
@@ -115,37 +118,14 @@ serve(async (req: Request) => {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const LITELLM_BASE = await getProxyBaseUrl(supabaseAdmin);
 
-    // Fetch models and global health in parallel
-    const [modelsRes, healthRes] = await Promise.all([
-      fetch(`${LITELLM_BASE}/model/info`, { headers: authHeaders }),
-      fetch(`${LITELLM_BASE}/health`, { headers: authHeaders }).catch(() => null),
-    ]);
+    // Fetch models (no global /health — it runs real completions on every model)
+    const modelsRes = await fetch(`${LITELLM_BASE}/model/info`, { headers: authHeaders });
 
     if (!modelsRes.ok) {
       return new Response(JSON.stringify({ error: 'Failed to fetch models from LiteLLM' }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
-
-    // Build health status map from global /health response
-    const healthMap = new Map<string, string>();
-    if (healthRes && healthRes.ok) {
-      try {
-        const healthData = await healthRes.json();
-        console.log('Health response keys:', Object.keys(healthData));
-        const healthy: HealthEntry[] = healthData.healthy_endpoints || [];
-        const unhealthy: HealthEntry[] = healthData.unhealthy_endpoints || [];
-        console.log(`Global health: ${healthy.length} healthy, ${unhealthy.length} unhealthy`);
-        for (const e of healthy) {
-          healthMap.set(e.model, 'healthy');
-        }
-        for (const e of unhealthy) {
-          healthMap.set(e.model, 'unhealthy');
-        }
-      } catch { /* ignore */ }
-    } else {
-      console.warn('Global /health failed or not ok:', healthRes?.status);
     }
 
     const data = await modelsRes.json();
@@ -173,26 +153,52 @@ serve(async (req: Request) => {
       }
     }
 
-    // First pass: build models with global health data
+    // Garage connectivity from NetBird (fetched once; never probe garage GPUs via LiteLLM)
+    const garageNames = new Set<string>();
+    for (const m of rawModels) {
+      const g = m.model_info?.garage;
+      if (typeof g === 'string' && g) garageNames.add(g);
+    }
+    let peerConnected: Map<string, boolean> | null = null;
+    if (garageNames.size > 0) {
+      try {
+        const nbUrl = await getNetbirdApiUrl(supabaseAdmin);
+        const res = await fetch(`${nbUrl}/peers`, { headers: netbirdHeaders() });
+        if (!res.ok) throw new Error(`NetBird GET /peers status ${res.status}`);
+        const peers = (await res.json()) as Array<{ name?: string; connected?: boolean }>;
+        peerConnected = new Map();
+        for (const p of peers) {
+          if (p.name && p.connected === true) peerConnected.set(p.name, true);
+        }
+      } catch (e) {
+        console.warn('NetBird peer lookup failed; garage status unknown:', e instanceof Error ? e.message : 'error');
+        peerConnected = null;
+      }
+    }
+    const garageStatus = (g: string): string =>
+      peerConnected === null ? 'unknown' : peerConnected.get(g) ? 'healthy' : 'unhealthy';
+
     const modelsWithStatus = rawModels.map((m) => {
       const info = m.model_info || {};
       const litellmModel = m.litellm_params?.model || m.model_name;
-      const providerRaw = litellmModel.includes('/') ? litellmModel.split('/')[0] : 'unknown';
-      const provider = providerRaw.charAt(0).toUpperCase() + providerRaw.slice(1);
+      const garage = typeof info.garage === 'string' && info.garage ? info.garage : null;
+      const garage_tier = garage && typeof info.garage_tier === 'string' ? info.garage_tier : null;
+      let provider: string;
+      if (garage) {
+        provider = garage;
+      } else {
+        const providerRaw = litellmModel.includes('/') ? litellmModel.split('/')[0] : 'unknown';
+        provider = providerRaw.charAt(0).toUpperCase() + providerRaw.slice(1);
+      }
       const stableId = info.id || m.model_name;
-
-      // Try matching health by model_name first, then by id, then by litellm_params.model
-      const healthStatus = healthMap.get(m.model_name) 
-        || healthMap.get(stableId)
-        || healthMap.get(litellmModel)
-        || null;
-
       const prev = existingById.get(stableId) || existingByName.get(m.model_name);
 
       return {
         id: stableId,
         model_name: m.model_name,
         provider,
+        garage,
+        garage_tier,
         litellmModel,
         max_input_tokens: info.max_input_tokens || info.max_tokens || null,
         max_output_tokens: info.max_output_tokens || null,
@@ -203,7 +209,7 @@ serve(async (req: Request) => {
           ? Math.round(info.output_cost_per_token * 1_000_000 * 1000) / 1000
           : null,
         mode: info.mode || null,
-        status: healthStatus || 'unknown',
+        status: garage ? garageStatus(garage) : 'unknown',
         enabled: prev?.enabled ?? false,
         is_default: prev?.is_default ?? false,
         huggingface_url: prev?.huggingface_url ?? null,
@@ -212,21 +218,26 @@ serve(async (req: Request) => {
       };
     });
 
-    // Second pass: for models still "unknown", try individual health checks in parallel
-    const unknownModels = modelsWithStatus.filter((m) => m.status === 'unknown');
-    if (unknownModels.length > 0) {
-      console.log(`Running individual health checks for ${unknownModels.length} models:`, unknownModels.map(m => m.model_name));
-      const individualChecks = await Promise.all(
-        unknownModels.map(async (m) => {
-          const status = await checkModelHealth(LITELLM_BASE, m.model_name, authHeaders);
-          return { id: m.id, status };
-        })
+    // Per-model health checks for non-garage models only, in parallel
+    const nonGarage = modelsWithStatus.filter((m) => !m.garage);
+    if (nonGarage.length > 0) {
+      const checks = await Promise.all(
+        nonGarage.map(async (m) => ({ id: m.id, status: await checkModelHealth(LITELLM_BASE, m.model_name, authHeaders) }))
       );
-      const individualMap = new Map(individualChecks.map((c) => [c.id, c.status]));
+      const checkMap = new Map(checks.map((c) => [c.id, c.status]));
       for (const m of modelsWithStatus) {
-        if (m.status === 'unknown' && individualMap.has(m.id)) {
-          m.status = individualMap.get(m.id)!;
-        }
+        if (!m.garage && checkMap.has(m.id)) m.status = checkMap.get(m.id)!;
+      }
+    }
+
+    // Update garages.status from NetBird connectivity (skip if NetBird failed)
+    if (peerConnected !== null) {
+      for (const g of garageNames) {
+        const { error: gErr } = await supabase
+          .from('garages')
+          .update({ status: peerConnected.get(g) ? 'online' : 'offline' })
+          .eq('name', g);
+        if (gErr) console.warn(`Failed to update garage status for ${g}:`, gErr.message);
       }
     }
 

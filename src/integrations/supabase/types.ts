@@ -135,6 +135,8 @@ export type Database = {
         Row: {
           created_at: string
           enabled: boolean
+          garage: string | null
+          garage_tier: string | null
           huggingface_url: string | null
           id: string
           input_cost_per_million: number | null
@@ -152,6 +154,8 @@ export type Database = {
         Insert: {
           created_at?: string
           enabled?: boolean
+          garage?: string | null
+          garage_tier?: string | null
           huggingface_url?: string | null
           id: string
           input_cost_per_million?: number | null
@@ -169,6 +173,8 @@ export type Database = {
         Update: {
           created_at?: string
           enabled?: boolean
+          garage?: string | null
+          garage_tier?: string | null
           huggingface_url?: string | null
           id?: string
           input_cost_per_million?: number | null

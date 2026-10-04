@@ -15,6 +15,13 @@
       "when": 1791133843926,
       "tag": "0001_create_garages",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791137283054,
+      "tag": "0002_curated_models_garage_columns",
+      "breakpoints": true
     }
   ]
 }

@@ -120,6 +120,11 @@ export const ModelCurationPanel = () => {
                     <Badge variant="outline" className="text-[10px] shrink-0">
                       {model.provider}
                     </Badge>
+                    {model.garage && (
+                      <Badge variant="default" className="text-[10px] shrink-0">
+                        Garage{model.garage_tier ? ` · ${model.garage_tier}` : ""}
+                      </Badge>
+                    )}
                     {model.mode && (
                       <Badge variant="secondary" className="text-[10px] shrink-0">
                         {model.mode}
