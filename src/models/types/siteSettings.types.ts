@@ -34,6 +34,7 @@ export interface SiteSettings {
 
   // API
   api_base_url: string;
+  netbird_api_url: string;
 
   // Landing – Hero
   hero_badge: string;
@@ -89,6 +90,7 @@ export const defaultSiteSettings: SiteSettings = {
   site_name: "Private AI",
   tagline: "Secure Private LLM Access for Developers",
   api_base_url: "",
+  netbird_api_url: "",
   logo_url: "",
   favicon_url: "/favicon.png",
 

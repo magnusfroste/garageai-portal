@@ -185,6 +185,98 @@ export type Database = {
         }
         Relationships: []
       }
+      garage_tokens: {
+        Row: {
+          created_at: string | null
+          garage_id: string
+          id: string
+          revoked_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string | null
+          garage_id: string
+          id?: string
+          revoked_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          created_at?: string | null
+          garage_id?: string
+          id?: string
+          revoked_at?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_tokens_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      garages: {
+        Row: {
+          api_host: string | null
+          created_at: string
+          dedicated_input_cost_per_million: number
+          dedicated_output_cost_per_million: number
+          id: string
+          last_registered_at: string | null
+          mesh_ip: string | null
+          models: string[]
+          name: string
+          netbird_peer_id: string | null
+          operator_id: string | null
+          pool_input_cost_per_million: number
+          pool_output_cost_per_million: number
+          port: number | null
+          runtime: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          api_host?: string | null
+          created_at?: string
+          dedicated_input_cost_per_million?: number
+          dedicated_output_cost_per_million?: number
+          id?: string
+          last_registered_at?: string | null
+          mesh_ip?: string | null
+          models?: string[]
+          name: string
+          netbird_peer_id?: string | null
+          operator_id?: string | null
+          pool_input_cost_per_million?: number
+          pool_output_cost_per_million?: number
+          port?: number | null
+          runtime?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          api_host?: string | null
+          created_at?: string
+          dedicated_input_cost_per_million?: number
+          dedicated_output_cost_per_million?: number
+          id?: string
+          last_registered_at?: string | null
+          mesh_ip?: string | null
+          models?: string[]
+          name?: string
+          netbird_peer_id?: string | null
+          operator_id?: string | null
+          pool_input_cost_per_million?: number
+          pool_output_cost_per_million?: number
+          port?: number | null
+          runtime?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company: string | null

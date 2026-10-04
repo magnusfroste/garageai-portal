@@ -1,0 +1,53 @@
+// Shared helper: resolve NetBird management API URL from admin_settings.
+// Falls back to NETBIRD_API_URL env var. Trailing slashes are stripped.
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+let cached: { url: string; expires: number } | null = null;
+const TTL_MS = 60_000;
+
+export async function getNetbirdApiUrl(client?: SupabaseClient): Promise<string> {
+  const now = Date.now();
+  if (cached && cached.expires > now) return cached.url;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  let url = (Deno.env.get("NETBIRD_API_URL") || "").trim().replace(/\/+$/, "");
+
+  try {
+    const supabase = client ?? (supabaseUrl && serviceKey ? createClient(supabaseUrl, serviceKey) : null);
+    if (supabase) {
+      const { data } = await supabase
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "site_settings")
+        .maybeSingle();
+      const settings = data?.value as Record<string, unknown> | null;
+      const configured = (settings?.netbird_api_url as string | undefined)?.trim();
+      if (configured) url = configured.replace(/\/+$/, "");
+    }
+  } catch (e) {
+    console.warn("[netbirdConfig] Failed to read admin_settings, using env fallback:", e);
+  }
+
+  if (!url) {
+    throw new Error("NetBird API URL not configured. Set it in Admin → Settings → Proxy (NetBird API URL) or NETBIRD_API_URL env var.");
+  }
+
+  cached = { url, expires: now + TTL_MS };
+  return url;
+}
+
+export function netbirdHeaders(): Record<string, string> {
+  const token = Deno.env.get("NETBIRD_API_TOKEN");
+  if (!token) throw new Error("NETBIRD_API_TOKEN is not configured");
+  return { Authorization: `Token ${token}`, "Content-Type": "application/json", Accept: "application/json" };
+}
+
+export async function getGaragesGroupId(apiUrl: string): Promise<string> {
+  const res = await fetch(`${apiUrl}/groups`, { headers: netbirdHeaders() });
+  if (!res.ok) throw new Error(`NetBird GET /groups failed with status ${res.status}`);
+  const groups = (await res.json()) as Array<{ id: string; name: string }>;
+  const g = groups.find((x) => x.name === "garages");
+  if (!g) throw new Error('NetBird group "garages" not found');
+  return g.id;
+}
