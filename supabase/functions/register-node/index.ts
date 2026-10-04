@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 import { getNetbirdApiUrl, netbirdHeaders } from "../_shared/netbirdConfig.ts";
+import { syncModels } from "../_shared/syncModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -193,8 +194,17 @@ Deno.serve(async (req) => {
     }).eq("id", garage.id);
     if (updErr) throw updErr;
 
-    console.log("[register-node] registered", { garage: garage.name, api_base: apiBase, models: uniqueModels.length });
-    return json({ ok: true, garage: garage.name, api_base: apiBase, models: uniqueModels });
+    // 8. Refresh catalogue so the garage's models appear immediately
+    let catalogSynced = true;
+    try {
+      await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
+    } catch (e) {
+      catalogSynced = false;
+      console.error("[register-node] catalog sync failed:", e instanceof Error ? e.message : "unknown");
+    }
+
+    console.log("[register-node] registered", { garage: garage.name, api_base: apiBase, models: uniqueModels.length, catalog_synced: catalogSynced });
+    return json({ ok: true, garage: garage.name, api_base: apiBase, models: uniqueModels, catalog_synced: catalogSynced });
   } catch (e) {
     console.error("[register-node] error:", e instanceof Error ? e.message : "unknown");
     return json({ error: "Internal error" }, 500);
