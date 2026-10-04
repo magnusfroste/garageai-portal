@@ -10,6 +10,7 @@ import { StripeConfigCard } from "./components/StripeConfigCard";
 import { ProxyConfigCard } from "./components/ProxyConfigCard";
 import { CreditOverviewPanel } from "./components/CreditOverviewPanel";
 import { ApiKeyOverviewPanel } from "./components/ApiKeyOverviewPanel";
+import { GaragePanel } from "./components/GaragePanel";
 import { UsageStatsPanel } from "./components/UsageStatsPanel";
 import { SiteSettingsPage } from "@/views/SiteSettings/SiteSettingsPage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -76,6 +77,7 @@ export const AdminPage = () => {
           <TabsTrigger value="keys">API Keys</TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
           <TabsTrigger value="models">Models</TabsTrigger>
+          <TabsTrigger value="garages">Garages</TabsTrigger>
           <TabsTrigger value="website">Website</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
