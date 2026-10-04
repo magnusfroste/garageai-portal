@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 
 const corsHeaders = {
@@ -22,40 +23,6 @@ interface LiteLLMModelInfo {
   };
 }
 
-interface HealthEntry {
-  model: string;
-  status: string;
-}
-
-async function checkModelHealth(
-  base: string,
-  modelName: string,
-  authHeaders: Record<string, string>,
-  timeoutMs = 8000
-): Promise<string> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(
-      `${base}/health?model=${encodeURIComponent(modelName)}`,
-      { headers: authHeaders, signal: controller.signal }
-    );
-    clearTimeout(timeout);
-    if (!res.ok) {
-      await res.text();
-      return 'unknown';
-    }
-    const data = await res.json();
-    const healthy: HealthEntry[] = data.healthy_endpoints || [];
-    const unhealthy: HealthEntry[] = data.unhealthy_endpoints || [];
-    if (unhealthy.length > 0) return 'unhealthy';
-    if (healthy.length > 0) return 'healthy';
-    return 'unknown';
-  } catch {
-    return 'unknown';
-  }
-}
-
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -74,11 +41,7 @@ serve(async (req: Request) => {
 
     const LITELLM_BASE = await getProxyBaseUrl();
 
-    // Fetch models and health in parallel
-    const [modelsRes, healthRes] = await Promise.all([
-      fetch(`${LITELLM_BASE}/model/info`, { headers: authHeaders }),
-      fetch(`${LITELLM_BASE}/health`, { headers: authHeaders }).catch(() => null),
-    ]);
+    const modelsRes = await fetch(`${LITELLM_BASE}/model/info`, { headers: authHeaders });
 
     if (!modelsRes.ok) {
       console.error('LiteLLM /model/info error:', modelsRes.status);
@@ -88,21 +51,18 @@ serve(async (req: Request) => {
       });
     }
 
-    // Build health status map
-    const healthMap = new Map<string, string>();
-    if (healthRes && healthRes.ok) {
-      try {
-        const healthData = await healthRes.json();
-        const healthy: HealthEntry[] = healthData.healthy_endpoints || [];
-        const unhealthy: HealthEntry[] = healthData.unhealthy_endpoints || [];
-        for (const e of healthy) {
-          healthMap.set(e.model, 'healthy');
-        }
-        for (const e of unhealthy) {
-          healthMap.set(e.model, 'unhealthy');
-        }
-      } catch {
-        console.warn('Could not parse health response');
+    // Status comes from curated_models (set by sync-models) — never probe models here
+    const statusById = new Map<string, string>();
+    const statusByName = new Map<string, string>();
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (SUPABASE_URL && SERVICE_KEY) {
+      const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+      const { data: rows, error } = await admin.from('curated_models').select('id, model_name, status');
+      if (error) console.warn('Could not read curated_models status:', error.message);
+      for (const r of (rows || []) as Array<{ id: string; model_name: string | null; status: string }>) {
+        statusById.set(r.id, r.status);
+        if (r.model_name && !statusByName.has(r.model_name)) statusByName.set(r.model_name, r.status);
       }
     }
 
@@ -117,10 +77,9 @@ serve(async (req: Request) => {
         : 'unknown';
       const provider = providerRaw.charAt(0).toUpperCase() + providerRaw.slice(1);
 
-      // Try matching health by model_name, id, or litellm_params.model
-      const healthStatus = healthMap.get(m.model_name)
-        || healthMap.get(info.id || '')
-        || healthMap.get(litellmModel)
+      const healthStatus = statusById.get(info.id || '')
+        || statusById.get(m.model_name)
+        || statusByName.get(m.model_name)
         || null;
 
       return {
@@ -139,23 +98,6 @@ serve(async (req: Request) => {
         litellmModel,
       };
     });
-
-    // Individual health checks for unknown models
-    const unknownModels = models.filter((m) => m.status === 'unknown');
-    if (unknownModels.length > 0) {
-      const checks = await Promise.all(
-        unknownModels.map(async (m) => ({
-          id: m.id,
-          status: await checkModelHealth(LITELLM_BASE, m.id, authHeaders),
-        }))
-      );
-      const checkMap = new Map(checks.map((c) => [c.id, c.status]));
-      for (const m of models) {
-        if (m.status === 'unknown' && checkMap.has(m.id)) {
-          m.status = checkMap.get(m.id)!;
-        }
-      }
-    }
 
     // Remove temp field and sort
     const result = models

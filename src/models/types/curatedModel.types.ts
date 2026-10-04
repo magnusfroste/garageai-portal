@@ -10,6 +10,8 @@ export interface CuratedModel {
   status: "healthy" | "unhealthy" | "unknown";
   enabled: boolean;
   is_default: boolean;
+  garage: string | null;
+  garage_tier: string | null;
   huggingface_url: string | null;
   last_synced_at: string;
   created_at: string;
