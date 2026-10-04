@@ -1,3 +1,6 @@
 project_id = "sjopaiquzqotymqmrcke"
 [functions.register-node]
 verify_jwt = false
+
+[functions.sync-models-cron]
+verify_jwt = false
