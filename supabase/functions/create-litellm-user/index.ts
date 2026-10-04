@@ -86,7 +86,7 @@ serve(async (req: Request) => {
     });
 
     const litellmData = await litellmResponse.json();
-    console.log('LiteLLM /user/new response:', { status: litellmResponse.status, data: litellmData });
+    console.log('LiteLLM /user/new response:', { status: litellmResponse.status, user_id: litellmData?.user_id });
 
     let litellmUserId: string;
 

@@ -83,7 +83,7 @@ async function createLiteLLMKey(
   });
 
   const data = await response.json();
-  console.log('LiteLLM API response:', { status: response.status, data });
+  console.log('LiteLLM API response:', { status: response.status, key_alias: data?.key_alias });
   
   if (!response.ok) {
     throw new Error(data.error || `LiteLLM API error: ${response.status}`);
@@ -194,10 +194,9 @@ serve(async (req: Request) => {
           details: dbError.details,
           hint: dbError.hint,
           orphanedKey: {
-            litellm_key: liteLLMResponse.key,
-            litellm_token: liteLLMResponse.token,
             key_alias: body.keyName,
-            user_id: user.id
+            user_id: user.id,
+            litellm_token: liteLLMResponse.token
           }
         });
         
