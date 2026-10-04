@@ -27,6 +27,18 @@ export const ProxyConfigCard = () => {
   const [checking, setChecking] = useState(false);
   const [editingUrl, setEditingUrl] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
+  const [editingNetbird, setEditingNetbird] = useState(false);
+  const [netbirdDraft, setNetbirdDraft] = useState("");
+
+  useEffect(() => {
+    if (settings?.netbird_api_url) setNetbirdDraft(settings.netbird_api_url);
+  }, [settings?.netbird_api_url]);
+
+  const handleSaveNetbird = () => {
+    if (!settings) return;
+    save({ ...settings, netbird_api_url: netbirdDraft.trim().replace(/\/+$/, "") });
+    setEditingNetbird(false);
+  };
 
   useEffect(() => {
     if (settings?.api_base_url) {
@@ -94,6 +106,36 @@ export const ProxyConfigCard = () => {
                 {settings?.api_base_url || "Not configured"}
               </code>
               <Button size="sm" variant="ghost" onClick={() => setEditingUrl(true)}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">NetBird API URL</Label>
+          {editingNetbird ? (
+            <div className="flex gap-2">
+              <Input
+                value={netbirdDraft}
+                onChange={(e) => setNetbirdDraft(e.target.value)}
+                placeholder="https://netbird.example.com/api"
+                className="font-mono text-sm"
+              />
+              <Button size="sm" onClick={handleSaveNetbird} disabled={isSaving}>
+                <Save className="w-3.5 h-3.5 mr-1.5" />
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => { setEditingNetbird(false); setNetbirdDraft(settings?.netbird_api_url || ""); }}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <code className="text-sm bg-muted px-2 py-1 rounded font-mono flex-1 truncate">
+                {settings?.netbird_api_url || "Not configured"}
+              </code>
+              <Button size="sm" variant="ghost" onClick={() => setEditingNetbird(true)}>
                 <Pencil className="w-3.5 h-3.5" />
               </Button>
             </div>
