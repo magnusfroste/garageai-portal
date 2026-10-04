@@ -110,6 +110,10 @@ export const AdminPage = () => {
           <ModelCurationPanel />
         </TabsContent>
 
+        <TabsContent value="garages" className="mt-6">
+          <GaragePanel />
+        </TabsContent>
+
         <TabsContent value="website" className="mt-6">
           <SiteSettingsPage embedded />
         </TabsContent>
