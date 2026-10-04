@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, ArrowLeft, Users, Settings, Cpu } from "lucide-react";
+import { Shield, ArrowLeft, Users, Settings, Cpu, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminUser } from "@/models/types/admin.types";
@@ -11,6 +11,7 @@ import { AdminSettingsPanel } from "./components/AdminSettingsPanel";
 import { StripeConfigCard } from "./components/StripeConfigCard";
 import { ProxyConfigCard } from "./components/ProxyConfigCard";
 import { ModelCurationPanel } from "./components/ModelCurationPanel";
+import { GaragePanel } from "./components/GaragePanel";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export const AdminPanel = () => {
@@ -87,6 +88,10 @@ export const AdminPanel = () => {
               <Cpu className="w-4 h-4" />
               Models
             </TabsTrigger>
+            <TabsTrigger value="garages" className="flex items-center gap-1.5">
+              <Server className="w-4 h-4" />
+              Garages
+            </TabsTrigger>
             <TabsTrigger value="config" className="flex items-center gap-1.5">
               <Settings className="w-4 h-4" />
               Configuration
@@ -115,6 +120,10 @@ export const AdminPanel = () => {
 
           <TabsContent value="models">
             <ModelCurationPanel />
+          </TabsContent>
+
+          <TabsContent value="garages">
+            <GaragePanel />
           </TabsContent>
 
           <TabsContent value="config" className="space-y-6">
