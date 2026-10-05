@@ -1,12 +1,10 @@
 # Roadmap
 
-- [ ] Finish routing reconciliation, runtime key persistence, complete probing, and model-id protection
-- [ ] Finish connect command, budget, user repair, Stripe webhook, render-origin, and platform accounting security work
-- [ ] Apply accurate privacy copy and English/Swedish text cleanup
-- [ ] Add anonymous garage suggestions and existing-garage warning
-- [ ] Auto-create a Chat API key on first send and show inline failures
-- [ ] Correct signup mode, configured credit, and email-confirmation state
-- [ ] Correct documentation defaults, snippets, catalogue defaults, and query aliases
-- [ ] Add logged-out mobile navigation
-- [ ] Improve model-page options, signup CTA, and reliability period display
-- [ ] Deploy backend changes and verify requested security and UX flows
+- [ ] Audit the six remaining security/routing workstreams against current code and backend state
+- [ ] Complete routing reconciliation, hourly probes, and runtime-secret persistence
+- [ ] Complete connect-script command hardening and remove the legacy public script
+- [ ] Complete budgets, payments, LiteLLM user repair, and Stripe webhook handling
+- [ ] Complete render proxy and platform-traffic exclusions
+- [ ] Run typechecks and focused/live tests
+- [ ] Deploy backend functions and publish the frontend
+- [ ] Report migration, test results, webhook URL/event, and any external secret blocker
