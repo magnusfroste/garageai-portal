@@ -6,9 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { profileService } from "@/models/services/profileService";
 import type { SignupIntent } from "@/models/types/onboarding.types";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
+  const { loading } = useAuth();
   const [saving, setSaving] = useState(false);
 
   const choose = async (intent: SignupIntent | null) => {
@@ -21,6 +23,8 @@ export const OnboardingPage = () => {
       setSaving(false);
     }
   };
+
+  if (loading) return null;
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
