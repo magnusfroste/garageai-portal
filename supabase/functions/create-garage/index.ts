@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getNetbirdApiUrl, netbirdHeaders, getGaragesGroupId } from "../_shared/netbirdConfig.ts";
+import { getNetbirdApiUrl, netbirdHeaders, getGaragesGroupId, ensureGarageGroup } from "../_shared/netbirdConfig.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
     let setupKey: string | null = null;
     if (createSetupKey) {
       const groupId = await getGaragesGroupId(netbirdApiUrl);
+      const garageGroupId = await ensureGarageGroup(netbirdApiUrl, name);
       const res = await fetch(`${netbirdApiUrl}/setup-keys`, {
         method: "POST",
         headers: netbirdHeaders(),
@@ -142,7 +143,7 @@ Deno.serve(async (req) => {
           name,
           type: "one-off",
           expires_in: 259200,
-          auto_groups: [groupId],
+          auto_groups: [groupId, garageGroupId],
           usage_limit: 1,
           ephemeral: false,
         }),
@@ -153,6 +154,12 @@ Deno.serve(async (req) => {
       }
       const data = await res.json();
       setupKey = data?.key ?? null;
+      if (setupKey && garage.netbird_peer_id) {
+        // Operator is (re)installing; the pin is re-established at the next registration.
+        const { error: pinErr } = await admin.from("garages").update({ netbird_peer_id: null }).eq("id", garage.id);
+        if (pinErr) throw pinErr;
+        garage = { ...garage, netbird_peer_id: null };
+      }
     }
 
     console.log("[create-garage] garage ready", { garage: name, reused: !!existing, setup_key_created: !!setupKey });
