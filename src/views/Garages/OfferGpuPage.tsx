@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Circle, Loader2, XCircle, Cpu, ShieldCheck, FlaskConical } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, XCircle, Cpu, ShieldCheck, FlaskConical, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/components/ui/use-toast";
 import { useProfile } from "@/hooks/useProfile";
 import { useGarageStatusPolling } from "@/hooks/useGarageStatusPolling";
@@ -13,7 +14,8 @@ import { garageRepository } from "@/data/repositories/garageRepository";
 import {
   buildGarageCommand, GarageCredentials, GARAGE_NAME_RE, suggestGarageName,
 } from "@/models/services/garageCommand";
-import { OS_OPTIONS, RUNTIME_OPTIONS, prepSteps, GarageOs, GarageRuntime } from "@/models/services/garageInstructions";
+import { OS_OPTIONS, OFFICIAL_RUNTIMES, OTHER_RUNTIMES, RUNTIME_OPTIONS, prepSteps, GarageOs, GarageRuntime } from "@/models/services/garageInstructions";
+import { runtimeLabel, RUNTIMES_WITH_API_KEY } from "@/models/services/garageRuntime";
 import { CommandBlock, OneTimeWarning } from "./components/GarageShared";
 
 const STEPS = ["Din maskin", "Förbered", "Namnge", "Live"];
@@ -41,6 +43,8 @@ const OfferGpuPage = () => {
   const [step, setStep] = useState(0);
   const [os, setOs] = useState<GarageOs>("macos");
   const [runtime, setRuntime] = useState<GarageRuntime>("ollama");
+  const [otherPort, setOtherPort] = useState<8000 | 8080>(8000);
+  const [otherRuntimesOpen, setOtherRuntimesOpen] = useState(false);
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [creds, setCreds] = useState<GarageCredentials | null>(null);
@@ -86,7 +90,12 @@ const OfferGpuPage = () => {
   };
 
   const osSupported = OS_OPTIONS.find((o) => o.value === os)?.supported;
-  const port = RUNTIME_OPTIONS.find((r) => r.value === runtime)?.port;
+  const port = runtime === "other" ? otherPort : RUNTIME_OPTIONS.find((r) => r.value === runtime)?.port;
+  const apiKeyHelp = runtime === "paddock"
+    ? "Byt ut <DIN_NYCKEL> mot nyckeln från Paddock. Nyckeln krävs."
+    : RUNTIMES_WITH_API_KEY.includes(runtime)
+      ? "Byt ut <DIN_NYCKEL> mot runtime-nyckeln. Om du inte använder någon nyckel kan du ta bort flaggan."
+      : null;
 
   return (
     <div className="p-6 space-y-6 max-w-3xl">
@@ -122,14 +131,50 @@ const OfferGpuPage = () => {
             </div>
             <div className="space-y-2">
               <Label>Runtime</Label>
-              <RadioGroup value={runtime} onValueChange={(v) => setRuntime(v as GarageRuntime)} className="flex gap-4 flex-wrap">
-                {RUNTIME_OPTIONS.map((r) => (
-                  <div key={r.value} className="flex items-center gap-2">
-                    <RadioGroupItem value={r.value} id={`rt-${r.value}`} />
-                    <Label htmlFor={`rt-${r.value}`} className="font-normal">{r.label}</Label>
-                  </div>
+              <RadioGroup value={runtime} onValueChange={(v) => setRuntime(v as GarageRuntime)} className="grid gap-2 sm:grid-cols-2">
+                {OFFICIAL_RUNTIMES.map((r) => (
+                  <Label key={r.value} htmlFor={`rt-${r.value}`} className="flex min-h-12 cursor-pointer items-start gap-3 rounded-md border border-border p-3 font-normal">
+                    <RadioGroupItem value={r.value} id={`rt-${r.value}`} className="mt-0.5" />
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2 font-medium">
+                        {r.label}
+                        {r.beta && <span className="rounded border border-primary/40 px-1.5 py-0.5 text-[10px] text-primary">Beta</span>}
+                      </span>
+                      {r.description && <span className="mt-1 block text-xs text-muted-foreground">{r.description}</span>}
+                    </span>
+                  </Label>
                 ))}
               </RadioGroup>
+              <Collapsible open={otherRuntimesOpen} onOpenChange={setOtherRuntimesOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="h-9 w-full justify-between px-2">
+                    Övriga
+                    <ChevronDown className={`h-4 w-4 transition-transform ${otherRuntimesOpen ? "rotate-180" : ""}`} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <RadioGroup value={runtime} onValueChange={(v) => setRuntime(v as GarageRuntime)} className="grid gap-2 sm:grid-cols-2">
+                    {OTHER_RUNTIMES.map((r) => (
+                      <Label key={r.value} htmlFor={`rt-${r.value}`} className="flex min-h-12 cursor-pointer items-start gap-3 rounded-md border border-border p-3 font-normal">
+                        <RadioGroupItem value={r.value} id={`rt-${r.value}`} className="mt-0.5" />
+                        <span className="font-medium">{r.label}</span>
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </CollapsibleContent>
+              </Collapsible>
+              {runtime === "other" && (
+                <div className="space-y-2 pt-2">
+                  <Label>Port</Label>
+                  <RadioGroup value={String(otherPort)} onValueChange={(value) => setOtherPort(value === "8080" ? 8080 : 8000)} className="flex gap-4">
+                    {[8000, 8080].map((value) => (
+                      <Label key={value} htmlFor={`port-${value}`} className="flex items-center gap-2 font-normal">
+                        <RadioGroupItem value={String(value)} id={`port-${value}`} />{value}
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </div>
+              )}
             </div>
             <Button onClick={() => setStep(1)} disabled={!osSupported}>Nästa</Button>
           </CardContent>
@@ -140,7 +185,7 @@ const OfferGpuPage = () => {
         <Card className="glass-card">
           <CardHeader><CardTitle>Förbered</CardTitle><CardDescription>Se till att din runtime lyssnar på alla nätverksgränssnitt (port {port}).</CardDescription></CardHeader>
           <CardContent className="space-y-4">
-            {prepSteps(os, runtime).map((s, i) => (
+            {prepSteps(os, runtime, port).map((s, i) => (
               <div key={i} className="space-y-1.5">
                 <p className="text-sm">{i + 1}. {s.text}</p>
                 {s.code && <CommandBlock command={s.code} />}
@@ -178,10 +223,8 @@ const OfferGpuPage = () => {
               <>
                 <OneTimeWarning />
                 <p className="text-sm">Kör detta i en terminal på maskinen:</p>
-                <CommandBlock command={buildGarageCommand(creds, runtime, { sudo: os === "linux" })} />
-                {runtime === "vllm" && (
-                  <p className="text-xs text-muted-foreground">Byt ut &lt;YOUR_VLLM_API_KEY&gt; mot nyckeln du startade vLLM med (ta bort flaggan om du inte använder någon).</p>
-                )}
+                <CommandBlock command={buildGarageCommand(creds, runtime, { sudo: os === "linux", port })} />
+                {apiKeyHelp && <p className="text-xs text-muted-foreground">{apiKeyHelp}</p>}
                 <Button onClick={() => { setLiveName(creds.garage.name); setCreds(null); setStep(3); }}>
                   Jag har kopierat och kört kommandot
                 </Button>
@@ -197,7 +240,7 @@ const OfferGpuPage = () => {
           <CardContent className="space-y-2">
             <CheckItem state={meshOk ? "done" : "wait"} label="Maskinen ansluten till nätet" />
             <CheckItem state={registered ? "done" : meshOk ? "wait" : "todo"} label="Garaget registrerat"
-              detail={registered && data?.garage.runtime ? `${data.garage.runtime}:${data.garage.port}` : undefined} />
+              detail={registered && data?.garage.runtime ? `${runtimeLabel(data.garage.runtime)}:${data.garage.port}` : undefined} />
             {registered && (data?.garage.models ?? []).map((m) => {
               const t = data?.latest_tests.find((x) => x.model === m);
               return (
