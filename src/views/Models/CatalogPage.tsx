@@ -1,3 +1,4 @@
+import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Cpu, Search } from "lucide-react";
@@ -60,6 +61,7 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
       {t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}
     </span>
     <span className="text-xs text-muted-foreground hidden sm:block">{t("{n} garages", { n: m.offers.length })}</span>
+    {m.offers.some((o) => o.providerName) && <ProviderBadge name={m.offers.find((o) => o.providerName)!.providerName} />}
     <span className="justify-self-end">{m.bestGrade && <GradeBadge grade={m.bestGrade} />}</span>
   </Link>
 );

@@ -29,6 +29,7 @@ export const buildCatalog = (
   stats: GaragePublicStat[],
   reliability: Map<string, GarageReliability>,
   tools: GarageToolSupport[] = [],
+  providers: Map<string, string> = new Map(),
 ): CatalogModel[] => {
   const statOf = new Map(stats.map((s) => [s.garage_name, s]));
   const groups = new Map<string, CuratedModel[]>();
@@ -59,6 +60,7 @@ export const buildCatalog = (
         online: (st?.online ?? false) && list.some((r) => r.garage === g && r.status !== "unhealthy"),
         runtime: st?.runtime ?? null,
         tokens7d: st?.tokens_7d ?? 0,
+        providerName: providers.get(g) ?? null,
       };
     });
     const allPrices = list.map((r) => ({ i: r.input_cost_per_million, o: r.output_cost_per_million }));

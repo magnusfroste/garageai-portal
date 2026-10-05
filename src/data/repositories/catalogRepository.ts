@@ -10,6 +10,13 @@ export const catalogRepository = {
     return (data ?? []).map((r) => ({ ...r, tokens_7d: Number(r.tokens_7d) })) as GaragePublicStat[];
   },
 
+  /** Endpoint providers (company garages) by garage name → display name. */
+  async providers(): Promise<Map<string, string>> {
+    const { data, error } = await supabase.rpc("garage_public_providers");
+    if (error) throw error;
+    return new Map((data ?? []).map((r) => [r.garage_name, r.display_name]));
+  },
+
   /** Latest tool-calling probe result per garage + model (public). */
   async toolSupport(): Promise<GarageToolSupport[]> {
     const { data, error } = await supabase.rpc("garage_tool_support");

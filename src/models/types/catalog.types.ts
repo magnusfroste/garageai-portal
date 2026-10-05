@@ -32,6 +32,8 @@ export interface GarageOffer {
   online: boolean;
   runtime: string | null;
   tokens7d: number;
+  /** Display name when this garage is an endpoint provider (company), else null. */
+  providerName: string | null;
 }
 
 /** Buyer-facing catalogue entry: one per base model name. */
