@@ -117,6 +117,11 @@ export const ModelCurationPanel = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-sm truncate">{model.model_name || model.id}</span>
+                    {!model.enabled && model.disabled_reason && (
+                      <Badge variant="outline" className="text-[10px] shrink-0 text-muted-foreground">
+                        {model.disabled_reason === "failed_test" ? "Avstängd: underkänt test" : "Avstängd av admin"}
+                      </Badge>
+                    )}
                     <Badge variant="outline" className="text-[10px] shrink-0">
                       {model.provider}
                     </Badge>

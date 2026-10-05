@@ -27,7 +27,7 @@ export class CuratedModelRepository {
   async toggleEnabled(id: string, enabled: boolean): Promise<void> {
     const { error } = await supabase
       .from("curated_models")
-      .update({ enabled, updated_at: new Date().toISOString() } as never)
+      .update({ enabled, disabled_reason: enabled ? null : "admin", updated_at: new Date().toISOString() } as never)
       .eq("id", id);
     if (error) throw error;
   }
