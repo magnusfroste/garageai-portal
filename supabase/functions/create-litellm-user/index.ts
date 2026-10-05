@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
+import { ensureLiteLLMUser } from "../_shared/litellmUsers.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,87 +47,12 @@ serve(async (req: Request) => {
     // Check if user already has a LiteLLM user
     const { data: profile } = await supabase
       .from('profiles')
-      .select('litellm_user_id')
+      .select('id, email, litellm_user_id, starting_credit_usd, purchased_credits_usd')
       .eq('id', user.id)
       .single();
 
-    if (profile?.litellm_user_id) {
-      return new Response(JSON.stringify({ 
-        success: true, 
-        litellm_user_id: profile.litellm_user_id,
-        message: 'LiteLLM user already exists' 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Read default budget from admin_settings
-    const { data: budgetSetting } = await supabase
-      .from('admin_settings')
-      .select('value')
-      .eq('key', 'default_user_budget_usd')
-      .single();
-
-    const defaultBudget = budgetSetting ? Number(budgetSetting.value) : 25;
-
-    // Create LiteLLM internal user with configured budget
-    const proxyBase = await getProxyBaseUrl(supabase);
-    const litellmResponse = await fetch(`${proxyBase}/user/new`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LITELLM_MASTER_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: user.id,
-        user_email: user.email,
-        max_budget: defaultBudget,
-        user_role: 'internal_user',
-      }),
-    });
-
-    const litellmData = await litellmResponse.json();
-    console.log('LiteLLM /user/new response:', { status: litellmResponse.status, user_id: litellmData?.user_id });
-
-    let litellmUserId: string;
-
-    if (litellmResponse.ok) {
-      litellmUserId = litellmData.user_id || user.id;
-    } else if (litellmResponse.status === 409) {
-      // User already exists in LiteLLM — fetch their info instead
-      console.log('LiteLLM user already exists, fetching info...');
-      const infoUrl = new URL(`${proxyBase}/user/info`);
-      infoUrl.searchParams.set('user_id', user.id);
-
-      const infoRes = await fetch(infoUrl.toString(), {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${LITELLM_MASTER_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (infoRes.ok) {
-        const infoData = await infoRes.json();
-        litellmUserId = infoData.user_info?.user_id || user.id;
-      } else {
-        // Fallback: use the Supabase user ID as the LiteLLM user ID
-        litellmUserId = user.id;
-      }
-    } else {
-      throw new Error(litellmData.error?.message || `LiteLLM error: ${litellmResponse.status}`);
-    }
-
-    // Store LiteLLM user ID in profile
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ litellm_user_id: litellmUserId })
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('Failed to update profile with litellm_user_id:', updateError);
-      throw new Error('Failed to save LiteLLM user ID');
-    }
+    if (!profile) throw new Error('Profile not found');
+    const { userId: litellmUserId } = await ensureLiteLLMUser(supabase, profile);
 
     return new Response(JSON.stringify({ 
       success: true, 
