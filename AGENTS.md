@@ -7,5 +7,6 @@
 - Keep runtime metadata in one frontend service and backend port allowlisting in one shared edge-function constant so setup commands and validation stay aligned.- Compute garage reliability grades only in the `garage_reliability` database function, fed by the five-minute cron (samples, usage ingest, hourly probes), so every view shows the same numbers.
 - Define portal navigation groups only in `src/models/services/navigation.ts`; public-readable pages use `PublicOrAppLayout` so visitors and signed-in users share routes.
 - Build the buyer catalogue (one entry per base model, garages as providers) only in `catalogService.buildCatalog` from public data (curated_models + public garage RPCs), so list and model pages agree.
+- Track why a catalogue model is off in `curated_models.disabled_reason` (admin vs failed_test); only syncModels re-enables failed_test rows on a pass, never admin-disabled ones.
 - Decide tool-calling support only from the acceptance-test tool probe (`garage_model_tests.supports_tools`, read publicly via `garage_tool_support`); the chat backend and UI share the same "garage/<g>/<m> vs pool" matching so the Webbsök toggle and server agree.
 - Run chat web search server-side in `chat-playground/webSearch.ts` (SearXNG, max 3 tool rounds) and stream `garageai` status events alongside OpenAI chunks; never log queries, results or prompts.

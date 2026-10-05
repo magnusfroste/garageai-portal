@@ -1,6 +1,8 @@
 export interface CuratedModel {
   id: string;
   model_name: string | null;
+  /** Why the model is off: 'admin' (manual) or 'failed_test' (automatic). */
+  disabled_reason?: "admin" | "failed_test" | null;
   provider: string;
   max_input_tokens: number | null;
   max_output_tokens: number | null;

@@ -85,6 +85,13 @@
       "when": 1791167029871,
       "tag": "0011_garage_tool_support",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791167387387,
+      "tag": "0012_curated_models_disabled_reason",
+      "breakpoints": true
     }
   ]
 }

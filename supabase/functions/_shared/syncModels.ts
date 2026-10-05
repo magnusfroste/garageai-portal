@@ -72,8 +72,8 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
 
   const { data: existing } = await admin
     .from("curated_models")
-    .select("id, model_name, enabled, huggingface_url, is_default, status");
-  type Row = { id: string; model_name: string | null; enabled: boolean; huggingface_url: string | null; is_default: boolean; status: string };
+    .select("id, model_name, enabled, disabled_reason, huggingface_url, is_default, status");
+  type Row = { id: string; model_name: string | null; enabled: boolean; disabled_reason: string | null; huggingface_url: string | null; is_default: boolean; status: string };
   const byId = new Map<string, Row>();
   const byName = new Map<string, Row>();
   for (const row of (existing || []) as Row[]) {
@@ -138,13 +138,20 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
     const id = info.id || m.model_name;
     const prev = byId.get(id) || byName.get(m.model_name);
     let enabled = prev ? prev.enabled : (opts.enableNewGarageModels && !!garage);
+    // disabled_reason separates an admin's choice ('admin') from an automatic test-disable ('failed_test').
+    let disabled_reason: string | null = prev ? prev.disabled_reason ?? null : null;
     if (garage && opts.testResults && opts.testResults.garage === garage) {
       const prefix = `garage/${garage}/`;
       const underlying = garage_tier === "dedicated" && m.model_name.startsWith(prefix)
         ? m.model_name.slice(prefix.length) : m.model_name;
       const passed = opts.testResults.results.get(underlying);
-      if (passed === false) enabled = false;
-      else if (passed === true && !byId.has(id)) enabled = true;
+      if (passed === false) { enabled = false; disabled_reason = "failed_test"; }
+      else if (passed === true) {
+        const own = byId.get(id);
+        if (!own || own.disabled_reason === "failed_test" || (!own.enabled && own.disabled_reason == null)) {
+          enabled = true; disabled_reason = null;
+        } else if (own.disabled_reason === "admin") { enabled = false; }
+      }
     }
     if (garage && disabledGarages.has(garage)) enabled = false;
     return {
@@ -160,6 +167,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
       mode: info.mode || null,
       status: garage ? garageStatus(garage) : (prev?.status ?? "unknown"),
       enabled,
+      disabled_reason: enabled ? null : disabled_reason,
       is_default: prev?.is_default ?? false,
       huggingface_url: prev?.huggingface_url ?? null,
       last_synced_at: now,

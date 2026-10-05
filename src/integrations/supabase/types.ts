@@ -134,6 +134,7 @@ export type Database = {
       curated_models: {
         Row: {
           created_at: string
+          disabled_reason: string | null
           enabled: boolean
           garage: string | null
           garage_tier: string | null
@@ -153,6 +154,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          disabled_reason?: string | null
           enabled?: boolean
           garage?: string | null
           garage_tier?: string | null
@@ -172,6 +174,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          disabled_reason?: string | null
           enabled?: boolean
           garage?: string | null
           garage_tier?: string | null
