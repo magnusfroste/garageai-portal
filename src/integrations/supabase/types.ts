@@ -223,6 +223,47 @@ export type Database = {
           },
         ]
       }
+      garage_model_stats_hourly: {
+        Row: {
+          completion_tokens: number
+          failures: number
+          garage_id: string
+          hour: string
+          model: string
+          prompt_tokens: number
+          requests: number
+          spend_usd: number
+        }
+        Insert: {
+          completion_tokens?: number
+          failures?: number
+          garage_id: string
+          hour: string
+          model: string
+          prompt_tokens?: number
+          requests?: number
+          spend_usd?: number
+        }
+        Update: {
+          completion_tokens?: number
+          failures?: number
+          garage_id?: string
+          hour?: string
+          model?: string
+          prompt_tokens?: number
+          requests?: number
+          spend_usd?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_model_stats_hourly_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_model_tests: {
         Row: {
           duration_ms: number | null
@@ -291,7 +332,9 @@ export type Database = {
           failures: number
           garage_id: string
           hour: string
+          prompt_tokens: number
           requests: number
+          spend_usd: number
           tokens_per_second_p50: number | null
           ttft_ms_p50: number | null
         }
@@ -300,7 +343,9 @@ export type Database = {
           failures?: number
           garage_id: string
           hour: string
+          prompt_tokens?: number
           requests?: number
+          spend_usd?: number
           tokens_per_second_p50?: number | null
           ttft_ms_p50?: number | null
         }
@@ -309,7 +354,9 @@ export type Database = {
           failures?: number
           garage_id?: string
           hour?: string
+          prompt_tokens?: number
           requests?: number
+          spend_usd?: number
           tokens_per_second_p50?: number | null
           ttft_ms_p50?: number | null
         }
@@ -416,10 +463,13 @@ export type Database = {
       garages: {
         Row: {
           api_host: string | null
+          connection_type: string
           created_at: string
           dedicated_input_cost_per_million: number
           dedicated_output_cost_per_million: number
           disabled: boolean
+          display_name: string | null
+          endpoint_url: string | null
           id: string
           last_heartbeat_at: string | null
           last_registered_at: string | null
@@ -437,10 +487,13 @@ export type Database = {
         }
         Insert: {
           api_host?: string | null
+          connection_type?: string
           created_at?: string
           dedicated_input_cost_per_million?: number
           dedicated_output_cost_per_million?: number
           disabled?: boolean
+          display_name?: string | null
+          endpoint_url?: string | null
           id?: string
           last_heartbeat_at?: string | null
           last_registered_at?: string | null
@@ -458,10 +511,13 @@ export type Database = {
         }
         Update: {
           api_host?: string | null
+          connection_type?: string
           created_at?: string
           dedicated_input_cost_per_million?: number
           dedicated_output_cost_per_million?: number
           disabled?: boolean
+          display_name?: string | null
+          endpoint_url?: string | null
           id?: string
           last_heartbeat_at?: string | null
           last_registered_at?: string | null
@@ -669,6 +725,20 @@ export type Database = {
           success_rate: number
           tokens_per_second: number
           ttft_ms_p50: number
+        }[]
+      }
+      garage_revenue: {
+        Args: { _from: string; _to: string }
+        Returns: {
+          completion_tokens: number
+          connection_type: string
+          display_name: string
+          failures: number
+          garage_name: string
+          model: string
+          prompt_tokens: number
+          requests: number
+          spend_usd: number
         }[]
       }
       garage_tool_support: {
