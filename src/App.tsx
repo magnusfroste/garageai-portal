@@ -13,6 +13,8 @@ import { AccountPage } from "./views/Account/AccountPage";
 import { KeysPage } from "./views/Keys/KeysPage";
 import { AdminPage } from "./views/Admin/AdminPage";
 import { ChatPage } from "./views/Chat/ChatPage";
+import OfferGpuPage from "./views/Garages/OfferGpuPage";
+import MyGaragesPage from "./views/Garages/MyGaragesPage";
 import { SiteSettingsPage } from "./views/SiteSettings/SiteSettingsPage";
 import { ModelsPage } from "./views/Models/ModelsPage";
 import { DashboardModelsPage } from "./views/Models/DashboardModelsPage";
