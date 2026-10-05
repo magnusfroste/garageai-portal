@@ -38,8 +38,8 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: "Unauthorized" }, 401);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    if (!isAdmin) return json({ error: "Forbidden" }, 403);
+    const { data: isAdminRaw } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
+    const isAdmin = isAdminRaw === true;
 
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
@@ -47,6 +47,9 @@ Deno.serve(async (req) => {
     const name = typeof body.name === "string" ? body.name.trim() : "";
     if (!NAME_RE.test(name)) return json({ error: "name must match ^[a-z0-9][a-z0-9-]{1,40}$" }, 400);
 
+    if (!isAdmin && body.api_host !== undefined && body.api_host !== null && body.api_host !== "") {
+      return json({ error: "api_host is not allowed" }, 400);
+    }
     let apiHost: string | undefined;
     if (body.api_host !== undefined && body.api_host !== null && body.api_host !== "") {
       if (typeof body.api_host !== "string" || !/^[A-Za-z0-9.-]{1,253}$/.test(body.api_host)) {
@@ -54,18 +57,37 @@ Deno.serve(async (req) => {
       }
       apiHost = body.api_host;
     }
-    let operatorId: string | undefined;
-    if (body.operator_id !== undefined && body.operator_id !== null && body.operator_id !== "") {
+    let operatorId: string | undefined = isAdmin ? undefined : user.id;
+    if (isAdmin && body.operator_id !== undefined && body.operator_id !== null && body.operator_id !== "") {
       if (typeof body.operator_id !== "string" || !UUID_RE.test(body.operator_id)) {
         return json({ error: "operator_id must be a uuid" }, 400);
       }
       operatorId = body.operator_id;
     }
-    const createSetupKey = body.create_setup_key === undefined ? true : body.create_setup_key === true;
+    let createSetupKey = body.create_setup_key === undefined ? true : body.create_setup_key === true;
 
     // Insert or reuse garage
     const { data: existing, error: selErr } = await admin.from("garages").select("*").eq("name", name).maybeSingle();
     if (selErr) throw selErr;
+
+    if (!isAdmin) {
+      if (existing && existing.operator_id !== user.id) {
+        return json({ error: "name taken" }, 409);
+      }
+      if (!existing) {
+        const { count, error } = await admin.from("garages").select("id", { count: "exact", head: true }).eq("operator_id", user.id);
+        if (error) throw error;
+        if ((count ?? 0) >= 5) return json({ error: "You can have at most 5 garages" }, 409);
+      }
+      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      const { count: calls, error: rlErr } = await admin
+        .from("garage_tokens")
+        .select("id, garages!inner(operator_id)", { count: "exact", head: true })
+        .eq("garages.operator_id", user.id)
+        .gte("created_at", since);
+      if (rlErr) throw rlErr;
+      if ((calls ?? 0) >= 10) return json({ error: "Too many requests: max 10 per 24 hours" }, 429);
+    }
 
     let garage;
     if (existing) {
@@ -88,6 +110,8 @@ Deno.serve(async (req) => {
       if (error) throw error;
       garage = data;
     }
+
+    if (!isAdmin && !(body.create_setup_key === false && garage.netbird_peer_id)) createSetupKey = true;
 
     // Token: revoke old, store hash of new
     const raw = new Uint8Array(32);
