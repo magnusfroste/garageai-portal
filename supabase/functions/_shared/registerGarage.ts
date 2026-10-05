@@ -4,6 +4,7 @@ import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, type NetbirdPeer } fr
 import { runAndStoreAcceptanceTests, type AcceptanceResult } from "./acceptanceTest.ts";
 import { syncModels } from "./syncModels.ts";
 import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
+import { modelIdError } from "./garageRouting.ts";
 
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
 const sanitize = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
@@ -18,6 +19,7 @@ export function validateGaragePayload(body: Record<string, unknown>, allowEmptyM
   const models = body.models;
   const minimum = allowEmptyModels ? 0 : 1;
   if (!Array.isArray(models) || models.length < minimum || models.length > 20 || !models.every((model) => typeof model === "string" && MODEL_RE.test(model))) throw new Error(`models must be ${minimum}-20 strings matching ^[A-Za-z0-9._:/-]{1,128}$`);
+  for (const model of models as string[]) { const err = modelIdError(model); if (err) throw new Error(err); }
   const runtime = body.runtime;
   if (typeof runtime !== "string" || runtime.length < 1 || runtime.length > 32) throw new Error("runtime must be a short string (1-32 chars)");
   let runtimeApiKey: string | undefined;

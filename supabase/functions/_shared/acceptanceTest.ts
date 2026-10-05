@@ -28,6 +28,7 @@ export async function runAcceptanceTest(
   masterKey: string,
   garageName: string,
   model: string,
+  route = `garage/${garageName}/${model}`,
 ): Promise<AcceptanceResult> {
   const start = Date.now();
   const controller = new AbortController();
@@ -49,7 +50,7 @@ export async function runAcceptanceTest(
       signal: controller.signal,
       headers: { Authorization: `Bearer ${masterKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: `garage/${garageName}/${model}`,
+        model: route,
         stream: true,
         max_tokens: 512,
         temperature: 0,
@@ -121,7 +122,7 @@ const TOOL_TIMEOUT_MS = 60_000;
 
 /** Capability probe: does the model emit a valid OpenAI-style tool call? Does not affect `passed`. */
 export async function runToolProbe(
-  litellmBase: string, masterKey: string, garageName: string, model: string,
+  litellmBase: string, masterKey: string, garageName: string, model: string, route = `garage/${garageName}/${model}`,
 ): Promise<{ supports_tools: boolean; tools_error: string | null }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TOOL_TIMEOUT_MS);
@@ -131,7 +132,7 @@ export async function runToolProbe(
       signal: controller.signal,
       headers: { Authorization: `Bearer ${masterKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: `garage/${garageName}/${model}`,
+        model: route,
         stream: false,
         max_tokens: 256,
         temperature: 0,
@@ -179,10 +180,11 @@ export async function runAndStoreAcceptanceTests(
   masterKey: string,
   garage: { id: string; name: string },
   models: string[],
+  routeFor?: (model: string) => string,
 ): Promise<AcceptanceResult[]> {
   const results = await Promise.all(models.map(async (m) => {
-    const r = await runAcceptanceTest(litellmBase, masterKey, garage.name, m);
-    if (r.passed) Object.assign(r, await runToolProbe(litellmBase, masterKey, garage.name, m));
+    const r = await runAcceptanceTest(litellmBase, masterKey, garage.name, m, routeFor?.(m));
+    if (r.passed) Object.assign(r, await runToolProbe(litellmBase, masterKey, garage.name, m, routeFor?.(m)));
     return r;
   }));
   const { error } = await admin.from("garage_model_tests").insert(

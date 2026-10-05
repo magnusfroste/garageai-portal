@@ -99,6 +99,13 @@
       "when": 1791167717030,
       "tag": "0013_profile_preferred_language",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791183687537,
+      "tag": "0014_routing_secrets_and_starting_credit",
+      "breakpoints": true
     }
   ]
 }

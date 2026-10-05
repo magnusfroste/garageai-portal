@@ -291,6 +291,32 @@ export type Database = {
           },
         ]
       }
+      garage_runtime_secrets: {
+        Row: {
+          garage_id: string
+          runtime_api_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          garage_id: string
+          runtime_api_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          garage_id?: string
+          runtime_api_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_runtime_secrets_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: true
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_status_samples: {
         Row: {
           garage_id: string
@@ -469,6 +495,7 @@ export type Database = {
           preferred_language: string
           purchased_credits_usd: number
           signup_intent: string | null
+          starting_credit_usd: number
           updated_at: string
         }
         Insert: {
@@ -482,6 +509,7 @@ export type Database = {
           preferred_language?: string
           purchased_credits_usd?: number
           signup_intent?: string | null
+          starting_credit_usd?: number
           updated_at?: string
         }
         Update: {
@@ -495,6 +523,7 @@ export type Database = {
           preferred_language?: string
           purchased_credits_usd?: number
           signup_intent?: string | null
+          starting_credit_usd?: number
           updated_at?: string
         }
         Relationships: []
