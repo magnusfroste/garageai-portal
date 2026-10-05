@@ -94,6 +94,8 @@ export interface SiteSettings {
 
   // Platform economics: share (0–100) of usage revenue kept by the platform
   platform_fee_percent: number;
+  /** Public signup display value, mirrored from default_user_budget_usd. */
+  starting_credit_usd?: number;
 }
 
 export const defaultSiteSettings: SiteSettings = {

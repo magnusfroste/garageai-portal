@@ -24,6 +24,7 @@ import { useWebSearchPreference } from "./hooks/useWebSearchPreference";
 import { useChatPreferences } from "./hooks/useChatPreferences";
 import { useAutoScroll } from "./hooks/useAutoScroll";
 import type { ChatMessage } from "./types";
+import { apiKeyService } from "@/models/services/apiKeyService";
 
 export const ChatPage = () => {
   const { checkAuth } = useAuth();
@@ -35,6 +36,7 @@ export const ChatPage = () => {
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
   const [panelOpen, setPanelOpen] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const composer = useRef<ChatComposerHandle>(null);
 
   useEffect(() => { checkAuth(); }, []);
@@ -100,12 +102,12 @@ export const ChatPage = () => {
   const lastLen = messages[messages.length - 1]?.content.length ?? 0;
   const scroll = useAutoScroll(`${messages.length}:${lastLen}:${messages[messages.length - 1]?.reasoning?.length ?? 0}`);
 
-  const canSend = !!selectedModel && !!selectedKeyId;
-  const startRun = useCallback((convId: string, history: ChatMessage[]) => run({
+  const canSend = !!selectedModel;
+  const startRun = useCallback((convId: string, history: ChatMessage[], keyId = selectedKeyId) => run({
     convId, history,
     modelId: selectedModel,
     model: modelInfos.find((m) => m.id === selectedModel),
-    apiKeyId: selectedKeyId === "__master__" ? undefined : selectedKeyId,
+    apiKeyId: keyId === "__master__" ? undefined : keyId,
     systemPrompt,
     webSearch: webSearch && webSearchAvailable,
   }), [run, selectedModel, modelInfos, selectedKeyId, systemPrompt, webSearch, webSearchAvailable]);
@@ -114,13 +116,27 @@ export const ChatPage = () => {
   const handleSend = useCallback(async (text: string) => {
     if (isStreaming || sending.current || !canSend) return;
     sending.current = true;
+    setSendError(null);
     try {
+      let keyId = selectedKeyId;
+      if (!keyId && !isAdmin) {
+        try {
+          await apiKeyService.createKey({ keyName: "Chat", models: [] });
+          const refreshed = await refetchKeys();
+          keyId = refreshed.data?.find((key) => key.is_active && key.name === "Chat")?.id ?? "";
+          if (!keyId) throw new Error(t("The Chat API key could not be loaded."));
+          chooseKey(keyId);
+        } catch {
+          setSendError(t("We couldn't create your Chat API key. Try again or create one under API keys."));
+          return;
+        }
+      }
       const id = convs.activeId || (await convs.createConversation(selectedModel));
       if (!id) return;
       scroll.scrollToBottom(false);
-      await startRun(id, [...messages, { role: "user", content: text }]);
+      await startRun(id, [...messages, { role: "user", content: text }], keyId);
     } finally { sending.current = false; }
-  }, [isStreaming, canSend, convs, selectedModel, messages, startRun, scroll]);
+  }, [isStreaming, canSend, selectedKeyId, isAdmin, refetchKeys, convs, selectedModel, messages, startRun, scroll]);
 
   const handleRegenerate = useCallback(() => {
     if (isStreaming || !convs.activeId) return;
@@ -161,6 +177,7 @@ export const ChatPage = () => {
       webSearch={webSearch}
       onToggleWebSearch={toggleWebSearch}
       webSearchAvailable={webSearchAvailable}
+      error={sendError}
     >
       <ChatSystemPrompt systemPrompt={systemPrompt} onChangeSystemPrompt={setSystemPrompt} disabled={isStreaming} />
     </ChatComposer>
@@ -224,7 +241,7 @@ export const ChatPage = () => {
             <div className="shrink-0 px-4 pb-4 pt-1">
               <div className="mx-auto w-full max-w-[760px]">
                 {composerEl}
-                <p className="mt-2 text-center text-[11px] text-muted-foreground">{t("Answers come from community garages and can be wrong. Check important facts.")}</p>
+                <p className="mt-2 text-center text-[11px] text-muted-foreground">{t("Chats are saved to your account · Delete anytime")}</p>
               </div>
             </div>
           </>

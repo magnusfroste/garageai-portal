@@ -28,10 +28,14 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [checkInbox, setCheckInbox] = useState(false);
   const { settings } = useSiteSettings();
   const siteName = settings?.site_name || "AI Portal";
   const logoUrl = settings?.logo_url;
   const intent = onboardingService.readUrlIntent(location.search);
+  const params = new URLSearchParams(location.search);
+  const initialTab = params.get("mode") === "signup" || !!intent ? "signup" : "signin";
+  const starterCredit = Number(settings?.starting_credit_usd ?? 25);
   const heading = intent === "operator"
     ? t("Create an account and offer your GPU")
     : intent === "buyer"
@@ -60,7 +64,7 @@ const Auth = () => {
     try {
       const validated = authSchema.parse({ email, password, fullName });
       if (intent) onboardingService.storeIntent(intent);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: validated.email,
         password: validated.password,
         options: {
@@ -72,6 +76,8 @@ const Auth = () => {
         toast.error(error.message.includes("already registered")
           ? t("This email is already registered. Please sign in instead.")
           : error.message);
+      } else if (!data.session) {
+        setCheckInbox(true);
       } else {
         toast.success(t("Account created! Welcome to {site}.", { site: siteName }));
       }
@@ -157,7 +163,12 @@ const Auth = () => {
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50" /></div>
               <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">{t("or")}</span></div>
             </div>
-            <Tabs defaultValue="signin" className="w-full">
+            {checkInbox ? (
+              <div className="space-y-3 py-6 text-center" role="status">
+                <h2 className="text-xl font-semibold">{t("Check your inbox")}</h2>
+                <p className="text-sm text-muted-foreground">{t("Open the confirmation link we sent to {email} to finish creating your account.", { email })}</p>
+              </div>
+            ) : <Tabs defaultValue={initialTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin">{t("Sign in")}</TabsTrigger>
                 <TabsTrigger value="signup">{t("Create account")}</TabsTrigger>
@@ -196,7 +207,7 @@ const Auth = () => {
                   <div className="bg-accent/10 border border-accent/20 rounded-lg p-4 space-y-2">
                      <p className="text-sm font-semibold text-accent">{t("Starter credit included:")}</p>
                     <ul className="text-sm space-y-1 text-muted-foreground">
-                       <li>{t("• 25 USD in credits")}</li>
+                       <li>{t("• {amount} USD in credits", { amount: starterCredit })}</li>
                        <li>{t("• All available models")}</li>
                        <li>{t("• No credit card required")}</li>
                     </ul>
@@ -206,7 +217,7 @@ const Auth = () => {
                   </Button>
                 </form>
               </TabsContent>
-            </Tabs>
+            </Tabs>}
           </CardContent>
         </Card>
       </div>
