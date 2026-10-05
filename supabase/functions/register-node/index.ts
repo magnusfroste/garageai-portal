@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
-import { getNetbirdApiUrl, netbirdHeaders } from "../_shared/netbirdConfig.ts";
+import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, NetbirdPeer } from "../_shared/netbirdConfig.ts";
 import { syncModels } from "../_shared/syncModels.ts";
 import { runAndStoreAcceptanceTests, toPublicResult } from "../_shared/acceptanceTest.ts";
 
@@ -19,13 +19,6 @@ const sanitize = (m: string) => m.replace(/[^A-Za-z0-9._-]/g, "-");
 async function sha256Hex(s: string): Promise<string> {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   return Array.from(new Uint8Array(d)).map((x) => x.toString(16).padStart(2, "0")).join("");
-}
-
-interface NetbirdPeer {
-  id: string;
-  name: string;
-  ip: string;
-  groups?: Array<{ id: string; name: string }>;
 }
 
 Deno.serve(async (req) => {
@@ -94,8 +87,9 @@ Deno.serve(async (req) => {
       return json({ error: "Could not query mesh" }, 502);
     }
     const peers = (await peersRes.json()) as NetbirdPeer[];
-    const peer = peers.find((p) => p.name === garage.name && (p.groups || []).some((g) => g.name === "garages"));
-    if (!peer) return json({ error: "node is not connected to the mesh yet" }, 409);
+    const lookup = findGaragePeer(peers, garage);
+    if (!lookup.peer) return json({ error: lookup.error }, 409);
+    const peer = lookup.peer;
 
     const meshIp = peer.ip;
     if (typeof body.mesh_ip === "string" && body.mesh_ip !== meshIp) {

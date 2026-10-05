@@ -1,7 +1,6 @@
 import { corsHeaders, json, NAME_RE, getCaller } from "../_shared/garageAuth.ts";
-import { getNetbirdApiUrl, netbirdHeaders } from "../_shared/netbirdConfig.ts";
+import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, NetbirdPeer } from "../_shared/netbirdConfig.ts";
 
-interface NetbirdPeer { name?: string; connected?: boolean; groups?: Array<{ name?: string }> }
 
 const GARAGE_COLUMNS =
   "id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, created_at, updated_at";
@@ -30,7 +29,7 @@ Deno.serve(async (req) => {
       const res = await fetch(`${nbUrl}/peers`, { headers: netbirdHeaders() });
       if (res.ok) {
         const peers = (await res.json()) as NetbirdPeer[];
-        const peer = peers.find((p) => p.name === garage.name && (p.groups || []).some((g) => g.name === "garages"));
+        const { peer } = findGaragePeer(peers, garage);
         mesh = { connected: peer ? peer.connected === true : null, peer_found: !!peer };
       } else {
         await res.text();

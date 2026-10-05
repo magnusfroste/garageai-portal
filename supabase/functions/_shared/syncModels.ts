@@ -84,21 +84,35 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
     const g = m.model_info?.garage;
     if (typeof g === "string" && g) garageNames.add(g);
   }
+  // Status is keyed on the pinned NetBird peer id, never the peer name.
   let peerConnected: Map<string, boolean> | null = null;
+  const pinnedPeer = new Map<string, string>();
   if (garageNames.size > 0) {
+    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id").in("name", Array.from(garageNames));
+    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null }>) {
+      if (g.netbird_peer_id) pinnedPeer.set(g.name, g.netbird_peer_id);
+    }
+  }
+  if (pinnedPeer.size > 0) {
     try {
       const nbUrl = await getNetbirdApiUrl(admin);
       const res = await fetch(`${nbUrl}/peers`, { headers: netbirdHeaders() });
       if (!res.ok) throw new Error(`NetBird GET /peers status ${res.status}`);
-      const peers = (await res.json()) as Array<{ name?: string; connected?: boolean }>;
+      const peers = (await res.json()) as Array<{ id?: string; connected?: boolean; groups?: Array<{ name?: string }> }>;
+      const byId = new Map(peers.filter((p) => p.id).map((p) => [p.id!, p]));
       peerConnected = new Map();
-      for (const p of peers) if (p.name && p.connected === true) peerConnected.set(p.name, true);
+      for (const [g, pid] of pinnedPeer) {
+        const p = byId.get(pid);
+        const ok = !!p && p.connected === true && (p.groups || []).some((x) => x.name === "garages");
+        peerConnected.set(g, ok);
+      }
     } catch (e) {
       console.warn("NetBird peer lookup failed; garage status unknown:", e instanceof Error ? e.message : "error");
       peerConnected = null;
     }
   }
-  const garageStatus = (g: string) => peerConnected === null ? "unknown" : peerConnected.get(g) ? "healthy" : "unhealthy";
+  const garageStatus = (g: string) =>
+    peerConnected === null || !peerConnected.has(g) ? "unknown" : peerConnected.get(g) ? "healthy" : "unhealthy";
 
   const { data: disabledRows } = await admin.from("garages").select("name").eq("disabled", true);
   const disabledGarages = new Set(((disabledRows || []) as Array<{ name: string }>).map((g) => g.name));
@@ -155,7 +169,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
 
   if (peerConnected !== null) {
     for (const g of garageNames) {
-      if (disabledGarages.has(g)) continue;
+      if (disabledGarages.has(g) || !peerConnected.has(g)) continue;
       // A connected garage keeps 'failed_test' until a retest passes.
       const q = admin.from("garages").update({ status: peerConnected.get(g) ? "online" : "offline" }).eq("name", g);
       const { error } = peerConnected.get(g) ? await q.neq("status", "failed_test") : await q;
