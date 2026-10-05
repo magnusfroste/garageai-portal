@@ -65,7 +65,9 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
 
   const testModels = opts.testOnly ?? payload.models;
   const acceptance = testModels.length ? await runAndStoreAcceptanceTests(admin, litellm, masterKey, garage, testModels) : [];
-  const { data: latest } = await admin.from("garage_model_tests").select("model, passed, tested_at").eq("garage_id", garage.id).in("model", payload.models).order("tested_at", { ascending: false });
+  const latest = payload.models.length
+    ? (await admin.from("garage_model_tests").select("model, passed, tested_at").eq("garage_id", garage.id).in("model", payload.models).order("tested_at", { ascending: false })).data
+    : [];
   const latestByModel = new Map<string, boolean>();
   for (const result of (latest || []) as Array<{ model: string; passed: boolean }>) if (!latestByModel.has(result.model)) latestByModel.set(result.model, result.passed);
   for (const result of acceptance) latestByModel.set(result.model, result.passed);

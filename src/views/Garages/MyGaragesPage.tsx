@@ -82,6 +82,7 @@ const MyGaragesPage = () => {
                   <span className="font-mono">{g.name}</span>
                   {g.runtime && <Badge variant="outline" className="text-[10px]">{g.runtime}{g.port ? `:${g.port}` : ""}</Badge>}
                   <span className="text-xs text-muted-foreground ml-auto">Registrerad: {relativeTimeSv(g.last_registered_at)}</span>
+                   <span className="text-xs text-muted-foreground">Senaste livstecken: {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : "Ingen heartbeat (äldre installation)"}</span>
                 </div>
                 <div className="flex gap-1.5 flex-wrap">
                   {g.models.length === 0

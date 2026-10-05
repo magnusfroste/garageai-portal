@@ -14,6 +14,7 @@ export interface GarageRow {
   status: string;
   disabled: boolean;
   last_registered_at: string | null;
+  last_heartbeat_at: string | null;
   created_at: string;
 }
 
@@ -60,7 +61,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, created_at")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;

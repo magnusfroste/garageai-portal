@@ -87,10 +87,13 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   // Status is keyed on the pinned NetBird peer id, never the peer name.
   let peerConnected: Map<string, boolean> | null = null;
   const pinnedPeer = new Map<string, string>();
+  const heartbeatStatus = new Map<string, "healthy" | "unhealthy">();
   if (garageNames.size > 0) {
-    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id").in("name", Array.from(garageNames));
-    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null }>) {
-      if (g.netbird_peer_id) pinnedPeer.set(g.name, g.netbird_peer_id);
+    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id, last_heartbeat_at").in("name", Array.from(garageNames));
+    const staleBefore = Date.now() - 15 * 60 * 1000;
+    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null; last_heartbeat_at: string | null }>) {
+      if (g.last_heartbeat_at) heartbeatStatus.set(g.name, Date.parse(g.last_heartbeat_at) < staleBefore ? "unhealthy" : "healthy");
+      else if (g.netbird_peer_id) pinnedPeer.set(g.name, g.netbird_peer_id);
     }
   }
   if (pinnedPeer.size > 0) {
@@ -111,8 +114,8 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
       peerConnected = null;
     }
   }
-  const garageStatus = (g: string) =>
-    peerConnected === null || !peerConnected.has(g) ? "unknown" : peerConnected.get(g) ? "healthy" : "unhealthy";
+  const garageStatus = (g: string) => heartbeatStatus.get(g)
+    ?? (peerConnected === null || !peerConnected.has(g) ? "unknown" : peerConnected.get(g) ? "healthy" : "unhealthy");
 
   const { data: disabledRows } = await admin.from("garages").select("name").eq("disabled", true);
   const disabledGarages = new Set(((disabledRows || []) as Array<{ name: string }>).map((g) => g.name));
@@ -175,6 +178,11 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
       const { error } = peerConnected.get(g) ? await q.neq("status", "failed_test") : await q;
       if (error) console.warn(`Failed to update garage status for ${g}:`, error.message);
     }
+  }
+  for (const [garage, status] of heartbeatStatus) {
+    if (status !== "unhealthy" || disabledGarages.has(garage)) continue;
+    const { error } = await admin.from("garages").update({ status: "offline" }).eq("name", garage);
+    if (error) console.warn(`Failed to mark stale garage ${garage} offline:`, error.message);
   }
 
   const { error: upsertError } = await admin.from("curated_models").upsert(rows, { onConflict: "id" });
