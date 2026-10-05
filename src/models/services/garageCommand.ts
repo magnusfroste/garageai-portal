@@ -9,6 +9,7 @@ export interface GarageCredentials {
 export interface BuildCommandOptions {
   /** Prefix the script invocation with sudo (Linux). */
   sudo?: boolean;
+  port?: number;
 }
 
 /** Builds the one-time connect command shown after create-garage. */
@@ -32,7 +33,10 @@ export const buildGarageCommand = (
     `--register-url ${result.register_url}`,
     `--register-token ${result.register_token}`
   );
-  if (runtime === "vllm") parts.push("--runtime-api-key <YOUR_VLLM_API_KEY>");
+  if (runtime === "other" && opts.port) parts.push(`--port ${opts.port}`);
+  if (["vllm", "sglang", "paddock", "unsloth", "lemonade"].includes(runtime)) {
+    parts.push("--runtime-api-key <DIN_NYCKEL>");
+  }
   lines.push(parts.join(" \\\n  "));
   return lines.join("\n");
 };

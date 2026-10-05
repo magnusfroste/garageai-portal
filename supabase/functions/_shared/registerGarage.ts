@@ -3,8 +3,8 @@ import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, type NetbirdPeer } from "./netbirdConfig.ts";
 import { runAndStoreAcceptanceTests, type AcceptanceResult } from "./acceptanceTest.ts";
 import { syncModels } from "./syncModels.ts";
+import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
 
-export const ALLOWED_GARAGE_PORTS = [11434, 1234, 8080, 8000];
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
 const sanitize = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
 
