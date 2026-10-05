@@ -42,6 +42,8 @@ const App = () => (
             <Route path="models" element={<DashboardModelsPage />} />
             <Route path="api" element={<DashboardApiPage />} />
             <Route path="chat" element={<ChatPage />} />
+            <Route path="offer-gpu" element={<OfferGpuPage />} />
+            <Route path="garages" element={<MyGaragesPage />} />
           </Route>
           <Route path="/models" element={<ModelsPage />} />
           <Route path="/api" element={<ApiPage />} />
