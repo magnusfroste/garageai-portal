@@ -4,6 +4,7 @@ import { curatedModelRepository } from "@/data/repositories/curatedModelReposito
 import { catalogRepository } from "@/data/repositories/catalogRepository";
 import { buildCatalog } from "@/models/services/catalogService";
 import { useGarageReliability } from "./useGarageReliability";
+import { useToolSupport } from "./useToolSupport";
 
 const STALE = 2 * 60 * 1000;
 
@@ -12,9 +13,10 @@ export const useModelCatalog = () => {
   const rows = useQuery({ queryKey: ["catalog-rows"], queryFn: () => curatedModelRepository.fetchEnabled(), staleTime: STALE });
   const stats = useQuery({ queryKey: ["garage-public-stats"], queryFn: () => catalogRepository.garageStats(), staleTime: STALE, retry: false });
   const { reliability, isLoading: relLoading } = useGarageReliability();
+  const { rows: tools } = useToolSupport();
   const models = useMemo(
-    () => buildCatalog(rows.data ?? [], stats.data ?? [], reliability),
-    [rows.data, stats.data, reliability],
+    () => buildCatalog(rows.data ?? [], stats.data ?? [], reliability, tools),
+    [rows.data, stats.data, reliability, tools],
   );
   return { models, isLoading: rows.isLoading || stats.isLoading || relLoading };
 };

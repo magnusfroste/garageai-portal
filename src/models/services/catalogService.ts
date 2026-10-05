@@ -1,3 +1,4 @@
+import type { GarageToolSupport } from "./toolSupportService";
 import type { CuratedModel } from "@/models/types/curatedModel.types";
 import type { GarageReliability, ReliabilityGrade } from "@/models/types/reliability.types";
 import type {
@@ -27,6 +28,7 @@ export const buildCatalog = (
   rows: CuratedModel[],
   stats: GaragePublicStat[],
   reliability: Map<string, GarageReliability>,
+  tools: GarageToolSupport[] = [],
 ): CatalogModel[] => {
   const statOf = new Map(stats.map((s) => [s.garage_name, s]));
   const groups = new Map<string, CuratedModel[]>();
@@ -79,6 +81,7 @@ export const buildCatalog = (
       poolAvailability: avail.length ? 1 - avail.reduce((p, a) => p * (1 - a), 1) : null,
       tokens7d: offers.reduce((s, o) => s + o.tokens7d, 0),
       tokensPerSecond: maxOf(offers.map((o) => o.tokensPerSecond)),
+      supportsTools: tools.some((t) => t.supports_tools && t.model === name && garages.includes(t.garage_name)),
     });
   }
   return out;

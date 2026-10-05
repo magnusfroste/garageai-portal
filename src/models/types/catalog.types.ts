@@ -51,6 +51,8 @@ export interface CatalogModel {
   poolAvailability: number | null;
   tokens7d: number;
   tokensPerSecond: number | null;
+  /** Any garage serving this model passed the tool-calling probe. */
+  supportsTools: boolean;
 }
 
 export type CatalogSort = "popular" | "cheapest" | "fastest" | "reliable";

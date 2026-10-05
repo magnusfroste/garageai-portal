@@ -17,6 +17,7 @@ import { runtimeLabel } from "@/models/services/garageRuntime";
 import type { GarageOffer } from "@/models/types/catalog.types";
 import type { GarageDay } from "@/models/types/reliability.types";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
+import { ToolsBadge } from "@/views/Models/components/ToolsBadge";
 import { CopyButton } from "./components/CopyButton";
 import { ModelSnippets } from "./components/ModelSnippets";
 import { cn } from "@/lib/utils";
@@ -104,6 +105,7 @@ const ModelDetailPage = () => {
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-bold font-mono">{m.name}</h1>
           {m.bestGrade && <GradeBadge grade={m.bestGrade} />}
+          {m.supportsTools && <ToolsBadge />}
           {!m.available && <Badge variant="outline">Inte tillgänglig just nu</Badge>}
         </div>
         <div className="flex items-center gap-2 text-sm">

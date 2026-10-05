@@ -13,6 +13,7 @@ import {
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import type { CatalogFilters, CatalogModel, CatalogSort } from "@/models/types/catalog.types";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
+import { ToolsBadge } from "@/views/Models/components/ToolsBadge";
 import { cn } from "@/lib/utils";
 
 const ANY = "__any";
@@ -45,7 +46,10 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
       title={m.available ? "Tillgänglig" : "Inte tillgänglig just nu"}
     />
     <div className="min-w-0">
-      <div className="font-mono text-sm font-semibold truncate">{m.name}</div>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="font-mono text-sm font-semibold truncate">{m.name}</span>
+        {m.supportsTools && <ToolsBadge />}
+      </div>
       <div className="text-xs text-muted-foreground truncate">
         {m.provider}{m.mode ? ` · ${m.mode}` : ""}{!m.available ? " · Inte tillgänglig just nu" : ""}
       </div>
