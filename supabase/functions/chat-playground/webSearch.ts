@@ -17,8 +17,8 @@ const WEB_SEARCH_TOOL = {
 };
 
 const SEARCH_SYSTEM =
-  "Du har tillgång till verktyget web_search. Använd det när frågan kräver aktuell eller faktabaserad information. " +
-  "Källorna är numrerade. Citera källor i svaret som [1], [2] osv. med samma nummer som i sökresultaten.";
+  "You have access to the web_search tool. Use it when the question needs current or factual information. " +
+  "Sources are numbered. Cite them as [1], [2], and so on, using the same numbers as the search results. Answer in the user's language.";
 
 /** Pool model "x" supports tools if any garage serving x passed the probe; "garage/<g>/<m>" checks that garage. */
 export async function modelSupportsTools(admin: SupabaseClient, model: string): Promise<boolean> {
@@ -42,7 +42,7 @@ async function searxSearch(base: string, query: string): Promise<Array<Omit<Sour
   const hn = Deno.env.get("SEARXNG_HEADER_NAME");
   const hv = Deno.env.get("SEARXNG_HEADER_VALUE");
   if (hn && hv) headers[hn] = hv;
-  const url = `${base}/search?q=${encodeURIComponent(query)}&format=json&language=sv-SE`;
+  const url = `${base}/search?q=${encodeURIComponent(query)}&format=json`;
   const res = await fetch(url, { headers, signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`search HTTP ${res.status}`);
   const json = await res.json();
@@ -82,7 +82,7 @@ export function streamWithWebSearch(opts: {
           });
           if (!res.ok || !res.body) {
             await res.body?.cancel().catch(() => {});
-            status({ type: "error", message: `Modellförfrågan misslyckades (HTTP ${res.status})` });
+            status({ type: "error", code: "model_request_failed", status: res.status });
             break;
           }
 
@@ -134,7 +134,7 @@ export function streamWithWebSearch(opts: {
             let query = "";
             try { query = String(JSON.parse(c.args || "{}").query || "").trim(); } catch { /* ignore */ }
             if (c.name !== "web_search" || !query) {
-              convo.push({ role: "tool", tool_call_id: id, content: "Fel: ogiltigt verktygsanrop." });
+              convo.push({ role: "tool", tool_call_id: id, content: "Error: invalid tool call." });
               continue;
             }
             queries.push(query);
@@ -147,10 +147,10 @@ export function streamWithWebSearch(opts: {
               status({ type: "found", query, count: hits.length });
               text = numbered.length
                 ? numbered.map((h) => `[${h.n}] ${h.title}\n${h.url}\n${h.content}`).join("\n\n")
-                : "Inga resultat.";
+                : "No results.";
             } catch {
               status({ type: "found", query, count: 0 });
-              text = "Sökningen misslyckades.";
+              text = "Search failed.";
             }
             convo.push({ role: "tool", tool_call_id: id, content: text });
           }
@@ -158,7 +158,7 @@ export function streamWithWebSearch(opts: {
         status({ type: "sources", queries, sources: sources.map(({ n, title, url }) => ({ n, title, url })) });
         controller.enqueue(enc.encode("data: [DONE]\n\n"));
       } catch (e) {
-        if (!opts.signal?.aborted) status({ type: "error", message: "Ett fel uppstod under webbsökningen" });
+        if (!opts.signal?.aborted) status({ type: "error", code: "web_search_failed" });
         console.error("[chat-playground] web search loop failed:", e instanceof Error ? e.name : "unknown");
       } finally {
         try { controller.close(); } catch { /* closed */ }
