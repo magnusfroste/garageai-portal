@@ -15,10 +15,12 @@ import { UsageStatsPanel } from "./components/UsageStatsPanel";
 import { SiteSettingsPage } from "@/views/SiteSettings/SiteSettingsPage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export const AdminPage = () => {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") || "users";
   const {
     users,
     isLoading,
@@ -70,7 +72,7 @@ export const AdminPage = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="users">
+      <Tabs value={tab} onValueChange={(v) => setParams({ tab: v }, { replace: true })}>
         <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="credits">Credits</TabsTrigger>
