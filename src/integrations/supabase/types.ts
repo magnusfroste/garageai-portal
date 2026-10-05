@@ -548,6 +548,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      garage_daily_tokens: {
+        Args: { _names: string[] }
+        Returns: {
+          day: string
+          garage_name: string
+          tokens: number
+        }[]
+      }
       garage_offline_periods: {
         Args: { _limit?: number; _name: string }
         Returns: {
@@ -558,6 +566,15 @@ export type Database = {
         }[]
       }
       garage_profile: { Args: { _name: string }; Returns: Json }
+      garage_public_stats: {
+        Args: never
+        Returns: {
+          garage_name: string
+          online: boolean
+          runtime: string
+          tokens_7d: number
+        }[]
+      }
       garage_reliability: {
         Args: { _names?: string[] }
         Returns: {
