@@ -12,6 +12,9 @@ import { StripeConfigCard } from "./components/StripeConfigCard";
 import { ProxyConfigCard } from "./components/ProxyConfigCard";
 import { ModelCurationPanel } from "./components/ModelCurationPanel";
 import { GaragePanel } from "./components/GaragePanel";
+import { RevenuePanel } from "./components/RevenuePanel";
+import { Wallet } from "lucide-react";
+import { t } from "@/i18n";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export const AdminPanel = () => {
@@ -92,6 +95,10 @@ export const AdminPanel = () => {
               <Server className="w-4 h-4" />
               Garages
             </TabsTrigger>
+            <TabsTrigger value="revenue" className="flex items-center gap-1.5">
+              <Wallet className="w-4 h-4" />
+              {t("Revenue")}
+            </TabsTrigger>
             <TabsTrigger value="config" className="flex items-center gap-1.5">
               <Settings className="w-4 h-4" />
               Configuration
@@ -124,6 +131,10 @@ export const AdminPanel = () => {
 
           <TabsContent value="garages">
             <GaragePanel />
+          </TabsContent>
+
+          <TabsContent value="revenue">
+            <RevenuePanel />
           </TabsContent>
 
           <TabsContent value="config" className="space-y-6">
