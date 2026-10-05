@@ -1,3 +1,4 @@
+import { PlatformFeeField } from "./PlatformFeeField";
 import { useState, useEffect } from "react";
 import { Settings, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,6 +102,9 @@ export const AdminSettingsPanel = () => {
             LiteLLM user max_budget at sign-up
           </p>
         </div>
+
+        <PlatformFeeField />
+
 
         <Button onClick={handleSave} disabled={saving} className="w-full md:w-auto">
           <Save className="w-4 h-4 mr-2" />
