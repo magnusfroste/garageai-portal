@@ -32,16 +32,17 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    if (!isAdmin) return json({ error: "Forbidden" }, 403);
 
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
     const name = typeof body.name === "string" ? body.name.trim() : "";
     if (!NAME_RE.test(name)) return json({ error: "name must match ^[a-z0-9][a-z0-9-]{1,40}$" }, 400);
 
-    const { data: garage, error: gErr } = await admin.from("garages").select("id, name, models").eq("name", name).maybeSingle();
+    const { data: garage, error: gErr } = await admin.from("garages").select("id, name, models, operator_id, disabled").eq("name", name).maybeSingle();
     if (gErr) throw gErr;
     if (!garage) return json({ error: "Garage not found" }, 404);
+    if (!isAdmin && garage.operator_id !== user.id) return json({ error: "Garage not found" }, 404);
+    if (garage.disabled) return json({ error: "garage disabled by platform" }, 403);
     const models = (garage.models || []) as string[];
     if (models.length === 0) return json({ error: "Garage has no registered models" }, 400);
 

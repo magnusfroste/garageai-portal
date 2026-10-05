@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
       if (existing && existing.operator_id !== user.id) {
         return json({ error: "name taken" }, 409);
       }
+      if (existing?.disabled) return json({ error: "garage disabled by platform" }, 403);
       if (!existing) {
         const { count, error } = await admin.from("garages").select("id", { count: "exact", head: true }).eq("operator_id", user.id);
         if (error) throw error;
