@@ -7,7 +7,7 @@ export const Features = () => {
   const { settings } = useSiteSettings();
 
   const headline = settings?.features_headline || "Everything you need for";
-  const headlineAccent = settings?.features_headline_accent || "Private AI";
+  const headlineAccent = settings?.features_headline_accent || "open models";
   const subtitle = settings?.features_subtitle || "Sovereign, secure, and developer-friendly AI infrastructure — ready to scale.";
   const cards = settings?.feature_cards || [];
 

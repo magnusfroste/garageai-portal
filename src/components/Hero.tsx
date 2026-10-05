@@ -9,7 +9,7 @@ export const Hero = () => {
   const { settings } = useSiteSettings();
 
   const badge = settings?.hero_badge || "Your data never leaves your control";
-  const headline = settings?.hero_headline || "Private AI access";
+  const headline = settings?.hero_headline || "Open model access";
   const headlineAccent = settings?.hero_headline_accent || "built for developers";
   const subtitle = settings?.hero_subtitle || "Secure LLM proxy with OpenAI-compatible API. Access multiple models, transparent pricing, and full data privacy. Get started in minutes.";
   const ctaText = settings?.hero_cta_text || "Get started";
