@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useMyGarages } from "@/hooks/useMyGarages";
 import { garageRepository, GarageRow } from "@/data/repositories/garageRepository";
 import { buildGarageCommand, GarageCredentials } from "@/models/services/garageCommand";
+import { runtimeLabel } from "@/models/services/garageRuntime";
 import { CommandBlock, GarageStatusBadge, ModelTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
 
 const MyGaragesPage = () => {
@@ -80,7 +81,7 @@ const MyGaragesPage = () => {
                 <div className="flex items-center gap-2 flex-wrap">
                   <GarageStatusBadge status={g.status} />
                   <span className="font-mono">{g.name}</span>
-                  {g.runtime && <Badge variant="outline" className="text-[10px]">{g.runtime}{g.port ? `:${g.port}` : ""}</Badge>}
+                   {g.runtime && <Badge variant="outline" className="text-[10px]">{runtimeLabel(g.runtime)}{g.port ? `:${g.port}` : ""}</Badge>}
                   <span className="text-xs text-muted-foreground ml-auto">Registrerad: {relativeTimeSv(g.last_registered_at)}</span>
                    <span className="text-xs text-muted-foreground">Senaste livstecken: {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : "Ingen heartbeat (äldre installation)"}</span>
                 </div>

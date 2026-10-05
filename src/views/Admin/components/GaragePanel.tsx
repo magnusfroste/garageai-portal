@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { buildGarageCommand } from "@/models/services/garageCommand";
+import { GARAGE_RUNTIME_OPTIONS, runtimeLabel } from "@/models/services/garageRuntime";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -18,7 +19,6 @@ import {
 import { useGarages, Garage, CreateGarageResult, GarageModelTest } from "../hooks/useGarages";
 
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
-const RUNTIMES = ["ollama", "lmstudio", "llamacpp", "vllm", "other"] as const;
 
 const relativeTime = (iso: string | null): string => {
   if (!iso) return "—";
@@ -275,7 +275,7 @@ export const GaragePanel = () => {
                     <span className="font-mono text-sm truncate">{g.name}</span>
                     {g.runtime && (
                       <Badge variant="outline" className="text-[10px] shrink-0">
-                        {g.runtime}
+                        {runtimeLabel(g.runtime)}
                         {g.port ? `:${g.port}` : ""}
                       </Badge>
                     )}
@@ -355,9 +355,9 @@ export const GaragePanel = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {RUNTIMES.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
+                    {GARAGE_RUNTIME_OPTIONS.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {runtimeLabel(r.value)}
                       </SelectItem>
                     ))}
                   </SelectContent>

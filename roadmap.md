@@ -9,3 +9,9 @@
 - [x] Heartbeat detail in Admin → Garages and Mina garage
 - [x] Verify builds, auth journeys, heartbeat auth paths, and responsive UI
 - [x] Report exact auth Site URL owner step if tooling cannot change it
+
+- [x] Expand shared garage port validation to all eight mesh ports
+- [x] Add official and secondary inference runtimes to the operator wizard
+- [x] Add runtime-specific preparation and API-key command guidance
+- [x] Show friendly runtime names in operator and admin garage views
+- [x] Verify and deploy affected garage functions

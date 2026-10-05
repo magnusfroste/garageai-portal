@@ -1,0 +1,1 @@
+export const ALLOWED_GARAGE_PORTS = [11434, 1234, 8080, 8000, 30000, 11540, 8888, 13305] as const;
