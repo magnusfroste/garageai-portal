@@ -57,6 +57,13 @@
       "when": 1791163456294,
       "tag": "0007_add_garage_heartbeat",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791165700958,
+      "tag": "0008_garage_reliability",
+      "breakpoints": true
     }
   ]
 }
