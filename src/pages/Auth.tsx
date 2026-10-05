@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { onboardingService } from "@/models/services/onboardingService";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email too long"),
@@ -20,6 +21,7 @@ const authSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,30 +29,41 @@ const Auth = () => {
   const { settings } = useSiteSettings();
   const siteName = settings?.site_name || "Private AI";
   const logoUrl = settings?.logo_url;
+  const intent = onboardingService.readUrlIntent(location.search);
+  const heading = intent === "operator"
+    ? "Skapa konto och erbjud din GPU"
+    : intent === "buyer"
+      ? "Skapa konto och kom igång med AI"
+      : "Välkommen";
+
+  const routeSession = async (session: { user: Parameters<typeof onboardingService.routeAfterLogin>[0] }) => {
+    navigate(await onboardingService.routeAfterLogin(session.user), { replace: true });
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/dashboard");
+      if (session) void routeSession(session);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) navigate("/dashboard");
+      if (session) void routeSession(session);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, location.search]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       const validated = authSchema.parse({ email, password, fullName });
+      if (intent) onboardingService.storeIntent(intent);
       const { error } = await supabase.auth.signUp({
         email: validated.email,
         password: validated.password,
         options: {
-          data: { full_name: validated.fullName || "" },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: { full_name: validated.fullName || "", signup_intent: intent },
+          emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
       if (error) {
@@ -103,16 +116,16 @@ const Auth = () => {
 
         <Card className="glass-card border-border/50">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl">Welcome</CardTitle>
+            <CardTitle className="text-3xl">{heading}</CardTitle>
             <CardDescription>
-              Sign in or create an account to get started
+              Logga in eller skapa ett konto för att fortsätta
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">Logga in</TabsTrigger>
+                <TabsTrigger value="signup">Skapa konto</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
@@ -126,7 +139,7 @@ const Auth = () => {
                     <Input id="signin-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {isLoading ? "Loggar in..." : "Logga in"}
                   </Button>
                 </form>
               </TabsContent>
@@ -134,7 +147,7 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Label htmlFor="signup-name">Namn</Label>
                     <Input id="signup-name" type="text" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={isLoading} />
                   </div>
                   <div className="space-y-2">
@@ -154,7 +167,7 @@ const Auth = () => {
                     </ul>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Creating account..." : "Get Started"}
+                    {isLoading ? "Skapar konto..." : "Skapa konto"}
                   </Button>
                 </form>
               </TabsContent>

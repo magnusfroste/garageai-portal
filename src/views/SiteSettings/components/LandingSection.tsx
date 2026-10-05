@@ -93,6 +93,20 @@ export const LandingSection = ({ settings, onChange }: Props) => {
               <Input value={settings.hero_headline_accent} onChange={(e) => onChange({ ...settings, hero_headline_accent: e.target.value })} />
             </div>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Primary CTA URL</Label>
+              <Input value={settings.hero_cta_url} onChange={(e) => onChange({ ...settings, hero_cta_url: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Secondary CTA text</Label>
+              <Input value={settings.hero_secondary_cta_text} onChange={(e) => onChange({ ...settings, hero_secondary_cta_text: e.target.value })} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Secondary CTA URL</Label>
+            <Input value={settings.hero_secondary_cta_url} onChange={(e) => onChange({ ...settings, hero_secondary_cta_url: e.target.value })} />
+          </div>
           <div className="space-y-2">
             <Label>Subtitle</Label>
             <Textarea value={settings.hero_subtitle} onChange={(e) => onChange({ ...settings, hero_subtitle: e.target.value })} rows={3} />

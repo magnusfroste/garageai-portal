@@ -11,6 +11,7 @@ import { useAccountData } from "@/views/Account/hooks/useAccountData";
 import { ActivityCard } from "./components/ActivityCard";
 import { MonthlyUsageChart } from "./components/MonthlyUsageChart";
 import { DailySpendChart } from "@/views/Account/components/DailySpendChart";
+import { BuyerGettingStarted } from "./components/BuyerGettingStarted";
 
 const PRESETS = [
   { label: "7d", days: 7 },
@@ -20,7 +21,7 @@ const PRESETS = [
 ] as const;
 
 export const DashboardActivity = () => {
-  const { loading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const { loading: keysLoading } = useDashboardData();
 
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -79,11 +80,12 @@ export const DashboardActivity = () => {
 
   return (
     <div className="p-6 space-y-8">
+      {profile?.signup_intent === "buyer" && <BuyerGettingStarted />}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Activity</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Your usage across models on Private AI
+            Din användning av modeller på GarageAI
           </p>
         </div>
 

@@ -42,6 +42,9 @@ export interface SiteSettings {
   hero_headline_accent: string;
   hero_subtitle: string;
   hero_cta_text: string;
+  hero_cta_url: string;
+  hero_secondary_cta_text: string;
+  hero_secondary_cta_url: string;
   hero_doc_url: string;
   hero_doc_text: string;
   hero_pillars: HeroPillar[];
@@ -103,6 +106,9 @@ export const defaultSiteSettings: SiteSettings = {
   hero_headline_accent: "built for developers",
   hero_subtitle: "Secure LLM proxy with OpenAI-compatible API. Access multiple models, transparent pricing, and full data privacy. Get started in minutes.",
   hero_cta_text: "Get started",
+  hero_cta_url: "/auth",
+  hero_secondary_cta_text: "",
+  hero_secondary_cta_url: "",
   hero_doc_url: "",
   hero_doc_text: "Documentation",
   hero_pillars: [

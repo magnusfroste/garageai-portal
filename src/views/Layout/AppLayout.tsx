@@ -56,7 +56,7 @@ export const AppLayout = () => {
                 className={cn("gap-2 hover:text-foreground", isActive("/dashboard", true) ? "text-foreground" : "text-muted-foreground")}
               >
                 <LayoutDashboard className="w-4 h-4" />
-                <span className="hidden sm:inline">Dashboard</span>
+                 <span className="hidden sm:inline">Översikt</span>
               </Button>
               <Button
                 variant="ghost"
@@ -65,7 +65,7 @@ export const AppLayout = () => {
                 className={cn("gap-2 hover:text-foreground", isActive("/chat") ? "text-foreground" : "text-muted-foreground")}
               >
                 <MessageSquare className="w-4 h-4" />
-                <span className="hidden sm:inline">Chat</span>
+                 <span className="hidden sm:inline">Chatt</span>
               </Button>
             </div>
             <div className="flex items-center gap-2">
@@ -76,7 +76,7 @@ export const AppLayout = () => {
                 className={cn("gap-2 hover:text-foreground", isActive("/dashboard/models") ? "text-foreground" : "text-muted-foreground")}
               >
                 <Cpu className="w-4 h-4" />
-                <span className="hidden sm:inline">Models</span>
+                 <span className="hidden sm:inline">Modeller</span>
               </Button>
               <Button
                 variant="ghost"
@@ -101,11 +101,11 @@ export const AppLayout = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/dashboard/account")}>
                     <User className="w-4 h-4 mr-2" />
-                    Profile
+                     Profil
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
-                    Sign Out
+                     Logga ut
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

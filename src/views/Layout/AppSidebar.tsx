@@ -18,11 +18,11 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainNav = [
-  { title: "Activity", url: "/dashboard", icon: Activity },
-  { title: "Chat", url: "/dashboard/chat", icon: MessageSquare, Cpu, Server },
-  { title: "Logs", url: "/dashboard/logs", icon: ScrollText },
-  { title: "Credits", url: "/dashboard/credits", icon: CreditCard },
-  { title: "API Keys", url: "/dashboard/keys", icon: Key },
+  { title: "Aktivitet", url: "/dashboard", icon: Activity },
+  { title: "Chatt", url: "/dashboard/chat", icon: MessageSquare },
+  { title: "Loggar", url: "/dashboard/logs", icon: ScrollText },
+  { title: "Krediter", url: "/dashboard/credits", icon: CreditCard },
+  { title: "API-nycklar", url: "/dashboard/keys", icon: Key },
   { title: "Erbjud din GPU", url: "/dashboard/offer-gpu", icon: Cpu },
   { title: "Mina garage", url: "/dashboard/garages", icon: Server },
 ];
@@ -34,7 +34,7 @@ export const AppSidebar = () => {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "Private AI";
+  const siteName = settings?.site_name || "AI Portal";
   const logoUrl = settings?.logo_url;
 
   const { data: isAdmin } = useQuery({
@@ -107,14 +107,14 @@ export const AppSidebar = () => {
             <SidebarMenuButton
               isActive={isActive("/dashboard/account")}
               onClick={() => navigate("/dashboard/account")}
-              tooltip="Profile"
+              tooltip="Profil"
             >
               <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-semibold shrink-0">
                 {initials}
               </div>
               {!collapsed && (
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm truncate">{profile?.full_name || "Profile"}</span>
+                  <span className="text-sm truncate">{profile?.full_name || "Profil"}</span>
                   <span className="text-[10px] text-muted-foreground truncate">{profile?.email}</span>
                 </div>
               )}

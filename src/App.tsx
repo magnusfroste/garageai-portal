@@ -21,6 +21,7 @@ import { DashboardModelsPage } from "./views/Models/DashboardModelsPage";
 import { ApiPage } from "./views/Models/ApiPage";
 import { DashboardApiPage } from "./views/Models/DashboardApiPage";
 import NotFound from "./pages/NotFound";
+import { OnboardingPage } from "./views/Onboarding/OnboardingPage";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/dashboard" element={<AppLayout />}>
             <Route index element={<DashboardActivity />} />
             <Route path="logs" element={<LogsPage />} />
