@@ -6,6 +6,7 @@ import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
 import { searchCatalog } from "@/models/services/catalogSearch";
 
+import { t } from "@/i18n";
 export const GlobalSearch = ({ modelsHref = "/models" }: { modelsHref?: string }) => {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
@@ -33,14 +34,14 @@ export const GlobalSearch = ({ modelsHref = "/models" }: { modelsHref?: string }
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         onKeyDown={(e) => { if (e.key === "Enter" && hits[0]) go(hits[0].href); }}
-        placeholder="Sök modeller och garage"
+        placeholder={t("Search models and garages")}
         className="h-8 pl-8 text-sm"
-        aria-label="Sök modeller och garage"
+        aria-label={t("Search models and garages")}
       />
       {open && q.trim() && (
         <div className="absolute mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md z-50 py-1">
           {hits.length === 0 ? (
-            <p className="px-3 py-2 text-xs text-muted-foreground">Inga träffar</p>
+            <p className="px-3 py-2 text-xs text-muted-foreground">{t("No results")}</p>
           ) : hits.map((h) => (
             <button
               key={h.kind + h.label}
@@ -50,7 +51,7 @@ export const GlobalSearch = ({ modelsHref = "/models" }: { modelsHref?: string }
             >
               {h.kind === "model" ? <Cpu className="w-3.5 h-3.5 text-muted-foreground" /> : <Warehouse className="w-3.5 h-3.5 text-muted-foreground" />}
               <span className="truncate font-mono text-xs">{h.label}</span>
-              <span className="ml-auto text-[10px] text-muted-foreground">{h.kind === "model" ? "Modell" : "Garage"}</span>
+              <span className="ml-auto text-[10px] text-muted-foreground">{h.kind === "model" ? t("Model") : t("Garage")}</span>
             </button>
           ))}
         </div>

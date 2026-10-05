@@ -3,9 +3,10 @@ import { Warehouse } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
-import { formatPct } from "@/models/services/reliabilityService";
-import { GradeBadge, HONEST_NOTE } from "./components/Reliability";
+import { formatPct, formatDecimal } from "@/models/services/reliabilityService";
+import { GradeBadge, honestNote } from "./components/Reliability";
 
+import { t } from "@/i18n";
 const GaragesListPage = () => {
   const { reliability, isLoading } = useGarageReliability();
   const list = [...reliability.values()].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
@@ -15,14 +16,14 @@ const GaragesListPage = () => {
       <div>
         <div className="flex items-center gap-3 mb-1">
           <Warehouse className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Garage</h1>
+          <h1 className="text-2xl font-bold">{t("Garages")}</h1>
         </div>
-        <p className="text-sm text-muted-foreground max-w-2xl">{HONEST_NOTE}</p>
+        <p className="text-sm text-muted-foreground max-w-2xl">{honestNote()}</p>
       </div>
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
       ) : list.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Inga garage att visa ännu.</p>
+        <p className="text-sm text-muted-foreground">{t("No garages to show yet.")}</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((g) => (
@@ -34,8 +35,8 @@ const GaragesListPage = () => {
                     <GradeBadge grade={g.grade} />
                   </div>
                   <div className="text-xs text-muted-foreground flex gap-4">
-                    <span>Tillgänglighet 7 d: {formatPct(g.windows["7d"]?.availability ?? null)}</span>
-                    {g.score != null && <span>{String(g.score).replace(".", ",")} / 100</span>}
+                    <span>{t("Availability 7 d")}: {formatPct(g.windows["7d"]?.availability ?? null)}</span>
+                    {g.score != null && <span>{formatDecimal(g.score)} / 100</span>}
                   </div>
                 </CardContent>
               </Card>

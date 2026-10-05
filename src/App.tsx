@@ -28,6 +28,7 @@ import { SessionRedirect } from "./views/Layout/SessionRedirect";
 import NotFound from "./pages/NotFound";
 import { OnboardingPage } from "./views/Onboarding/OnboardingPage";
 
+import { LanguageBoundary } from "./views/Layout/LanguageBoundary";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -36,6 +37,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <LanguageBoundary>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
@@ -70,6 +72,7 @@ const App = () => (
           <Route path="/chat" element={<Navigate to="/dashboard/chat" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </LanguageBoundary>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

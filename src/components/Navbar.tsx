@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Warehouse } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
+import { t } from "@/i18n";
 const LINKS = [
-  { label: "Modeller", to: "/models" },
-  { label: "Garage", to: "/garages" },
-  { label: "Priser", to: "/#priser" },
-  { label: "Dokumentation", to: "/api" },
+  { label: "Models", to: "/models" },
+  { label: "Garages", to: "/garages" },
+  { label: "Pricing", to: "/#priser" },
+  { label: "Documentation", to: "/api" },
 ];
 
 export const Navbar = () => {
@@ -31,15 +32,15 @@ export const Navbar = () => {
           <div className="hidden md:flex items-center gap-1">
             {LINKS.map((l) => (
               <Link key={l.to} to={l.to}>
-                <Button variant="ghost" size="sm">{l.label}</Button>
+                <Button variant="ghost" size="sm">{t(l.label)}</Button>
               </Link>
             ))}
           </div>
           <Link to="/auth">
-            <Button variant="ghost" size="sm">Logga in</Button>
+            <Button variant="ghost" size="sm">{t("Sign in")}</Button>
           </Link>
           <Link to="/auth?mode=signup">
-            <Button size="sm" className="glow">Skapa konto</Button>
+            <Button size="sm" className="glow">{t("Create account")}</Button>
           </Link>
         </div>
       </div>

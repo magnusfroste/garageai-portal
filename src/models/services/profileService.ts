@@ -21,6 +21,13 @@ export class ProfileService {
     return profileRepository.update(user.id, updates);
   }
 
+  /** Persists the UI language on the profile (localStorage is handled by the i18n store). */
+  async updateLanguage(lang: "en" | "sv"): Promise<void> {
+    const user = await authService.getCurrentUser();
+    if (!user) return;
+    return profileRepository.updateLanguage(user.id, lang);
+  }
+
   async completeOnboarding(intent: SignupIntent | null): Promise<void> {
     const user = await authService.getCurrentUser();
     if (!user) throw new Error("Not authenticated");
