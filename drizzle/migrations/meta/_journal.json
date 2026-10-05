@@ -106,6 +106,13 @@
       "when": 1791183687537,
       "tag": "0014_routing_secrets_and_starting_credit",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791187882059,
+      "tag": "0015_atomic_credit_claims_and_secret_grants",
+      "breakpoints": true
     }
   ]
 }

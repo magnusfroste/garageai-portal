@@ -44,7 +44,6 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
   const { data: garages, error } = await admin.from("garages")
     .select("id, name, status, disabled, models, netbird_peer_id, last_heartbeat_at").eq("disabled", false);
   if (error) throw new Error(`garages read failed: ${error.message}`);
-  const healthy = await healthyModelsByGarage(admin);
   const now = Date.now();
   const rows: Array<{ garage_id: string; online: boolean; reason: string | null }> = [];
   let skipped = 0;
@@ -237,7 +236,7 @@ export async function runHourlyProbes(admin: SupabaseClient) {
 
   const probed: Array<{ garage: string; model: string; passed: boolean; supports_tools: boolean | null; tools_error: string | null }> = [];
   await Promise.all(due.map(async (g) => {
-    const candidates = (g.models || []).filter((m) => healthy.get(g.name)?.has(m));
+    const candidates = [...(g.models || [])];
     if (!candidates.length) return;
     // Rotate: the model tested longest ago goes next.
     candidates.sort((a, b) => (lastByModel.get(`${g.id}::${a}`) ?? 0) - (lastByModel.get(`${g.id}::${b}`) ?? 0));

@@ -26,6 +26,7 @@ Deno.serve(async (req) => {
     if (!disabled) {
       const { error: uErr } = await admin.from("garages").update({ disabled: false, status: "pending" }).eq("id", garage.id);
       if (uErr) throw uErr;
+      await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
       console.log("[set-garage-disabled] enabled", { garage: name });
       return json({ ok: true, garage: name, disabled: false, status: "pending" });
     }

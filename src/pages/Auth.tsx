@@ -35,7 +35,7 @@ const Auth = () => {
   const intent = onboardingService.readUrlIntent(location.search);
   const params = new URLSearchParams(location.search);
   const initialTab = params.get("mode") === "signup" || !!intent ? "signup" : "signin";
-  const starterCredit = Number(settings?.starting_credit_usd ?? 25);
+  const starterCredit = Number(settings?.starting_credit_usd ?? 0);
   const heading = intent === "operator"
     ? t("Create an account and offer your GPU")
     : intent === "buyer"

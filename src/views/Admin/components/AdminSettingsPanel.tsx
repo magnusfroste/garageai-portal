@@ -15,7 +15,7 @@ interface AdminSettings {
 
 export const AdminSettingsPanel = () => {
   const [settings, setSettings] = useState<AdminSettings>({
-    default_user_budget_usd: 25,
+    default_user_budget_usd: 0,
     key_rpm_limit: 60,
   });
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ export const AdminSettingsPanel = () => {
 
       if (data && data.length > 0) {
         setSettings({
-          default_user_budget_usd: Number(data.find((r) => r.key === "default_user_budget_usd")?.value ?? 25),
+          default_user_budget_usd: Number(data.find((r) => r.key === "default_user_budget_usd")?.value ?? 0),
           key_rpm_limit: Number(data.find((r) => r.key === "key_rpm_limit")?.value ?? 60),
         });
       }

@@ -2,6 +2,7 @@ import { Bot, Shield, Terminal, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "./CopyButton";
+import { t } from "@/i18n";
 
 interface AgenticTool {
   name: string;
@@ -34,7 +35,7 @@ const tools: AgenticTool[] = [
     name: "Roo Code",
     badge: "VS Code",
     description:
-      "An autonomous AI coding agent that lives inside VS Code. Roo can create & edit files, run terminal commands, use a browser, and orchestrate multi-step tasks — all while keeping your code private and on your machine.",
+      "An autonomous AI coding agent inside VS Code. Roo can create and edit files, run terminal commands, use a browser, and orchestrate multi-step tasks with your chosen model endpoint.",
     features: [
       "Runs inside VS Code with your chosen model endpoint",
       "Multi-step task orchestration with tool use",
@@ -68,7 +69,7 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => (
         Agentic Coding Tools
       </CardTitle>
       <p className="text-sm text-muted-foreground mt-1">
-        Encrypted in transit: TLS to our EU gateway and WireGuard to the garage. The gateway does not store your prompts or responses. Your prompt is processed on the operator&apos;s machine, so don&apos;t send sensitive data to the public pool yet.
+        {t("Encrypted in transit: TLS to our EU gateway and WireGuard to the garage. The gateway does not store your prompts or responses. Your prompt is processed on the operator's machine, so don't send sensitive data to the public pool yet.")}
       </p>
     </CardHeader>
     <CardContent className="space-y-6">

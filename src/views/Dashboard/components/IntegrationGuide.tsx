@@ -1,10 +1,12 @@
 import { Copy } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useCuratedModels } from "@/hooks/useCuratedModels";
 
 interface IntegrationGuideProps {
   onCopy: (text: string) => void;
@@ -12,7 +14,9 @@ interface IntegrationGuideProps {
 
 export const IntegrationGuide = ({ onCopy }: IntegrationGuideProps) => {
   const { settings } = useSiteSettings();
-  const baseUrl = settings?.api_base_url || "https://your-lite-llm-proxy.example.com";
+  const { models } = useCuratedModels(true);
+  const baseUrl = settings?.api_base_url || "https://llm.garageai.eu";
+  const defaultModel = models.find((m) => m.is_default && m.garage_tier === "pool")?.model_name || models.find((m) => m.garage_tier === "pool")?.model_name || "";
   return (
     <div className="container mx-auto px-4 pb-8">
       <Card className="glass-card">
@@ -55,7 +59,7 @@ export const IntegrationGuide = ({ onCopy }: IntegrationGuideProps) => {
                 <p className="ml-4">-H "Content-Type: application/json" \</p>
                 <p className="ml-4">
                   -d '{"{"}
-                  "model": "your-model", "messages": [...]
+                  "model": "{defaultModel}", "messages": [...]
                   {"}"}'
                 </p>
               </div>
@@ -126,7 +130,7 @@ export const IntegrationGuide = ({ onCopy }: IntegrationGuideProps) => {
 
               <p className="text-sm text-muted-foreground">
                 Replace <code className="text-accent">&lt;your-api-key&gt;</code> with
-                an API key from the list above. Claude Code will then use
+                an API key from <Link to="/dashboard/api-keys" className="text-accent hover:underline">API keys</Link>. Claude Code will then use
                 the proxy for all API calls.
               </p>
             </TabsContent>

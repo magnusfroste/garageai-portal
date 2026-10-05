@@ -589,6 +589,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_checkout_credits: {
+        Args: { p_credits: number; p_session_id: string; p_user_id: string }
+        Returns: {
+          already_processed: boolean
+          credits_added: number
+          total_budget: number
+        }[]
+      }
       garage_daily_tokens: {
         Args: { _names: string[] }
         Returns: {

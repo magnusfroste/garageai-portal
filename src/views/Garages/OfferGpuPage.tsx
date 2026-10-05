@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/components/ui/use-toast";
-import { useProfile } from "@/hooks/useProfile";
+import { useMyGarages } from "@/hooks/useMyGarages";
 import { useGarageStatusPolling } from "@/hooks/useGarageStatusPolling";
 import { garageRepository } from "@/data/repositories/garageRepository";
 import {
@@ -40,7 +40,7 @@ const CheckItem = ({ state, label, detail, action }: {
 const OfferGpuPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile } = useProfile();
+  const { garages } = useMyGarages();
   const [step, setStep] = useState(0);
   const [os, setOs] = useState<GarageOs>("macos");
   const [runtime, setRuntime] = useState<GarageRuntime>("ollama");
@@ -48,6 +48,7 @@ const OfferGpuPage = () => {
   const [otherRuntimesOpen, setOtherRuntimesOpen] = useState(false);
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [confirmReuse, setConfirmReuse] = useState(false);
   const [creds, setCreds] = useState<GarageCredentials | null>(null);
   const [liveName, setLiveName] = useState<string | null>(null);
   const [retesting, setRetesting] = useState(false);
@@ -65,6 +66,11 @@ const OfferGpuPage = () => {
   const create = async () => {
     if (!GARAGE_NAME_RE.test(name)) {
       toast({ title: t("Invalid name"), description: t("Lowercase letters, digits and hyphens (2–41 characters)."), variant: "destructive" });
+      return;
+    }
+    if (garages.some((garage) => garage.name === name) && !confirmReuse) {
+      setConfirmReuse(true);
+      toast({ title: t("Garage name already exists"), description: t("This will create a new command for your existing garage {name}.", { name }) });
       return;
     }
     setCreating(true);
@@ -212,12 +218,12 @@ const OfferGpuPage = () => {
               <>
                 <div className="space-y-1.5">
                   <Label htmlFor="g-name">{t("Name")}</Label>
-                  <Input id="g-name" value={name} onChange={(e) => setName(e.target.value.toLowerCase())} disabled={creating} />
+                  <Input id="g-name" value={name} onChange={(e) => { setName(e.target.value.toLowerCase()); setConfirmReuse(false); }} disabled={creating} />
                   <p className="text-xs text-muted-foreground">{t("Lowercase letters, digits and hyphens (2–41 characters).")}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setStep(1)} disabled={creating}>{t("Back")}</Button>
-                  <Button onClick={create} disabled={creating || !name}>{creating ? t("Creating...") : t("Create garage")}</Button>
+                  <Button onClick={create} disabled={creating || !name}>{creating ? t("Creating...") : confirmReuse ? t("Create new command") : t("Create garage")}</Button>
                 </div>
               </>
             ) : (

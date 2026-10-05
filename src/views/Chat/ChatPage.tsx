@@ -221,6 +221,7 @@ export const ChatPage = () => {
             <div className="w-full max-w-[760px] space-y-6">
               <ChatEmptyState onPick={(p) => composer.current?.fill(p)} />
               {composerEl}
+              <p className="text-center text-[11px] text-muted-foreground">{t("Chats are saved to your account · Delete anytime")}</p>
             </div>
           </div>
         ) : (

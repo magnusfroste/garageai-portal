@@ -16,6 +16,10 @@ serve(async (req) => {
       if (session.payment_status === "paid") {
         const userId = session.metadata?.user_id || "";
         const credits = Number(session.metadata?.credits || 0);
+        if (!userId || !Number.isFinite(credits) || credits <= 0) {
+          console.warn("[stripe-webhook] acknowledged checkout without valid credit metadata", { session_id: session.id });
+          return new Response(JSON.stringify({ received: true, credited: false }), { headers: { "Content-Type": "application/json" } });
+        }
         const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
         await grantCheckoutCredits(admin, { sessionId: session.id, userId, credits });
       }

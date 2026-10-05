@@ -215,7 +215,12 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const tests = await latestTests(admin, routingGarages.map((g) => g.id));
   const sellable = new Set<string>();
   for (const g of routingGarages) for (const model of g.models || []) {
-    if (isModelSellable(g, model, tests.get(`${g.id}::${model}`))) sellable.add(`${g.name}::${model}`);
+    const test = tests.get(`${g.id}::${model}`);
+    const okay = isModelSellable(g, model, test);
+    if (okay) sellable.add(`${g.name}::${model}`);
+    const ids = [deploymentId(g.name, model, "dedicated"), deploymentId(g.name, model, "pool")];
+    if (test?.passed === false) await admin.from("curated_models").update({ enabled: false, disabled_reason: "failed_test" }).in("id", ids).neq("disabled_reason", "admin");
+    else if (okay) await admin.from("curated_models").update({ enabled: true, disabled_reason: null }).in("id", ids).eq("disabled_reason", "failed_test");
   }
   const { data: tierRows } = await admin.from("curated_models").select("id, enabled, disabled_reason");
   const enabledTiers = new Set(((tierRows || []) as Array<{ id: string; enabled: boolean; disabled_reason: string | null }>)

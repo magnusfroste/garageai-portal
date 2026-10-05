@@ -24,8 +24,17 @@ export async function ensureLiteLLMUser(admin: SupabaseClient, profile: { id: st
     await info.text().catch(() => "");
     const created = await fetch(`${base}/user/new`, { method: "POST", headers: headers(key), body: JSON.stringify({ user_id: profile.id, user_email: profile.email, max_budget: budget, user_role: "internal_user" }) });
     const body = await created.json().catch(() => ({}));
-    if (!created.ok) throw new Error(`LiteLLM user creation failed (${created.status})`);
-    userId = body?.user_id || profile.id;
+    if (created.status === 409) {
+      const retryUrl = new URL(`${base}/user/info`);
+      retryUrl.searchParams.set("user_id", profile.id);
+      const retry = await fetch(retryUrl, { headers: headers(key) });
+      const retryBody = await retry.json().catch(() => ({}));
+      if (!retry.ok) throw new Error(`LiteLLM user lookup after conflict failed (${retry.status})`);
+      userId = retryBody?.user_info?.user_id || retryBody?.user_id || profile.id;
+    } else {
+      if (!created.ok) throw new Error(`LiteLLM user creation failed (${created.status})`);
+      userId = body?.user_id || profile.id;
+    }
   }
   const updated = await fetch(`${base}/user/update`, { method: "POST", headers: headers(key), body: JSON.stringify({ user_id: userId, max_budget: budget }) });
   await updated.text().catch(() => "");
