@@ -138,7 +138,7 @@ const OfferGpuPage = () => {
                     <RadioGroupItem value={r.value} id={`rt-${r.value}`} className="mt-0.5" />
                     <span className="min-w-0">
                       <span className="flex items-center gap-2 font-medium">
-                        {r.label}
+                        {t(r.label)}
                         {r.beta && <span className="rounded border border-primary/40 px-1.5 py-0.5 text-[10px] text-primary">Beta</span>}
                       </span>
                       {r.description && <span className="mt-1 block text-xs text-muted-foreground">{t(r.description)}</span>}
@@ -158,7 +158,7 @@ const OfferGpuPage = () => {
                     {OTHER_RUNTIMES.map((r) => (
                       <Label key={r.value} htmlFor={`rt-${r.value}`} className="flex min-h-12 cursor-pointer items-start gap-3 rounded-md border border-border p-3 font-normal">
                         <RadioGroupItem value={r.value} id={`rt-${r.value}`} className="mt-0.5" />
-                        <span className="font-medium">{r.label}</span>
+                        <span className="font-medium">{t(r.label)}</span>
                       </Label>
                     ))}
                   </RadioGroup>

@@ -6,6 +6,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { ModelRow } from "./components/ModelRow";
 import { ConnectSection } from "./components/ConnectSection";
 
+import { t } from "@/i18n";
 export const ModelsPage = () => {
   const { models, isLoading } = useCuratedModels(true);
   const { settings } = useSiteSettings();
@@ -21,10 +22,10 @@ export const ModelsPage = () => {
       <div>
         <div className="flex items-center gap-3 mb-2">
           <Cpu className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">Modeller</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("Models")}</h1>
         </div>
         <p className="text-muted-foreground mb-8 max-w-xl">
-          Modellerna som just nu finns tillgängliga via {siteName}. Använd modellnamnet i API:et – HuggingFace-länken leder till full dokumentation.
+          {t("The models currently available via {site}. Use the model name in the API – the HuggingFace link leads to full documentation.", { site: siteName })}
         </p>
 
         {isLoading ? (

@@ -9,19 +9,19 @@ const snippets = (base: string, model: string) => ({
   python: `from openai import OpenAI
 
 client = OpenAI(base_url="${base}", api_key="DIN_API_NYCKEL")
-svar = client.chat.completions.create(
+response = client.chat.completions.create(
     model="${model}",
     messages=[{"role": "user", "content": "Hej!"}],
 )
-print(svar.choices[0].message.content)`,
+print(response.choices[0].message.content)`,
   javascript: `import OpenAI from "openai";
 
 const client = new OpenAI({ baseURL: "${base}", apiKey: process.env.GARAGE_API_KEY });
-const svar = await client.chat.completions.create({
+const response = await client.chat.completions.create({
   model: "${model}",
   messages: [{ role: "user", content: "Hej!" }],
 });
-console.log(svar.choices[0].message.content);`,
+console.log(response.choices[0].message.content);`,
 });
 
 export const ModelSnippets = ({ baseUrl, model }: { baseUrl: string; model: string }) => {

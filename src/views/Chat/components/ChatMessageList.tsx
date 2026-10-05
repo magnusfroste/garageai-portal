@@ -6,6 +6,7 @@ import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
 import type { ChatMessage, ChatSearchInfo } from "../types";
 
+import { t } from "@/i18n";
 const SearchStatus = ({ text }: { text: string }) => (
   <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
     <Globe className="h-3.5 w-3.5 animate-pulse text-primary/70" /> {text}
@@ -16,7 +17,7 @@ const SearchSources = ({ search }: { search: ChatSearchInfo }) => (
   <div className="mt-3 border-t border-border/50 pt-2 text-xs text-muted-foreground">
     {search.queries.length > 0 && (
       <p className="mb-1 flex items-center gap-1.5">
-        <Globe className="h-3.5 w-3.5" /> Sökte: {search.queries.map((q) => `"${q}"`).join(", ")}
+        <Globe className="h-3.5 w-3.5" /> {t("Searched:")} {search.queries.map((q) => `"${q}"`).join(", ")}
       </p>
     )}
     {search.sources.length > 0 && (

@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { CuratedModel } from "@/models/types/curatedModel.types";
 
+import { t } from "@/i18n";
 const StatusDot = ({ status }: { status: CuratedModel["status"] }) => {
   const colors = {
     healthy: "bg-emerald-500",
@@ -119,7 +120,7 @@ export const ModelCurationPanel = () => {
                     <span className="font-mono text-sm truncate">{model.model_name || model.id}</span>
                     {!model.enabled && model.disabled_reason && (
                       <Badge variant="outline" className="text-[10px] shrink-0 text-muted-foreground">
-                        {model.disabled_reason === "failed_test" ? "Avstängd: underkänt test" : "Avstängd av admin"}
+                        {model.disabled_reason === "failed_test" ? t("Disabled: failed test") : t("Disabled by admin")}
                       </Badge>
                     )}
                     <Badge variant="outline" className="text-[10px] shrink-0">
