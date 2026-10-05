@@ -29,9 +29,9 @@ export const ChatPage = () => {
   // Use curated enabled models directly from DB
   const { models } = useCuratedModels(true);
 
-  // Map curated models to ModelInfo shape expected by ChatHeader
+  // Map curated models to ModelInfo shape; id = LiteLLM model name (routing), never the deployment id
   const modelInfos = models.map((m) => ({
-    id: m.id,
+    id: apiModelName(m),
     model_name: m.model_name,
     provider: m.provider,
     max_input_tokens: m.max_input_tokens,

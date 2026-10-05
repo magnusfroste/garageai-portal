@@ -1,13 +1,15 @@
 import { curatedModelRepository } from "@/data/repositories/curatedModelRepository";
 import { CuratedModel } from "@/models/types/curatedModel.types";
+import { dedupeByModelName } from "@/models/services/modelDedup";
 
 export class CuratedModelService {
   async getAllModels(): Promise<CuratedModel[]> {
     return curatedModelRepository.fetchAll();
   }
 
+  /** User-facing list: one entry per model_name (LiteLLM routing name). */
   async getEnabledModels(): Promise<CuratedModel[]> {
-    return curatedModelRepository.fetchEnabled();
+    return dedupeByModelName(await curatedModelRepository.fetchEnabled());
   }
 
   async toggleModel(id: string, enabled: boolean): Promise<void> {
