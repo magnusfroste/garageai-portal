@@ -26,6 +26,11 @@ export const useAdminData = () => {
       toast.error(`Failed to update budget: ${error.message}`);
     },
   });
+  const repairMutation = useMutation({
+    mutationFn: () => adminService.repairLiteLLMUsers(),
+    onSuccess: (r) => { queryClient.invalidateQueries({ queryKey: ["admin-users"] }); toast.success(`Repaired ${r.repaired} LiteLLM users${r.failed ? `; ${r.failed} failed` : ""}`); },
+    onError: (error: Error) => toast.error(`Repair failed: ${error.message}`),
+  });
 
   return {
     users: usersQuery.data ?? [],
@@ -35,5 +40,7 @@ export const useAdminData = () => {
     isAdminLoading: isAdminQuery.isLoading,
     updateBudget: updateBudgetMutation.mutate,
     isUpdating: updateBudgetMutation.isPending,
+    repairUsers: repairMutation.mutate,
+    isRepairing: repairMutation.isPending,
   };
 };

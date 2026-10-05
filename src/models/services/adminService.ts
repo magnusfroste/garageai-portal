@@ -16,6 +16,10 @@ export class AdminService {
   async isAdmin(): Promise<boolean> {
     return adminRepository.checkIsAdmin();
   }
+
+  async repairLiteLLMUsers() {
+    return adminRepository.repairLiteLLMUsers();
+  }
 }
 
 export const adminService = new AdminService();

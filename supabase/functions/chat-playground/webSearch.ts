@@ -57,6 +57,7 @@ interface ToolCallAcc { id: string; name: string; args: string }
 
 export function streamWithWebSearch(opts: {
   proxyBase: string; apiKey: string; model: string; messages: unknown[]; searxngUrl: string; signal?: AbortSignal;
+  platformRequest?: boolean;
 }): ReadableStream<Uint8Array> {
   const enc = new TextEncoder();
   return new ReadableStream({
@@ -77,6 +78,7 @@ export function streamWithWebSearch(opts: {
             body: JSON.stringify({
               model: opts.model, messages: convo, stream: true,
               stream_options: { include_usage: true },
+              ...(opts.platformRequest ? { metadata: { tags: ["platform"] } } : {}),
               ...(allowTools ? { tools: [WEB_SEARCH_TOOL], tool_choice: "auto" } : {}),
             }),
           });

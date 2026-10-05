@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
+import { ensureLiteLLMUser } from "../_shared/litellmUsers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,7 +58,7 @@ serve(async (req: Request) => {
   if (req.method === "GET") {
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, email, company, litellm_user_id, purchased_credits_usd, created_at")
+      .select("id, full_name, email, company, litellm_user_id, starting_credit_usd, purchased_credits_usd, created_at")
       .order("created_at", { ascending: false });
 
     if (profilesError) {
@@ -127,6 +128,16 @@ serve(async (req: Request) => {
       return jsonResponse({ error: "Invalid JSON body" }, 400);
     }
 
+    if (body.action === "repair_litellm_users") {
+      const { data: profiles, error } = await supabase.from("profiles").select("id, email, litellm_user_id, starting_credit_usd, purchased_credits_usd");
+      if (error) return jsonResponse({ error: "Failed to fetch users" }, 500);
+      let repaired = 0, failed = 0;
+      for (const profile of profiles || []) {
+        try { await ensureLiteLLMUser(supabase, profile); repaired++; } catch { failed++; }
+      }
+      return jsonResponse({ success: failed === 0, repaired, failed });
+    }
+
     const { user_id, litellm_max_budget } = body as {
       user_id?: string;
       litellm_max_budget?: number;
@@ -147,7 +158,7 @@ serve(async (req: Request) => {
       // Get litellm_user_id from profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("litellm_user_id")
+        .select("id, email, litellm_user_id, starting_credit_usd, purchased_credits_usd")
         .eq("id", user_id)
         .single();
 
@@ -170,6 +181,8 @@ serve(async (req: Request) => {
           if (!resp.ok) {
             return jsonResponse({ error: `Failed to update LiteLLM budget: ${data.error?.message || resp.status}` }, 500);
           }
+          const purchased = Math.max(0, litellm_max_budget - Number(profile.starting_credit_usd || 0));
+          await supabase.from("profiles").update({ purchased_credits_usd: purchased }).eq("id", user_id);
         } catch (e) {
           console.error('LiteLLM budget update error:', e);
           return jsonResponse({ error: "Failed to update LiteLLM budget" }, 500);

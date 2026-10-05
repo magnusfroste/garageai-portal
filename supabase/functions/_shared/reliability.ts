@@ -150,7 +150,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number };
   const buckets = new Map<string, Bucket>();
   const perGarage: Record<string, number> = {};
-  let excludedAcceptance = 0, nonGarage = 0, outOfWindow = 0;
+  let excludedAcceptance = 0, excludedPlatform = 0, nonGarage = 0, outOfWindow = 0;
 
   for (const r of rows) {
     const modelId = typeof r.model_id === "string" ? r.model_id : "";
@@ -158,7 +158,9 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const garage = sep > 0 ? modelId.slice(0, sep) : "";
     const gid = garage ? garageIds.get(garage) : undefined;
     if (!gid) { nonGarage++; continue; }
-    if (tagsOf(r).includes("acceptance-test")) { excludedAcceptance++; continue; }
+    const tags = tagsOf(r);
+    if (tags.includes("acceptance-test")) { excludedAcceptance++; continue; }
+    if (tags.includes("platform")) { excludedPlatform++; continue; }
     const start = parseTs(r.startTime);
     if (start === null || start < fromMs || start >= toMs) { outOfWindow++; continue; }
     const hour = floorHour(start);
@@ -199,7 +201,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
 
   return {
     source, fetched: rows.length, aggregated: perGarage, hours: upserts.length,
-    excluded_acceptance: excludedAcceptance, non_garage: nonGarage, out_of_window: outOfWindow,
+    excluded_acceptance: excludedAcceptance, excluded_platform: excludedPlatform, non_garage: nonGarage, out_of_window: outOfWindow,
     from: new Date(fromMs).toISOString(), to: new Date(toMs).toISOString(),
   };
 }

@@ -46,6 +46,8 @@ async function createLiteLLMKey(
   litellmUserId: string,
   models?: string[],
   durationDays?: number,
+  maxBudget?: number,
+  rpmLimit = 60,
 ): Promise<{
   key: string;
   token: string;
@@ -58,9 +60,13 @@ async function createLiteLLMKey(
     user_id: string;
     duration?: string;
     models?: string[];
+    max_budget?: number;
+    rpm_limit?: number;
   } = {
     key_alias: keyName,
     user_id: litellmUserId,
+    max_budget: maxBudget,
+    rpm_limit: rpmLimit,
   };
 
   if (durationDays) {
@@ -140,7 +146,7 @@ serve(async (req: Request) => {
     // 1. Get user profile for litellm_user_id
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('litellm_user_id')
+      .select('litellm_user_id, starting_credit_usd, purchased_credits_usd')
       .eq('id', user.id)
       .single();
 
@@ -156,12 +162,18 @@ serve(async (req: Request) => {
     try {
       // 2. Generate key through LiteLLM's API (no expiry — budget controls access)
       const proxyBase = await getProxyBaseUrl(supabase);
+      const { data: rpmSetting } = await supabase.from('admin_settings').select('value').eq('key', 'key_rpm_limit').maybeSingle();
+      const totalBudget = Number(profile.starting_credit_usd || 0) + Number(profile.purchased_credits_usd || 0);
+      const rpmLimit = Math.max(1, Number(rpmSetting?.value ?? 60));
       const liteLLMResponse = await createLiteLLMKey(
         proxyBase,
         body.keyName,
         LITELLM_MASTER_KEY,
         profile.litellm_user_id,
         body.models,
+        undefined,
+        totalBudget,
+        rpmLimit,
       );
       
       console.log('LiteLLM response structure:', {
@@ -179,7 +191,7 @@ serve(async (req: Request) => {
           key_value: liteLLMResponse.key,
           litellm_token: liteLLMResponse.token || null,
           expires_at: null,
-          trial_credits_usd: 25.0,
+          trial_credits_usd: Number(profile.starting_credit_usd || 0),
           used_credits_usd: 0,
           is_active: true
         })
@@ -213,7 +225,7 @@ serve(async (req: Request) => {
           key: liteLLMResponse.key,
           name: body.keyName,
           expires_at: null,
-          trial_credits_usd: 25.0,
+          trial_credits_usd: Number(profile.starting_credit_usd || 0),
           used_credits_usd: 0
         }
       };

@@ -10,11 +10,13 @@ import { toast } from "sonner";
 
 interface AdminSettings {
   default_user_budget_usd: number;
+  key_rpm_limit: number;
 }
 
 export const AdminSettingsPanel = () => {
   const [settings, setSettings] = useState<AdminSettings>({
     default_user_budget_usd: 25,
+    key_rpm_limit: 60,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,13 +30,14 @@ export const AdminSettingsPanel = () => {
       const { data, error } = await supabase
         .from("admin_settings")
         .select("key, value")
-        .eq("key", "default_user_budget_usd");
+        .in("key", ["default_user_budget_usd", "key_rpm_limit"]);
 
       if (error) throw error;
 
       if (data && data.length > 0) {
         setSettings({
-          default_user_budget_usd: Number(data[0].value ?? 25),
+          default_user_budget_usd: Number(data.find((r) => r.key === "default_user_budget_usd")?.value ?? 25),
+          key_rpm_limit: Number(data.find((r) => r.key === "key_rpm_limit")?.value ?? 60),
         });
       }
     } catch (error) {
@@ -47,10 +50,10 @@ export const AdminSettingsPanel = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("admin_settings")
-        .update({ value: settings.default_user_budget_usd as never, updated_at: new Date().toISOString() })
-        .eq("key", "default_user_budget_usd");
+      const { error } = await supabase.from("admin_settings").upsert([
+        { key: "default_user_budget_usd", value: settings.default_user_budget_usd as never, updated_at: new Date().toISOString() },
+        { key: "key_rpm_limit", value: settings.key_rpm_limit as never, updated_at: new Date().toISOString() },
+      ]);
       if (error) throw error;
       toast.success("Settings saved");
     } catch (error) {
@@ -101,6 +104,11 @@ export const AdminSettingsPanel = () => {
           <p className="text-xs text-muted-foreground">
             LiteLLM user max_budget at sign-up
           </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="rpm">API key requests per minute</Label>
+          <Input id="rpm" type="number" min={1} step={1} value={settings.key_rpm_limit} onChange={(e) => setSettings((s) => ({ ...s, key_rpm_limit: Number(e.target.value) }))} />
         </div>
 
         <PlatformFeeField />

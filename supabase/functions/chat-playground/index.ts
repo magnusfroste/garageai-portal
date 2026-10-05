@@ -114,7 +114,7 @@ serve(async (req: Request) => {
       const searxngUrl = await getSearxngUrl(supabase);
       const stream = streamWithWebSearch({
         proxyBase, apiKey: apiKeyForRequest, model: String(model), messages: finalMessages, searxngUrl,
-        signal: req.signal,
+        signal: req.signal, platformRequest,
       });
       return new Response(stream, {
         headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
