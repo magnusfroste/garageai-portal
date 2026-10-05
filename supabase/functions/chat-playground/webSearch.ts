@@ -140,7 +140,8 @@ export function streamWithWebSearch(opts: {
             let text: string;
             try {
               const hits = await searxSearch(opts.searxngUrl, query);
-              const numbered = hits.map((h) => ({ n: sources.length + 1, ...h, _: sources.push({ n: sources.length + 1, ...h }) }));
+              const numbered: Source[] = [];
+              for (const h of hits) { const src = { n: sources.length + 1, ...h }; sources.push(src); numbered.push(src); }
               status({ type: "found", query, count: hits.length });
               text = numbered.length
                 ? numbered.map((h) => `[${h.n}] ${h.title}\n${h.url}\n${h.content}`).join("\n\n")
