@@ -10,6 +10,8 @@ import { useMyGarages } from "@/hooks/useMyGarages";
 import { garageRepository, GarageRow } from "@/data/repositories/garageRepository";
 import { buildGarageCommand, GarageCredentials } from "@/models/services/garageCommand";
 import { runtimeLabel } from "@/models/services/garageRuntime";
+import { useGarageReliability } from "@/hooks/useGarageReliability";
+import { GarageReliabilityPanel } from "./components/GarageReliabilityPanel";
 import { CommandBlock, GarageStatusBadge, ModelTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
 
 const MyGaragesPage = () => {
@@ -17,6 +19,7 @@ const MyGaragesPage = () => {
   const { toast } = useToast();
   const { garages, isLoading, isError, latestTests, invalidate } = useMyGarages();
   const [busy, setBusy] = useState<string | null>(null);
+  const { reliability } = useGarageReliability();
   const [creds, setCreds] = useState<{ c: GarageCredentials; runtime: string } | null>(null);
 
   const retest = async (g: GarageRow) => {
@@ -101,6 +104,7 @@ const MyGaragesPage = () => {
                   </div>
                 )}
                 {g.disabled && <p className="text-xs text-destructive">Garaget är avstängt av plattformen.</p>}
+                <GarageReliabilityPanel name={g.name} reliability={reliability.get(g.name)} />
               </CardContent>
             </Card>
           ))}
