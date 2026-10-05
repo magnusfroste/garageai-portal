@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useCuratedModels } from "@/hooks/useCuratedModels";
 
 interface IntegrationGuideProps {
   onCopy: (text: string) => void;
@@ -13,7 +14,9 @@ interface IntegrationGuideProps {
 
 export const IntegrationGuide = ({ onCopy }: IntegrationGuideProps) => {
   const { settings } = useSiteSettings();
+  const { models } = useCuratedModels(true);
   const baseUrl = settings?.api_base_url || "https://llm.garageai.eu";
+  const defaultModel = models.find((m) => m.is_default && m.garage_tier === "pool")?.model_name || models.find((m) => m.garage_tier === "pool")?.model_name || "";
   return (
     <div className="container mx-auto px-4 pb-8">
       <Card className="glass-card">
@@ -56,7 +59,7 @@ export const IntegrationGuide = ({ onCopy }: IntegrationGuideProps) => {
                 <p className="ml-4">-H "Content-Type: application/json" \</p>
                 <p className="ml-4">
                   -d '{"{"}
-                  "model": "your-model", "messages": [...]
+                  "model": "{defaultModel}", "messages": [...]
                   {"}"}'
                 </p>
               </div>

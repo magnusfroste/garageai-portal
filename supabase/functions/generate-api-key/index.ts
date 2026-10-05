@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
+import { ensureLiteLLMUser } from "../_shared/litellmUsers.ts";
 
 interface GenerateKeyRequest {
   keyName: string;
@@ -146,7 +147,7 @@ serve(async (req: Request) => {
     // 1. Get user profile for litellm_user_id
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('litellm_user_id, starting_credit_usd, purchased_credits_usd')
+      .select('id, email, litellm_user_id, starting_credit_usd, purchased_credits_usd')
       .eq('id', user.id)
       .single();
 
@@ -155,13 +156,10 @@ serve(async (req: Request) => {
       return respondWithError(500, 'database_error', 'Failed to fetch user profile');
     }
 
-    if (!profile.litellm_user_id) {
-      return respondWithError(400, 'no_litellm_user', 'LiteLLM user not initialized. Please reload the dashboard.');
-    }
-
     try {
       // 2. Generate key through LiteLLM's API (no expiry — budget controls access)
       const proxyBase = await getProxyBaseUrl(supabase);
+      const ensured = await ensureLiteLLMUser(supabase, profile);
       const { data: rpmSetting } = await supabase.from('admin_settings').select('value').eq('key', 'key_rpm_limit').maybeSingle();
       const totalBudget = Number(profile.starting_credit_usd || 0) + Number(profile.purchased_credits_usd || 0);
       const rpmLimit = Math.max(1, Number(rpmSetting?.value ?? 60));
@@ -169,7 +167,7 @@ serve(async (req: Request) => {
         proxyBase,
         body.keyName,
         LITELLM_MASTER_KEY,
-        profile.litellm_user_id,
+        ensured.userId,
         body.models,
         undefined,
         totalBudget,

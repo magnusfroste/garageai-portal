@@ -179,4 +179,5 @@ export const defaultSiteSettings: SiteSettings = {
   sitemap_entries: [{ url: "/", priority: "1.0", changefreq: "weekly" }],
   models_public: false,
   platform_fee_percent: 0,
+  starting_credit_usd: 0,
 };

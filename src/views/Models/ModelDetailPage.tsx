@@ -91,7 +91,7 @@ const ModelDetailPage = () => {
   if (!m) return <p className="p-6 text-sm text-muted-foreground">{t("Model not found.")}</p>;
 
   const baseUrl = `${(settings?.api_base_url || "https://llm.garageai.eu").replace(/\/+$/, "")}/v1`;
-  const modelId = m.poolId ?? offers[0]?.modelId ?? m.name;
+  const modelId = m.poolId ?? m.name;
   const chart = dailyTotals(daily.data ?? []);
   const hasUsage = chart.some((d) => d.tokens > 0);
   const profileOf = (g: string) => profiles[garages.indexOf(g)]?.data?.daily;
