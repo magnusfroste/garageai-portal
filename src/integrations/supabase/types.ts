@@ -284,6 +284,7 @@ export type Database = {
           dedicated_output_cost_per_million: number
           disabled: boolean
           id: string
+          last_heartbeat_at: string | null
           last_registered_at: string | null
           mesh_ip: string | null
           models: string[]
@@ -304,6 +305,7 @@ export type Database = {
           dedicated_output_cost_per_million?: number
           disabled?: boolean
           id?: string
+          last_heartbeat_at?: string | null
           last_registered_at?: string | null
           mesh_ip?: string | null
           models?: string[]
@@ -324,6 +326,7 @@ export type Database = {
           dedicated_output_cost_per_million?: number
           disabled?: boolean
           id?: string
+          last_heartbeat_at?: string | null
           last_registered_at?: string | null
           mesh_ip?: string | null
           models?: string[]

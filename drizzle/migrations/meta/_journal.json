@@ -50,6 +50,13 @@
       "when": 1791163254726,
       "tag": "0006_add_profile_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791163456294,
+      "tag": "0007_add_garage_heartbeat",
+      "breakpoints": true
     }
   ]
 }
