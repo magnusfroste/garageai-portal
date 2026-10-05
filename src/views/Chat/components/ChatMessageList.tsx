@@ -1,10 +1,36 @@
-import { Copy, Check, Brain, ChevronDown, ChevronRight } from "lucide-react";
+import { Copy, Check, Brain, ChevronDown, ChevronRight, Globe } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
-import type { ChatMessage } from "../types";
+import type { ChatMessage, ChatSearchInfo } from "../types";
+
+const SearchStatus = ({ text }: { text: string }) => (
+  <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+    <Globe className="h-3.5 w-3.5 animate-pulse text-primary/70" /> {text}
+  </div>
+);
+
+const SearchSources = ({ search }: { search: ChatSearchInfo }) => (
+  <div className="mt-3 border-t border-border/50 pt-2 text-xs text-muted-foreground">
+    {search.queries.length > 0 && (
+      <p className="mb-1 flex items-center gap-1.5">
+        <Globe className="h-3.5 w-3.5" /> Sökte: {search.queries.map((q) => `"${q}"`).join(", ")}
+      </p>
+    )}
+    {search.sources.length > 0 && (
+      <ol className="space-y-0.5">
+        {search.sources.map((s) => (
+          <li key={s.n} className="truncate">
+            <span className="mr-1 text-foreground/70">[{s.n}]</span>
+            <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{s.title || s.url}</a>
+          </li>
+        ))}
+      </ol>
+    )}
+  </div>
+);
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
@@ -171,6 +197,7 @@ export const ChatMessageList = ({ messages, isStreaming, isReasoning }: ChatMess
               </div>
             ) : (
               <div className="text-sm leading-relaxed prose-sm">
+                {msg.search?.status && isLastAssistant && isStreaming && <SearchStatus text={msg.search.status} />}
                 {msg.reasoning && (
                   <ReasoningBlock
                     reasoning={msg.reasoning}
@@ -188,6 +215,9 @@ export const ChatMessageList = ({ messages, isStreaming, isReasoning }: ChatMess
                   isLastAssistant && isStreaming && !isReasoning && (
                     <span className="inline-block w-1.5 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
                   )
+                )}
+                {msg.search && !(isLastAssistant && isStreaming) && (msg.search.queries.length > 0 || msg.search.sources.length > 0) && (
+                  <SearchSources search={msg.search} />
                 )}
               </div>
             )}
