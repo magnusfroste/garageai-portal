@@ -466,6 +466,7 @@ export type Database = {
           id: string
           litellm_user_id: string | null
           onboarding_done: boolean
+          preferred_language: string
           purchased_credits_usd: number
           signup_intent: string | null
           updated_at: string
@@ -478,6 +479,7 @@ export type Database = {
           id: string
           litellm_user_id?: string | null
           onboarding_done?: boolean
+          preferred_language?: string
           purchased_credits_usd?: number
           signup_intent?: string | null
           updated_at?: string
@@ -490,6 +492,7 @@ export type Database = {
           id?: string
           litellm_user_id?: string | null
           onboarding_done?: boolean
+          preferred_language?: string
           purchased_credits_usd?: number
           signup_intent?: string | null
           updated_at?: string
