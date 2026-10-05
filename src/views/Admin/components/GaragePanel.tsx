@@ -287,7 +287,7 @@ export const GaragePanel = () => {
                 >
                   {g.status}
                 </Badge>
-                <a href={`/garages/${g.name}`} className="shrink-0 w-16" title={reliability.get(g.name)?.score != null ? `Score ${reliability.get(g.name)!.score}` : "No data"}>
+                <a href={`/garages/${g.name}`} className="shrink-0 w-16" title={reliability.get(g.name)?.grade !== "Nytt" && reliability.get(g.name)?.score != null ? `Score ${reliability.get(g.name)!.score}` : "No score yet"}>
                   {reliability.get(g.name) ? <GradeBadge grade={reliability.get(g.name)!.grade} /> : <span className="text-[10px] text-muted-foreground">—</span>}
                 </a>
                 <div className="flex-1 min-w-0">

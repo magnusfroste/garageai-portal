@@ -1,4 +1,5 @@
 import { Copy } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ interface IntegrationGuideProps {
 
 export const IntegrationGuide = ({ onCopy }: IntegrationGuideProps) => {
   const { settings } = useSiteSettings();
-  const baseUrl = settings?.api_base_url || "https://your-lite-llm-proxy.example.com";
+  const baseUrl = settings?.api_base_url || "https://llm.garageai.eu";
   return (
     <div className="container mx-auto px-4 pb-8">
       <Card className="glass-card">
@@ -126,7 +127,7 @@ export const IntegrationGuide = ({ onCopy }: IntegrationGuideProps) => {
 
               <p className="text-sm text-muted-foreground">
                 Replace <code className="text-accent">&lt;your-api-key&gt;</code> with
-                an API key from the list above. Claude Code will then use
+                an API key from <Link to="/dashboard/api-keys" className="text-accent hover:underline">API keys</Link>. Claude Code will then use
                 the proxy for all API calls.
               </p>
             </TabsContent>

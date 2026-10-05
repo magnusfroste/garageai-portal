@@ -100,7 +100,7 @@ export interface SiteSettings {
 
 export const defaultSiteSettings: SiteSettings = {
   site_name: "AI Portal",
-  tagline: "Open model access",
+  tagline: "Open model access through an EU gateway",
   api_base_url: "",
   netbird_api_url: "",
   searxng_url: "https://search.liteit.se",
@@ -127,11 +127,11 @@ export const defaultSiteSettings: SiteSettings = {
   // Features
   features_headline: "Everything you need for",
   features_headline_accent: "open models",
-  features_subtitle: "Sovereign, secure, and developer-friendly AI infrastructure — ready to scale.",
+  features_subtitle: "Open-model infrastructure with transparent routing, pricing, and measured reliability.",
   feature_cards: [
     {
-      title: "Open Weights models",
-      description: "Access only open weights models through a single unified endpoint. Drop-in replacement for your existing code.",
+      title: "Encrypted in transit",
+      description: "TLS to our EU gateway and WireGuard to the garage. The gateway does not store prompts or responses.",
       bullets: ["Single API endpoint", "Multiple providers", "Easy migration"],
     },
     {

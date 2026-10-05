@@ -19,13 +19,6 @@ Deno.serve(async (req) => {
       return new Response("Missing ?base= parameter", { status: 400, headers: corsHeaders });
     }
 
-    // Fetch the real index.html from the deployed site
-    const realHtml = await fetch(`${baseUrl}${path}`, {
-      headers: { "User-Agent": "Lovable-SSR/1.0" },
-    });
-    let html = await realHtml.text();
-
-    // Fetch site settings from DB
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -35,6 +28,21 @@ Deno.serve(async (req) => {
       .select("value")
       .eq("key", "site_settings")
       .maybeSingle();
+
+    let requested: URL;
+    try { requested = new URL(baseUrl); } catch { return new Response("Invalid base URL", { status: 400, headers: corsHeaders }); }
+    const configured = typeof (data?.value as Record<string, unknown> | undefined)?.site_url === "string"
+      ? String((data?.value as Record<string, unknown>).site_url) : "";
+    const allowedHosts = new Set(["app.garageai.eu", "garageai.eu", "litellm.lovable.app"]);
+    if (configured) { try { allowedHosts.add(new URL(configured).hostname); } catch { /* ignore malformed setting */ } }
+    const lovablePreview = requested.protocol === "https:" && /(^|\.)lovable\.app$/.test(requested.hostname);
+    if (requested.protocol !== "https:" || (!allowedHosts.has(requested.hostname) && !lovablePreview)) {
+      return new Response("Base URL is not allowed", { status: 400, headers: corsHeaders });
+    }
+    const target = new URL(path.startsWith("/") ? path : `/${path}`, requested.origin);
+    const realHtml = await fetch(target, { headers: { "User-Agent": "Lovable-SSR/1.0" }, redirect: "error" });
+    if (!realHtml.ok) return new Response("Upstream page unavailable", { status: 502, headers: corsHeaders });
+    let html = await realHtml.text();
 
     if (!data?.value) {
       return new Response(html, {
@@ -103,7 +111,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (err) {
-    return new Response(`SSR Error: ${err.message}`, {
+    console.error("[render-html]", err instanceof Error ? err.message : "unknown");
+    return new Response("SSR error", {
       status: 500,
       headers: corsHeaders,
     });

@@ -24,7 +24,7 @@ const GarageProfilePage = () => {
         <Server className="w-6 h-6 text-primary" />
         <h1 className="text-2xl font-bold font-mono">{p.name}</h1>
         {r && <GradeBadge grade={r.grade} className="text-xs" />}
-        {r?.score != null && <span className="text-sm text-muted-foreground">{formatDecimal(r.score)} / 100</span>}
+        {r?.grade !== "Nytt" && r?.score != null && <span className="text-sm text-muted-foreground">{formatDecimal(r.score)} / 100</span>}
         {p.disabled && <Badge variant="destructive">{t("Disabled")}</Badge>}
       </div>
       <p className="text-sm text-muted-foreground max-w-2xl">{honestNote()}</p>

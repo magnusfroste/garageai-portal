@@ -35,8 +35,7 @@ export const buildGarageCommand = (
   parts.push(
     `--runtime ${runtime}`,
     `--name ${result.garage.name}`,
-    `--register-url ${result.register_url}`,
-    `--register-token ${result.register_token}`
+    `--register-url ${result.register_url}`
   );
   if (runtime === "other" && opts.port) parts.push(`--port ${opts.port}`);
   lines.push(parts.join(" \\\n  "));

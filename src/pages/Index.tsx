@@ -8,7 +8,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 const Index = () => {
   const { settings } = useSiteSettings();
   const siteName = settings?.site_name || "AI Portal";
-  const tagline = settings?.tagline || "Secure private LLM access for developers.";
+  const tagline = settings?.tagline || "Open model access through an EU gateway.";
 
   return (
     <div className="min-h-screen">

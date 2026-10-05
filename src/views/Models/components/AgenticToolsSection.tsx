@@ -34,7 +34,7 @@ const tools: AgenticTool[] = [
     name: "Roo Code",
     badge: "VS Code",
     description:
-      "An autonomous AI coding agent that lives inside VS Code. Roo can create & edit files, run terminal commands, use a browser, and orchestrate multi-step tasks — all while keeping your code private and on your machine.",
+      "An autonomous AI coding agent inside VS Code. Roo can create and edit files, run terminal commands, use a browser, and orchestrate multi-step tasks with your chosen model endpoint.",
     features: [
       "Runs inside VS Code with your chosen model endpoint",
       "Multi-step task orchestration with tool use",

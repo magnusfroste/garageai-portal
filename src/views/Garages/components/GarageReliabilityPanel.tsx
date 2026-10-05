@@ -15,7 +15,7 @@ export const GarageReliabilityPanel = ({ name, reliability }: { name: string; re
       <CollapsibleTrigger className="flex w-full items-center gap-2 text-sm font-medium">
         {t("Reliability")}
         {reliability && <GradeBadge grade={reliability.grade} />}
-        {reliability?.score != null && <span className="text-xs text-muted-foreground">{formatDecimal(reliability.score)} / 100</span>}
+        {reliability?.grade !== "Nytt" && reliability?.score != null && <span className="text-xs text-muted-foreground">{formatDecimal(reliability.score)} / 100</span>}
         <ChevronDown className="w-4 h-4 ml-auto" />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-3 pt-3">

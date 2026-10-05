@@ -36,7 +36,7 @@ const GaragesListPage = () => {
                   </div>
                   <div className="text-xs text-muted-foreground flex gap-4">
                     <span>{t("Availability 7 d")}: {formatPct(g.windows["7d"]?.availability ?? null)}</span>
-                    {g.score != null && <span>{formatDecimal(g.score)} / 100</span>}
+                    {g.grade !== "Nytt" && g.score != null && <span>{formatDecimal(g.score)} / 100</span>}
                   </div>
                 </CardContent>
               </Card>
