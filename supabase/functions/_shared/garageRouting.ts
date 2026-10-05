@@ -18,12 +18,14 @@ export interface RoutingGarage {
   id: string; name: string; operator_id: string | null; api_host: string | null; mesh_ip: string | null;
   port: number | null; runtime: string | null; models: string[]; status: string; disabled: boolean;
   last_heartbeat_at: string | null;
+  connection_type?: string | null; endpoint_url?: string | null;
   dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number;
   pool_input_cost_per_million: number; pool_output_cost_per_million: number;
 }
 
-export const apiBaseFor = (g: Pick<RoutingGarage, "api_host" | "mesh_ip" | "port">) =>
-  (g.api_host || g.mesh_ip) && g.port ? `http://${g.api_host || g.mesh_ip}:${g.port}/v1` : null;
+export const apiBaseFor = (g: Pick<RoutingGarage, "api_host" | "mesh_ip" | "port" | "connection_type" | "endpoint_url">) =>
+  g.connection_type === "endpoint" ? (g.endpoint_url || null)
+  : (g.api_host || g.mesh_ip) && g.port ? `http://${g.api_host || g.mesh_ip}:${g.port}/v1` : null;
 
 const litellmHeaders = (masterKey: string) => ({ Authorization: `Bearer ${masterKey}`, "Content-Type": "application/json" });
 
@@ -49,7 +51,7 @@ async function addDeployment(base: string, masterKey: string, s: DeploymentSpec)
     body: JSON.stringify({
       model_name: s.route,
       litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6 },
-      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier },
+      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh" },
     }),
   });
   await res.text().catch(() => "");
@@ -83,7 +85,7 @@ export function isModelSellable(g: RoutingGarage, model: string, test: { passed:
   return now - test.tested_at <= NO_HEARTBEAT_TEST_MAX_AGE_MS;
 }
 
-export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, port, runtime, models, status, disabled, last_heartbeat_at, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million";
+export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connection_type, endpoint_url, port, runtime, models, status, disabled, last_heartbeat_at, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million";
 
 /**
  * Makes LiteLLM garage deployments equal the desired set.

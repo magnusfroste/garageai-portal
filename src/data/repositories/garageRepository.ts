@@ -58,7 +58,25 @@ const invoke = async <T>(fn: string, body: unknown): Promise<T> => {
   return data as T;
 };
 
+export interface ProviderPrices {
+  dedicated_input_cost_per_million?: number; dedicated_output_cost_per_million?: number;
+  pool_input_cost_per_million?: number; pool_output_cost_per_million?: number;
+}
+export interface ProviderResult {
+  garage: { name: string; display_name: string; endpoint_url: string };
+  acceptance: Array<{ model: string; passed: boolean; error?: string | null }>;
+}
+
 export const garageRepository = {
+  listProviderModels: (endpoint_url: string, api_key: string) =>
+    invoke<{ endpoint_url: string; models: string[] }>("create-provider", { list_only: true, endpoint_url, api_key }),
+
+  createProvider: (body: { name: string; display_name: string; endpoint_url: string; api_key?: string; models: string[]; prices: ProviderPrices }) =>
+    invoke<ProviderResult>("create-provider", body),
+
+  updateProviderKey: (name: string, api_key: string) =>
+    invoke<{ ok: boolean }>("create-provider", { update_key: true, name, api_key }),
+
   /** RLS returns only the caller's garages (admins see all). */
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase

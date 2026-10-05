@@ -11,7 +11,7 @@ const sanitize = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
 
 export interface GarageRegistrationPayload { name: string; runtime: string; port: number; models: string[]; runtime_api_key?: string; mesh_ip?: string; }
 export interface GarageRegistration { api_base: string; models: string[]; acceptance: AcceptanceResult[]; catalog_synced: boolean; }
-export interface GarageRecord { id: string; name: string; operator_id: string | null; api_host: string | null; netbird_peer_id: string | null; dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number; pool_input_cost_per_million: number; pool_output_cost_per_million: number; }
+export interface GarageRecord { id: string; name: string; operator_id: string | null; api_host: string | null; netbird_peer_id: string | null; dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number; pool_input_cost_per_million: number; pool_output_cost_per_million: number; connection_type?: string | null; endpoint_url?: string | null; }
 
 export function validateGaragePayload(body: Record<string, unknown>, allowEmptyModels = false): GarageRegistrationPayload {
   const port = body.port;
@@ -33,19 +33,23 @@ export function validateGaragePayload(body: Record<string, unknown>, allowEmptyM
 export async function registerGarage(admin: SupabaseClient, garage: GarageRecord, payload: GarageRegistrationPayload, opts: { testOnly?: string[] } = {}): Promise<GarageRegistration> {
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
-  const netbirdApiUrl = await getNetbirdApiUrl(admin);
-  const peersRes = await fetch(`${netbirdApiUrl}/peers`, { headers: netbirdHeaders() });
-  if (!peersRes.ok) throw new Error(`Could not query mesh (${peersRes.status})`);
-  const lookup = findGaragePeer(await peersRes.json() as NetbirdPeer[], garage);
-  if (!lookup.peer) throw new Error(lookup.error);
-  const peer = lookup.peer;
-  const apiBase = `http://${garage.api_host || peer.ip}:${payload.port}/v1`;
+  const isEndpoint = garage.connection_type === "endpoint";
+  let peer: { id: string | null; ip: string | null } = { id: null, ip: null };
+  if (!isEndpoint) {
+    const netbirdApiUrl = await getNetbirdApiUrl(admin);
+    const peersRes = await fetch(`${netbirdApiUrl}/peers`, { headers: netbirdHeaders() });
+    if (!peersRes.ok) throw new Error(`Could not query mesh (${peersRes.status})`);
+    const lookup = findGaragePeer(await peersRes.json() as NetbirdPeer[], garage);
+    if (!lookup.peer) throw new Error(lookup.error);
+    peer = { id: lookup.peer.id, ip: lookup.peer.ip };
+  } else if (!garage.endpoint_url) throw new Error("provider has no endpoint_url");
+  const apiBase = isEndpoint ? garage.endpoint_url! : `http://${garage.api_host || peer.ip}:${payload.port}/v1`;
   const litellm = await getProxyBaseUrl(admin);
   const headers = { Authorization: `Bearer ${masterKey}`, "Content-Type": "application/json" };
   await storeRuntimeKey(admin, garage.id, payload.runtime_api_key);
 
   const testModels = opts.testOnly ?? payload.models;
-  const routingGarage = { ...garage, api_host: garage.api_host, mesh_ip: peer.ip, port: payload.port, runtime: payload.runtime, models: payload.models, status: "pending", disabled: false, last_heartbeat_at: null } as RoutingGarage;
+  const routingGarage = { ...garage, api_host: garage.api_host, mesh_ip: peer.ip, port: payload.port, runtime: payload.runtime, models: payload.models, status: "pending", disabled: false, last_heartbeat_at: null, connection_type: garage.connection_type || "mesh", endpoint_url: garage.endpoint_url ?? null } as RoutingGarage;
   const acceptance = testModels.length
     ? await withProbeDeployments(admin, routingGarage, testModels, (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, garage, testModels, routeFor))
     : [];
@@ -56,7 +60,7 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   for (const result of (latest || []) as Array<{ model: string; passed: boolean }>) if (!latestByModel.has(result.model)) latestByModel.set(result.model, result.passed);
   for (const result of acceptance) if (!result.inconclusive) latestByModel.set(result.model, result.passed);
   const anyPassed = payload.models.some((model) => latestByModel.get(model) === true);
-  const { error } = await admin.from("garages").update({ runtime: payload.runtime, port: payload.port, models: payload.models, mesh_ip: peer.ip, netbird_peer_id: peer.id, status: anyPassed ? "online" : payload.models.length ? "failed_test" : "pending", last_registered_at: new Date().toISOString() }).eq("id", garage.id);
+  const { error } = await admin.from("garages").update({ runtime: payload.runtime, port: payload.port, models: payload.models, ...(isEndpoint ? {} : { mesh_ip: peer.ip, netbird_peer_id: peer.id }), status: anyPassed ? "online" : payload.models.length ? "failed_test" : "pending", last_registered_at: new Date().toISOString() }).eq("id", garage.id);
   if (error) throw error;
 
   let catalogSynced = true;

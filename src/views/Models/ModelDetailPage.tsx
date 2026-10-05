@@ -14,6 +14,7 @@ import { reliabilityRepository } from "@/data/repositories/reliabilityRepository
 import { dailyTotals, formatContext, formatPrice, priceRange } from "@/models/services/catalogService";
 import { formatNumber, formatPct, formatTokens, dayLevel } from "@/models/services/reliabilityService";
 import { runtimeLabel } from "@/models/services/garageRuntime";
+import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import type { GarageOffer } from "@/models/types/catalog.types";
 import type { GarageDay } from "@/models/types/reliability.types";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
@@ -147,7 +148,7 @@ const ModelDetailPage = () => {
         <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Server className="h-4 w-4 text-primary" />{t("Specific garage")}</CardTitle><CardDescription>{t("Choose one garage directly. Availability depends on that machine.")}</CardDescription></CardHeader>
         <CardContent className="space-y-2">
           {offers.map((o) => <div key={o.garage} className="grid gap-2 border-b border-border/50 py-3 last:border-0 sm:grid-cols-[1fr_auto_1.5fr] sm:items-center">
-            <div><Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-sm text-primary hover:underline">{o.garage}</Link>{o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}</div>
+            <div><Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-sm text-primary hover:underline">{o.garage}</Link><ProviderBadge name={o.providerName} />{o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}</div>
             <div className="text-sm tabular-nums"><span className="text-xs text-muted-foreground">{t("Price in / out")}</span><br />{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</div>
             {o.modelId && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><code className="truncate font-mono text-xs">{o.modelId}</code><CopyButton text={o.modelId} /></div>}
           </div>)}
@@ -169,7 +170,7 @@ const ModelDetailPage = () => {
               {offers.map((o) => (
                 <tr key={o.garage}>
                   <td className="px-3 py-2">
-                    <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-primary hover:underline">{o.garage}</Link>
+                    <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-primary hover:underline">{o.garage}</Link><ProviderBadge name={o.providerName} />
                     {o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}
                   </td>
                   <td className="px-3 py-2">{o.grade ? <GradeBadge grade={o.grade} /> : "—"}</td>

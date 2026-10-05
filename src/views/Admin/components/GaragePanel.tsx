@@ -23,6 +23,10 @@ import { ToolsTestBadge } from "@/views/Garages/components/GarageShared";
 import { useGarages, Garage, CreateGarageResult, GarageModelTest } from "../hooks/useGarages";
 
 import { t } from "@/i18n";
+import { Building2 } from "lucide-react";
+import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
+import { ProviderDialog } from "./ProviderDialog";
+import { garageRepository } from "@/data/repositories/garageRepository";
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 
 const relativeTime = (iso: string | null): string => {
@@ -136,7 +140,10 @@ const ResultView = ({ result, runtime, onClose }: ResultViewProps) => {
 };
 
 export const GaragePanel = () => {
-  const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled } = useGarages();
+  const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled, invalidate } = useGarages();
+  const [providerOpen, setProviderOpen] = useState(false);
+  const [keyGarage, setKeyGarage] = useState<Garage | null>(null);
+  const [newKey, setNewKey] = useState("");
   const { reliability } = useGarageReliability();
   const [sortDir, setSortDir] = useState<"none" | "desc" | "asc">("none");
   const [confirmGarage, setConfirmGarage] = useState<Garage | null>(null);
@@ -264,6 +271,10 @@ export const GaragePanel = () => {
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefetching ? "animate-spin" : ""}`} />
             Refresh
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setProviderOpen(true)}>
+            <Building2 className="w-4 h-4 mr-2" />
+            {t("Add provider")}
+          </Button>
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add garage
@@ -293,6 +304,7 @@ export const GaragePanel = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-sm truncate">{g.name}</span>
+                    {g.connection_type === "endpoint" && <ProviderBadge name={g.display_name || g.name} />}
                     {g.runtime && (
                       <Badge variant="outline" className="text-[10px] shrink-0">
                         {runtimeLabel(g.runtime)}
@@ -302,11 +314,13 @@ export const GaragePanel = () => {
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
                     <span>Models: {g.models.length > 0 ? g.models.join(", ") : "—"}</span>
-                    {g.mesh_ip && <span>Mesh: {g.mesh_ip}</span>}
+                    {g.connection_type === "endpoint"
+                      ? <span>{t("Endpoint")}: {g.endpoint_url ? new URL(g.endpoint_url).host : "—"}</span>
+                      : g.mesh_ip && <span>Mesh: {g.mesh_ip}</span>}
                     {g.api_host && <span>Host: {g.api_host}</span>}
                     <span>Operator: {g.operator_id ? operatorEmails.get(g.operator_id) ?? "…" : "—"}</span>
                     <span>Registered: {relativeTime(g.last_registered_at)}</span>
-                    <span>Heartbeat: {g.last_heartbeat_at ? relativeTime(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>
+                    {g.connection_type !== "endpoint" && <span>Heartbeat: {g.last_heartbeat_at ? relativeTime(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>}
                   </div>
                   {g.models.length > 0 && (
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
@@ -329,10 +343,17 @@ export const GaragePanel = () => {
                   <FlaskConical className={`w-3.5 h-3.5 mr-1.5 ${retesting === g.name ? "animate-pulse" : ""}`} />
                   {retesting === g.name ? "Testing..." : "Retest"}
                 </Button>
-                <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => handleNewToken(g)}>
-                  <KeyRound className="w-3.5 h-3.5 mr-1.5" />
-                  New token
-                </Button>
+                {g.connection_type === "endpoint" ? (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => { setNewKey(""); setKeyGarage(g); }}>
+                    <KeyRound className="w-3.5 h-3.5 mr-1.5" />
+                    {t("Update API key")}
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => handleNewToken(g)}>
+                    <KeyRound className="w-3.5 h-3.5 mr-1.5" />
+                    New token
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => setConfirmGarage(g)}>
                   {g.disabled ? <Power className="w-3.5 h-3.5 mr-1.5" /> : <Ban className="w-3.5 h-3.5 mr-1.5" />}
                   {g.disabled ? "Enable" : "Disable"}
@@ -412,6 +433,28 @@ export const GaragePanel = () => {
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <ProviderDialog open={providerOpen} onOpenChange={setProviderOpen} onCreated={invalidate} />
+
+      <Dialog open={!!keyGarage} onOpenChange={(o) => !o && setKeyGarage(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Update API key")}</DialogTitle>
+            <DialogDescription>{keyGarage?.display_name || keyGarage?.name}</DialogDescription>
+          </DialogHeader>
+          <Input type="password" autoComplete="off" value={newKey} onChange={(e) => setNewKey(e.target.value)} placeholder={t("API key")} />
+          <Button disabled={!newKey} onClick={async () => {
+            if (!keyGarage) return;
+            try {
+              await garageRepository.updateProviderKey(keyGarage.name, newKey);
+              toast({ title: t("API key updated") });
+              setKeyGarage(null);
+            } catch (e) {
+              toast({ title: t("Action failed"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
+            }
+          }}>{t("Save")}</Button>
         </DialogContent>
       </Dialog>
 

@@ -17,6 +17,9 @@ export interface Garage {
   last_registered_at: string | null;
   last_heartbeat_at: string | null;
   created_at: string;
+  connection_type?: string;
+  endpoint_url?: string | null;
+  display_name?: string | null;
 }
 
 export interface CreateGarageResult {
@@ -121,5 +124,6 @@ export const useGarages = () => {
     retestGarage,
     operatorEmails: emailsQuery.data ?? new Map<string, string>(),
     setGarageDisabled,
+    invalidate: () => { queryClient.invalidateQueries({ queryKey: ["admin-garages"] }); queryClient.invalidateQueries({ queryKey: ["admin-garage-tests"] }); },
   };
 };
