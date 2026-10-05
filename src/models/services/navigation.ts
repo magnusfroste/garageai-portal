@@ -34,7 +34,7 @@ export const EXPLORE: NavGroup = {
   id: "explore",
   label: "Utforska",
   items: [
-    { title: "Modeller", url: "/dashboard/models", icon: Cpu },
+    { title: "Modeller", url: "/models", icon: Cpu },
     { title: "Garage", url: "/garages", icon: Warehouse },
   ],
 };

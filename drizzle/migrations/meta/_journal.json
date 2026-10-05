@@ -71,6 +71,13 @@
       "when": 1791166188999,
       "tag": "0009_public_garage_reliability_read",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791166400219,
+      "tag": "0010_public_garage_catalog_stats",
+      "breakpoints": true
     }
   ]
 }

@@ -6,7 +6,7 @@ import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
 import { searchCatalog } from "@/models/services/catalogSearch";
 
-export const GlobalSearch = ({ modelsHref = "/dashboard/models" }: { modelsHref?: string }) => {
+export const GlobalSearch = ({ modelsHref = "/models" }: { modelsHref?: string }) => {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);

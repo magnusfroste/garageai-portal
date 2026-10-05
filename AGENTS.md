@@ -6,3 +6,4 @@
 - Route both initial node registration and changed heartbeats through the shared garage registration service so deployment cleanup and catalogue sync stay consistent.
 - Keep runtime metadata in one frontend service and backend port allowlisting in one shared edge-function constant so setup commands and validation stay aligned.- Compute garage reliability grades only in the `garage_reliability` database function, fed by the five-minute cron (samples, usage ingest, hourly probes), so every view shows the same numbers.
 - Define portal navigation groups only in `src/models/services/navigation.ts`; public-readable pages use `PublicOrAppLayout` so visitors and signed-in users share routes.
+- Build the buyer catalogue (one entry per base model, garages as providers) only in `catalogService.buildCatalog` from public data (curated_models + public garage RPCs), so list and model pages agree.

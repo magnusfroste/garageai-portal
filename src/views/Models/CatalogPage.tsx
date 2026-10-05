@@ -1,0 +1,130 @@
+import { useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Cpu, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useModelCatalog } from "@/hooks/useModelCatalog";
+import {
+  applyFilters, filtersFromParams, filtersToParams, formatContext, formatPrice,
+} from "@/models/services/catalogService";
+import { runtimeLabel } from "@/models/services/garageRuntime";
+import type { CatalogFilters, CatalogModel, CatalogSort } from "@/models/types/catalog.types";
+import { GradeBadge } from "@/views/Garages/components/Reliability";
+import { cn } from "@/lib/utils";
+
+const ANY = "__any";
+const SORT_LABEL: Record<CatalogSort, string> = {
+  popular: "Populärast",
+  cheapest: "Billigast",
+  fastest: "Snabbast",
+  reliable: "Högst tillförlitlighet",
+};
+
+const Pick = ({
+  value, onChange, placeholder, options,
+}: { value: string | null; onChange: (v: string | null) => void; placeholder: string; options: [string, string][] }) => (
+  <Select value={value ?? ANY} onValueChange={(v) => onChange(v === ANY ? null : v)}>
+    <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs"><SelectValue placeholder={placeholder} /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value={ANY}>{placeholder}</SelectItem>
+      {options.map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+    </SelectContent>
+  </Select>
+);
+
+const CatalogRow = ({ m }: { m: CatalogModel }) => (
+  <Link
+    to={`/models/${encodeURIComponent(m.name)}`}
+    className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_minmax(0,1fr)_70px_150px_80px_80px] items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-accent/30 transition-colors"
+  >
+    <span
+      className={cn("w-2 h-2 rounded-full", m.available ? "bg-emerald-500" : "bg-muted-foreground/40")}
+      title={m.available ? "Tillgänglig" : "Inte tillgänglig just nu"}
+    />
+    <div className="min-w-0">
+      <div className="font-mono text-sm font-semibold truncate">{m.name}</div>
+      <div className="text-xs text-muted-foreground truncate">
+        {m.provider}{m.mode ? ` · ${m.mode}` : ""}{!m.available ? " · Inte tillgänglig just nu" : ""}
+      </div>
+    </div>
+    <span className="text-xs tabular-nums text-muted-foreground hidden sm:block">{formatContext(m.contextLength)}</span>
+    <span className="text-xs tabular-nums hidden sm:block">
+      från {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}
+    </span>
+    <span className="text-xs text-muted-foreground hidden sm:block">{m.offers.length} garage</span>
+    <span className="justify-self-end">{m.bestGrade && <GradeBadge grade={m.bestGrade} />}</span>
+  </Link>
+);
+
+export const CatalogPage = () => {
+  const [params, setParams] = useSearchParams();
+  const f = filtersFromParams(params);
+  const { models, isLoading } = useModelCatalog();
+  const set = (patch: Partial<CatalogFilters>) => setParams(filtersToParams({ ...f, ...patch }), { replace: true });
+
+  const runtimes = useMemo(
+    () => [...new Set(models.flatMap((m) => m.offers.map((o) => o.runtime)).filter((r): r is string => !!r))],
+    [models],
+  );
+  const list = useMemo(() => applyFilters(models, f), [models, params]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="p-6 space-y-5">
+      <div>
+        <div className="flex items-center gap-3 mb-1">
+          <Cpu className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold">Modeller</h1>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Öppna modeller som körs i garage. Priser per 1 miljon tokens (in / ut).
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full sm:w-64">
+          <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder="Sök modell eller garage" className="h-8 pl-8 text-sm" />
+        </div>
+        <Pick value={f.minContext ? String(f.minContext) : null} onChange={(v) => set({ minContext: v ? Number(v) : null })}
+          placeholder="Alla kontextlängder" options={[["8000", "≥ 8k"], ["32000", "≥ 32k"], ["128000", "≥ 128k"]]} />
+        <Pick value={f.maxPrice != null ? String(f.maxPrice) : null} onChange={(v) => set({ maxPrice: v != null ? Number(v) : null })}
+          placeholder="Alla priser" options={[["0.5", "Ut ≤ $0,5"], ["1", "Ut ≤ $1"], ["2", "Ut ≤ $2"], ["5", "Ut ≤ $5"]]} />
+        <Pick value={f.runtime} onChange={(v) => set({ runtime: v })} placeholder="Alla motorer"
+          options={runtimes.map((r) => [r, runtimeLabel(r)])} />
+        <Pick value={f.minGrade} onChange={(v) => set({ minGrade: v as CatalogFilters["minGrade"] })} placeholder="Alla betyg"
+          options={[["A", "Betyg A"], ["B", "B eller bättre"], ["C", "C eller bättre"]]} />
+        <div className="flex items-center gap-2 px-2">
+          <Switch id="multi" checked={f.multiGarage} onCheckedChange={(c) => set({ multiGarage: c })} />
+          <Label htmlFor="multi" className="text-xs">Endast modeller med flera garage</Label>
+        </div>
+        <div className="sm:ml-auto">
+          <Select value={f.sort} onValueChange={(v) => set({ sort: v as CatalogSort })}>
+            <SelectTrigger className="h-8 w-[190px] text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABEL) as CatalogSort[]).map((s) => <SelectItem key={s} value={s}>{SORT_LABEL[s]}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/50 bg-card/60 divide-y divide-border/50">
+        <div className="hidden sm:grid grid-cols-[auto_minmax(0,1fr)_70px_150px_80px_80px] gap-x-4 px-4 py-2 text-[11px] text-muted-foreground">
+          <span className="w-2" /><span>Modell</span><span>Kontext</span><span>Lägsta pris in / ut</span><span>Garage</span><span className="justify-self-end">Bästa betyg</span>
+        </div>
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 m-2" />)
+        ) : list.length === 0 ? (
+          <p className="p-6 text-sm text-muted-foreground">Inga modeller matchar.</p>
+        ) : (
+          list.map((m) => <CatalogRow key={m.name} m={m} />)
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">{list.length} av {models.length} modeller</p>
+    </div>
+  );
+};
+
+export default CatalogPage;

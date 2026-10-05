@@ -1,5 +1,6 @@
 import { apiModelName } from "@/models/services/modelDedup";
 import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +18,8 @@ import { DEFAULT_SYSTEM_PROMPT } from "./components/ChatSystemPrompt";
 
 export const ChatPage = () => {
   const { checkAuth } = useAuth();
+  const [searchParams] = useSearchParams();
+  const requestedModel = searchParams.get("model");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedKeyId, setSelectedKeyId] = useState("");
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
@@ -82,6 +85,8 @@ export const ChatPage = () => {
   // Select default model from enabled models
   useEffect(() => {
     if (modelInfos.length > 0 && !selectedModel) {
+      const requested = requestedModel && modelInfos.find((m) => m.id === requestedModel);
+      if (requested) { setSelectedModel(requested.id); return; }
       // First try to find the default model
       const defaultModel = modelInfos.find((m) => m.is_default);
       if (defaultModel) {
@@ -92,7 +97,7 @@ export const ChatPage = () => {
         setSelectedModel(healthy?.id || modelInfos[0].id);
       }
     }
-  }, [modelInfos, selectedModel]);
+  }, [modelInfos, selectedModel, requestedModel]);
 
   const {
     conversations,
