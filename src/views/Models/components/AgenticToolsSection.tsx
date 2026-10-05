@@ -2,6 +2,7 @@ import { Bot, Shield, Terminal, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "./CopyButton";
+import { t } from "@/i18n";
 
 interface AgenticTool {
   name: string;

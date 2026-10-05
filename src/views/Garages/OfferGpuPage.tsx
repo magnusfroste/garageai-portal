@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/components/ui/use-toast";
-import { useProfile } from "@/hooks/useProfile";
+import { useMyGarages } from "@/hooks/useMyGarages";
 import { useGarageStatusPolling } from "@/hooks/useGarageStatusPolling";
 import { garageRepository } from "@/data/repositories/garageRepository";
 import {
@@ -40,7 +40,7 @@ const CheckItem = ({ state, label, detail, action }: {
 const OfferGpuPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile } = useProfile();
+  const { garages } = useMyGarages();
   const [step, setStep] = useState(0);
   const [os, setOs] = useState<GarageOs>("macos");
   const [runtime, setRuntime] = useState<GarageRuntime>("ollama");
@@ -68,13 +68,10 @@ const OfferGpuPage = () => {
       toast({ title: t("Invalid name"), description: t("Lowercase letters, digits and hyphens (2–41 characters)."), variant: "destructive" });
       return;
     }
-    if (profile?.id) {
-      const existing = await garageRepository.listOwn(profile.id);
-      if (existing.some((garage) => garage.name === name) && !confirmReuse) {
-        setConfirmReuse(true);
-        toast({ title: t("Garage name already exists"), description: t("This will create a new command for your existing garage {name}.", { name }) });
-        return;
-      }
+    if (garages.some((garage) => garage.name === name) && !confirmReuse) {
+      setConfirmReuse(true);
+      toast({ title: t("Garage name already exists"), description: t("This will create a new command for your existing garage {name}.", { name }) });
+      return;
     }
     setCreating(true);
     try {
