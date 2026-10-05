@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Server, RefreshCw, Plus, Copy, Check, KeyRound, FlaskConical } from "lucide-react";
+import { Server, RefreshCw, Plus, Copy, Check, KeyRound, FlaskConical, Ban, Power } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { buildGarageCommand } from "@/models/services/garageCommand";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useGarages, Garage, CreateGarageResult, GarageModelTest } from "../hooks/useGarages";
 
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
@@ -90,26 +95,7 @@ const SecretRow = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-const buildCommand = (result: CreateGarageResult, runtime: string): string => {
-  const lines = [
-    "curl -fsSLO https://raw.githubusercontent.com/magnusfroste/garageai/main/scripts/garageai-connect.sh",
-  ];
-  const parts = ["bash garageai-connect.sh"];
-  if (result.setup_key) {
-    parts.push(`--setup-key ${result.setup_key}`, `--management-url ${result.management_url}`);
-  } else {
-    parts.push("--skip-install");
-  }
-  parts.push(
-    `--runtime ${runtime}`,
-    `--name ${result.garage.name}`,
-    `--register-url ${result.register_url}`,
-    `--register-token ${result.register_token}`
-  );
-  if (runtime === "vllm") parts.push("--runtime-api-key <YOUR_VLLM_API_KEY>");
-  lines.push(parts.join(" \\\n  "));
-  return lines.join("\n");
-};
+const buildCommand = (result: CreateGarageResult, runtime: string) => buildGarageCommand(result, runtime);
 
 interface ResultViewProps {
   result: CreateGarageResult;
@@ -145,7 +131,9 @@ const ResultView = ({ result, runtime, onClose }: ResultViewProps) => {
 };
 
 export const GaragePanel = () => {
-  const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage } = useGarages();
+  const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled } = useGarages();
+  const [confirmGarage, setConfirmGarage] = useState<Garage | null>(null);
+  const [toggling, setToggling] = useState(false);
   const [retesting, setRetesting] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -217,6 +205,21 @@ export const GaragePanel = () => {
     }
   };
 
+  const handleToggleDisabled = async () => {
+    if (!confirmGarage) return;
+    const g = confirmGarage;
+    setToggling(true);
+    try {
+      await setGarageDisabled(g.name, !g.disabled);
+      toast({ title: g.disabled ? `${g.name} enabled` : `${g.name} disabled` });
+    } catch (e) {
+      toast({ title: "Action failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setToggling(false);
+      setConfirmGarage(null);
+    }
+  };
+
   const handleNewToken = (garage: Garage) => {
     setName(garage.name);
     setRuntime(garage.runtime || "ollama");
@@ -281,6 +284,7 @@ export const GaragePanel = () => {
                     <span>Models: {g.models.length > 0 ? g.models.join(", ") : "—"}</span>
                     {g.mesh_ip && <span>Mesh: {g.mesh_ip}</span>}
                     {g.api_host && <span>Host: {g.api_host}</span>}
+                    <span>Operator: {g.operator_id ? operatorEmails.get(g.operator_id) ?? "…" : "—"}</span>
                     <span>Registered: {relativeTime(g.last_registered_at)}</span>
                   </div>
                   {g.models.length > 0 && (
@@ -304,6 +308,10 @@ export const GaragePanel = () => {
                 <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => handleNewToken(g)}>
                   <KeyRound className="w-3.5 h-3.5 mr-1.5" />
                   New token
+                </Button>
+                <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => setConfirmGarage(g)}>
+                  {g.disabled ? <Power className="w-3.5 h-3.5 mr-1.5" /> : <Ban className="w-3.5 h-3.5 mr-1.5" />}
+                  {g.disabled ? "Enable" : "Disable"}
                 </Button>
               </div>
             ))}
@@ -382,6 +390,25 @@ export const GaragePanel = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!confirmGarage} onOpenChange={(o) => !o && setConfirmGarage(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmGarage?.disabled ? "Enable" : "Disable"} {confirmGarage?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmGarage?.disabled
+                ? "The garage goes back to pending. The operator must run the connect command again to re-register."
+                : "Revokes all tokens, removes its deployments from the proxy and disables its models in the catalog."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={toggling}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); handleToggleDisabled(); }} disabled={toggling}>
+              {toggling ? "Working..." : confirmGarage?.disabled ? "Enable" : "Disable"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
     </TooltipProvider>
   );

@@ -100,6 +100,9 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   }
   const garageStatus = (g: string) => peerConnected === null ? "unknown" : peerConnected.get(g) ? "healthy" : "unhealthy";
 
+  const { data: disabledRows } = await admin.from("garages").select("name").eq("disabled", true);
+  const disabledGarages = new Set(((disabledRows || []) as Array<{ name: string }>).map((g) => g.name));
+
   const rows = rawModels.map((m) => {
     const info = m.model_info || {};
     const litellmModel = m.litellm_params?.model || m.model_name;
@@ -122,6 +125,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
       if (passed === false) enabled = false;
       else if (passed === true && !byId.has(id)) enabled = true;
     }
+    if (garage && disabledGarages.has(garage)) enabled = false;
     return {
       id,
       model_name: m.model_name,
@@ -151,6 +155,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
 
   if (peerConnected !== null) {
     for (const g of garageNames) {
+      if (disabledGarages.has(g)) continue;
       // A connected garage keeps 'failed_test' until a retest passes.
       const q = admin.from("garages").update({ status: peerConnected.get(g) ? "online" : "offline" }).eq("name", g);
       const { error } = peerConnected.get(g) ? await q.neq("status", "failed_test") : await q;

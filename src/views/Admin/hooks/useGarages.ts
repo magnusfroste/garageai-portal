@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { garageRepository } from "@/data/repositories/garageRepository";
 
 export interface Garage {
   id: string;
@@ -12,6 +13,7 @@ export interface Garage {
   mesh_ip: string | null;
   netbird_peer_id: string | null;
   status: string;
+  disabled: boolean;
   last_registered_at: string | null;
   created_at: string;
 }
@@ -71,6 +73,19 @@ export const useGarages = () => {
     },
   });
 
+  const operatorIds = Array.from(new Set((query.data ?? []).map((g) => g.operator_id).filter((x): x is string => !!x)));
+  const emailsQuery = useQuery({
+    queryKey: ["admin-garage-operators", operatorIds.join(",")],
+    enabled: operatorIds.length > 0,
+    queryFn: () => garageRepository.operatorEmails(operatorIds),
+  });
+
+  const setGarageDisabled = async (name: string, disabled: boolean) => {
+    const res = await garageRepository.setDisabled(name, disabled);
+    queryClient.invalidateQueries({ queryKey: ["admin-garages"] });
+    return res;
+  };
+
   const retestGarage = async (name: string) => {
     const { data, error } = await supabase.functions.invoke("retest-garage", { body: { name } });
     if (error) throw new Error(error.message || "Retest failed");
@@ -101,5 +116,7 @@ export const useGarages = () => {
     createGarage,
     latestTests: testsQuery.data ?? new Map<string, GarageModelTest>(),
     retestGarage,
+    operatorEmails: emailsQuery.data ?? new Map<string, string>(),
+    setGarageDisabled,
   };
 };

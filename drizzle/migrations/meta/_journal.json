@@ -36,6 +36,13 @@
       "when": 1791160188362,
       "tag": "0004_create_garage_model_tests",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791160641082,
+      "tag": "0005_garages_disabled_and_admin_profiles",
+      "breakpoints": true
     }
   ]
 }

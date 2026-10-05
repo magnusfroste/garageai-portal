@@ -282,6 +282,7 @@ export type Database = {
           created_at: string
           dedicated_input_cost_per_million: number
           dedicated_output_cost_per_million: number
+          disabled: boolean
           id: string
           last_registered_at: string | null
           mesh_ip: string | null
@@ -301,6 +302,7 @@ export type Database = {
           created_at?: string
           dedicated_input_cost_per_million?: number
           dedicated_output_cost_per_million?: number
+          disabled?: boolean
           id?: string
           last_registered_at?: string | null
           mesh_ip?: string | null
@@ -320,6 +322,7 @@ export type Database = {
           created_at?: string
           dedicated_input_cost_per_million?: number
           dedicated_output_cost_per_million?: number
+          disabled?: boolean
           id?: string
           last_registered_at?: string | null
           mesh_ip?: string | null

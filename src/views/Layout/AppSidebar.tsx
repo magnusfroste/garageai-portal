@@ -1,4 +1,4 @@
-import { Activity, ScrollText, CreditCard, Key, Shield, MessageSquare } from "lucide-react";
+import { Activity, ScrollText, CreditCard, Key, Shield, MessageSquare, Cpu, Server } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -19,10 +19,12 @@ import {
 
 const mainNav = [
   { title: "Activity", url: "/dashboard", icon: Activity },
-  { title: "Chat", url: "/dashboard/chat", icon: MessageSquare },
+  { title: "Chat", url: "/dashboard/chat", icon: MessageSquare, Cpu, Server },
   { title: "Logs", url: "/dashboard/logs", icon: ScrollText },
   { title: "Credits", url: "/dashboard/credits", icon: CreditCard },
   { title: "API Keys", url: "/dashboard/keys", icon: Key },
+  { title: "Erbjud din GPU", url: "/dashboard/offer-gpu", icon: Cpu },
+  { title: "Mina garage", url: "/dashboard/garages", icon: Server },
 ];
 
 export const AppSidebar = () => {
