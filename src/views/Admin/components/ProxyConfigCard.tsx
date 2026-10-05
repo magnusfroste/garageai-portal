@@ -30,6 +30,16 @@ export const ProxyConfigCard = () => {
   const [editingNetbird, setEditingNetbird] = useState(false);
   const [netbirdDraft, setNetbirdDraft] = useState("");
 
+  const [searxDraft, setSearxDraft] = useState("");
+  useEffect(() => {
+    setSearxDraft(settings?.searxng_url || "https://search.liteit.se");
+  }, [settings?.searxng_url]);
+  const handleSaveSearx = () => {
+    if (!settings) return;
+    save({ ...settings, searxng_url: searxDraft.trim().replace(/\/+$/, "") });
+    toast.success("Sökserver sparad");
+  };
+
   useEffect(() => {
     if (settings?.netbird_api_url) setNetbirdDraft(settings.netbird_api_url);
   }, [settings?.netbird_api_url]);
@@ -110,6 +120,18 @@ export const ProxyConfigCard = () => {
               </Button>
             </div>
           )}
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Sökserver (SearXNG) URL</Label>
+          <div className="flex gap-2">
+            <Input value={searxDraft} onChange={(e) => setSearxDraft(e.target.value)} placeholder="https://search.liteit.se" className="font-mono text-sm" />
+            <Button size="sm" onClick={handleSaveSearx} disabled={isSaving}>
+              <Save className="w-3.5 h-3.5 mr-1.5" />
+              Spara
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">Används av webbsök i chatten. Valfri autentiseringsheader sätts via hemligheterna SEARXNG_HEADER_NAME / SEARXNG_HEADER_VALUE.</p>
         </div>
 
         <div className="space-y-2">

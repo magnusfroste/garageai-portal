@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { GarageDailyTokens, GaragePublicStat } from "@/models/types/catalog.types";
+import type { GarageToolSupport } from "@/models/services/toolSupportService";
 
 /** Public, aggregate-only data used by the model catalogue (readable by visitors). */
 export const catalogRepository = {
@@ -7,6 +8,13 @@ export const catalogRepository = {
     const { data, error } = await supabase.rpc("garage_public_stats");
     if (error) throw error;
     return (data ?? []).map((r) => ({ ...r, tokens_7d: Number(r.tokens_7d) })) as GaragePublicStat[];
+  },
+
+  /** Latest tool-calling probe result per garage + model (public). */
+  async toolSupport(): Promise<GarageToolSupport[]> {
+    const { data, error } = await supabase.rpc("garage_tool_support");
+    if (error) throw error;
+    return (data ?? []) as GarageToolSupport[];
   },
 
   async dailyTokens(names: string[]): Promise<GarageDailyTokens[]> {

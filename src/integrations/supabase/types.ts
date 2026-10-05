@@ -202,8 +202,10 @@ export type Database = {
           model: string
           output_tokens: number | null
           passed: boolean
+          supports_tools: boolean | null
           tested_at: string
           tokens_per_second: number | null
+          tools_error: string | null
           ttft_ms: number | null
         }
         Insert: {
@@ -216,8 +218,10 @@ export type Database = {
           model: string
           output_tokens?: number | null
           passed: boolean
+          supports_tools?: boolean | null
           tested_at?: string
           tokens_per_second?: number | null
+          tools_error?: string | null
           ttft_ms?: number | null
         }
         Update: {
@@ -230,8 +234,10 @@ export type Database = {
           model?: string
           output_tokens?: number | null
           passed?: boolean
+          supports_tools?: boolean | null
           tested_at?: string
           tokens_per_second?: number | null
+          tools_error?: string | null
           ttft_ms?: number | null
         }
         Relationships: [
@@ -588,6 +594,14 @@ export type Database = {
           success_rate: number
           tokens_per_second: number
           ttft_ms_p50: number
+        }[]
+      }
+      garage_tool_support: {
+        Args: never
+        Returns: {
+          garage_name: string
+          model: string
+          supports_tools: boolean
         }[]
       }
       has_role: {

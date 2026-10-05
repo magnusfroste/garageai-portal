@@ -1,16 +1,17 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { ChatMessage } from "../types";
+import type { ChatMessage, ChatSearchInfo } from "../types";
 
 interface UseChatStreamOptions {
   model: string;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   apiKeyId?: string;
   systemPrompt?: string;
+  webSearch?: boolean;
 }
 
-export const useChatStream = ({ model, setMessages, apiKeyId, systemPrompt }: UseChatStreamOptions) => {
+export const useChatStream = ({ model, setMessages, apiKeyId, systemPrompt, webSearch }: UseChatStreamOptions) => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isReasoning, setIsReasoning] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -40,7 +41,11 @@ export const useChatStream = ({ model, setMessages, apiKeyId, systemPrompt }: Us
         return;
       }
 
-      const body: Record<string, unknown> = { messages: allMessages, model };
+      const body: Record<string, unknown> = {
+        messages: allMessages.map(({ role, content }) => ({ role, content })),
+        model,
+      };
+      if (webSearch) body.web_search = true;
       if (apiKeyId) {
         body.api_key_id = apiKeyId;
       }
@@ -77,6 +82,7 @@ export const useChatStream = ({ model, setMessages, apiKeyId, systemPrompt }: Us
       let textBuffer = "";
       let assistantContent = "";
       let reasoningContent = "";
+      let searchInfo: ChatSearchInfo = { queries: [], sources: [] };
       let streamDone = false;
 
       while (!streamDone) {
@@ -101,6 +107,20 @@ export const useChatStream = ({ model, setMessages, apiKeyId, systemPrompt }: Us
 
           try {
             const parsed = JSON.parse(jsonStr);
+            if (parsed.garageai) {
+              const g = parsed.garageai as { type: string; query?: string; count?: number; message?: string; queries?: string[]; sources?: ChatSearchInfo["sources"] };
+              if (g.type === "search") { searchInfo.queries = [...searchInfo.queries, g.query || ""]; searchInfo.status = `Söker: ${g.query}…`; }
+              else if (g.type === "found") searchInfo.status = `Hittade ${g.count ?? 0} källor`;
+              else if (g.type === "sources") searchInfo = { queries: g.queries || searchInfo.queries, sources: g.sources || [] };
+              else if (g.type === "error") toast.error(g.message || "Webbsökningen misslyckades");
+              const snap = { ...searchInfo };
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === "assistant") return prev.map((m, i) => i === prev.length - 1 ? { ...m, search: snap } : m);
+                return [...prev, { role: "assistant", content: "", search: snap }];
+              });
+              continue;
+            }
             const delta = parsed.choices?.[0]?.delta;
             if (!delta) continue;
 
@@ -149,7 +169,7 @@ export const useChatStream = ({ model, setMessages, apiKeyId, systemPrompt }: Us
       setIsStreaming(false);
       setIsReasoning(false);
     }
-  }, [model, setMessages, apiKeyId, systemPrompt]);
+  }, [model, setMessages, apiKeyId, systemPrompt, webSearch]);
 
   return { isStreaming, isReasoning, sendMessage, stopStreaming };
 };

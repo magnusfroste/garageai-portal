@@ -15,6 +15,8 @@ import { useChatStream } from "./hooks/useChatStream";
 import { useChatConversations } from "./hooks/useChatConversations";
 import { useRef, useState, useCallback } from "react";
 import { DEFAULT_SYSTEM_PROMPT } from "./components/ChatSystemPrompt";
+import { useToolSupport } from "@/hooks/useToolSupport";
+import { useWebSearchPreference } from "./hooks/useWebSearchPreference";
 
 export const ChatPage = () => {
   const { checkAuth } = useAuth();
@@ -111,7 +113,12 @@ export const ChatPage = () => {
 
   const messages = activeConversation?.messages ?? [];
 
+  const { supportsTools } = useToolSupport();
+  const webSearchAvailable = !!selectedModel && supportsTools(selectedModel);
+  const [webSearch, toggleWebSearch] = useWebSearchPreference();
+
   const { isStreaming, isReasoning, sendMessage, stopStreaming } = useChatStream({
+    webSearch: webSearch && webSearchAvailable,
     model: selectedModel,
     setMessages,
     apiKeyId: selectedKeyId === "__master__" ? undefined : selectedKeyId,
@@ -173,7 +180,14 @@ export const ChatPage = () => {
           )}
         </div>
 
-        <ChatInput onSend={handleSend} onStop={stopStreaming} disabled={isStreaming} />
+        <ChatInput
+          onSend={handleSend}
+          onStop={stopStreaming}
+          disabled={isStreaming}
+          webSearch={webSearch}
+          onToggleWebSearch={toggleWebSearch}
+          webSearchAvailable={webSearchAvailable}
+        />
       </div>
 
       <ChatSidebar

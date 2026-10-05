@@ -232,14 +232,14 @@ export async function runHourlyProbes(admin: SupabaseClient) {
     .slice(0, MAX_PROBES_PER_RUN);
 
   const base = await getProxyBaseUrl(admin);
-  const probed: Array<{ garage: string; model: string; passed: boolean }> = [];
+  const probed: Array<{ garage: string; model: string; passed: boolean; supports_tools: boolean | null; tools_error: string | null }> = [];
   await Promise.all(due.map(async (g) => {
     const candidates = (g.models || []).filter((m) => healthy.get(g.name)?.has(m));
     if (!candidates.length) return;
     // Rotate: the model tested longest ago goes next.
     candidates.sort((a, b) => (lastByModel.get(`${g.id}::${a}`) ?? 0) - (lastByModel.get(`${g.id}::${b}`) ?? 0));
     const [r] = await runAndStoreAcceptanceTests(admin, base, masterKey, g, [candidates[0]]);
-    probed.push({ garage: g.name, model: r.model, passed: r.passed });
+    probed.push({ garage: g.name, model: r.model, passed: r.passed, supports_tools: r.supports_tools, tools_error: r.tools_error });
   }));
   return { probed };
 }

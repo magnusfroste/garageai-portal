@@ -12,7 +12,7 @@ import { buildGarageCommand, GarageCredentials } from "@/models/services/garageC
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
 import { GarageReliabilityPanel } from "./components/GarageReliabilityPanel";
-import { CommandBlock, GarageStatusBadge, ModelTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
+import { CommandBlock, GarageStatusBadge, ModelTestBadge, ToolsTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
 
 const MyGaragesPage = () => {
   const navigate = useNavigate();
@@ -91,7 +91,12 @@ const MyGaragesPage = () => {
                 <div className="flex gap-1.5 flex-wrap">
                   {g.models.length === 0
                     ? <span className="text-xs text-muted-foreground">Inga modeller registrerade än</span>
-                    : g.models.map((m) => <ModelTestBadge key={m} model={m} test={latestTests.get(`${g.id}::${m}`)} />)}
+                    : g.models.map((m) => (
+                      <span key={m} className="inline-flex flex-wrap gap-1">
+                        <ModelTestBadge model={m} test={latestTests.get(`${g.id}::${m}`)} />
+                        <ToolsTestBadge test={latestTests.get(`${g.id}::${m}`)} runtime={g.runtime} />
+                      </span>
+                    ))}
                 </div>
                 {!g.disabled && (
                   <div className="flex gap-2">

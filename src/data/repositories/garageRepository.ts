@@ -28,6 +28,8 @@ export interface GarageTestRow {
   ttft_ms: number | null;
   tokens_per_second: number | null;
   instruction_followed: boolean | null;
+  supports_tools: boolean | null;
+  tools_error: string | null;
   tested_at: string;
 }
 

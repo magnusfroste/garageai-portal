@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
+import { modelSupportsTools, getSearxngUrl, streamWithWebSearch } from "./webSearch.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,7 +35,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const { messages, model, api_key_id, system_prompt } = await req.json();
+    const { messages, model, api_key_id, system_prompt, web_search } = await req.json();
 
     // Determine which key to use
     let apiKeyForRequest: string;
@@ -99,6 +100,24 @@ serve(async (req: Request) => {
       : messages;
 
     const proxyBase = await getProxyBaseUrl(supabase);
+
+    if (web_search === true) {
+      if (!(await modelSupportsTools(supabase, String(model || '')))) {
+        return new Response(JSON.stringify({ error: 'Den här modellen har inte stöd för verktyg' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const searxngUrl = await getSearxngUrl(supabase);
+      const stream = streamWithWebSearch({
+        proxyBase, apiKey: apiKeyForRequest, model: String(model), messages: finalMessages, searxngUrl,
+        signal: req.signal,
+      });
+      return new Response(stream, {
+        headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+      });
+    }
+
     const response = await fetch(`${proxyBase}/chat/completions`, {
       method: 'POST',
       headers: {

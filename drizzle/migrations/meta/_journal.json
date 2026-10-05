@@ -78,6 +78,13 @@
       "when": 1791166400219,
       "tag": "0010_public_garage_catalog_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791167029871,
+      "tag": "0011_garage_tool_support",
+      "breakpoints": true
     }
   ]
 }
