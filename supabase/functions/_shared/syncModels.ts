@@ -31,6 +31,10 @@ export interface SyncResult {
   synced: number;
   deleted: number;
   health: Record<string, number>;
+  /** Per-garage connectivity used for this sync (garages with LiteLLM deployments only). */
+  garageConnectivity: Record<string, "healthy" | "unhealthy" | "unknown">;
+  /** False when the NetBird lookup was needed but failed (connectivity unknown, not offline). */
+  netbirdOk: boolean;
 }
 
 async function checkModelHealth(base: string, modelName: string, authHeaders: Record<string, string>, timeoutMs = 8000): Promise<string> {
@@ -198,5 +202,8 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   }
 
   const health = rows.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {} as Record<string, number>);
-  return { synced: rows.length, deleted, health };
+  const garageConnectivity: SyncResult["garageConnectivity"] = {};
+  for (const g of garageNames) garageConnectivity[g] = garageStatus(g);
+  const netbirdOk = pinnedPeer.size === 0 || peerConnected !== null;
+  return { synced: rows.length, deleted, health, garageConnectivity, netbirdOk };
 }
