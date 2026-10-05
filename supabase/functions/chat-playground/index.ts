@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
+import { withMeta } from "./meta.ts";
 import { modelSupportsTools, getSearxngUrl, streamWithWebSearch } from "./webSearch.ts";
 
 const corsHeaders = {
@@ -128,7 +129,9 @@ serve(async (req: Request) => {
         model: model || 'gpt-4o',
         messages: finalMessages,
         stream: true,
+        stream_options: { include_usage: true },
       }),
+      signal: req.signal,
     });
 
     if (!response.ok) {
@@ -140,7 +143,7 @@ serve(async (req: Request) => {
       });
     }
 
-    return new Response(response.body, {
+    return new Response(withMeta(response), {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/event-stream',

@@ -1,3 +1,4 @@
+import { garageMetaFromResponse } from "./meta.ts";
 // Server-side web search tool loop for the chat playground.
 // PRIVACY: never log search queries, results or prompts.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -85,6 +86,7 @@ export function streamWithWebSearch(opts: {
             break;
           }
 
+          if (round === 0) status(garageMetaFromResponse(res));
           const calls: ToolCallAcc[] = [];
           let content = "";
           const reader = res.body.getReader();
