@@ -365,7 +365,9 @@ export type Database = {
           full_name: string | null
           id: string
           litellm_user_id: string | null
+          onboarding_done: boolean
           purchased_credits_usd: number
+          signup_intent: string | null
           updated_at: string
         }
         Insert: {
@@ -375,7 +377,9 @@ export type Database = {
           full_name?: string | null
           id: string
           litellm_user_id?: string | null
+          onboarding_done?: boolean
           purchased_credits_usd?: number
+          signup_intent?: string | null
           updated_at?: string
         }
         Update: {
@@ -385,7 +389,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           litellm_user_id?: string | null
+          onboarding_done?: boolean
           purchased_credits_usd?: number
+          signup_intent?: string | null
           updated_at?: string
         }
         Relationships: []
