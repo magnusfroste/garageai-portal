@@ -1,19 +1,26 @@
-# Plan: Fler inferensmotorer för garage
+# Plan: Security completion and UX trust fixes
 
-## Mål
-Stödja de åtta tillåtna mesh-portarna genom en gemensam backendregel, utöka operatörsguiden med sex officiella och fyra övriga runtime-val samt visa konsekventa runtime-namn i garagevyerna.
+## Goal
+Finish the pending routing, payment, and security review before updating privacy language, onboarding, chat, documentation, navigation, and model reliability presentation in English and Swedish.
 
-## Genomförande
-- Flytta portlistan till en delad garagekonfiguration och låt både registrering och heartbeat använda samma validering.
-- Utöka runtime-modellen med etikett, port, grupp, Beta-status, beskrivning och krav på runtime-nyckel.
-- Visa Ollama, LM Studio, llama.cpp, vLLM, SGLang och Paddock direkt; lägg Unsloth, MLX, Lemonade och annan OpenAI-kompatibel server under en hopfälld sektion.
-- För `other` låter guiden operatören välja port 8000 eller 8080.
-- Lägg in de angivna förberedelsekommandona, OS-anpassad Ollama-hjälp och rekommendationen `OLLAMA_NUM_PARALLEL=4`.
-- Generera `--runtime-api-key <DIN_NYCKEL>` för vLLM, SGLang, Paddock, Unsloth och Lemonade. Paddock markeras som obligatorisk; övriga som valfria.
-- Återanvänd en gemensam namnformatterare i operatörs- och adminvyer, exempelvis `Paddock (beta)`.
-- Distribuera registrering, heartbeat och andra funktioner som importerar den ändrade delade registreringstjänsten.
+## Implementation
+- Complete garage routing reconciliation so only healthy, tested, enabled models exist in gateway routing; store runtime keys securely and cover all models over recurring probes.
+- Harden registration model names, connect commands, rendering origins, platform-chat accounting, user repair, budgets, and Stripe credit processing.
+- Replace inaccurate privacy claims with the approved disclosure across landing, API guidance, settings defaults, and chat.
+- Remove English-interface Swedish leftovers, rename catalogue query parameters while retaining old aliases, and standardize examples and links.
+- Make garage suggestions anonymous and warn when reissuing credentials for an existing garage.
+- Auto-create a normal-budget “Chat” key on first send, surface failures inline, and preserve keyboard submission behavior.
+- Correct signup tab selection, configured starting-credit display, and email-confirmation state.
+- Ensure documentation defaults to the configured pool default model and production gateway; restrict default-star controls to pool rows.
+- Add logged-out mobile navigation and improve model pages with pool/specific options, public signup CTA, and honest reliability periods.
 
-## Verifiering
-- Kontrollera alla runtime-val, portvalet för `other`, instruktioner och genererade kommandon i webbläsaren.
-- Kontrollera att backend accepterar exakt de åtta portarna och fortsatt avvisar andra.
-- Kontrollera bygge och runtime-fel efter distribution.
+## Technical details
+- Preserve repositories → services/models → hooks → views separation and route all user-facing strings through `t()` with Swedish entries.
+- Use one shared idempotent credit claim path for browser verification and Stripe webhook processing.
+- Keep gateway admin calls server-side with the existing master key and never expose runtime keys or prompts.
+- Deploy affected functions and migrations, then verify the requested routing/security cases plus desktop and mobile UX.
+
+## Verification
+- Confirm preview build and runtime logs are clean.
+- Test model-name rejection, model removal/recreation in gateway routing, Sync models, payment idempotency, and user repair paths.
+- Test signup states, keyless first chat, catalogue aliases, mobile menu, documentation defaults, and model-page reliability labels.
