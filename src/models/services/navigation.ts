@@ -64,7 +64,7 @@ export const itemHref = (i: NavItem) => (i.tab ? `${i.url}?tab=${i.tab}` : i.url
 export const isItemActive = (i: NavItem, pathname: string, search: string) => {
   if (i.tab) {
     if (pathname !== i.url) return false;
-    const tab = new URLSearchParams(search).ge"tab" ?? "users";
+    const tab = new URLSearchParams(search).get("tab") ?? "users";
     return tab === i.tab;
   }
   if (i.url === "/dashboard") return pathname === "/dashboard";

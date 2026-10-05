@@ -10,3 +10,4 @@
 - Track why a catalogue model is off in `curated_models.disabled_reason` (admin vs failed_test); only syncModels re-enables failed_test rows on a pass, never admin-disabled ones.
 - Decide tool-calling support only from the acceptance-test tool probe (`garage_model_tests.supports_tools`, read publicly via `garage_tool_support`); the chat backend and UI share the same "garage/<g>/<m> vs pool" matching so the Webbsök toggle and server agree.
 - Run chat web search server-side in `chat-playground/webSearch.ts` (SearXNG, max 3 tool rounds) and stream `garageai` status events alongside OpenAI chunks; never log queries, results or prompts.
+- Route every user-facing string through `t()` from `src/i18n` (English source strings, translations in `src/i18n/<lang>.ts`); stored site_settings text is English at top level with per-language overrides in `translations.<lang>`, merged only in `useSiteSettings` for display.
