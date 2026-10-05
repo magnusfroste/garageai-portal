@@ -94,10 +94,11 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const pinnedPeer = new Map<string, string>();
   const heartbeatStatus = new Map<string, "healthy" | "unhealthy">();
   if (garageNames.size > 0) {
-    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id, last_heartbeat_at").in("name", Array.from(garageNames));
+    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id, last_heartbeat_at, connection_type").in("name", Array.from(garageNames));
     const staleBefore = Date.now() - 15 * 60 * 1000;
-    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null; last_heartbeat_at: string | null }>) {
-      if (g.last_heartbeat_at) heartbeatStatus.set(g.name, Date.parse(g.last_heartbeat_at) < staleBefore ? "unhealthy" : "healthy");
+    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null; last_heartbeat_at: string | null; connection_type: string | null }>) {
+      if (g.connection_type === "endpoint") heartbeatStatus.set(g.name, "healthy"); // no tunnel; routes follow recent tests
+      else if (g.last_heartbeat_at) heartbeatStatus.set(g.name, Date.parse(g.last_heartbeat_at) < staleBefore ? "unhealthy" : "healthy");
       else if (g.netbird_peer_id) pinnedPeer.set(g.name, g.netbird_peer_id);
     }
   }

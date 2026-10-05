@@ -3,7 +3,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { runAndStoreAcceptanceTests } from "./acceptanceTest.ts";
-import { withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
+import { GARAGE_SELECT, apiBaseFor, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 import { syncModels } from "./syncModels.ts";
 import type { SyncResult } from "./syncModels.ts";
 
@@ -42,7 +42,7 @@ async function healthyModelsByGarage(admin: SupabaseClient) {
 /** One sample per non-disabled garage, using the same online rules as the catalogue sync. */
 export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResult) {
   const { data: garages, error } = await admin.from("garages")
-    .select("id, name, status, disabled, models, netbird_peer_id, last_heartbeat_at").eq("disabled", false);
+    .select("id, name, status, disabled, models, netbird_peer_id, last_heartbeat_at, connection_type").eq("disabled", false);
   if (error) throw new Error(`garages read failed: ${error.message}`);
   const now = Date.now();
   const healthy = await healthyModelsByGarage(admin);
@@ -51,7 +51,9 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
   for (const g of (garages || []) as GarageRow[]) {
     const hasModels = (healthy.get(g.name)?.size ?? 0) > 0;
     let reason: string | null = null;
-    if (g.last_heartbeat_at) {
+    if ((g as { connection_type?: string }).connection_type === "endpoint") {
+      // No tunnel: health comes only from recent passing tests (hasModels below).
+    } else if (g.last_heartbeat_at) {
       if (now - Date.parse(g.last_heartbeat_at) > HEARTBEAT_STALE_MS) reason = "no_heartbeat";
     } else {
       const conn = sync.garageConnectivity[g.name];
@@ -147,7 +149,9 @@ export async function ingestUsageStats(admin: SupabaseClient) {
 
   const { rows, source } = await fetchSpendLogs(base, masterKey, new Date(fromMs), new Date(toMs));
 
-  type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number };
+  type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number };
+  type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number };
+  const mbuckets = new Map<string, MBucket>();
   const buckets = new Map<string, Bucket>();
   const perGarage: Record<string, number> = {};
   let excludedAcceptance = 0, excludedPlatform = 0, nonGarage = 0, outOfWindow = 0;
@@ -166,11 +170,20 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const hour = floorHour(start);
     const key = `${gid}|${hour}`;
     let b = buckets.get(key);
-    if (!b) { b = { garage_id: gid, hour, requests: 0, failures: 0, ttft: [], tps: [], tokens: 0 }; buckets.set(key, b); }
+    if (!b) { b = { garage_id: gid, hour, requests: 0, failures: 0, ttft: [], tps: [], tokens: 0, prompt: 0, spend: 0 }; buckets.set(key, b); }
     b.requests++;
     if (statusOf(r) !== "success") b.failures++;
     const completionTokens = Number(r.completion_tokens ?? 0) || 0;
     b.tokens += completionTokens;
+    const promptTokens = Number(r.prompt_tokens ?? 0) || 0;
+    const spend = Number(r.spend ?? 0) || 0;
+    b.prompt += promptTokens; b.spend += spend;
+    const model = modelId.slice(sep + 2).replace(/__(dedicated|pool)$/, "") || String(r.model ?? "unknown");
+    const mkey = `${gid}|${model}|${hour}`;
+    let mb = mbuckets.get(mkey);
+    if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0 }; mbuckets.set(mkey, mb); }
+    mb.requests++; if (statusOf(r) !== "success") mb.failures++;
+    mb.prompt += promptTokens; mb.tokens += completionTokens; mb.spend += spend;
     const end = parseTs(r.endTime);
     const first = parseTs(r.completionStartTime);
     const stream = r.stream === true || (r.stream === undefined && first !== null && end !== null && end - first >= 50);
@@ -190,12 +203,20 @@ export async function ingestUsageStats(admin: SupabaseClient) {
       garage_id: b.garage_id, hour: new Date(b.hour).toISOString(), requests: b.requests, failures: b.failures,
       ttft_ms_p50: ttft === null ? null : Math.round(ttft),
       tokens_per_second_p50: tps === null ? null : Math.round(tps * 10) / 10,
-      completion_tokens: b.tokens,
+      completion_tokens: b.tokens, prompt_tokens: b.prompt, spend_usd: Math.round(b.spend * 1e8) / 1e8,
     };
   });
   if (upserts.length) {
     const { error } = await admin.from("garage_request_stats_hourly").upsert(upserts, { onConflict: "garage_id,hour" });
     if (error) throw new Error(`hourly upsert failed: ${error.message}`);
+  }
+  const mUpserts = [...mbuckets.values()].map((b) => ({
+    garage_id: b.garage_id, model: b.model, hour: new Date(b.hour).toISOString(), requests: b.requests, failures: b.failures,
+    prompt_tokens: b.prompt, completion_tokens: b.tokens, spend_usd: Math.round(b.spend * 1e8) / 1e8,
+  }));
+  if (mUpserts.length) {
+    const { error } = await admin.from("garage_model_stats_hourly").upsert(mUpserts, { onConflict: "garage_id,model,hour" });
+    if (error) throw new Error(`model hourly upsert failed: ${error.message}`);
   }
   await admin.from("ingest_cursors").upsert({ name: USAGE_CURSOR, value: new Date(toMs).toISOString(), updated_at: new Date().toISOString() });
 
@@ -212,8 +233,8 @@ export async function runHourlyProbes(admin: SupabaseClient) {
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const { data: garages } = await admin.from("garages")
-    .select("id, name, operator_id, api_host, mesh_ip, port, runtime, models, status, disabled, last_heartbeat_at, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million").eq("disabled", false).in("status", ["online", "failed_test", "offline"]);
-  const list = ((garages || []) as RoutingGarage[]).filter((g) => (g.api_host || g.mesh_ip) && g.port);
+    .select(GARAGE_SELECT).eq("disabled", false).in("status", ["online", "failed_test", "offline"]);
+  const list = ((garages || []) as RoutingGarage[]).filter((g) => !!apiBaseFor(g));
   if (!list.length) return { probed: [] as string[] };
 
   const healthy = await healthyModelsByGarage(admin);
