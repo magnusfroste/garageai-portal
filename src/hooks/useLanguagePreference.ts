@@ -14,12 +14,13 @@ export const useLanguagePreference = (profileLanguage?: string | null) => {
   }, [profileLanguage]);
 
   const change = useCallback(async (lang: Language) => {
-    setLanguage(lang);
     try {
+      // Save first so a re-mounted layout re-reads the new value from the profile.
       await profileService.updateLanguage(lang);
     } catch {
-      /* stays in localStorage; profile sync is best-effort */
+      /* falls back to localStorage only */
     }
+    setLanguage(lang);
   }, []);
 
   return { language, change };

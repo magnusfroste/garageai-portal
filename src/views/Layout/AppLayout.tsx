@@ -13,6 +13,7 @@ import { CreditCard, HelpCircle, LogOut, User, Wallet, Warehouse } from "lucide-
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
 import { LanguageMenu } from "./LanguageMenu";
+import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +32,7 @@ export const AppLayout = () => {
   const { settings } = useSiteSettings();
   const siteName = settings?.site_name || "AI Portal";
   useLitellmUser();
+  useLanguagePreference(profile?.preferred_language);
 
   useEffect(() => {
     checkAuth();

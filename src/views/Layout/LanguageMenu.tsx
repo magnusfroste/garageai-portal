@@ -4,12 +4,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LANGUAGES, t } from "@/i18n";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
-import { useProfile } from "@/hooks/useProfile";
 
 /** Language switcher inside the account menu (English / Svenska). */
 export const LanguageMenu = () => {
-  const { profile } = useProfile();
-  const { language, change } = useLanguagePreference(profile?.preferred_language);
+  const { language, change } = useLanguagePreference();
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>

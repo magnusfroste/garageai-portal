@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Warehouse } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
-import { t } from "@/i18n";
+import { t, getLanguage, setLanguage } from "@/i18n";
 const LINKS = [
   { label: "Models", to: "/models" },
   { label: "Garages", to: "/garages" },
@@ -36,6 +36,9 @@ export const Navbar = () => {
               </Link>
             ))}
           </div>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setLanguage(getLanguage() === "en" ? "sv" : "en")} aria-label={t("Language")}>
+            {getLanguage() === "en" ? "SV" : "EN"}
+          </Button>
           <Link to="/auth">
             <Button variant="ghost" size="sm">{t("Sign in")}</Button>
           </Link>
