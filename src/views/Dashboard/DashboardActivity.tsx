@@ -13,6 +13,7 @@ import { MonthlyUsageChart } from "./components/MonthlyUsageChart";
 import { DailySpendChart } from "@/views/Account/components/DailySpendChart";
 import { BuyerGettingStarted } from "./components/BuyerGettingStarted";
 
+import { t } from "@/i18n";
 const PRESETS = [
   { label: "7d", days: 7 },
   { label: "30d", days: 30 },
@@ -83,9 +84,9 @@ export const DashboardActivity = () => {
       {profile?.signup_intent === "buyer" && <BuyerGettingStarted />}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Activity</h1>
+          <h1 className="text-3xl font-bold">{t("Activity")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Din användning av modeller på GarageAI
+            {t("Your model usage on GarageAI")}
           </p>
         </div>
 

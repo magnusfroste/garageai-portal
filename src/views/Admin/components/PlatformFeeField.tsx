@@ -7,7 +7,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { toast } from "sonner";
 
 export const PlatformFeeField = () => {
-  const { settings, save, isSaving } = useSiteSettings();
+  const { rawSettings: settings, save, isSaving } = useSiteSettings();
   const [draft, setDraft] = useState("0");
 
   useEffect(() => {

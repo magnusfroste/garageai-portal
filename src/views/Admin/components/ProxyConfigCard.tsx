@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { toast } from "sonner";
 
+import { t } from "@/i18n";
 interface ProxyStatus {
   has_key: boolean;
   key_prefix: string | null;
@@ -22,7 +23,7 @@ interface ProxyStatus {
 }
 
 export const ProxyConfigCard = () => {
-  const { settings, save, isSaving } = useSiteSettings();
+  const { rawSettings: settings, save, isSaving } = useSiteSettings();
   const [status, setStatus] = useState<ProxyStatus | null>(null);
   const [checking, setChecking] = useState(false);
   const [editingUrl, setEditingUrl] = useState(false);
@@ -37,7 +38,7 @@ export const ProxyConfigCard = () => {
   const handleSaveSearx = () => {
     if (!settings) return;
     save({ ...settings, searxng_url: searxDraft.trim().replace(/\/+$/, "") });
-    toast.success("Sökserver sparad");
+    toast.success(t("Search server saved"));
   };
 
   useEffect(() => {
@@ -123,15 +124,15 @@ export const ProxyConfigCard = () => {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Sökserver (SearXNG) URL</Label>
+          <Label className="text-xs text-muted-foreground">{t("Search server (SearXNG) URL")}</Label>
           <div className="flex gap-2">
             <Input value={searxDraft} onChange={(e) => setSearxDraft(e.target.value)} placeholder="https://search.liteit.se" className="font-mono text-sm" />
             <Button size="sm" onClick={handleSaveSearx} disabled={isSaving}>
               <Save className="w-3.5 h-3.5 mr-1.5" />
-              Spara
+              {t("Save")}
             </Button>
           </div>
-          <p className="text-[11px] text-muted-foreground">Används av webbsök i chatten. Valfri autentiseringsheader sätts via hemligheterna SEARXNG_HEADER_NAME / SEARXNG_HEADER_VALUE.</p>
+          <p className="text-[11px] text-muted-foreground">{t("Used by web search in the chat. An optional authentication header is set via the secrets SEARXNG_HEADER_NAME / SEARXNG_HEADER_VALUE.")}</p>
         </div>
 
         <div className="space-y-2">

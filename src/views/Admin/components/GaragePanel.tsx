@@ -22,6 +22,7 @@ import { GradeBadge } from "@/views/Garages/components/Reliability";
 import { ToolsTestBadge } from "@/views/Garages/components/GarageShared";
 import { useGarages, Garage, CreateGarageResult, GarageModelTest } from "../hooks/useGarages";
 
+import { t } from "@/i18n";
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 
 const relativeTime = (iso: string | null): string => {
@@ -305,7 +306,7 @@ export const GaragePanel = () => {
                     {g.api_host && <span>Host: {g.api_host}</span>}
                     <span>Operator: {g.operator_id ? operatorEmails.get(g.operator_id) ?? "…" : "—"}</span>
                     <span>Registered: {relativeTime(g.last_registered_at)}</span>
-                    <span>Heartbeat: {g.last_heartbeat_at ? relativeTime(g.last_heartbeat_at) : "Ingen heartbeat (äldre installation)"}</span>
+                    <span>Heartbeat: {g.last_heartbeat_at ? relativeTime(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>
                   </div>
                   {g.models.length > 0 && (
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">

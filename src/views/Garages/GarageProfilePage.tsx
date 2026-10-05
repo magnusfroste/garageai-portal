@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useGarageProfile, useGarageReliability } from "@/hooks/useGarageReliability";
 import { runtimeLabel } from "@/models/services/garageRuntime";
-import { formatTokens } from "@/models/services/reliabilityService";
-import { GradeBadge, HONEST_NOTE, ReliabilityStats, StatusBar } from "./components/Reliability";
+import { formatTokens, formatDecimal } from "@/models/services/reliabilityService";
+import { GradeBadge, honestNote, ReliabilityStats, StatusBar } from "./components/Reliability";
 
+import { t, locale } from "@/i18n";
 const GarageProfilePage = () => {
   const { name } = useParams<{ name: string }>();
   const profile = useGarageProfile(name);
@@ -14,8 +15,8 @@ const GarageProfilePage = () => {
   const r = name ? reliability.get(name) : undefined;
   const p = profile.data;
 
-  if (profile.isLoading) return <p className="p-6 text-sm text-muted-foreground">Laddar...</p>;
-  if (profile.isError || !p) return <p className="p-6 text-sm text-muted-foreground">Garaget hittades inte.</p>;
+  if (profile.isLoading) return <p className="p-6 text-sm text-muted-foreground">{t("Loading...")}</p>;
+  if (profile.isError || !p) return <p className="p-6 text-sm text-muted-foreground">{t("Garage not found.")}</p>;
 
   return (
     <div className="p-6 space-y-6">
@@ -23,18 +24,18 @@ const GarageProfilePage = () => {
         <Server className="w-6 h-6 text-primary" />
         <h1 className="text-2xl font-bold font-mono">{p.name}</h1>
         {r && <GradeBadge grade={r.grade} className="text-xs" />}
-        {r?.score != null && <span className="text-sm text-muted-foreground">{String(r.score).replace(".", ",")} / 100</span>}
-        {p.disabled && <Badge variant="destructive">Avstängt</Badge>}
+        {r?.score != null && <span className="text-sm text-muted-foreground">{formatDecimal(r.score)} / 100</span>}
+        {p.disabled && <Badge variant="destructive">{t("Disabled")}</Badge>}
       </div>
-      <p className="text-sm text-muted-foreground max-w-2xl">{HONEST_NOTE}</p>
+      <p className="text-sm text-muted-foreground max-w-2xl">{honestNote()}</p>
       {r?.grade === "Nytt" && (
-        <p className="text-xs text-muted-foreground">Garaget har mätts i mindre än 7 dagar – betyget sätts när det finns tillräckligt med data.</p>
+        <p className="text-xs text-muted-foreground">{t("The garage has been measured for less than 7 days – the grade is set once there is enough data.")}</p>
       )}
 
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle className="text-base">Tillförlitlighet</CardTitle>
-          <CardDescription>Uppmätt var femte minut, plus ett testanrop i timmen.</CardDescription>
+          <CardTitle className="text-base">{t("Reliability")}</CardTitle>
+          <CardDescription>{t("Measured every five minutes, plus one test request per hour.")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <ReliabilityStats r={r} />
@@ -44,11 +45,11 @@ const GarageProfilePage = () => {
 
       <Card className="glass-card">
         <CardContent className="pt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
-          <div><div className="text-xs text-muted-foreground">Inferensmotor</div>{p.runtime ? runtimeLabel(p.runtime) : "—"}</div>
-          <div><div className="text-xs text-muted-foreground">Aktivt sedan</div>{new Date(p.active_since).toLocaleDateString("sv-SE")}</div>
-          <div><div className="text-xs text-muted-foreground">Levererade tokens totalt</div>{formatTokens(p.total_tokens)}</div>
+          <div><div className="text-xs text-muted-foreground">{t("Inference engine")}</div>{p.runtime ? runtimeLabel(p.runtime) : "—"}</div>
+          <div><div className="text-xs text-muted-foreground">{t("Active since")}</div>{new Date(p.active_since).toLocaleDateString(locale())}</div>
+          <div><div className="text-xs text-muted-foreground">{t("Total tokens delivered")}</div>{formatTokens(p.total_tokens)}</div>
           <div>
-            <div className="text-xs text-muted-foreground mb-1">Modeller</div>
+            <div className="text-xs text-muted-foreground mb-1">{t("Models")}</div>
             <div className="flex gap-1 flex-wrap">
               {p.models.length ? p.models.map((m) => <Badge key={m} variant="outline" className="font-mono text-[10px]">{m}</Badge>) : "—"}
             </div>

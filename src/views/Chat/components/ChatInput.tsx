@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
+import { t } from "@/i18n";
 interface ChatInputProps {
   onSend: (message: string) => void;
   onStop?: () => void;
@@ -55,14 +56,14 @@ export const ChatInput = ({ onSend, onStop, disabled, webSearch, onToggleWebSear
                   className={cn("h-10 gap-1.5 shrink-0", webSearch && webSearchAvailable && "border-primary text-primary bg-primary/10")}
                 >
                   <Globe className="w-4 h-4" />
-                  <span className="hidden sm:inline">Webbsök</span>
+                  <span className="hidden sm:inline">{t("Web search")}</span>
                 </Button>
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs text-xs">
               {webSearchAvailable
-                ? "Låt modellen söka på webben och ange källor. Sökfrågan skickas till GarageAI:s sökserver."
-                : "Den här modellen har inte stöd för verktyg"}
+                ? t("Let the model search the web and cite sources. The search query is sent to GarageAI's search server.")
+                : t("This model does not support tools")}
             </TooltipContent>
           </Tooltip>
         )}

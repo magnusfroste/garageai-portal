@@ -1,4 +1,5 @@
-import type {
+
+import { t, locale } from "@/i18n";import type {
   GarageReliability, OfflineReason, ReliabilityGrade, ReliabilityWindow,
 } from "@/models/types/reliability.types";
 
@@ -22,14 +23,14 @@ export const bestGrade = (grades: ReliabilityGrade[]): ReliabilityGrade | null =
   grades.length ? grades.reduce((a, b) => (GRADE_RANK[b] > GRADE_RANK[a] ? b : a)) : null;
 
 export const formatPct = (v: number | null | undefined, digits = 1) =>
-  v === null || v === undefined ? "—" : `${(v * 100).toFixed(digits).replace(".", ",")} %`;
+  v === null || v === undefined ? "—" : `${formatDecimal((v * 100).toFixed(digits))} %`;
 
 export const formatNumber = (v: number | null | undefined, suffix = "") =>
-  v === null || v === undefined ? "—" : `${Math.round(Number(v)).toLocaleString("sv-SE")}${suffix}`;
+  v === null || v === undefined ? "—" : `${Math.round(Number(v)).toLocaleString(locale())}${suffix}`;
 
 export const formatTokens = (n: number) => {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".", ",")} M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(".", ",")} k`;
+  if (n >= 1_000_000) return `${formatDecimal((n / 1_000_000).toFixed(1))} M`;
+  if (n >= 1_000) return `${formatDecimal((n / 1_000).toFixed(1))} k`;
   return String(n);
 };
 
@@ -45,10 +46,10 @@ export const formatDuration = (seconds: number) => {
 
 export const offlineReasonLabel = (r: OfflineReason): string => {
   switch (r) {
-    case "no_heartbeat": return "Inget livstecken från agenten";
-    case "mesh_disconnected": return "Ej ansluten till det krypterade nätet";
-    case "no_models": return "Inga fungerande modeller";
-    default: return "Okänd orsak";
+    case "no_heartbeat": return t("No heartbeat from the agent");
+    case "mesh_disconnected": return t("Not connected to the encrypted network");
+    case "no_models": return t("No working models");
+    default: return t("Unknown reason");
   }
 };
 
@@ -60,6 +61,9 @@ export const dayLevel = (pct: number | null, samples: number): DayLevel => {
   return "bad";
 };
 
-/** Buyer-facing pool summary, e.g. "3 garage · bästa betyg A". */
+/** Buyer-facing pool summary, e.g. "3 garages · best grade A". */
 export const poolSummaryText = (count: number, best: ReliabilityGrade | null) =>
-  `${count} garage${best && best !== "Nytt" ? ` · bästa betyg ${best}` : best === "Nytt" ? " · nya" : ""}`;
+  `${t("{n} garages", { n: count })}${best && best !== "Nytt" ? ` · ${t("best grade {g}", { g: best })}` : best === "Nytt" ? ` · ${t("new")}` : ""}`;
+
+/** Decimal number in the current locale (comma in Swedish). */
+export const formatDecimal = (v: number | string) => (locale() === "sv-SE" ? String(v).replace(".", ",") : String(v));

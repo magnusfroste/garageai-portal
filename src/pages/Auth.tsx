@@ -14,6 +14,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { onboardingService } from "@/models/services/onboardingService";
 import { lovable } from "@/integrations/lovable/index";
 
+import { t } from "@/i18n";
 const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email too long"),
   password: z.string().min(8, "Password must be at least 8 characters").max(100, "Password too long"),
@@ -32,10 +33,10 @@ const Auth = () => {
   const logoUrl = settings?.logo_url;
   const intent = onboardingService.readUrlIntent(location.search);
   const heading = intent === "operator"
-    ? "Skapa konto och erbjud din GPU"
+    ? t("Create an account and offer your GPU")
     : intent === "buyer"
-      ? "Skapa konto och kom igång med AI"
-      : "Välkommen";
+      ? t("Create an account and get started with AI")
+      : t("Welcome");
 
   const routeSession = async (session: { user: Parameters<typeof onboardingService.routeAfterLogin>[0] }) => {
     navigate(await onboardingService.routeAfterLogin(session.user), { replace: true });
@@ -69,13 +70,13 @@ const Auth = () => {
       });
       if (error) {
         toast.error(error.message.includes("already registered")
-          ? "This email is already registered. Please sign in instead."
+          ? t("This email is already registered. Please sign in instead.")
           : error.message);
       } else {
-        toast.success(`Account created successfully! Welcome to ${siteName}.`);
+        toast.success(t("Account created! Welcome to {site}.", { site: siteName }));
       }
     } catch (error) {
-      toast.error(error instanceof z.ZodError ? error.errors[0].message : "An unexpected error occurred");
+      toast.error(error instanceof z.ZodError ? error.errors[0].message : t("An unexpected error occurred"));
     } finally {
       setIsLoading(false);
     }
@@ -89,14 +90,14 @@ const Auth = () => {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
-        toast.error("Kunde inte logga in med Google. Försök igen.");
+        toast.error(t("Could not sign in with Google. Please try again."));
         setIsLoading(false);
         return;
       }
       if (result.redirected) return; // browser redirects to Google
       // Session set — onAuthStateChange routes the user
     } catch {
-      toast.error("Kunde inte logga in med Google. Försök igen.");
+      toast.error(t("Could not sign in with Google. Please try again."));
       setIsLoading(false);
     }
   };
@@ -111,9 +112,9 @@ const Auth = () => {
         password: validated.password,
       });
       if (error) toast.error(error.message);
-      else toast.success("Welcome back!");
+      else toast.success(t("Welcome back!"));
     } catch (error) {
-      toast.error(error instanceof z.ZodError ? error.errors[0].message : "An unexpected error occurred");
+      toast.error(error instanceof z.ZodError ? error.errors[0].message : t("An unexpected error occurred"));
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +140,7 @@ const Auth = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-3xl">{heading}</CardTitle>
             <CardDescription>
-              Logga in eller skapa ett konto för att fortsätta
+              {t("Sign in or create an account to continue")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -150,30 +151,30 @@ const Auth = () => {
                 <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/>
                 <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/>
               </svg>
-              Fortsätt med Google
+              {t("Continue with Google")}
             </Button>
             <div className="relative mb-4">
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50" /></div>
-              <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">eller</span></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">{t("or")}</span></div>
             </div>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signin">Logga in</TabsTrigger>
-                <TabsTrigger value="signup">Skapa konto</TabsTrigger>
+                <TabsTrigger value="signin">{t("Sign in")}</TabsTrigger>
+                <TabsTrigger value="signup">{t("Create account")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">E-post</Label>
+                    <Label htmlFor="signin-email">{t("Email")}</Label>
                     <Input id="signin-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Lösenord</Label>
+                    <Label htmlFor="signin-password">{t("Password")}</Label>
                     <Input id="signin-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Loggar in..." : "Logga in"}
+                    {isLoading ? t("Signing in...") : t("Sign in")}
                   </Button>
                 </form>
               </TabsContent>
@@ -181,27 +182,27 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Namn</Label>
+                    <Label htmlFor="signup-name">{t("Name")}</Label>
                     <Input id="signup-name" type="text" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={isLoading} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">E-post</Label>
+                    <Label htmlFor="signup-email">{t("Email")}</Label>
                     <Input id="signup-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Lösenord</Label>
+                    <Label htmlFor="signup-password">{t("Password")}</Label>
                     <Input id="signup-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                   </div>
                   <div className="bg-accent/10 border border-accent/20 rounded-lg p-4 space-y-2">
-                     <p className="text-sm font-semibold text-accent">Startkredit ingår:</p>
+                     <p className="text-sm font-semibold text-accent">{t("Starter credit included:")}</p>
                     <ul className="text-sm space-y-1 text-muted-foreground">
-                       <li>• 25 USD i krediter</li>
-                       <li>• Alla tillgängliga modeller</li>
-                       <li>• Inget betalkort krävs</li>
+                       <li>{t("• 25 USD in credits")}</li>
+                       <li>{t("• All available models")}</li>
+                       <li>{t("• No credit card required")}</li>
                     </ul>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Skapar konto..." : "Skapa konto"}
+                    {isLoading ? t("Creating account...") : t("Create account")}
                   </Button>
                 </form>
               </TabsContent>

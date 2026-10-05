@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { GarageTestRow } from "@/data/repositories/garageRepository";
 
+import { t } from "@/i18n";
 export const CopyButton = ({ value }: { value: string }) => {
   const [copied, setCopied] = useState(false);
   return (
@@ -12,7 +13,7 @@ export const CopyButton = ({ value }: { value: string }) => {
       variant="ghost"
       size="icon"
       className="h-7 w-7 shrink-0"
-      aria-label="Kopiera"
+      aria-label={t("Copy")}
       onClick={() => {
         navigator.clipboard.writeText(value);
         setCopied(true);
@@ -37,26 +38,26 @@ export const CommandBlock = ({ command }: { command: string }) => (
 
 export const OneTimeWarning = () => (
   <div className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
-    Kopiera kommandot nu – det visas bara en gång. Token och nyckel kan inte visas igen.
+    {t("Copy the command now – it is only shown once. The token and key cannot be shown again.")}
   </div>
 );
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Väntar",
+  pending: "Pending",
   online: "Online",
   offline: "Offline",
-  failed_test: "Test misslyckades",
-  disabled: "Avstängd",
+  failed_test: "Test failed",
+  disabled: "Disabled",
 };
 
 export const GarageStatusBadge = ({ status }: { status: string }) => {
   const variant =
     status === "online" ? "default" : status === "failed_test" || status === "disabled" ? "destructive" : "secondary";
-  return <Badge variant={variant} className="text-[10px]">{STATUS_LABEL[status] ?? status}</Badge>;
+  return <Badge variant={variant} className="text-[10px]">{STATUS_LABEL[status] ? t(STATUS_LABEL[status]) : status}</Badge>;
 };
 
 export const ModelTestBadge = ({ model, test }: { model: string; test?: GarageTestRow }) => {
-  if (!test) return <Badge variant="outline" className="text-[10px] font-mono">{model} · ej testad</Badge>;
+  if (!test) return <Badge variant="outline" className="text-[10px] font-mono">{model} · {t("not tested")}</Badge>;
   if (test.passed) {
     const parts = [
       test.tokens_per_second != null ? `${test.tokens_per_second} tok/s` : null,
@@ -79,13 +80,13 @@ export const ModelTestBadge = ({ model, test }: { model: string; test?: GarageTe
 export const ToolsTestBadge = ({ test, runtime }: { test?: { supports_tools: boolean | null; tools_error: string | null }; runtime?: string | null }) => {
   if (!test || test.supports_tools == null) return null;
   if (test.supports_tools) {
-    return <Badge variant="outline" className="text-[10px] border-primary/50 text-primary" title="Modellen klarade verktygstestet">Verktyg ✓</Badge>;
+    return <Badge variant="outline" className="text-[10px] border-primary/50 text-primary" title={t("The model passed the tool test")}>{t("Tools")} ✓</Badge>;
   }
   const hint = toolSupportHint(runtime);
   return (
     <Badge variant="outline" className="text-[10px] border-muted-foreground/40 text-muted-foreground cursor-help"
-      title={`${test.tools_error ?? "misslyckades"}${hint ? ` — Tips: ${hint}` : ""}`}>
-      Verktyg ✗{test.tools_error ? ` · ${test.tools_error}` : ""}{hint ? ` · ${hint}` : ""}
+      title={`${test.tools_error ?? t("failed")}${hint ? ` — ${t("Tip")}: ${t(hint)}` : ""}`}>
+      {t("Tools")} ✗{test.tools_error ? ` · ${test.tools_error}` : ""}{hint ? ` · ${t(hint)}` : ""}
     </Badge>
   );
 };
@@ -93,9 +94,9 @@ export const ToolsTestBadge = ({ test, runtime }: { test?: { supports_tools: boo
 export const relativeTimeSv = (iso: string | null): string => {
   if (!iso) return "—";
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return "nyss";
-  if (mins < 60) return `${mins} min sedan`;
+  if (mins < 1) return t("just now");
+  if (mins < 60) return t("{n} min ago", { n: mins });
   const h = Math.floor(mins / 60);
-  if (h < 24) return `${h} h sedan`;
-  return `${Math.floor(h / 24)} d sedan`;
+  if (h < 24) return t("{n} h ago", { n: h });
+  return t("{n} d ago", { n: Math.floor(h / 24) });
 };

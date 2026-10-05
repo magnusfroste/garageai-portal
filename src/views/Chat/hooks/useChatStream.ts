@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ChatMessage, ChatSearchInfo } from "../types";
 
+import { t } from "@/i18n";
 interface UseChatStreamOptions {
   model: string;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
@@ -109,10 +110,10 @@ export const useChatStream = ({ model, setMessages, apiKeyId, systemPrompt, webS
             const parsed = JSON.parse(jsonStr);
             if (parsed.garageai) {
               const g = parsed.garageai as { type: string; query?: string; count?: number; message?: string; queries?: string[]; sources?: ChatSearchInfo["sources"] };
-              if (g.type === "search") { searchInfo.queries = [...searchInfo.queries, g.query || ""]; searchInfo.status = `Söker: ${g.query}…`; }
-              else if (g.type === "found") searchInfo.status = `Hittade ${g.count ?? 0} källor`;
+              if (g.type === "search") { searchInfo.queries = [...searchInfo.queries, g.query || ""]; searchInfo.status = t("Searching: {q}…", { q: g.query ?? "" }); }
+              else if (g.type === "found") searchInfo.status = t("Found {n} sources", { n: g.count ?? 0 });
               else if (g.type === "sources") searchInfo = { queries: g.queries || searchInfo.queries, sources: g.sources || [] };
-              else if (g.type === "error") toast.error(g.message || "Webbsökningen misslyckades");
+              else if (g.type === "error") toast.error(g.message || t("Web search failed"));
               const snap = { ...searchInfo };
               setMessages(prev => {
                 const last = prev[prev.length - 1];

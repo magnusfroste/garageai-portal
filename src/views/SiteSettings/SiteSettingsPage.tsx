@@ -24,7 +24,7 @@ export const SiteSettingsPage = ({ embedded = false }: SiteSettingsPageProps) =>
     queryFn: () => adminRepository.checkIsAdmin(),
   });
 
-  const { settings, isLoading, save, isSaving, uploadAsset, isUploading } = useSiteSettings();
+  const { rawSettings: settings, isLoading, save, isSaving, uploadAsset, isUploading } = useSiteSettings();
   const [draft, setDraft] = useState<SiteSettings>(defaultSiteSettings);
 
   const handleUpload = async (file: File, folder: string) => {

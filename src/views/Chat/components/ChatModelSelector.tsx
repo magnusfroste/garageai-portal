@@ -7,6 +7,7 @@ import { useModelGarageGrades } from "@/hooks/useGarageReliability";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
 import { poolSummaryText } from "@/models/services/reliabilityService";
 
+import { t } from "@/i18n";
 interface ChatModelSelectorProps {
   models: ModelInfo[];
   selectedModel: string;
@@ -68,7 +69,7 @@ export const ChatModelSelector = ({ models, selectedModel, onSelect, disabled }:
                   <span className="text-xs text-muted-foreground w-16 shrink-0">{m.provider}</span>
                   <span className="font-mono text-xs">{m.model_name || m.id}</span>
                   {gradeHint(m)}
-                  {supportsTools(m.id) && <Wrench className="h-3 w-3 text-muted-foreground" aria-label="Stöd för verktyg" />}
+                  {supportsTools(m.id) && <Wrench className="h-3 w-3 text-muted-foreground" aria-label={t("Supports tools")} />}
                   {isDefault && <span className="text-yellow-400 text-xs">★</span>}
                 </span>
               </SelectItem>

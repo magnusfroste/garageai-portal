@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { adminRepository } from "@/data/repositories/adminRepository";
 import { useMyGarages } from "@/hooks/useMyGarages";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { t } from "@/i18n";
 import {
   ADMIN, DEVELOPERS, EXPLORE, MY_GARAGES_ITEM, OFFER_GPU_ITEM, OVERVIEW, USE_AI,
   isItemActive, itemHref, type NavGroup, type NavItem,
@@ -40,7 +41,7 @@ export const AppSidebar = () => {
   const hasGarages = garagesLoading || garages.length > 0;
   const myGarages: NavGroup = {
     id: "my-garages",
-    label: "Mina garage",
+    label: "My garages",
     items: hasGarages ? [MY_GARAGES_ITEM, OFFER_GPU_ITEM] : [OFFER_GPU_ITEM],
   };
 
@@ -51,9 +52,9 @@ export const AppSidebar = () => {
 
   const renderItem = (i: NavItem) => (
     <SidebarMenuItem key={i.title + (i.tab ?? "")}>
-      <SidebarMenuButton isActive={isItemActive(i, pathname, search)} onClick={() => go(i)} tooltip={i.title}>
+      <SidebarMenuButton isActive={isItemActive(i, pathname, search)} onClick={() => go(i)} tooltip={t(i.title)}>
         <i.icon className="w-4 h-4" />
-        <span>{i.title}</span>
+        <span>{t(i.title)}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
@@ -65,7 +66,7 @@ export const AppSidebar = () => {
         <SidebarGroup className="py-1">
           <SidebarGroupLabel asChild>
             <CollapsibleTrigger className="w-full flex items-center justify-between">
-              <span className={containsActive ? "text-foreground" : undefined}>{g.label}</span>
+              <span className={containsActive ? "text-foreground" : undefined}>{g.label ? t(g.label) : null}</span>
               <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=closed]/collapsible:-rotate-90" />
             </CollapsibleTrigger>
           </SidebarGroupLabel>
@@ -104,7 +105,7 @@ export const AppSidebar = () => {
         {renderGroup(
           myGarages,
           !hasGarages && !collapsed ? (
-            <p className="px-2 pt-1 text-xs text-muted-foreground">Har du en GPU? Tjäna pengar på den.</p>
+            <p className="px-2 pt-1 text-xs text-muted-foreground">{t("Have a GPU? Earn money with it.")}</p>
           ) : null,
         )}
         {renderGroup(DEVELOPERS)}

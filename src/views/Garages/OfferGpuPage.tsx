@@ -17,8 +17,9 @@ import {
 import { OS_OPTIONS, OFFICIAL_RUNTIMES, OTHER_RUNTIMES, RUNTIME_OPTIONS, prepSteps, GarageOs, GarageRuntime } from "@/models/services/garageInstructions";
 import { runtimeLabel, RUNTIMES_WITH_API_KEY } from "@/models/services/garageRuntime";
 import { CommandBlock, OneTimeWarning } from "./components/GarageShared";
+import { t } from "@/i18n";
 
-const STEPS = ["Din maskin", "Förbered", "Namnge", "Live"];
+const STEPS = ["Your machine", "Prepare", "Name", "Live"];
 
 const CheckItem = ({ state, label, detail, action }: {
   state: "done" | "wait" | "fail" | "todo"; label: string; detail?: string; action?: React.ReactNode;
@@ -63,14 +64,14 @@ const OfferGpuPage = () => {
 
   const create = async () => {
     if (!GARAGE_NAME_RE.test(name)) {
-      toast({ title: "Ogiltigt namn", description: "Små bokstäver, siffror och bindestreck (2–41 tecken).", variant: "destructive" });
+      toast({ title: t("Invalid name"), description: t("Lowercase letters, digits and hyphens (2–41 characters)."), variant: "destructive" });
       return;
     }
     setCreating(true);
     try {
       setCreds(await garageRepository.create({ name, create_setup_key: true }));
     } catch (e) {
-      toast({ title: "Kunde inte skapa garaget", description: e instanceof Error ? e.message : "Okänt fel", variant: "destructive" });
+      toast({ title: t("Could not create the garage"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -83,7 +84,7 @@ const OfferGpuPage = () => {
       await garageRepository.retest(liveName);
       status.restart();
     } catch (e) {
-      toast({ title: "Testet misslyckades", description: e instanceof Error ? e.message : "Okänt fel", variant: "destructive" });
+      toast({ title: t("The test failed"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
       setRetesting(false);
     }
@@ -92,39 +93,39 @@ const OfferGpuPage = () => {
   const osSupported = OS_OPTIONS.find((o) => o.value === os)?.supported;
   const port = runtime === "other" ? otherPort : RUNTIME_OPTIONS.find((r) => r.value === runtime)?.port;
   const apiKeyHelp = runtime === "paddock"
-    ? "Byt ut <DIN_NYCKEL> mot nyckeln från Paddock. Nyckeln krävs."
+    ? t("Replace <YOUR_KEY> with the key from Paddock. The key is required.")
     : RUNTIMES_WITH_API_KEY.includes(runtime)
-      ? "Byt ut <DIN_NYCKEL> mot runtime-nyckeln. Om du inte använder någon nyckel kan du ta bort flaggan."
+      ? t("Replace <YOUR_KEY> with the runtime key. If you don't use a key you can remove the flag.")
       : null;
 
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Cpu className="w-6 h-6 text-primary" />Erbjud din GPU</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2"><Cpu className="w-6 h-6 text-primary" />{t("Offer your GPU")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Anslut din dator som ett "garage" och låt den köra öppna modeller åt plattformen.
+          {t("Connect your computer as a \"garage\" and let it run open models for the platform.")}
         </p>
       </div>
 
       <ol className="flex gap-2 flex-wrap text-xs">
         {STEPS.map((s, i) => (
           <li key={s} className={`px-3 py-1 rounded-full border ${i === step ? "border-primary text-primary" : i < step ? "border-primary/40 text-muted-foreground" : "border-border text-muted-foreground"}`}>
-            {i + 1}. {s}
+            {i + 1}. {t(s)}
           </li>
         ))}
       </ol>
 
       {step === 0 && (
         <Card className="glass-card">
-          <CardHeader><CardTitle>Din maskin</CardTitle><CardDescription>Vilket operativsystem och vilken runtime använder du?</CardDescription></CardHeader>
+          <CardHeader><CardTitle>{t("Your machine")}</CardTitle><CardDescription>{t("Which operating system and runtime do you use?")}</CardDescription></CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label>Operativsystem</Label>
+              <Label>{t("Operating system")}</Label>
               <RadioGroup value={os} onValueChange={(v) => setOs(v as GarageOs)} className="flex gap-4 flex-wrap">
                 {OS_OPTIONS.map((o) => (
                   <div key={o.value} className="flex items-center gap-2">
                     <RadioGroupItem value={o.value} id={`os-${o.value}`} disabled={!o.supported} />
-                    <Label htmlFor={`os-${o.value}`} className={`font-normal ${o.supported ? "" : "text-muted-foreground"}`}>{o.label}</Label>
+                    <Label htmlFor={`os-${o.value}`} className={`font-normal ${o.supported ? "" : "text-muted-foreground"}`}>{t(o.label)}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -137,10 +138,10 @@ const OfferGpuPage = () => {
                     <RadioGroupItem value={r.value} id={`rt-${r.value}`} className="mt-0.5" />
                     <span className="min-w-0">
                       <span className="flex items-center gap-2 font-medium">
-                        {r.label}
+                        {t(r.label)}
                         {r.beta && <span className="rounded border border-primary/40 px-1.5 py-0.5 text-[10px] text-primary">Beta</span>}
                       </span>
-                      {r.description && <span className="mt-1 block text-xs text-muted-foreground">{r.description}</span>}
+                      {r.description && <span className="mt-1 block text-xs text-muted-foreground">{t(r.description)}</span>}
                     </span>
                   </Label>
                 ))}
@@ -148,7 +149,7 @@ const OfferGpuPage = () => {
               <Collapsible open={otherRuntimesOpen} onOpenChange={setOtherRuntimesOpen}>
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" className="h-9 w-full justify-between px-2">
-                    Övriga
+                    {t("Other")}
                     <ChevronDown className={`h-4 w-4 transition-transform ${otherRuntimesOpen ? "rotate-180" : ""}`} />
                   </Button>
                 </CollapsibleTrigger>
@@ -157,7 +158,7 @@ const OfferGpuPage = () => {
                     {OTHER_RUNTIMES.map((r) => (
                       <Label key={r.value} htmlFor={`rt-${r.value}`} className="flex min-h-12 cursor-pointer items-start gap-3 rounded-md border border-border p-3 font-normal">
                         <RadioGroupItem value={r.value} id={`rt-${r.value}`} className="mt-0.5" />
-                        <span className="font-medium">{r.label}</span>
+                        <span className="font-medium">{t(r.label)}</span>
                       </Label>
                     ))}
                   </RadioGroup>
@@ -176,14 +177,14 @@ const OfferGpuPage = () => {
                 </div>
               )}
             </div>
-            <Button onClick={() => setStep(1)} disabled={!osSupported}>Nästa</Button>
+            <Button onClick={() => setStep(1)} disabled={!osSupported}>{t("Next")}</Button>
           </CardContent>
         </Card>
       )}
 
       {step === 1 && (
         <Card className="glass-card">
-          <CardHeader><CardTitle>Förbered</CardTitle><CardDescription>Se till att din runtime lyssnar på alla nätverksgränssnitt (port {port}).</CardDescription></CardHeader>
+          <CardHeader><CardTitle>{t("Prepare")}</CardTitle><CardDescription>{t("Make sure your runtime listens on all network interfaces (port {port}).", { port: port ?? "" })}</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             {prepSteps(os, runtime, port).map((s, i) => (
               <div key={i} className="space-y-1.5">
@@ -193,11 +194,11 @@ const OfferGpuPage = () => {
             ))}
             <div className="flex gap-2 rounded-md border border-border/60 bg-muted/30 p-3 text-sm text-muted-foreground">
               <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
-              <p>Din runtime exponeras inte mot internet så länge routern inte vidarebefordrar porten. Endast GarageAI-gatewayen når den, via det krypterade meshnätet.</p>
+              <p>{t("Your runtime is not exposed to the internet as long as your router does not forward the port. Only the GarageAI gateway reaches it, via the encrypted mesh network.")}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(0)}>Tillbaka</Button>
-              <Button onClick={() => setStep(2)}>Nästa</Button>
+              <Button variant="outline" onClick={() => setStep(0)}>{t("Back")}</Button>
+              <Button onClick={() => setStep(2)}>{t("Next")}</Button>
             </div>
           </CardContent>
         </Card>
@@ -205,28 +206,28 @@ const OfferGpuPage = () => {
 
       {step === 2 && (
         <Card className="glass-card">
-          <CardHeader><CardTitle>Namnge ditt garage</CardTitle><CardDescription>Namnet syns för plattformen och används i kommandot.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>{t("Name your garage")}</CardTitle><CardDescription>{t("The name is visible to the platform and used in the command.")}</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             {!creds ? (
               <>
                 <div className="space-y-1.5">
-                  <Label htmlFor="g-name">Namn</Label>
+                  <Label htmlFor="g-name">{t("Name")}</Label>
                   <Input id="g-name" value={name} onChange={(e) => setName(e.target.value.toLowerCase())} disabled={creating} />
-                  <p className="text-xs text-muted-foreground">Små bokstäver, siffror och bindestreck (2–41 tecken).</p>
+                  <p className="text-xs text-muted-foreground">{t("Lowercase letters, digits and hyphens (2–41 characters).")}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setStep(1)} disabled={creating}>Tillbaka</Button>
-                  <Button onClick={create} disabled={creating || !name}>{creating ? "Skapar..." : "Skapa garage"}</Button>
+                  <Button variant="outline" onClick={() => setStep(1)} disabled={creating}>{t("Back")}</Button>
+                  <Button onClick={create} disabled={creating || !name}>{creating ? t("Creating...") : t("Create garage")}</Button>
                 </div>
               </>
             ) : (
               <>
                 <OneTimeWarning />
-                <p className="text-sm">Kör detta i en terminal på maskinen:</p>
+                <p className="text-sm">{t("Run this in a terminal on the machine:")}</p>
                 <CommandBlock command={buildGarageCommand(creds, runtime, { sudo: os === "linux", port })} />
                 {apiKeyHelp && <p className="text-xs text-muted-foreground">{apiKeyHelp}</p>}
                 <Button onClick={() => { setLiveName(creds.garage.name); setCreds(null); setStep(3); }}>
-                  Jag har kopierat och kört kommandot
+                  {t("I have copied and run the command")}
                 </Button>
               </>
             )}
@@ -236,23 +237,23 @@ const OfferGpuPage = () => {
 
       {step === 3 && liveName && (
         <Card className="glass-card">
-          <CardHeader><CardTitle className="font-mono">{liveName}</CardTitle><CardDescription>Vi kontrollerar status var 5:e sekund.</CardDescription></CardHeader>
+          <CardHeader><CardTitle className="font-mono">{liveName}</CardTitle><CardDescription>{t("We check the status every 5 seconds.")}</CardDescription></CardHeader>
           <CardContent className="space-y-2">
-            <CheckItem state={meshOk ? "done" : "wait"} label="Maskinen ansluten till nätet" />
-            <CheckItem state={registered ? "done" : meshOk ? "wait" : "todo"} label="Garaget registrerat"
+            <CheckItem state={meshOk ? "done" : "wait"} label={t("Machine connected to the network")} />
+            <CheckItem state={registered ? "done" : meshOk ? "wait" : "todo"} label={t("Garage registered")}
               detail={registered && data?.garage.runtime ? `${runtimeLabel(data.garage.runtime)}:${data.garage.port}` : undefined} />
             {registered && (data?.garage.models ?? []).map((m) => {
-              const t = data?.latest_tests.find((x) => x.model === m);
+              const tr = data?.latest_tests.find((x) => x.model === m);
               return (
                 <CheckItem key={m}
-                  state={!t ? "wait" : t.passed ? "done" : "fail"}
-                  label={`Acceptanstest: ${m}`}
-                  detail={!t ? undefined : t.passed
-                    ? [t.tokens_per_second != null ? `${t.tokens_per_second} tok/s` : null, t.ttft_ms != null ? `TTFT ${t.ttft_ms} ms` : null].filter(Boolean).join(" · ")
-                    : t.error ?? "Misslyckades"}
-                  action={t && !t.passed ? (
+                  state={!tr ? "wait" : tr.passed ? "done" : "fail"}
+                  label={t("Acceptance test: {m}", { m })}
+                  detail={!tr ? undefined : tr.passed
+                    ? [tr.tokens_per_second != null ? `${tr.tokens_per_second} tok/s` : null, tr.ttft_ms != null ? `TTFT ${tr.ttft_ms} ms` : null].filter(Boolean).join(" · ")
+                    : tr.error ?? t("Failed")}
+                  action={tr && !tr.passed ? (
                     <Button size="sm" variant="outline" onClick={retest} disabled={retesting}>
-                      <FlaskConical className="w-3.5 h-3.5 mr-1.5" />{retesting ? "Testar..." : "Testa igen"}
+                      <FlaskConical className="w-3.5 h-3.5 mr-1.5" />{retesting ? t("Testing...") : t("Test again")}
                     </Button>
                   ) : undefined}
                 />
@@ -261,20 +262,20 @@ const OfferGpuPage = () => {
 
             {anyPassed && (
               <div className="rounded-md border border-primary/40 bg-primary/10 p-4 mt-4 space-y-3">
-                <p className="font-semibold">Ditt garage är live!</p>
-                <Button onClick={() => navigate("/dashboard/garages")}>Mina garage</Button>
+                <p className="font-semibold">{t("Your garage is live!")}</p>
+                <Button onClick={() => navigate("/dashboard/garages")}>{t("My garages")}</Button>
               </div>
             )}
 
             {status.timedOut && !anyPassed && (
               <div className="rounded-md border border-border/60 bg-muted/30 p-4 mt-4 text-sm space-y-2">
-                <p className="font-semibold">Det verkar ta längre tid än väntat. Vanliga orsaker:</p>
+                <p className="font-semibold">{t("This seems to be taking longer than expected. Common causes:")}</p>
                 <ul className="list-disc pl-5 text-muted-foreground space-y-1">
-                  <li>Runtimen lyssnar bara på localhost (127.0.0.1) – se steget Förbered.</li>
-                  <li>Fel port – {RUNTIME_OPTIONS.find((r) => r.value === runtime)?.label} ska använda port {port}.</li>
-                  <li>En brandvägg på maskinen blockerar inkommande trafik på porten.</li>
+                  <li>{t("The runtime only listens on localhost (127.0.0.1) – see the Prepare step.")}</li>
+                  <li>{t("Wrong port – {runtime} should use port {port}.", { runtime: RUNTIME_OPTIONS.find((r) => r.value === runtime)?.label ?? "", port: port ?? "" })}</li>
+                  <li>{t("A firewall on the machine blocks incoming traffic on the port.")}</li>
                 </ul>
-                <Button size="sm" variant="outline" onClick={status.restart}>Fortsätt kontrollera</Button>
+                <Button size="sm" variant="outline" onClick={status.restart}>{t("Keep checking")}</Button>
               </div>
             )}
           </CardContent>

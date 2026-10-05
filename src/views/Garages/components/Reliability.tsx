@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { t, locale } from "@/i18n";
 import {
-  dayLevel, formatDuration, poolSummaryText, formatNumber, formatPct, offlineReasonLabel,
+  dayLevel, formatDuration, formatDecimal, poolSummaryText, formatNumber, formatPct, offlineReasonLabel,
 } from "@/models/services/reliabilityService";
 import type {
   GarageDay, GarageReliability, OfflinePeriod, ReliabilityGrade,
@@ -18,8 +19,8 @@ const GRADE_CLASS: Record<ReliabilityGrade, string> = {
 };
 
 export const GradeBadge = ({ grade, className, title }: { grade: ReliabilityGrade; className?: string; title?: string }) => (
-  <Badge className={cn("text-[10px] font-semibold", GRADE_CLASS[grade], className)} title={title ?? "Tillförlitlighet (30 dagar)"}>
-    {grade === "Nytt" ? "Nytt" : `Betyg ${grade}`}
+  <Badge className={cn("text-[10px] font-semibold", GRADE_CLASS[grade], className)} title={title ?? t("Reliability (30 days)")}>
+    {grade === "Nytt" ? t("New") : t("Grade {g}", { g: grade })}
   </Badge>
 );
 
@@ -61,12 +62,12 @@ export const ReliabilityStats = ({ r }: { r: GarageReliability | undefined }) =>
   const main = w["30d"];
   return (
     <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-      <Stat label="Tillgänglighet 24 h" value={formatPct(w["24h"]?.availability)} />
-      <Stat label="Tillgänglighet 7 d" value={formatPct(w["7d"]?.availability)} />
-      <Stat label="Tillgänglighet 30 d" value={formatPct(w["30d"]?.availability)} />
-      <Stat label="Lyckade anrop (30 d)" value={main?.success_rate == null ? "Inga anrop än" : formatPct(main.success_rate)} />
-      <Stat label="Median tid till första token" value={formatNumber(main?.ttft_ms_p50, " ms")} />
-      <Stat label="Median hastighet (7 d)" value={main?.tokens_per_second == null ? "—" : `${String(main.tokens_per_second).replace(".", ",")} tok/s`} />
+      <Stat label={t("Availability 24 h")} value={formatPct(w["24h"]?.availability)} />
+      <Stat label={t("Availability 7 d")} value={formatPct(w["7d"]?.availability)} />
+      <Stat label={t("Availability 30 d")} value={formatPct(w["30d"]?.availability)} />
+      <Stat label={t("Successful requests (30 d)")} value={main?.success_rate == null ? t("No requests yet") : formatPct(main.success_rate)} />
+      <Stat label={t("Median time to first token")} value={formatNumber(main?.ttft_ms_p50, " ms")} />
+      <Stat label={t("Median speed (7 d)")} value={main?.tokens_per_second == null ? "—" : `${formatDecimal(main.tokens_per_second)} tok/s`} />
     </div>
   );
 };
@@ -80,7 +81,7 @@ const LEVEL_CLASS = {
 
 export const StatusBar = ({ days }: { days: GarageDay[] }) => (
   <TooltipProvider delayDuration={100}>
-    <div className="flex gap-[3px] h-8 items-stretch" aria-label="Status de senaste 30 dagarna">
+    <div className="flex gap-[3px] h-8 items-stretch" aria-label={t("Status over the last 30 days")}>
       {days.map((d) => {
         const level = dayLevel(d.online_pct, d.samples);
         return (
@@ -90,8 +91,8 @@ export const StatusBar = ({ days }: { days: GarageDay[] }) => (
             </TooltipTrigger>
             <TooltipContent>
               <p className="text-xs">
-                {new Date(d.day).toLocaleDateString("sv-SE")}:{" "}
-                {level === "none" ? "Ingen data" : `${String(d.online_pct).replace(".", ",")} % online`}
+                {new Date(d.day).toLocaleDateString(locale())}:{" "}
+                {level === "none" ? t("No data") : `${formatDecimal(d.online_pct)} % online`}
               </p>
             </TooltipContent>
           </Tooltip>
@@ -99,25 +100,25 @@ export const StatusBar = ({ days }: { days: GarageDay[] }) => (
       })}
     </div>
     <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-      <span>30 dagar sedan</span><span>Idag</span>
+      <span>{t("30 days ago")}</span><span>{t("Today")}</span>
     </div>
   </TooltipProvider>
 );
 
 export const OfflinePeriodList = ({ periods }: { periods: OfflinePeriod[] }) =>
   periods.length === 0 ? (
-    <p className="text-xs text-muted-foreground">Inga avbrott registrerade.</p>
+    <p className="text-xs text-muted-foreground">{t("No outages recorded.")}</p>
   ) : (
     <ul className="space-y-1 text-xs">
       {periods.map((p) => (
         <li key={p.started_at} className="flex flex-wrap gap-x-3 gap-y-0.5">
-          <span className="tabular-nums">{new Date(p.started_at).toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" })}</span>
-          <span className="tabular-nums text-muted-foreground">{p.ended_at ? formatDuration(p.duration_seconds) : `pågår (${formatDuration(p.duration_seconds)})`}</span>
+          <span className="tabular-nums">{new Date(p.started_at).toLocaleString(locale(), { dateStyle: "short", timeStyle: "short" })}</span>
+          <span className="tabular-nums text-muted-foreground">{p.ended_at ? formatDuration(p.duration_seconds) : t("ongoing ({d})", { d: formatDuration(p.duration_seconds) })}</span>
           <span>{offlineReasonLabel(p.reason)}</span>
         </li>
       ))}
     </ul>
   );
 
-export const HONEST_NOTE =
-  "Mätt av GarageAI. Hemmagarage kan inte garantera drifttid; betyget visar hur garaget faktiskt har fungerat.";
+export const honestNote = () =>
+  t("Measured by GarageAI. Home garages cannot guarantee uptime; the grade shows how the garage has actually performed.");
