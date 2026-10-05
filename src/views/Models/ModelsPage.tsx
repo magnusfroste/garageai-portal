@@ -9,6 +9,7 @@ import { ConnectSection } from "./components/ConnectSection";
 export const ModelsPage = () => {
   const { models, isLoading } = useCuratedModels(true);
   const { settings } = useSiteSettings();
+  const siteName = settings?.site_name || "portalen";
 
 
   const defaultModel = models.find((m) => m.is_default)?.model_name || models[0]?.model_name || "gpt-4o";
