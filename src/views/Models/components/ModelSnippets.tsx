@@ -5,13 +5,13 @@ const snippets = (base: string, model: string) => ({
   curl: `curl ${base}/chat/completions \\
   -H "Authorization: Bearer $GARAGE_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"model": "${model}", "messages": [{"role": "user", "content": "Hej!"}]}'`,
+  -d '{"model": "${model}", "messages": [{"role": "user", "content": "Hello!"}]}'`,
   python: `from openai import OpenAI
 
-client = OpenAI(base_url="${base}", api_key="DIN_API_NYCKEL")
+client = OpenAI(base_url="${base}", api_key=os.environ["GARAGE_API_KEY"])
 response = client.chat.completions.create(
     model="${model}",
-    messages=[{"role": "user", "content": "Hej!"}],
+    messages=[{"role": "user", "content": "Hello!"}],
 )
 print(response.choices[0].message.content)`,
   javascript: `import OpenAI from "openai";
@@ -19,7 +19,7 @@ print(response.choices[0].message.content)`,
 const client = new OpenAI({ baseURL: "${base}", apiKey: process.env.GARAGE_API_KEY });
 const response = await client.chat.completions.create({
   model: "${model}",
-  messages: [{ role: "user", content: "Hej!" }],
+  messages: [{ role: "user", content: "Hello!" }],
 });
 console.log(response.choices[0].message.content);`,
 });

@@ -98,10 +98,10 @@ const num = (v: string | null) => (v && !Number.isNaN(Number(v)) ? Number(v) : n
 export const filtersFromParams = (p: URLSearchParams): CatalogFilters => ({
   q: p.get("q") ?? "",
   minContext: num(p.get("ctx")),
-  maxPrice: num(p.get("pris")),
-  runtime: p.get("motor"),
-  minGrade: GRADES.includes(p.get("betyg") as ReliabilityGrade) ? (p.get("betyg") as ReliabilityGrade) : null,
-  multiGarage: p.get("flera") === "1",
+  maxPrice: num(p.get("price") ?? p.get("pris")),
+  runtime: p.get("engine") ?? p.get("motor"),
+  minGrade: GRADES.includes((p.get("grade") ?? p.get("betyg")) as ReliabilityGrade) ? ((p.get("grade") ?? p.get("betyg")) as ReliabilityGrade) : null,
+  multiGarage: (p.get("multi") ?? p.get("flera")) === "1",
   sort: SORTS.includes(p.get("sort") as CatalogSort) ? (p.get("sort") as CatalogSort) : "popular",
 });
 
@@ -109,10 +109,10 @@ export const filtersToParams = (f: CatalogFilters): Record<string, string> => {
   const o: Record<string, string> = {};
   if (f.q) o.q = f.q;
   if (f.minContext) o.ctx = String(f.minContext);
-  if (f.maxPrice != null) o.pris = String(f.maxPrice);
-  if (f.runtime) o.motor = f.runtime;
-  if (f.minGrade) o.betyg = f.minGrade;
-  if (f.multiGarage) o.flera = "1";
+  if (f.maxPrice != null) o.price = String(f.maxPrice);
+  if (f.runtime) o.engine = f.runtime;
+  if (f.minGrade) o.grade = f.minGrade;
+  if (f.multiGarage) o.multi = "1";
   if (f.sort !== "popular") o.sort = f.sort;
   return o;
 };

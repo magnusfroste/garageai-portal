@@ -36,7 +36,7 @@ const tools: AgenticTool[] = [
     description:
       "An autonomous AI coding agent that lives inside VS Code. Roo can create & edit files, run terminal commands, use a browser, and orchestrate multi-step tasks — all while keeping your code private and on your machine.",
     features: [
-      "Runs entirely inside VS Code — no data leaves your environment",
+      "Runs inside VS Code with your chosen model endpoint",
       "Multi-step task orchestration with tool use",
       "Supports custom API endpoints for full model control",
       "MCP (Model Context Protocol) support for extended capabilities",
@@ -68,8 +68,7 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => (
         Agentic Coding Tools
       </CardTitle>
       <p className="text-sm text-muted-foreground mt-1">
-        Use your API key with these AI-powered coding agents for a <strong>private and secure</strong> development environment. 
-        All traffic stays between your machine and our proxy — no third-party telemetry.
+        Encrypted in transit: TLS to our EU gateway and WireGuard to the garage. The gateway does not store your prompts or responses. Your prompt is processed on the operator&apos;s machine, so don&apos;t send sensitive data to the public pool yet.
       </p>
     </CardHeader>
     <CardContent className="space-y-6">
