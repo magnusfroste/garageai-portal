@@ -7,3 +7,6 @@ verify_jwt = false
 
 [functions.node-heartbeat]
 verify_jwt = false
+
+[functions.ingest-usage-stats]
+verify_jwt = false

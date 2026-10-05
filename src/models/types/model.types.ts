@@ -8,6 +8,8 @@ export interface ModelInfo {
   output_cost_per_million: number | null;
   mode: string | null;
   status: "healthy" | "unhealthy" | "unknown";
+  garage?: string | null;
+  garage_tier?: string | null;
 }
 
 export interface AvailableModelsResponse {

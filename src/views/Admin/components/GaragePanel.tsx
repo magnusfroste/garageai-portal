@@ -16,6 +16,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ArrowUpDown } from "lucide-react";
+import { useGarageReliability } from "@/hooks/useGarageReliability";
+import { GradeBadge } from "@/views/Garages/components/Reliability";
 import { useGarages, Garage, CreateGarageResult, GarageModelTest } from "../hooks/useGarages";
 
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
@@ -132,6 +135,8 @@ const ResultView = ({ result, runtime, onClose }: ResultViewProps) => {
 
 export const GaragePanel = () => {
   const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled } = useGarages();
+  const { reliability } = useGarageReliability();
+  const [sortDir, setSortDir] = useState<"none" | "desc" | "asc">("none");
   const [confirmGarage, setConfirmGarage] = useState<Garage | null>(null);
   const [toggling, setToggling] = useState(false);
   const [retesting, setRetesting] = useState<string | null>(null);
@@ -229,6 +234,12 @@ export const GaragePanel = () => {
     submit(garage.name, garage.api_host || "", false, garage.runtime || "ollama");
   };
 
+  const sortedGarages = sortDir === "none" ? garages : [...garages].sort((a, b) => {
+    const sa = reliability.get(a.name)?.score ?? -1;
+    const sb = reliability.get(b.name)?.score ?? -1;
+    return sortDir === "desc" ? sb - sa : sa - sb;
+  });
+
   return (
     <TooltipProvider>
     <Card className="glass-card">
@@ -243,6 +254,10 @@ export const GaragePanel = () => {
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setSortDir(sortDir === "desc" ? "asc" : sortDir === "asc" ? "none" : "desc")}>
+            <ArrowUpDown className="w-4 h-4 mr-2" />
+            Grade{sortDir === "desc" ? " ↓" : sortDir === "asc" ? " ↑" : ""}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefetching ? "animate-spin" : ""}`} />
             Refresh
@@ -262,7 +277,7 @@ export const GaragePanel = () => {
           <p className="text-sm text-muted-foreground py-4">No garages yet — click "Add garage" to register one.</p>
         ) : (
           <div className="divide-y divide-border/50">
-            {garages.map((g) => (
+            {sortedGarages.map((g) => (
               <div key={g.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                 <Badge
                   variant="secondary"
@@ -270,6 +285,9 @@ export const GaragePanel = () => {
                 >
                   {g.status}
                 </Badge>
+                <a href={`/garages/${g.name}`} className="shrink-0 w-16" title={reliability.get(g.name)?.score != null ? `Score ${reliability.get(g.name)!.score}` : "No data"}>
+                  {reliability.get(g.name) ? <GradeBadge grade={reliability.get(g.name)!.grade} /> : <span className="text-[10px] text-muted-foreground">—</span>}
+                </a>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-sm truncate">{g.name}</span>

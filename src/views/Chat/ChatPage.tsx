@@ -42,6 +42,8 @@ export const ChatPage = () => {
     mode: m.mode,
     status: m.status,
     is_default: m.is_default,
+    garage: m.garage,
+    garage_tier: m.garage_tier,
   }));
 
   // Fetch user's API keys

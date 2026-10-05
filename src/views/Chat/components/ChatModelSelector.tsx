@@ -2,6 +2,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ModelInfo } from "@/models/types/model.types";
 import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useModelGarageGrades } from "@/hooks/useGarageReliability";
+import { GradeBadge } from "@/views/Garages/components/Reliability";
+import { poolSummaryText } from "@/models/services/reliabilityService";
 
 interface ChatModelSelectorProps {
   models: ModelInfo[];
@@ -26,6 +29,18 @@ const StatusDot = ({ status }: { status: ModelInfo["status"] }) => {
 
 export const ChatModelSelector = ({ models, selectedModel, onSelect, disabled }: ChatModelSelectorProps) => {
   const selected = models.find((m) => m.id === selectedModel);
+  const { gradeOf, poolSummary } = useModelGarageGrades();
+  const gradeHint = (m: ModelInfo) => {
+    if (m.garage_tier === "dedicated") {
+      const g = gradeOf(m.garage);
+      return g ? <GradeBadge grade={g} /> : null;
+    }
+    if (m.garage_tier === "pool") {
+      const p = poolSummary(m.model_name || m.id);
+      return p ? <span className="text-[10px] text-muted-foreground">{poolSummaryText(p.count, p.best)}</span> : null;
+    }
+    return null;
+  };
 
   return (
     <div className="flex items-center gap-2">
@@ -50,6 +65,7 @@ export const ChatModelSelector = ({ models, selectedModel, onSelect, disabled }:
                   <StatusDot status={m.status} />
                   <span className="text-xs text-muted-foreground w-16 shrink-0">{m.provider}</span>
                   <span className="font-mono text-xs">{m.model_name || m.id}</span>
+                  {gradeHint(m)}
                   {isDefault && <span className="text-yellow-400 text-xs">★</span>}
                 </span>
               </SelectItem>

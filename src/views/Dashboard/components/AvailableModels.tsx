@@ -8,6 +8,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { CuratedModel } from "@/models/types/curatedModel.types";
 import { buyerTierLabel } from "@/models/services/modelTier";
+import { useModelGarageGrades } from "@/hooks/useGarageReliability";
+import { ModelGarageGrade } from "@/views/Garages/components/Reliability";
 
 const formatTokenCount = (tokens: number | null): string => {
   if (!tokens) return "—";
@@ -36,7 +38,9 @@ const StatusDot = ({ status }: { status: CuratedModel["status"] }) => {
   );
 };
 
-const ModelCard = ({ model }: { model: CuratedModel }) => (
+const ModelCard = ({ model }: { model: CuratedModel }) => {
+  const { gradeOf, poolSummary } = useModelGarageGrades();
+  return (
   <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-card/50 p-3 transition-colors hover:bg-accent/30">
     <div className="flex-1 min-w-0 space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap">
@@ -52,6 +56,7 @@ const ModelCard = ({ model }: { model: CuratedModel }) => (
             {buyerTierLabel(model.garage_tier)}
           </Badge>
         )}
+        <ModelGarageGrade tier={model.garage_tier} garage={model.garage} grade={gradeOf(model.garage)} pool={poolSummary(model.model_name || model.id)} />
         {model.huggingface_url && (
           <a href={model.huggingface_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
             <ExternalLink className="w-3 h-3" />
@@ -96,6 +101,7 @@ const ModelCard = ({ model }: { model: CuratedModel }) => (
     </div>
   </div>
 );
+};
 
 export const AvailableModels = () => {
   const { models, isLoading: loading, error, refetch } = useCuratedModels(true);

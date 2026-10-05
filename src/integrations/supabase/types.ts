@@ -244,6 +244,76 @@ export type Database = {
           },
         ]
       }
+      garage_request_stats_hourly: {
+        Row: {
+          completion_tokens: number
+          failures: number
+          garage_id: string
+          hour: string
+          requests: number
+          tokens_per_second_p50: number | null
+          ttft_ms_p50: number | null
+        }
+        Insert: {
+          completion_tokens?: number
+          failures?: number
+          garage_id: string
+          hour: string
+          requests?: number
+          tokens_per_second_p50?: number | null
+          ttft_ms_p50?: number | null
+        }
+        Update: {
+          completion_tokens?: number
+          failures?: number
+          garage_id?: string
+          hour?: string
+          requests?: number
+          tokens_per_second_p50?: number | null
+          ttft_ms_p50?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_request_stats_hourly_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      garage_status_samples: {
+        Row: {
+          garage_id: string
+          id: number
+          online: boolean
+          reason: string | null
+          sampled_at: string
+        }
+        Insert: {
+          garage_id: string
+          id?: never
+          online: boolean
+          reason?: string | null
+          sampled_at?: string
+        }
+        Update: {
+          garage_id?: string
+          id?: never
+          online?: boolean
+          reason?: string | null
+          sampled_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_status_samples_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_tokens: {
         Row: {
           created_at: string | null
@@ -339,6 +409,24 @@ export type Database = {
           runtime?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ingest_cursors: {
+        Row: {
+          name: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          name: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          name?: string
+          updated_at?: string
+          value?: string
         }
         Relationships: []
       }
@@ -460,6 +548,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      garage_offline_periods: {
+        Args: { _limit?: number; _name: string }
+        Returns: {
+          duration_seconds: number
+          ended_at: string
+          reason: string
+          started_at: string
+        }[]
+      }
+      garage_profile: { Args: { _name: string }; Returns: Json }
+      garage_reliability: {
+        Args: { _names?: string[] }
+        Returns: {
+          availability: number
+          garage_name: string
+          grade: string
+          period: string
+          requests: number
+          sample_days: number
+          score: number
+          success_rate: number
+          tokens_per_second: number
+          ttft_ms_p50: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
