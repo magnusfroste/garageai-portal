@@ -67,7 +67,7 @@ export async function latestTests(admin: SupabaseClient, garageIds: string[]) {
   const map = new Map<string, { passed: boolean; tested_at: number }>();
   if (!garageIds.length) return map;
   const { data } = await admin.from("garage_model_tests").select("garage_id, model, passed, tested_at")
-    .in("garage_id", garageIds).order("tested_at", { ascending: false }).limit(5000);
+    .in("garage_id", garageIds).eq("inconclusive", false).order("tested_at", { ascending: false }).limit(5000);
   for (const t of (data || []) as Array<{ garage_id: string; model: string; passed: boolean; tested_at: string }>) {
     const k = `${t.garage_id}::${t.model}`;
     if (!map.has(k)) map.set(k, { passed: t.passed, tested_at: Date.parse(t.tested_at) });

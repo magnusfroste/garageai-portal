@@ -50,11 +50,11 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
     ? await withProbeDeployments(admin, routingGarage, testModels, (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, garage, testModels, routeFor))
     : [];
   const latest = payload.models.length
-    ? (await admin.from("garage_model_tests").select("model, passed, tested_at").eq("garage_id", garage.id).in("model", payload.models).order("tested_at", { ascending: false })).data
+    ? (await admin.from("garage_model_tests").select("model, passed, tested_at").eq("garage_id", garage.id).eq("inconclusive", false).in("model", payload.models).order("tested_at", { ascending: false })).data
     : [];
   const latestByModel = new Map<string, boolean>();
   for (const result of (latest || []) as Array<{ model: string; passed: boolean }>) if (!latestByModel.has(result.model)) latestByModel.set(result.model, result.passed);
-  for (const result of acceptance) latestByModel.set(result.model, result.passed);
+  for (const result of acceptance) if (!result.inconclusive) latestByModel.set(result.model, result.passed);
   const anyPassed = payload.models.some((model) => latestByModel.get(model) === true);
   const { error } = await admin.from("garages").update({ runtime: payload.runtime, port: payload.port, models: payload.models, mesh_ip: peer.ip, netbird_peer_id: peer.id, status: anyPassed ? "online" : payload.models.length ? "failed_test" : "pending", last_registered_at: new Date().toISOString() }).eq("id", garage.id);
   if (error) throw error;

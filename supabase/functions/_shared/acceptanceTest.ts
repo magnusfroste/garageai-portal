@@ -18,9 +18,12 @@ export interface AcceptanceResult {
   instruction_followed: boolean;
   supports_tools: boolean | null;
   tools_error: string | null;
+  /** True when the result must not change routing (auth/config error, or first failure in a row). */
+  inconclusive?: boolean;
 }
 
-const TIMEOUT_MS = 90_000;
+const FIRST_TOKEN_TIMEOUT_MS = 60_000;
+const STREAM_WINDOW_MS = 10_000;
 const EXPECTED = "GARAGEAI-OK";
 
 export async function runAcceptanceTest(
@@ -32,7 +35,8 @@ export async function runAcceptanceTest(
 ): Promise<AcceptanceResult> {
   const start = Date.now();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  let timer = setTimeout(() => controller.abort(), FIRST_TOKEN_TIMEOUT_MS);
+  let windowEnd = 0;
   const result: AcceptanceResult = {
     model, passed: false, http_status: null, error: null, ttft_ms: null,
     duration_ms: null, output_tokens: null, tokens_per_second: null, instruction_followed: false,
@@ -52,7 +56,7 @@ export async function runAcceptanceTest(
       body: JSON.stringify({
         model: route,
         stream: true,
-        max_tokens: 512,
+        max_tokens: 128,
         temperature: 0,
         messages: [{ role: "user", content: `Reply with exactly this text and nothing else: ${EXPECTED}` }],
         metadata: { tags: ["acceptance-test"], garage: garageName },
@@ -70,6 +74,7 @@ export async function runAcceptanceTest(
     const decoder = new TextDecoder();
     let buf = "";
     outer: while (true) {
+      if (windowEnd && Date.now() >= windowEnd) { reader.cancel().catch(() => {}); break; }
       const { done, value } = await reader.read();
       if (done) break;
       buf += decoder.decode(value, { stream: true });
@@ -88,7 +93,12 @@ export async function runAcceptanceTest(
         const r = typeof delta.reasoning_content === "string" ? delta.reasoning_content
           : typeof delta.reasoning === "string" ? delta.reasoning : "";
         if (c || r) {
-          if (result.ttft_ms === null) result.ttft_ms = Date.now() - start;
+          if (result.ttft_ms === null) {
+            result.ttft_ms = Date.now() - start;
+            windowEnd = Date.now() + STREAM_WINDOW_MS;
+            clearTimeout(timer);
+            timer = setTimeout(() => controller.abort(), STREAM_WINDOW_MS + 1000);
+          }
           chunks++;
           content += c;
           reasoning += r;
@@ -101,9 +111,11 @@ export async function runAcceptanceTest(
       return result;
     }
     result.passed = true;
+    // Any streamed tokens = pass; slowness only affects the grade.
   } catch (e) {
-    result.error = controller.signal.aborted
-      ? "timeout after 90s"
+    if (content || reasoning) result.passed = true;
+    else result.error = controller.signal.aborted
+      ? "no first token within 60s"
       : (e instanceof Error ? e.message : "request failed").slice(0, 300);
   } finally {
     clearTimeout(timer);
@@ -187,8 +199,23 @@ export async function runAndStoreAcceptanceTests(
     if (r.passed) Object.assign(r, await runToolProbe(litellmBase, masterKey, garage.name, m, routeFor?.(m)));
     return r;
   }));
+  // Delist only after 2 consecutive real failures; 401/403 is our config error, never delist.
+  for (const r of results) {
+    const key = { garage_id: garage.id, model: r.model };
+    if (r.passed) {
+      await admin.from("garage_model_failures").upsert({ ...key, consecutive_failures: 0, updated_at: new Date().toISOString() });
+    } else if (r.http_status === 401 || r.http_status === 403) {
+      r.inconclusive = true;
+      console.warn("[acceptance] auth error from runtime (check runtime key) — not delisting", { garage: garage.name, model: r.model, status: r.http_status });
+    } else {
+      const { data } = await admin.from("garage_model_failures").select("consecutive_failures").match(key).maybeSingle();
+      const n = ((data as { consecutive_failures?: number } | null)?.consecutive_failures ?? 0) + 1;
+      await admin.from("garage_model_failures").upsert({ ...key, consecutive_failures: n, updated_at: new Date().toISOString() });
+      if (n < 2) r.inconclusive = true;
+    }
+  }
   const { error } = await admin.from("garage_model_tests").insert(
-    results.map((r) => ({ garage_id: garage.id, ...r })),
+    results.map((r) => ({ garage_id: garage.id, ...r, inconclusive: !!r.inconclusive })),
   );
   if (error) console.error("[acceptance] failed to store results:", error.message);
   for (const r of results) {
