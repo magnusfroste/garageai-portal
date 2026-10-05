@@ -17,8 +17,9 @@ import OfferGpuPage from "./views/Garages/OfferGpuPage";
 import MyGaragesPage from "./views/Garages/MyGaragesPage";
 import GarageProfilePage from "./views/Garages/GarageProfilePage";
 import { SiteSettingsPage } from "./views/SiteSettings/SiteSettingsPage";
-import { ModelsPage } from "./views/Models/ModelsPage";
-import { DashboardModelsPage } from "./views/Models/DashboardModelsPage";
+import CatalogPage from "./views/Models/CatalogPage";
+import ModelDetailPage from "./views/Models/ModelDetailPage";
+import { KeepQueryRedirect } from "./views/Layout/KeepQueryRedirect";
 import { ApiPage } from "./views/Models/ApiPage";
 import { DashboardApiPage } from "./views/Models/DashboardApiPage";
 import GaragesListPage from "./views/Garages/GaragesListPage";
@@ -47,7 +48,7 @@ const App = () => (
             <Route path="keys" element={<KeysPage />} />
             <Route path="admin" element={<AdminPage />} />
             <Route path="site-settings" element={<SiteSettingsPage />} />
-            <Route path="models" element={<DashboardModelsPage />} />
+            <Route path="models" element={<KeepQueryRedirect to="/models" />} />
             <Route path="api" element={<DashboardApiPage />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="offer-gpu" element={<OfferGpuPage />} />
@@ -57,7 +58,10 @@ const App = () => (
             <Route index element={<GaragesListPage />} />
             <Route path=":name" element={<GarageProfilePage />} />
           </Route>
-          <Route path="/models" element={<SessionRedirect to="/dashboard/models"><ModelsPage /></SessionRedirect>} />
+          <Route path="/models" element={<PublicOrAppLayout />}>
+            <Route index element={<CatalogPage />} />
+            <Route path=":name" element={<ModelDetailPage />} />
+          </Route>
           <Route path="/api" element={<SessionRedirect to="/dashboard/api"><ApiPage /></SessionRedirect>} />
           <Route path="/dashboard/developers" element={<Navigate to="/dashboard/api" replace />} />
           {/* Redirect old routes */}
