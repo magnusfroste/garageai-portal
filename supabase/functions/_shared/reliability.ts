@@ -171,7 +171,8 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const first = parseTs(r.completionStartTime);
     const stream = r.stream === true || (r.stream === undefined && first !== null && end !== null && first < end);
     if (stream && first !== null && first > start) b.ttft.push(first - start);
-    if (first !== null && end !== null && end > first && completionTokens > 0) {
+    // Non-streamed rows have completionStartTime ≈ endTime, which would give absurd speeds.
+    if (stream && first !== null && end !== null && end - first >= 50 && completionTokens > 0) {
       const tps = completionTokens / ((end - first) / 1000);
       if (tps > 0 && Number.isFinite(tps)) b.tps.push(tps);
     }
