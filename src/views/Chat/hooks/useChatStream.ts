@@ -44,7 +44,6 @@ export const useChatStream = (setMessagesFor: SetFor) => {
 
     const controller = new AbortController();
     abortRef.current = controller;
-    const startedAt = performance.now();
     let reasoningStart: number | null = null;
     let reasoningEnd: number | null = null;
     let firstTokenAt: number | null = null;
@@ -172,7 +171,6 @@ export const useChatStream = (setMessagesFor: SetFor) => {
       console.error("Chat stream error:", e instanceof Error ? e.name : "unknown");
       toast.error(t("Could not connect to the model"));
     } finally {
-      void startedAt;
       abortRef.current = null;
       streamingRef.current = false;
       setIsStreaming(false);
