@@ -23,6 +23,8 @@ interface LiteLLMModelInfo {
 export interface SyncOptions {
   checkNonGarageHealth: boolean;
   enableNewGarageModels: boolean;
+  /** Acceptance results for one garage: underlying model -> passed. */
+  testResults?: { garage: string; results: Map<string, boolean> };
 }
 
 export interface SyncResult {
@@ -111,7 +113,15 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
     }
     const id = info.id || m.model_name;
     const prev = byId.get(id) || byName.get(m.model_name);
-    const enabled = prev ? prev.enabled : (opts.enableNewGarageModels && !!garage);
+    let enabled = prev ? prev.enabled : (opts.enableNewGarageModels && !!garage);
+    if (garage && opts.testResults && opts.testResults.garage === garage) {
+      const prefix = `garage/${garage}/`;
+      const underlying = garage_tier === "dedicated" && m.model_name.startsWith(prefix)
+        ? m.model_name.slice(prefix.length) : m.model_name;
+      const passed = opts.testResults.results.get(underlying);
+      if (passed === false) enabled = false;
+      else if (passed === true && !byId.has(id)) enabled = true;
+    }
     return {
       id,
       model_name: m.model_name,
@@ -141,7 +151,9 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
 
   if (peerConnected !== null) {
     for (const g of garageNames) {
-      const { error } = await admin.from("garages").update({ status: peerConnected.get(g) ? "online" : "offline" }).eq("name", g);
+      // A connected garage keeps 'failed_test' until a retest passes.
+      const q = admin.from("garages").update({ status: peerConnected.get(g) ? "online" : "offline" }).eq("name", g);
+      const { error } = peerConnected.get(g) ? await q.neq("status", "failed_test") : await q;
       if (error) console.warn(`Failed to update garage status for ${g}:`, error.message);
     }
   }
