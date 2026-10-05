@@ -12,6 +12,8 @@ export interface BuildCommandOptions {
   port?: number;
 }
 
+const shellQuote = (value: string) => `'${value.replace(/'/g, `'"'"'`)}'`;
+
 /** Builds the one-time connect command shown after create-garage. */
 export const buildGarageCommand = (
   result: GarageCredentials,
@@ -21,12 +23,12 @@ export const buildGarageCommand = (
   const lines = [
     "curl -fsSLo garageai-connect.sh https://raw.githubusercontent.com/magnusfroste/garageai/main/scripts/garageai-connect.sh",
   ];
-  const env = [`GARAGEAI_REGISTER_TOKEN=${result.register_token}`];
-  if (result.setup_key) env.push(`GARAGEAI_SETUP_KEY=${result.setup_key}`);
+  const env = [`GARAGEAI_REGISTER_TOKEN=${shellQuote(result.register_token)}`];
+  if (result.setup_key) env.push(`GARAGEAI_SETUP_KEY=${shellQuote(result.setup_key)}`);
   if (["vllm", "sglang", "paddock", "unsloth", "lemonade"].includes(runtime)) {
     env.push("GARAGEAI_RUNTIME_API_KEY=<YOUR_KEY>");
   }
-  const parts = [`${env.join(" ")} ${opts.sudo ? "sudo " : ""}bash garageai-connect.sh`];
+  const parts = [`${opts.sudo ? "sudo env " : ""}${env.join(" ")} bash garageai-connect.sh`];
   if (result.setup_key) {
     parts.push(`--management-url ${result.management_url}`);
   } else {

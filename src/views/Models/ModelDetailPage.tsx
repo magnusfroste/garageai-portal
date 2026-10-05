@@ -119,7 +119,7 @@ const ModelDetailPage = () => {
           <Fact label={t("Max output")} value={formatContext(m.maxOutput)} />
           <Fact label={t("Price in / 1M")} value={priceRange(m.minPrice.input, m.maxPrice.input)} />
           <Fact label={t("Price out / 1M")} value={priceRange(m.minPrice.output, m.maxPrice.output)} />
-          <Fact label="Garage" value={String(m.offers.length)} />
+          <Fact label={t("Garages")} value={String(m.offers.length)} />
           <Fact label={t("Tokens last 7 days")} value={formatTokens(m.tokens7d)} />
         </div>
         {m.huggingfaceUrl && (
@@ -132,7 +132,7 @@ const ModelDetailPage = () => {
       {m.poolPrice && m.poolId && (
         <Card className="glass-card border-primary/40">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" />Pool</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" />{t("Pool")}</CardTitle>
             <CardDescription>{t("We pick the best available garage for you.")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-end gap-6 text-sm">
@@ -161,7 +161,7 @@ const ModelDetailPage = () => {
           <table className="w-full text-sm">
             <thead className="text-[11px] text-muted-foreground border-b border-border/50">
               <tr>
-                <Th k="garage">Garage</Th><Th k="grade">{t("Grade")}</Th><Th k="price">{t("Price in / out")}</Th>
+                <Th k="garage">{t("Garage")}</Th><Th k="grade">{t("Grade")}</Th><Th k="price">{t("Price in / out")}</Th>
                 <Th k="ttft">Median TTFT</Th><Th k="tps">Median tok/s</Th><Th k="availability">{t("Availability")}</Th><Th k="online">Status</Th>
               </tr>
             </thead>

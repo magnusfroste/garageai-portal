@@ -272,7 +272,6 @@ export const sv: Record<string, string> = {
   "{n} garages": "{n} garage",
   "{n} h ago": "{n} h sedan",
   "{n} min ago": "{n} min sedan",
-  "• 25 USD in credits": "• 25 USD i krediter",
   "• All available models": "• Alla tillgängliga modeller",
   "• No credit card required": "• Inget betalkort krävs",
   "Yesterday": "Igår",
@@ -331,4 +330,10 @@ export const sv: Record<string, string> = {
   "Reset": "Återställ",
   "Enter system prompt...": "Skriv en systemprompt...",
   "Defines how the model behaves. Changes apply to new messages.": "Styr hur modellen beter sig. Ändringar gäller nya meddelanden.",
+  "Garage": "Garage",
+  "Garages": "Garage",
+  "Acceptance test: {m}": "Acceptanstest: {m}",
+  "Disabled: failed test": "Inaktiverad: underkänt test",
+  "Searching: {q}…": "Söker: {q}…",
+  "Test done: {ok}/{n} passed": "Test klart: {ok}/{n} godkända",
 };

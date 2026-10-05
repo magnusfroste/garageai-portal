@@ -68,7 +68,7 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => (
         Agentic Coding Tools
       </CardTitle>
       <p className="text-sm text-muted-foreground mt-1">
-        Encrypted in transit: TLS to our EU gateway and WireGuard to the garage. The gateway does not store your prompts or responses. Your prompt is processed on the operator&apos;s machine, so don&apos;t send sensitive data to the public pool yet.
+        {t("Encrypted in transit: TLS to our EU gateway and WireGuard to the garage. The gateway does not store your prompts or responses. Your prompt is processed on the operator's machine, so don't send sensitive data to the public pool yet.")}
       </p>
     </CardHeader>
     <CardContent className="space-y-6">

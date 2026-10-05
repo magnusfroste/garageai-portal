@@ -30,6 +30,7 @@ export class CuratedModelRepository {
       .update({ enabled, disabled_reason: enabled ? null : "admin", updated_at: new Date().toISOString() } as never)
       .eq("id", id);
     if (error) throw error;
+    await this.syncFromLitellm();
   }
 
   async updateHuggingfaceUrl(id: string, url: string | null): Promise<void> {

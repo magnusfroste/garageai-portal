@@ -18,7 +18,7 @@ export interface Price {
   output: number | null;
 }
 
-/** One garage offering a model (its "Specifikt garage" tier). */
+/** One garage offering a model through its specific-garage tier. */
 export interface GarageOffer {
   garage: string;
   modelId: string | null; // dedicated routing name, if the garage sells it specifically
