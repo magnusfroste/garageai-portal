@@ -4,6 +4,7 @@ import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useModelGarageGrades } from "@/hooks/useGarageReliability";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
+import { poolSummaryText } from "@/models/services/reliabilityService";
 
 interface ChatModelSelectorProps {
   models: ModelInfo[];
@@ -36,7 +37,7 @@ export const ChatModelSelector = ({ models, selectedModel, onSelect, disabled }:
     }
     if (m.garage_tier === "pool") {
       const p = poolSummary(m.model_name || m.id);
-      return p ? <span className="text-[10px] text-muted-foreground">{p.count} garage{p.best ? ` · bästa betyg ${p.best}` : ""}</span> : null;
+      return p ? <span className="text-[10px] text-muted-foreground">{poolSummaryText(p.count, p.best)}</span> : null;
     }
     return null;
   };

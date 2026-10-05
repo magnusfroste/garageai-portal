@@ -59,3 +59,7 @@ export const dayLevel = (pct: number | null, samples: number): DayLevel => {
   if (pct >= 90) return "warn";
   return "bad";
 };
+
+/** Buyer-facing pool summary, e.g. "3 garage · bästa betyg A". */
+export const poolSummaryText = (count: number, best: ReliabilityGrade | null) =>
+  `${count} garage${best && best !== "Nytt" ? ` · bästa betyg ${best}` : best === "Nytt" ? " · nya" : ""}`;

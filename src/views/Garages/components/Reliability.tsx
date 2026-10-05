@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
-  dayLevel, formatDuration, formatNumber, formatPct, offlineReasonLabel,
+  dayLevel, formatDuration, poolSummaryText, formatNumber, formatPct, offlineReasonLabel,
 } from "@/models/services/reliabilityService";
 import type {
   GarageDay, GarageReliability, OfflinePeriod, ReliabilityGrade,
@@ -42,7 +42,7 @@ export const ModelGarageGrade = ({
   if (tier === "pool" && pool) {
     return (
       <span className="text-[10px] text-muted-foreground">
-        {pool.count} garage{pool.best ? ` · bästa betyg ${pool.best}` : ""}
+        {poolSummaryText(pool.count, pool.best)}
       </span>
     );
   }
