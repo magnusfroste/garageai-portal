@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 import { getNetbirdApiUrl, netbirdHeaders } from "../_shared/netbirdConfig.ts";
 import { syncModels } from "../_shared/syncModels.ts";
+import { runAndStoreAcceptanceTests, toPublicResult } from "../_shared/acceptanceTest.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -182,6 +183,10 @@ Deno.serve(async (req) => {
       console.warn("[register-node] stale cleanup error:", e instanceof Error ? e.message : "unknown");
     }
 
+    // 6b. Acceptance test every model end to end through the gateway
+    const acceptance = await runAndStoreAcceptanceTests(admin, litellm, MASTER_KEY, garage, uniqueModels);
+    const anyPassed = acceptance.some((r) => r.passed);
+
     // 7. Update garage row (runtime_api_key is never stored here)
     const { error: updErr } = await admin.from("garages").update({
       runtime,
@@ -189,7 +194,7 @@ Deno.serve(async (req) => {
       models: uniqueModels,
       mesh_ip: meshIp,
       netbird_peer_id: peer.id,
-      status: "online",
+      status: anyPassed ? "online" : "failed_test",
       last_registered_at: new Date().toISOString(),
     }).eq("id", garage.id);
     if (updErr) throw updErr;
@@ -197,14 +202,16 @@ Deno.serve(async (req) => {
     // 8. Refresh catalogue so the garage's models appear immediately
     let catalogSynced = true;
     try {
-      await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
+      await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true,
+        testResults: { garage: garage.name, results: new Map(acceptance.map((r) => [r.model, r.passed])) },
+      });
     } catch (e) {
       catalogSynced = false;
       console.error("[register-node] catalog sync failed:", e instanceof Error ? e.message : "unknown");
     }
 
     console.log("[register-node] registered", { garage: garage.name, api_base: apiBase, models: uniqueModels.length, catalog_synced: catalogSynced });
-    return json({ ok: true, garage: garage.name, api_base: apiBase, models: uniqueModels, catalog_synced: catalogSynced });
+    return json({ ok: true, garage: garage.name, api_base: apiBase, models: uniqueModels, catalog_synced: catalogSynced, acceptance: acceptance.map(toPublicResult) });
   } catch (e) {
     console.error("[register-node] error:", e instanceof Error ? e.message : "unknown");
     return json({ error: "Internal error" }, 500);

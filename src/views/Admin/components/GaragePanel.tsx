@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Server, RefreshCw, Plus, Copy, Check, KeyRound } from "lucide-react";
+import { Server, RefreshCw, Plus, Copy, Check, KeyRound, FlaskConical } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { useGarages, Garage, CreateGarageResult } from "../hooks/useGarages";
+import { useGarages, Garage, CreateGarageResult, GarageModelTest } from "../hooks/useGarages";
 
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 const RUNTIMES = ["ollama", "lmstudio", "llamacpp", "vllm", "other"] as const;
@@ -24,6 +25,41 @@ const relativeTime = (iso: string | null): string => {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  online: "bg-emerald-600 hover:bg-emerald-600 text-primary-foreground",
+  failed_test: "bg-destructive hover:bg-destructive text-destructive-foreground",
+  offline: "bg-muted text-muted-foreground hover:bg-muted",
+};
+
+const TestBadge = ({ model, test }: { model: string; test?: GarageModelTest }) => {
+  if (!test) {
+    return <Badge variant="outline" className="text-[10px] font-mono">{model} · untested</Badge>;
+  }
+  if (test.passed) {
+    const parts = [
+      test.tokens_per_second != null ? `${test.tokens_per_second} tok/s` : null,
+      test.ttft_ms != null ? `TTFT ${test.ttft_ms} ms` : null,
+    ].filter(Boolean);
+    return (
+      <Badge className="text-[10px] font-mono bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/20 border border-emerald-600/40">
+        ✓ {model}{parts.length ? ` · ${parts.join(" · ")}` : ""}
+      </Badge>
+    );
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge className="text-[10px] font-mono bg-destructive/20 text-destructive hover:bg-destructive/20 border border-destructive/40 cursor-help">
+          ✗ {model}
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs text-xs">
+        {test.error || "failed"}{test.http_status ? ` (HTTP ${test.http_status})` : ""}
+      </TooltipContent>
+    </Tooltip>
+  );
 };
 
 const CopyButton = ({ value }: { value: string }) => {
@@ -109,7 +145,8 @@ const ResultView = ({ result, runtime, onClose }: ResultViewProps) => {
 };
 
 export const GaragePanel = () => {
-  const { garages, isLoading, isError, refetch, isRefetching, createGarage } = useGarages();
+  const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage } = useGarages();
+  const [retesting, setRetesting] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -167,6 +204,19 @@ export const GaragePanel = () => {
     submit(name, apiHost, createSetupKey, runtime);
   };
 
+  const handleRetest = async (garage: Garage) => {
+    setRetesting(garage.name);
+    try {
+      const res = await retestGarage(garage.name);
+      const passed = res.acceptance.filter((a) => a.passed).length;
+      toast({ title: `Retest finished: ${passed}/${res.acceptance.length} passed`, description: `Status: ${res.status}` });
+    } catch (e) {
+      toast({ title: "Retest failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setRetesting(null);
+    }
+  };
+
   const handleNewToken = (garage: Garage) => {
     setName(garage.name);
     setRuntime(garage.runtime || "ollama");
@@ -177,6 +227,7 @@ export const GaragePanel = () => {
   };
 
   return (
+    <TooltipProvider>
     <Card className="glass-card">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
@@ -211,8 +262,8 @@ export const GaragePanel = () => {
             {garages.map((g) => (
               <div key={g.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                 <Badge
-                  variant={g.status === "online" ? "default" : "secondary"}
-                  className={`text-[10px] shrink-0 ${g.status === "online" ? "bg-emerald-600 hover:bg-emerald-600" : ""}`}
+                  variant="secondary"
+                  className={`text-[10px] shrink-0 ${STATUS_CLASS[g.status] ?? ""}`}
                 >
                   {g.status}
                 </Badge>
@@ -232,7 +283,24 @@ export const GaragePanel = () => {
                     {g.api_host && <span>Host: {g.api_host}</span>}
                     <span>Registered: {relativeTime(g.last_registered_at)}</span>
                   </div>
+                  {g.models.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                      {g.models.map((m) => (
+                        <TestBadge key={m} model={m} test={latestTests.get(`${g.id}::${m}`)} />
+                      ))}
+                    </div>
+                  )}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs shrink-0"
+                  disabled={retesting === g.name || g.models.length === 0}
+                  onClick={() => handleRetest(g)}
+                >
+                  <FlaskConical className={`w-3.5 h-3.5 mr-1.5 ${retesting === g.name ? "animate-pulse" : ""}`} />
+                  {retesting === g.name ? "Testing..." : "Retest"}
+                </Button>
                 <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => handleNewToken(g)}>
                   <KeyRound className="w-3.5 h-3.5 mr-1.5" />
                   New token
@@ -315,5 +383,6 @@ export const GaragePanel = () => {
         </DialogContent>
       </Dialog>
     </Card>
+    </TooltipProvider>
   );
 };
