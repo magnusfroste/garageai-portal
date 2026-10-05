@@ -24,6 +24,19 @@ export interface CreateGarageResult {
   management_url: string;
 }
 
+export interface GarageModelTest {
+  id: string;
+  garage_id: string;
+  model: string;
+  passed: boolean;
+  http_status: number | null;
+  error: string | null;
+  ttft_ms: number | null;
+  tokens_per_second: number | null;
+  instruction_followed: boolean | null;
+  tested_at: string;
+}
+
 export const useGarages = () => {
   const queryClient = useQueryClient();
 
@@ -38,6 +51,34 @@ export const useGarages = () => {
       return (data ?? []) as unknown as Garage[];
     },
   });
+
+  const testsQuery = useQuery({
+    queryKey: ["admin-garage-tests"],
+    queryFn: async (): Promise<Map<string, GarageModelTest>> => {
+      const { data, error } = await supabase
+        .from("garage_model_tests")
+        .select("*")
+        .order("tested_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      // Latest test per garage+model
+      const latest = new Map<string, GarageModelTest>();
+      for (const t of (data ?? []) as GarageModelTest[]) {
+        const key = `${t.garage_id}::${t.model}`;
+        if (!latest.has(key)) latest.set(key, t);
+      }
+      return latest;
+    },
+  });
+
+  const retestGarage = async (name: string) => {
+    const { data, error } = await supabase.functions.invoke("retest-garage", { body: { name } });
+    if (error) throw new Error(error.message || "Retest failed");
+    if (data?.error) throw new Error(data.error);
+    queryClient.invalidateQueries({ queryKey: ["admin-garages"] });
+    queryClient.invalidateQueries({ queryKey: ["admin-garage-tests"] });
+    return data as { status: string; acceptance: Array<{ model: string; passed: boolean }> };
+  };
 
   const createGarage = async (body: {
     name: string;
@@ -55,8 +96,10 @@ export const useGarages = () => {
     garages: query.data ?? [],
     isLoading: query.isLoading,
     isError: query.isError,
-    refetch: query.refetch,
+    refetch: () => { testsQuery.refetch(); return query.refetch(); },
     isRefetching: query.isRefetching,
     createGarage,
+    latestTests: testsQuery.data ?? new Map<string, GarageModelTest>(),
+    retestGarage,
   };
 };
