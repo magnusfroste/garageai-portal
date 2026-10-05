@@ -1,148 +1,82 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { chatConversationRepository as repo } from "@/data/repositories/chatConversationRepository";
+import { titleFromMessage } from "@/models/services/chatService";
+import { t } from "@/i18n";
 import type { Conversation, ChatMessage } from "../types";
+
+const ACTIVE_KEY = "chat-active-id";
+const DEFAULT_TITLE = "New chat";
 
 export const useChatConversations = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(() => {
-    return sessionStorage.getItem("chat-active-id") || null;
-  });
+  const [activeId, setActiveIdState] = useState<string | null>(() => sessionStorage.getItem(ACTIVE_KEY) || null);
   const [loaded, setLoaded] = useState(false);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
-  // Load conversations from DB on mount
   useEffect(() => {
-    const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("chat_conversations")
-        .select("id, title, model, messages, created_at, updated_at")
-        .eq("user_id", user.id)
-        .order("updated_at", { ascending: false })
-        .limit(50);
-
-      if (!error && data) {
-        const convs = data.map((row) => ({
-          id: row.id,
-          title: row.title,
-          model: row.model || "",
-          messages: (row.messages as unknown as ChatMessage[]) || [],
-          createdAt: new Date(row.created_at).getTime(),
-        }));
-        setConversations(convs);
-        // Auto-select last active or most recent
-        const stored = sessionStorage.getItem("chat-active-id");
-        if (stored && convs.some((c) => c.id === stored)) {
-          setActiveId(stored);
-        } else if (convs.length > 0) {
-          setActiveId(convs[0].id);
-        }
-      }
+    repo.list().then((convs) => {
+      setConversations(convs);
+      const stored = sessionStorage.getItem(ACTIVE_KEY);
+      if (!(stored && convs.some((c) => c.id === stored))) setActiveIdState(null);
       setLoaded(true);
-    };
-    load();
+    });
   }, []);
 
-  // Persist activeId to sessionStorage
-  const wrappedSetActiveId = useCallback((id: string | null) => {
-    setActiveId(id);
-    if (id) sessionStorage.setItem("chat-active-id", id);
-    else sessionStorage.removeItem("chat-active-id");
+  const setActiveId = useCallback((id: string | null) => {
+    setActiveIdState(id);
+    if (id) sessionStorage.setItem(ACTIVE_KEY, id);
+    else sessionStorage.removeItem(ACTIVE_KEY);
   }, []);
+
+  const scheduleSave = useCallback((c: Conversation) => {
+    const prev = timers.current.get(c.id);
+    if (prev) clearTimeout(prev);
+    timers.current.set(c.id, setTimeout(async () => {
+      timers.current.delete(c.id);
+      const ok = await repo.update(c.id, { title: c.title, messages: c.messages, model: c.model });
+      if (!ok) toast.error(t("Couldn't save conversation"), { id: "chat-save-error" });
+    }, 500));
+  }, []);
+
+  const createConversation = useCallback(async (model: string): Promise<string> => {
+    const conv = await repo.create(model, DEFAULT_TITLE);
+    if (!conv) { toast.error(t("Couldn't start a new chat")); return ""; }
+    setConversations((prev) => [conv, ...prev]);
+    setActiveId(conv.id);
+    return conv.id;
+  }, [setActiveId]);
+
+  /** Update messages of a specific conversation (safe across async streaming). */
+  const setMessagesFor = useCallback((id: string, updater: React.SetStateAction<ChatMessage[]>) => {
+    setConversations((prev) => prev.map((c) => {
+      if (c.id !== id) return c;
+      const messages = typeof updater === "function" ? updater(c.messages) : updater;
+      const firstUser = messages.find((m) => m.role === "user");
+      const title = c.title === DEFAULT_TITLE && firstUser ? titleFromMessage(firstUser.content) : c.title;
+      const next = { ...c, messages, title, updatedAt: Date.now() };
+      scheduleSave(next);
+      return next;
+    }));
+  }, [scheduleSave]);
+
+  const renameConversation = useCallback(async (id: string, title: string) => {
+    const clean = title.trim();
+    if (!clean) return;
+    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title: clean } : c)));
+    if (!(await repo.update(id, { title: clean }))) toast.error(t("Couldn't rename conversation"));
+  }, []);
+
+  const deleteConversation = useCallback(async (id: string) => {
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (activeId === id) setActiveId(null);
+    await repo.remove(id);
+  }, [activeId, setActiveId]);
 
   const activeConversation = conversations.find((c) => c.id === activeId) ?? null;
 
-  // Debounced save to DB
-  const saveToDb = useCallback((convId: string, title: string, messages: ChatMessage[], model: string) => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      const { error } = await supabase
-        .from("chat_conversations")
-        .update({
-          title,
-          messages: JSON.parse(JSON.stringify(messages)),
-          model,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", convId);
-      if (error) {
-        toast.error("Couldn't save conversation", {
-          id: "chat-save-error",
-          description: "Your latest messages may not be stored in history.",
-        });
-      }
-    }, 500);
-  }, []);
-
-  const createConversation = useCallback(async (model: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return "";
-
-    const { data, error } = await supabase
-      .from("chat_conversations")
-      .insert({
-        user_id: user.id,
-        title: "New chat",
-        model,
-        messages: [],
-      })
-      .select("id, created_at")
-      .single();
-
-    if (error || !data) return "";
-
-    const conv: Conversation = {
-      id: data.id,
-      title: "New chat",
-      messages: [],
-      model,
-      createdAt: new Date(data.created_at).getTime(),
-    };
-    setConversations((prev) => [conv, ...prev]);
-    wrappedSetActiveId(conv.id);
-    return conv.id;
-  }, []);
-
-  const setMessages = useCallback(
-    (updater: React.SetStateAction<ChatMessage[]>) => {
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id !== activeId) return c;
-          const newMessages =
-            typeof updater === "function" ? updater(c.messages) : updater;
-          const firstUser = newMessages.find((m) => m.role === "user");
-          const title = firstUser
-            ? firstUser.content.slice(0, 40) + (firstUser.content.length > 40 ? "…" : "")
-            : c.title;
-          // Persist
-          saveToDb(c.id, title, newMessages, c.model);
-          return { ...c, messages: newMessages, title };
-        })
-      );
-    },
-    [activeId, saveToDb]
-  );
-
-  const deleteConversation = useCallback(
-    async (id: string) => {
-      setConversations((prev) => prev.filter((c) => c.id !== id));
-      if (activeId === id) wrappedSetActiveId(null);
-      await supabase.from("chat_conversations").delete().eq("id", id);
-    },
-    [activeId]
-  );
-
   return {
-    conversations,
-    activeConversation,
-    activeId,
-    setActiveId: wrappedSetActiveId,
-    createConversation,
-    setMessages,
-    deleteConversation,
-    loaded,
+    conversations, activeConversation, activeId, setActiveId,
+    createConversation, setMessagesFor, renameConversation, deleteConversation, loaded,
   };
 };
