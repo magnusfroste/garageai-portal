@@ -5,3 +5,4 @@
 - Keep signup intent as profile product metadata, never as an authorization role; authorization remains in `user_roles`.
 - Route both initial node registration and changed heartbeats through the shared garage registration service so deployment cleanup and catalogue sync stay consistent.
 - Keep runtime metadata in one frontend service and backend port allowlisting in one shared edge-function constant so setup commands and validation stay aligned.- Compute garage reliability grades only in the `garage_reliability` database function, fed by the five-minute cron (samples, usage ingest, hourly probes), so every view shows the same numbers.
+- Define portal navigation groups only in `src/models/services/navigation.ts`; public-readable pages use `PublicOrAppLayout` so visitors and signed-in users share routes.

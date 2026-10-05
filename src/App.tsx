@@ -21,6 +21,9 @@ import { ModelsPage } from "./views/Models/ModelsPage";
 import { DashboardModelsPage } from "./views/Models/DashboardModelsPage";
 import { ApiPage } from "./views/Models/ApiPage";
 import { DashboardApiPage } from "./views/Models/DashboardApiPage";
+import GaragesListPage from "./views/Garages/GaragesListPage";
+import { PublicOrAppLayout } from "./views/Layout/PublicOrAppLayout";
+import { SessionRedirect } from "./views/Layout/SessionRedirect";
 import NotFound from "./pages/NotFound";
 import { OnboardingPage } from "./views/Onboarding/OnboardingPage";
 
@@ -50,11 +53,13 @@ const App = () => (
             <Route path="offer-gpu" element={<OfferGpuPage />} />
             <Route path="garages" element={<MyGaragesPage />} />
           </Route>
-          <Route path="/garages" element={<AppLayout />}>
+          <Route path="/garages" element={<PublicOrAppLayout />}>
+            <Route index element={<GaragesListPage />} />
             <Route path=":name" element={<GarageProfilePage />} />
           </Route>
-          <Route path="/models" element={<ModelsPage />} />
-          <Route path="/api" element={<ApiPage />} />
+          <Route path="/models" element={<SessionRedirect to="/dashboard/models"><ModelsPage /></SessionRedirect>} />
+          <Route path="/api" element={<SessionRedirect to="/dashboard/api"><ApiPage /></SessionRedirect>} />
+          <Route path="/dashboard/developers" element={<Navigate to="/dashboard/api" replace />} />
           {/* Redirect old routes */}
           <Route path="/account" element={<Navigate to="/dashboard/account" replace />} />
           <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />

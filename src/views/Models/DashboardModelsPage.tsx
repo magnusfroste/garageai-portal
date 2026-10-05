@@ -8,9 +8,9 @@ export const DashboardModelsPage = () => {
   return (
     <div className="p-6 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-1">Models</h1>
+        <h1 className="text-3xl font-bold mb-1">Modeller</h1>
         <p className="text-muted-foreground text-sm">
-          Available models on the platform. See the <a href="/dashboard/api" className="text-primary hover:underline">API page</a> for integration guides.
+          Tillgängliga modeller. Se <a href="/dashboard/api" className="text-primary hover:underline">Anslut & API</a> för att komma igång.
         </p>
       </div>
 

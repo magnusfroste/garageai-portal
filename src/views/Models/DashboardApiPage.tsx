@@ -16,7 +16,7 @@ export const DashboardApiPage = () => {
   return (
     <div className="p-6 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-1">API</h1>
+        <h1 className="text-3xl font-bold mb-1">Anslut & API</h1>
         <p className="text-muted-foreground text-sm">
           Everything you need to connect to the API and start building with agentic coding tools.
         </p>

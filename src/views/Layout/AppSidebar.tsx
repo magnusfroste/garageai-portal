@@ -1,15 +1,20 @@
-import { Activity, ScrollText, CreditCard, Key, Shield, MessageSquare, Cpu, Server } from "lucide-react";
+import { ChevronDown, Warehouse } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useProfile } from "@/hooks/useProfile";
 import { adminRepository } from "@/data/repositories/adminRepository";
+import { useMyGarages } from "@/hooks/useMyGarages";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  ADMIN, DEVELOPERS, EXPLORE, MY_GARAGES_ITEM, OFFER_GPU_ITEM, OVERVIEW, USE_AI,
+  isItemActive, itemHref, type NavGroup, type NavItem,
+} from "@/models/services/navigation";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -17,36 +22,63 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const mainNav = [
-  { title: "Aktivitet", url: "/dashboard", icon: Activity },
-  { title: "Chatt", url: "/dashboard/chat", icon: MessageSquare },
-  { title: "Loggar", url: "/dashboard/logs", icon: ScrollText },
-  { title: "Krediter", url: "/dashboard/credits", icon: CreditCard },
-  { title: "API-nycklar", url: "/dashboard/keys", icon: Key },
-  { title: "Erbjud din GPU", url: "/dashboard/offer-gpu", icon: Cpu },
-  { title: "Mina garage", url: "/dashboard/garages", icon: Server },
-];
-
 export const AppSidebar = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { profile } = useProfile();
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { pathname, search } = useLocation();
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  const collapsed = state === "collapsed" && !isMobile;
   const { settings } = useSiteSettings();
   const siteName = settings?.site_name || "AI Portal";
   const logoUrl = settings?.logo_url;
+  const { garages, isLoading: garagesLoading } = useMyGarages();
 
   const { data: isAdmin } = useQuery({
     queryKey: ["is-admin"],
     queryFn: () => adminRepository.checkIsAdmin(),
   });
 
-  const isActive = (path: string) => location.pathname === path;
+  const hasGarages = garagesLoading || garages.length > 0;
+  const myGarages: NavGroup = {
+    id: "my-garages",
+    label: "Mina garage",
+    items: hasGarages ? [MY_GARAGES_ITEM, OFFER_GPU_ITEM] : [OFFER_GPU_ITEM],
+  };
 
-  const initials = profile?.full_name
-    ? profile.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-    : profile?.email?.[0]?.toUpperCase() || "?";
+  const go = (i: NavItem) => {
+    navigate(itemHref(i));
+    if (isMobile) setOpenMobile(false);
+  };
+
+  const renderItem = (i: NavItem) => (
+    <SidebarMenuItem key={i.title + (i.tab ?? "")}>
+      <SidebarMenuButton isActive={isItemActive(i, pathname, search)} onClick={() => go(i)} tooltip={i.title}>
+        <i.icon className="w-4 h-4" />
+        <span>{i.title}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+
+  const renderGroup = (g: NavGroup, extra?: React.ReactNode) => {
+    const containsActive = g.items.some((i) => isItemActive(i, pathname, search));
+    return (
+      <Collapsible key={g.id} defaultOpen className="group/collapsible">
+        <SidebarGroup className="py-1">
+          <SidebarGroupLabel asChild>
+            <CollapsibleTrigger className="w-full flex items-center justify-between">
+              <span className={containsActive ? "text-foreground" : undefined}>{g.label}</span>
+              <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=closed]/collapsible:-rotate-90" />
+            </CollapsibleTrigger>
+          </SidebarGroupLabel>
+          <CollapsibleContent>
+            <SidebarGroupContent>
+              <SidebarMenu>{g.items.map(renderItem)}</SidebarMenu>
+              {extra}
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </SidebarGroup>
+      </Collapsible>
+    );
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -55,73 +87,29 @@ export const AppSidebar = () => {
           {logoUrl ? (
             <img src={logoUrl} alt={siteName} className="w-6 h-6 shrink-0 object-contain" />
           ) : (
-            <Shield className="w-6 h-6 text-primary shrink-0" />
+            <Warehouse className="w-6 h-6 text-primary shrink-0" />
           )}
           {!collapsed && <span className="text-lg font-bold gradient-text">{siteName}</span>}
         </button>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="py-1">
           <SidebarGroupContent>
-            <SidebarMenu>
-              {mainNav.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    isActive={isActive(item.url)}
-                    onClick={() => navigate(item.url)}
-                    tooltip={item.title}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            <SidebarMenu>{renderItem(OVERVIEW)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={isActive("/dashboard/admin")}
-                    onClick={() => navigate("/dashboard/admin")}
-                    tooltip="Admin"
-                  >
-                    <Shield className="w-4 h-4" />
-                    <span>Admin</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        {renderGroup(USE_AI)}
+        {renderGroup(EXPLORE)}
+        {renderGroup(
+          myGarages,
+          !hasGarages && !collapsed ? (
+            <p className="px-2 pt-1 text-xs text-muted-foreground">Har du en GPU? Tjäna pengar på den.</p>
+          ) : null,
         )}
+        {renderGroup(DEVELOPERS)}
+        {isAdmin && renderGroup(ADMIN)}
       </SidebarContent>
-
-      <SidebarFooter className="p-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              isActive={isActive("/dashboard/account")}
-              onClick={() => navigate("/dashboard/account")}
-              tooltip="Profil"
-            >
-              <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-semibold shrink-0">
-                {initials}
-              </div>
-              {!collapsed && (
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm truncate">{profile?.full_name || "Profil"}</span>
-                  <span className="text-[10px] text-muted-foreground truncate">{profile?.email}</span>
-                </div>
-              )}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 };
