@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CuratedModel } from "@/models/types/curatedModel.types";
 import { buyerTierLabel } from "@/models/services/modelTier";
+import { useModelGarageGrades } from "@/hooks/useGarageReliability";
+import { ModelGarageGrade } from "@/views/Garages/components/Reliability";
 
 const formatTokenCount = (tokens: number | null): string => {
   if (!tokens) return "—";
@@ -30,7 +32,9 @@ const StatusDot = ({ status }: { status: CuratedModel["status"] }) => {
   );
 };
 
-export const ModelRow = ({ model }: { model: CuratedModel }) => (
+export const ModelRow = ({ model }: { model: CuratedModel }) => {
+  const { gradeOf, poolSummary } = useModelGarageGrades();
+  return (
   <div className="flex items-center gap-4 rounded-lg border border-border/50 bg-card/60 p-4 transition-colors hover:bg-accent/20">
     <StatusDot status={model.status} />
 
@@ -41,6 +45,7 @@ export const ModelRow = ({ model }: { model: CuratedModel }) => (
         </span>
         <Badge variant="outline" className="text-[10px]">{model.provider}</Badge>
         {buyerTierLabel(model.garage_tier) && <Badge variant="secondary" className="text-[10px]">{buyerTierLabel(model.garage_tier)}</Badge>}
+        <ModelGarageGrade tier={model.garage_tier} garage={model.garage} grade={gradeOf(model.garage)} pool={poolSummary(model.model_name || model.id)} />
       </div>
 
       <TooltipProvider delayDuration={200}>
@@ -88,3 +93,4 @@ export const ModelRow = ({ model }: { model: CuratedModel }) => (
     )}
   </div>
 );
+};
