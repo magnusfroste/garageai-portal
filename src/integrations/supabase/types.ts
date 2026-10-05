@@ -703,6 +703,13 @@ export type Database = {
         }[]
       }
       garage_profile: { Args: { _name: string }; Returns: Json }
+      garage_public_providers: {
+        Args: never
+        Returns: {
+          display_name: string
+          garage_name: string
+        }[]
+      }
       garage_public_stats: {
         Args: never
         Returns: {
