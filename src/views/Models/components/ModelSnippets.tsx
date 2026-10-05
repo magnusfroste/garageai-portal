@@ -6,7 +6,8 @@ const snippets = (base: string, model: string) => ({
   -H "Authorization: Bearer $GARAGE_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"model": "${model}", "messages": [{"role": "user", "content": "Hello!"}]}'`,
-  python: `from openai import OpenAI
+  python: `import os
+from openai import OpenAI
 
 client = OpenAI(base_url="${base}", api_key=os.environ["GARAGE_API_KEY"])
 response = client.chat.completions.create(

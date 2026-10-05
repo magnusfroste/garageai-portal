@@ -52,6 +52,7 @@ export const buildCatalog = (
         price: { input: any.input_cost_per_million, output: any.output_cost_per_million },
         grade: rel?.grade ?? null,
         score: rel?.score ?? null,
+        sampleDays: rel?.windows["30d"]?.sample_days ?? null,
         ttftMs: rel?.windows["30d"]?.ttft_ms_p50 ?? null,
         tokensPerSecond: rel?.windows["30d"]?.tokens_per_second ?? null,
         availability30d: rel?.windows["30d"]?.availability ?? null,

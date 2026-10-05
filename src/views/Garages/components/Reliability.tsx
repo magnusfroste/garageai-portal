@@ -24,6 +24,9 @@ export const GradeBadge = ({ grade, className, title }: { grade: ReliabilityGrad
   </Badge>
 );
 
+export const ReliabilityScore = ({ grade, score }: { grade: ReliabilityGrade; score: number | null }) =>
+  grade === "Nytt" || score == null ? null : <span className="tabular-nums">{score}</span>;
+
 /** Grade link for one garage, or a pool summary. Renders nothing without data. */
 export const ModelGarageGrade = ({
   tier, garage, grade, pool,
