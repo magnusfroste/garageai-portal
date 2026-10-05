@@ -42,6 +42,9 @@ export interface SiteSettings {
   hero_headline_accent: string;
   hero_subtitle: string;
   hero_cta_text: string;
+  hero_cta_url: string;
+  hero_secondary_cta_text: string;
+  hero_secondary_cta_url: string;
   hero_doc_url: string;
   hero_doc_text: string;
   hero_pillars: HeroPillar[];
@@ -90,19 +93,22 @@ export interface SiteSettings {
 }
 
 export const defaultSiteSettings: SiteSettings = {
-  site_name: "Private AI",
-  tagline: "Secure Private LLM Access for Developers",
+  site_name: "AI Portal",
+  tagline: "Open model access",
   api_base_url: "",
   netbird_api_url: "",
   logo_url: "",
   favicon_url: "/favicon.png",
 
   // Hero
-  hero_badge: "Your data never leaves your control",
-  hero_headline: "Private AI access",
-  hero_headline_accent: "built for developers",
-  hero_subtitle: "Secure LLM proxy with OpenAI-compatible API. Access multiple models, transparent pricing, and full data privacy. Get started in minutes.",
+  hero_badge: "Open model platform",
+  hero_headline: "Open model access",
+  hero_headline_accent: "through one API",
+  hero_subtitle: "Use available open models through an OpenAI-compatible API.",
   hero_cta_text: "Get started",
+  hero_cta_url: "/auth",
+  hero_secondary_cta_text: "",
+  hero_secondary_cta_url: "",
   hero_doc_url: "",
   hero_doc_text: "Documentation",
   hero_pillars: [
@@ -113,7 +119,7 @@ export const defaultSiteSettings: SiteSettings = {
 
   // Features
   features_headline: "Everything you need for",
-  features_headline_accent: "Private AI",
+  features_headline_accent: "open models",
   features_subtitle: "Sovereign, secure, and developer-friendly AI infrastructure — ready to scale.",
   feature_cards: [
     {
@@ -145,21 +151,21 @@ export const defaultSiteSettings: SiteSettings = {
   cta_bullets: ["25M tokens included", "All models available", "No credit card"],
   cta_button_text: "Get started",
   navbar_cta_text: "Start Free Trial",
-  footer_text: "Secure Private LLM Access for Developers",
+  footer_text: "Open model access",
   footer_links: [],
 
   // SEO
-  seo_title: "Private AI - Secure Private LLM Access for Developers",
-  seo_description: "Enterprise-grade private LLM proxy for secure AI development. Access multiple models with transparent pricing and full data privacy.",
+  seo_title: "AI Portal - Open model access",
+  seo_description: "Access open models through an OpenAI-compatible API.",
   seo_keywords: "LLM, AI, proxy, private, secure, API",
-  og_title: "Private AI - Secure Private LLM Access",
-  og_description: "Enterprise-grade private LLM proxy for secure AI development",
-  og_image_url: "/og-image.png",
+  og_title: "AI Portal - Open model access",
+  og_description: "Access open models through an OpenAI-compatible API.",
+  og_image_url: "",
   jsonld_organization: JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "Private AI",
-    "description": "Secure Private LLM Access for Developers"
+    "name": "AI Portal",
+    "description": "Open model access"
   }, null, 2),
   faq_schema: [],
   robots_txt: `User-agent: *\nAllow: /`,

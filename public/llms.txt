@@ -1,12 +1,12 @@
-# PrivAI
+# GarageAI
 
 > Enterprise-grade private LLM proxy: secure, privacy-first access to multiple AI models for developers.
 
-PrivAI gives developers and teams access to several large language models through a private proxy, with API keys, transparent pricing, usage logs and credit management, while keeping code and data private. It is built for developers and companies that want to use AI in their work without leaking sensitive code or data.
+GarageAI is a two-sided marketplace for local AI capacity. Buyers use open models through an OpenAI-compatible API, while operators offer GPU capacity and earn per token.
 
 ## Links
 
-- [Home](https://www.privai.se/)
-- [Available models](https://www.privai.se/models)
-- [API documentation](https://www.privai.se/api)
-- [Sign in / start free trial](https://www.privai.se/auth)
+- [Home](https://app.garageai.eu/)
+- [Available models](https://app.garageai.eu/models)
+- [API documentation](https://app.garageai.eu/api)
+- [Sign in](https://app.garageai.eu/auth)

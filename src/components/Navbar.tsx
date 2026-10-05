@@ -5,7 +5,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export const Navbar = () => {
   const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "Private AI";
+  const siteName = settings?.site_name || "AI Portal";
   const logoUrl = settings?.logo_url;
   const ctaText = settings?.navbar_cta_text || "Start Free Trial";
 

@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { CuratedModel } from "@/models/types/curatedModel.types";
+import { buyerTierLabel } from "@/models/services/modelTier";
 
 const formatTokenCount = (tokens: number | null): string => {
   if (!tokens) return "—";
@@ -46,9 +47,9 @@ const ModelCard = ({ model }: { model: CuratedModel }) => (
         <Badge variant="outline" className="text-[10px] shrink-0">
           {model.provider}
         </Badge>
-        {model.mode && (
+        {buyerTierLabel(model.garage_tier) && (
           <Badge variant="secondary" className="text-[10px] shrink-0">
-            {model.mode}
+            {buyerTierLabel(model.garage_tier)}
           </Badge>
         )}
         {model.huggingface_url && (

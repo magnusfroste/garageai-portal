@@ -15,6 +15,7 @@ export interface Garage {
   status: string;
   disabled: boolean;
   last_registered_at: string | null;
+  last_heartbeat_at: string | null;
   created_at: string;
 }
 

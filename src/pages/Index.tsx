@@ -7,7 +7,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const Index = () => {
   const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "Private AI";
+  const siteName = settings?.site_name || "AI Portal";
   const tagline = settings?.tagline || "Secure private LLM access for developers.";
 
   return (

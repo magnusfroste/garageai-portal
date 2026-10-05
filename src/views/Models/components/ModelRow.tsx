@@ -2,6 +2,7 @@ import { ExternalLink, Hash, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CuratedModel } from "@/models/types/curatedModel.types";
+import { buyerTierLabel } from "@/models/services/modelTier";
 
 const formatTokenCount = (tokens: number | null): string => {
   if (!tokens) return "—";
@@ -39,7 +40,7 @@ export const ModelRow = ({ model }: { model: CuratedModel }) => (
           {model.model_name || model.id}
         </span>
         <Badge variant="outline" className="text-[10px]">{model.provider}</Badge>
-        {model.mode && <Badge variant="secondary" className="text-[10px]">{model.mode}</Badge>}
+        {buyerTierLabel(model.garage_tier) && <Badge variant="secondary" className="text-[10px]">{buyerTierLabel(model.garage_tier)}</Badge>}
       </div>
 
       <TooltipProvider delayDuration={200}>

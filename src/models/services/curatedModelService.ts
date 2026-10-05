@@ -9,7 +9,7 @@ export class CuratedModelService {
 
   /** User-facing list: one entry per model_name (LiteLLM routing name). */
   async getEnabledModels(): Promise<CuratedModel[]> {
-    return dedupeByModelName(await curatedModelRepository.fetchEnabled());
+    return dedupeByModelName(await curatedModelRepository.fetchEnabled()).filter((model) => model.status !== "unhealthy");
   }
 
   async toggleModel(id: string, enabled: boolean): Promise<void> {

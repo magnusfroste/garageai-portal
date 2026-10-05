@@ -4,3 +4,6 @@ verify_jwt = false
 
 [functions.sync-models-cron]
 verify_jwt = false
+
+[functions.node-heartbeat]
+verify_jwt = false

@@ -9,10 +9,13 @@ export const Hero = () => {
   const { settings } = useSiteSettings();
 
   const badge = settings?.hero_badge || "Your data never leaves your control";
-  const headline = settings?.hero_headline || "Private AI access";
+  const headline = settings?.hero_headline || "Open model access";
   const headlineAccent = settings?.hero_headline_accent || "built for developers";
   const subtitle = settings?.hero_subtitle || "Secure LLM proxy with OpenAI-compatible API. Access multiple models, transparent pricing, and full data privacy. Get started in minutes.";
   const ctaText = settings?.hero_cta_text || "Get started";
+  const ctaUrl = settings?.hero_cta_url || "/auth";
+  const secondaryCtaText = settings?.hero_secondary_cta_text || "";
+  const secondaryCtaUrl = settings?.hero_secondary_cta_url || "";
   const docUrl = settings?.hero_doc_url || "";
   const docText = settings?.hero_doc_text || "Documentation";
   const pillars = settings?.hero_pillars || [];
@@ -43,12 +46,19 @@ export const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Link to="/auth">
+            <Link to={ctaUrl}>
               <Button size="lg" className="glow text-lg px-8 py-6 group">
                 {ctaText}
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
+            {secondaryCtaText && secondaryCtaUrl && (
+              <Link to={secondaryCtaUrl}>
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                  {secondaryCtaText}
+                </Button>
+              </Link>
+            )}
             {docUrl && (
               <a href={docUrl} target="_blank" rel="noopener noreferrer">
                 <Button size="lg" variant="outline" className="text-lg px-8 py-6">

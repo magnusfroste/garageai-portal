@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://www.privai.se/sitemap.xml
+Sitemap: https://app.garageai.eu/sitemap.xml
