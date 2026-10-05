@@ -1,0 +1,12 @@
+# PrivAI
+
+> Enterprise-grade private LLM proxy: secure, privacy-first access to multiple AI models for developers.
+
+PrivAI gives developers and teams access to several large language models through a private proxy, with API keys, transparent pricing, usage logs and credit management, while keeping code and data private. It is built for developers and companies that want to use AI in their work without leaking sensitive code or data.
+
+## Links
+
+- [Home](https://www.privai.se/)
+- [Available models](https://www.privai.se/models)
+- [API documentation](https://www.privai.se/api)
+- [Sign in / start free trial](https://www.privai.se/auth)

@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/robots.txt",
-      "destination": "https://sjopaiquzqotymqmrcke.supabase.co/functions/v1/robots?base=https://tokenportal.lovable.app"
+      "destination": "https://sjopaiquzqotymqmrcke.supabase.co/functions/v1/robots?base=https://www.privai.se"
     },
     {
       "source": "/sitemap.xml",
-      "destination": "https://sjopaiquzqotymqmrcke.supabase.co/functions/v1/sitemap?base=https://tokenportal.lovable.app"
+      "destination": "https://sjopaiquzqotymqmrcke.supabase.co/functions/v1/sitemap?base=https://www.privai.se"
     },
     {
       "source": "/(.*)",
