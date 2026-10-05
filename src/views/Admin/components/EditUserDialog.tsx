@@ -28,11 +28,11 @@ export const EditUserDialog = ({
   onUpdateBudget,
   isUpdating,
 }: EditUserDialogProps) => {
-  const [maxBudget, setMaxBudget] = useState(25);
+  const [maxBudget, setMaxBudget] = useState(0);
 
   useEffect(() => {
     if (user) {
-      setMaxBudget(user.litellm_budget?.max_budget ?? 25);
+      setMaxBudget(user.litellm_budget?.max_budget ?? 0);
     }
   }, [user]);
 

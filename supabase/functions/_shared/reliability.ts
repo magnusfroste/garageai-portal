@@ -45,6 +45,7 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
     .select("id, name, status, disabled, models, netbird_peer_id, last_heartbeat_at").eq("disabled", false);
   if (error) throw new Error(`garages read failed: ${error.message}`);
   const now = Date.now();
+  const healthy = await healthyModelsByGarage(admin);
   const rows: Array<{ garage_id: string; online: boolean; reason: string | null }> = [];
   let skipped = 0;
   for (const g of (garages || []) as GarageRow[]) {

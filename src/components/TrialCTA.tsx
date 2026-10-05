@@ -7,7 +7,7 @@ export const TrialCTA = () => {
   const { settings } = useSiteSettings();
 
   const headline = settings?.cta_headline || "Start building with";
-  const headlineAccent = settings?.cta_headline_accent || "$25 free credit";
+  const headlineAccent = settings?.cta_headline_accent || "open models";
   const subtitle = settings?.cta_subtitle || "No credit card required. Get instant access to all models and start integrating in minutes with our OpenAI-compatible API.";
   const bullets = settings?.cta_bullets || [];
   const buttonText = settings?.cta_button_text || "Get started";

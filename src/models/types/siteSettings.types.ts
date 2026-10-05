@@ -142,7 +142,7 @@ export const defaultSiteSettings: SiteSettings = {
     {
       title: "Transparent Pricing",
       description: "Pay-as-you-go at $1 per 1M tokens. No hidden fees, no surprises.",
-      bullets: ["$1 / 1M tokens", "No hidden costs", "$25 free credit"],
+      bullets: ["Usage-based pricing", "No hidden costs", "Configured account credit"],
     },
     {
       title: "Usage Analytics",
@@ -153,9 +153,9 @@ export const defaultSiteSettings: SiteSettings = {
 
   // CTA
   cta_headline: "Start building with",
-  cta_headline_accent: "$25 free credit",
+  cta_headline_accent: "open models",
   cta_subtitle: "No credit card required. Get instant access to all models and start integrating in minutes with our OpenAI-compatible API.",
-  cta_bullets: ["25M tokens included", "All models available", "No credit card"],
+  cta_bullets: ["Configured account credit", "All models available", "No credit card"],
   cta_button_text: "Get started",
   navbar_cta_text: "Start Free Trial",
   footer_text: "Open model access",
