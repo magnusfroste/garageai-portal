@@ -8,3 +8,4 @@
 - [ ] Stale-heartbeat catalogue handling and buyer availability behavior
 - [ ] Heartbeat detail in Admin → Garages and Mina garage
 - [ ] Verify builds, auth journeys, heartbeat auth paths, and responsive UI
+- [ ] Report exact auth Site URL owner step if tooling cannot change it
