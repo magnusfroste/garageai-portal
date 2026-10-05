@@ -135,6 +135,8 @@ const ResultView = ({ result, runtime, onClose }: ResultViewProps) => {
 
 export const GaragePanel = () => {
   const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled } = useGarages();
+  const { reliability } = useGarageReliability();
+  const [sortDir, setSortDir] = useState<"none" | "desc" | "asc">("none");
   const [confirmGarage, setConfirmGarage] = useState<Garage | null>(null);
   const [toggling, setToggling] = useState(false);
   const [retesting, setRetesting] = useState<string | null>(null);
