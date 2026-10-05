@@ -35,6 +35,8 @@ export interface SiteSettings {
   // API
   api_base_url: string;
   netbird_api_url: string;
+  /** SearXNG server used by chat web search. */
+  searxng_url: string;
 
   // Landing – Hero
   hero_badge: string;
@@ -97,6 +99,7 @@ export const defaultSiteSettings: SiteSettings = {
   tagline: "Open model access",
   api_base_url: "",
   netbird_api_url: "",
+  searxng_url: "https://search.liteit.se",
   logo_url: "",
   favicon_url: "/favicon.png",
 

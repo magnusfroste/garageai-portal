@@ -1,14 +1,20 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Square } from "lucide-react";
+import { Send, Square, Globe } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   onStop?: () => void;
   disabled?: boolean;
+  webSearch?: boolean;
+  onToggleWebSearch?: () => void;
+  /** False when the selected model has no tool-calling support. */
+  webSearchAvailable?: boolean;
 }
 
-export const ChatInput = ({ onSend, onStop, disabled }: ChatInputProps) => {
+export const ChatInput = ({ onSend, onStop, disabled, webSearch, onToggleWebSearch, webSearchAvailable }: ChatInputProps) => {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -35,6 +41,31 @@ export const ChatInput = ({ onSend, onStop, disabled }: ChatInputProps) => {
   return (
     <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm px-4 py-3">
       <div className="max-w-3xl mx-auto flex items-end gap-2">
+        {onToggleWebSearch && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  aria-pressed={!!webSearch && webSearchAvailable}
+                  disabled={!webSearchAvailable || disabled}
+                  onClick={onToggleWebSearch}
+                  className={cn("h-10 gap-1.5 shrink-0", webSearch && webSearchAvailable && "border-primary text-primary bg-primary/10")}
+                >
+                  <Globe className="w-4 h-4" />
+                  <span className="hidden sm:inline">Webbsök</span>
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-xs">
+              {webSearchAvailable
+                ? "Låt modellen söka på webben och ange källor. Sökfrågan skickas till GarageAI:s sökserver."
+                : "Den här modellen har inte stöd för verktyg"}
+            </TooltipContent>
+          </Tooltip>
+        )}
         <div className="flex-1 relative">
           <textarea
             ref={textareaRef}

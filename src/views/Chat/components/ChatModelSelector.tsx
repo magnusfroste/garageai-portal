@@ -1,6 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ModelInfo } from "@/models/types/model.types";
-import { Bot } from "lucide-react";
+import { Bot, Wrench } from "lucide-react";
+import { useToolSupport } from "@/hooks/useToolSupport";
 import { cn } from "@/lib/utils";
 import { useModelGarageGrades } from "@/hooks/useGarageReliability";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
@@ -30,6 +31,7 @@ const StatusDot = ({ status }: { status: ModelInfo["status"] }) => {
 export const ChatModelSelector = ({ models, selectedModel, onSelect, disabled }: ChatModelSelectorProps) => {
   const selected = models.find((m) => m.id === selectedModel);
   const { gradeOf, poolSummary } = useModelGarageGrades();
+  const { supportsTools } = useToolSupport();
   const gradeHint = (m: ModelInfo) => {
     if (m.garage_tier === "dedicated") {
       const g = gradeOf(m.garage);
@@ -66,6 +68,7 @@ export const ChatModelSelector = ({ models, selectedModel, onSelect, disabled }:
                   <span className="text-xs text-muted-foreground w-16 shrink-0">{m.provider}</span>
                   <span className="font-mono text-xs">{m.model_name || m.id}</span>
                   {gradeHint(m)}
+                  {supportsTools(m.id) && <Wrench className="h-3 w-3 text-muted-foreground" aria-label="Stöd för verktyg" />}
                   {isDefault && <span className="text-yellow-400 text-xs">★</span>}
                 </span>
               </SelectItem>
