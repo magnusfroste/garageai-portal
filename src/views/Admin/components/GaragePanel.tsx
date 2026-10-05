@@ -145,7 +145,8 @@ const ResultView = ({ result, runtime, onClose }: ResultViewProps) => {
 };
 
 export const GaragePanel = () => {
-  const { garages, isLoading, isError, refetch, isRefetching, createGarage } = useGarages();
+  const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage } = useGarages();
+  const [retesting, setRetesting] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [dialogOpen, setDialogOpen] = useState(false);
