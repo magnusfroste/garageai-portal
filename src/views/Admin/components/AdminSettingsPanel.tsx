@@ -102,6 +102,9 @@ export const AdminSettingsPanel = () => {
           </p>
         </div>
 
+        <PlatformFeeField />
+
+
         <Button onClick={handleSave} disabled={saving} className="w-full md:w-auto">
           <Save className="w-4 h-4 mr-2" />
           {saving ? "Saving..." : "Save settings"}

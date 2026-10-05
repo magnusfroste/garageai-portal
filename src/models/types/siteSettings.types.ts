@@ -84,6 +84,9 @@ export interface SiteSettings {
 
   // Visibility
   models_public: boolean;
+
+  // Platform economics: share (0–100) of usage revenue kept by the platform
+  platform_fee_percent: number;
 }
 
 export const defaultSiteSettings: SiteSettings = {
@@ -162,4 +165,5 @@ export const defaultSiteSettings: SiteSettings = {
   robots_txt: `User-agent: *\nAllow: /`,
   sitemap_entries: [{ url: "/", priority: "1.0", changefreq: "weekly" }],
   models_public: false,
+  platform_fee_percent: 0,
 };
