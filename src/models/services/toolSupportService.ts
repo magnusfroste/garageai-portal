@@ -1,4 +1,5 @@
-export interface GarageToolSupport {
+
+import { t } from "@/i18n";export interface GarageToolSupport {
   garage_name: string;
   model: string;
   supports_tools: boolean;
@@ -16,11 +17,11 @@ export type ToolHintRuntime = string | null | undefined;
 /** Operator-facing fix hint when the tool probe fails, per inference engine. */
 export const toolSupportHint = (runtime: ToolHintRuntime): string | null => {
   switch (runtime) {
-    case "vllm": return "Starta med --enable-auto-tool-choice --tool-call-parser <parser>";
-    case "sglang": return "Starta med --tool-call-parser <parser>";
-    case "llamacpp": return "Starta llama-server med --jinja";
-    case "ollama": return "Modellen måste ha stöd för tools";
-    case "lmstudio": return "Välj en modell med tool use-stöd";
+    case "vllm": return t("Start with --enable-auto-tool-choice --tool-call-parser <parser>");
+    case "sglang": return t("Start with --tool-call-parser <parser>");
+    case "llamacpp": return t("Start llama-server with --jinja");
+    case "ollama": return t("The model must support tools");
+    case "lmstudio": return t("Choose a model with tool use support");
     default: return null;
   }
 };
