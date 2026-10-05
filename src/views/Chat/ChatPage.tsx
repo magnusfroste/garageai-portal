@@ -1,44 +1,48 @@
-import { apiModelName } from "@/models/services/modelDedup";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowDown, Menu, PanelLeft, SquarePen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { adminRepository } from "@/data/repositories/adminRepository";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
-import { ChatInput } from "./components/ChatInput";
+import { useToolSupport } from "@/hooks/useToolSupport";
+import { apiModelName } from "@/models/services/modelDedup";
+import type { ModelInfo } from "@/models/types/model.types";
+import { t } from "@/i18n";
 import { ChatMessageList } from "./components/ChatMessageList";
 import { ChatEmptyState } from "./components/ChatEmptyState";
-import { ChatHeader } from "./components/ChatHeader";
-import { ChatSidebar } from "./components/ChatSidebar";
+import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
+import { ChatModelPicker } from "./components/ChatModelPicker";
+import { ChatKeyPicker } from "./components/ChatKeyPicker";
+import { ChatComposer, type ChatComposerHandle } from "./components/ChatComposer";
+import { ChatSystemPrompt, DEFAULT_SYSTEM_PROMPT } from "./components/ChatSystemPrompt";
 import { useChatStream } from "./hooks/useChatStream";
 import { useChatConversations } from "./hooks/useChatConversations";
-import { useRef, useState, useCallback } from "react";
-import { DEFAULT_SYSTEM_PROMPT } from "./components/ChatSystemPrompt";
-import { useToolSupport } from "@/hooks/useToolSupport";
 import { useWebSearchPreference } from "./hooks/useWebSearchPreference";
+import { useChatPreferences } from "./hooks/useChatPreferences";
+import { useAutoScroll } from "./hooks/useAutoScroll";
+import type { ChatMessage } from "./types";
 
 export const ChatPage = () => {
   const { checkAuth } = useAuth();
   const [searchParams] = useSearchParams();
   const requestedModel = searchParams.get("model");
+  const prefs = useChatPreferences();
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedKeyId, setSelectedKeyId] = useState("");
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const composer = useRef<ChatComposerHandle>(null);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  useEffect(() => { checkAuth(); }, []);
 
-  // Use curated enabled models directly from DB
   const { models } = useCuratedModels(true);
-
-  // Map curated models to ModelInfo shape; id = LiteLLM model name (routing), never the deployment id
-  const modelInfos = models.map((m) => ({
+  const modelInfos: ModelInfo[] = useMemo(() => models.map((m) => ({
     id: apiModelName(m),
-    model_name: m.model_name,
+    model_name: apiModelName(m),
     provider: m.provider,
     max_input_tokens: m.max_input_tokens,
     max_output_tokens: m.max_output_tokens,
@@ -46,159 +50,186 @@ export const ChatPage = () => {
     output_cost_per_million: m.output_cost_per_million,
     mode: m.mode,
     status: m.status,
-    is_default: m.is_default,
     garage: m.garage,
     garage_tier: m.garage_tier,
-  }));
+    is_default: m.is_default,
+  }) as ModelInfo), [models]);
 
-  // Fetch user's API keys
-  const { data: apiKeys = [] } = useQuery({
+  const { data: apiKeys = [], refetch: refetchKeys } = useQuery({
     queryKey: ["user-api-keys"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
-      const { data, error } = await supabase
-        .from("api_keys")
-        .select("id, name, is_active")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("api_keys").select("id, name, is_active").eq("user_id", user.id).order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
     },
-    staleTime: 30 * 1000,
+    staleTime: 30_000,
   });
+  const { data: isAdmin } = useQuery({ queryKey: ["is-admin"], queryFn: () => adminRepository.checkIsAdmin() });
 
-  const { data: isAdmin } = useQuery({
-    queryKey: ["is-admin"],
-    queryFn: () => adminRepository.checkIsAdmin(),
-  });
-
-  // Auto-select first active key for non-admins, master key for admins
+  // Key: last used → first active → master (admins).
   useEffect(() => {
-    if (selectedKeyId) return;
-    if (isAdmin) {
-      setSelectedKeyId("__master__");
-    } else {
-      const firstActive = apiKeys.find((k) => k.is_active);
-      if (firstActive) setSelectedKeyId(firstActive.id);
-    }
-  }, [apiKeys, isAdmin, selectedKeyId]);
+    const active = apiKeys.filter((k) => k.is_active);
+    if (selectedKeyId && (selectedKeyId === "__master__" ? isAdmin : active.some((k) => k.id === selectedKeyId))) return;
+    const remembered = prefs.lastKey && (prefs.lastKey === "__master__" ? isAdmin : active.some((k) => k.id === prefs.lastKey));
+    const next = remembered ? prefs.lastKey : active[0]?.id ?? (isAdmin ? "__master__" : "");
+    if (next !== selectedKeyId) setSelectedKeyId(next);
+  }, [apiKeys, isAdmin, selectedKeyId, prefs.lastKey]);
 
-  // Select default model from enabled models
+  // Model: ?model= → last used → default → first healthy.
   useEffect(() => {
-    if (modelInfos.length > 0 && !selectedModel) {
-      const requested = requestedModel && modelInfos.find((m) => m.id === requestedModel);
-      if (requested) { setSelectedModel(requested.id); return; }
-      // First try to find the default model
-      const defaultModel = modelInfos.find((m) => m.is_default);
-      if (defaultModel) {
-        setSelectedModel(defaultModel.id);
-      } else {
-        // Fallback to first healthy or first available
-        const healthy = modelInfos.find((m) => m.status === "healthy");
-        setSelectedModel(healthy?.id || modelInfos[0].id);
-      }
-    }
-  }, [modelInfos, selectedModel, requestedModel]);
+    if (!modelInfos.length || (selectedModel && modelInfos.some((m) => m.id === selectedModel))) return;
+    const find = (id?: string | null) => (id ? modelInfos.find((m) => m.id === id) : undefined);
+    const pick = find(requestedModel) ?? find(prefs.lastModel)
+      ?? modelInfos.find((m) => (m as ModelInfo & { is_default?: boolean }).is_default)
+      ?? modelInfos.find((m) => m.status === "healthy") ?? modelInfos[0];
+    setSelectedModel(pick.id);
+  }, [modelInfos, selectedModel, requestedModel, prefs.lastModel]);
 
-  const {
-    conversations,
-    activeConversation,
-    activeId,
-    setActiveId,
-    createConversation,
-    setMessages,
-    deleteConversation,
-  } = useChatConversations();
+  const chooseModel = (id: string) => { setSelectedModel(id); prefs.rememberModel(id); };
+  const chooseKey = (id: string) => { setSelectedKeyId(id); prefs.rememberKey(id); };
 
-  const messages = activeConversation?.messages ?? [];
-
+  const convs = useChatConversations();
+  const messages = convs.activeConversation?.messages ?? [];
   const { supportsTools } = useToolSupport();
   const webSearchAvailable = !!selectedModel && supportsTools(selectedModel);
   const [webSearch, toggleWebSearch] = useWebSearchPreference();
+  const { isStreaming, isReasoning, run, stopStreaming } = useChatStream(convs.setMessagesFor);
 
-  const { isStreaming, isReasoning, sendMessage, stopStreaming } = useChatStream({
-    webSearch: webSearch && webSearchAvailable,
-    model: selectedModel,
-    setMessages,
+  const lastLen = messages[messages.length - 1]?.content.length ?? 0;
+  const scroll = useAutoScroll(`${messages.length}:${lastLen}:${messages[messages.length - 1]?.reasoning?.length ?? 0}`);
+
+  const canSend = !!selectedModel && !!selectedKeyId;
+  const startRun = useCallback((convId: string, history: ChatMessage[]) => run({
+    convId, history,
+    modelId: selectedModel,
+    model: modelInfos.find((m) => m.id === selectedModel),
     apiKeyId: selectedKeyId === "__master__" ? undefined : selectedKeyId,
     systemPrompt,
-  });
+    webSearch: webSearch && webSearchAvailable,
+  }), [run, selectedModel, modelInfos, selectedKeyId, systemPrompt, webSearch, webSearchAvailable]);
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [messages]);
-
-  const sendingRef = useRef(false);
-  const handleSend = useCallback(async (input: string) => {
-    if (!input.trim() || isStreaming || sendingRef.current) return;
-    sendingRef.current = true;
+  const sending = useRef(false);
+  const handleSend = useCallback(async (text: string) => {
+    if (isStreaming || sending.current || !canSend) return;
+    sending.current = true;
     try {
-      if (!activeId) {
-        await createConversation(selectedModel);
-      }
-      await sendMessage(input, messages);
-    } finally {
-      sendingRef.current = false;
-    }
-  }, [isStreaming, activeId, createConversation, selectedModel, sendMessage]);
+      const id = convs.activeId || (await convs.createConversation(selectedModel));
+      if (!id) return;
+      scroll.scrollToBottom(false);
+      await startRun(id, [...messages, { role: "user", content: text }]);
+    } finally { sending.current = false; }
+  }, [isStreaming, canSend, convs, selectedModel, messages, startRun, scroll]);
 
-  const handleNewChat = async () => {
-    if (!isStreaming) {
-      await createConversation(selectedModel);
-    }
-  };
+  const handleRegenerate = useCallback(() => {
+    if (isStreaming || !convs.activeId) return;
+    const lastUser = messages.map((m) => m.role).lastIndexOf("user");
+    if (lastUser < 0) return;
+    startRun(convs.activeId, messages.slice(0, lastUser + 1));
+  }, [isStreaming, convs.activeId, messages, startRun]);
+
+  const handleEdit = useCallback((index: number, text: string) => {
+    if (isStreaming || !convs.activeId) return;
+    startRun(convs.activeId, [...messages.slice(0, index), { role: "user", content: text }]);
+  }, [isStreaming, convs.activeId, messages, startRun]);
+
+  const newChat = useCallback(() => {
+    if (isStreaming) stopStreaming();
+    convs.setActiveId(null);
+    requestAnimationFrame(() => composer.current?.focus());
+  }, [isStreaming, stopStreaming, convs]);
+
+  // Keyboard: Cmd/Ctrl+K new chat, Esc stops streaming.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); e.stopPropagation(); newChat(); }
+      else if (e.key === "Escape" && isStreaming) { e.preventDefault(); stopStreaming(); }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [newChat, isStreaming, stopStreaming]);
+
+  const empty = messages.length === 0;
+  const composerEl = (
+    <ChatComposer
+      ref={composer}
+      onSend={handleSend}
+      onStop={stopStreaming}
+      streaming={isStreaming}
+      canSend={canSend}
+      webSearch={webSearch}
+      onToggleWebSearch={toggleWebSearch}
+      webSearchAvailable={webSearchAvailable}
+    >
+      <ChatSystemPrompt systemPrompt={systemPrompt} onChangeSystemPrompt={setSystemPrompt} disabled={isStreaming} />
+    </ChatComposer>
+  );
 
   return (
-    <div className="flex h-full bg-background overflow-hidden">
-      <div className="flex-1 flex flex-col min-w-0 h-full">
-        <ChatHeader
-          models={modelInfos}
-          selectedModel={selectedModel}
-          onSelectModel={setSelectedModel}
-          keys={apiKeys}
-          selectedKeyId={selectedKeyId}
-          onSelectKey={setSelectedKeyId}
-          systemPrompt={systemPrompt}
-          onChangeSystemPrompt={setSystemPrompt}
-          disabled={isStreaming}
-          onToggleSidebar={() => setSidebarOpen((v) => !v)}
-          sidebarOpen={sidebarOpen}
-          isAdmin={isAdmin}
-        />
-
-        <div ref={scrollRef} className="flex-1 overflow-auto">
-          {messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <ChatEmptyState />
-            </div>
-          ) : (
-            <ChatMessageList messages={messages} isStreaming={isStreaming} isReasoning={isReasoning} />
-          )}
-        </div>
-
-        <ChatInput
-          onSend={handleSend}
-          onStop={stopStreaming}
-          disabled={isStreaming}
-          webSearch={webSearch}
-          onToggleWebSearch={toggleWebSearch}
-          webSearchAvailable={webSearchAvailable}
-        />
-      </div>
-
-      <ChatSidebar
-        conversations={conversations}
-        activeId={activeId}
-        onSelect={setActiveId}
-        onNew={handleNewChat}
-        onDelete={deleteConversation}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+    <div className="flex h-full overflow-hidden bg-background">
+      <ChatHistoryPanel
+        open={panelOpen}
+        mobileOpen={drawerOpen}
+        onMobileOpenChange={setDrawerOpen}
+        conversations={convs.conversations}
+        activeId={convs.activeId}
+        onSelect={(id) => { if (!isStreaming) convs.setActiveId(id); }}
+        onNew={newChat}
+        onRename={convs.renameConversation}
+        onDelete={convs.deleteConversation}
       />
+
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <header className="flex h-12 shrink-0 items-center gap-1 px-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden" onClick={() => setDrawerOpen(true)} aria-label={t("Chat history")}>
+            <Menu className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="hidden h-8 w-8 md:inline-flex" onClick={() => setPanelOpen((v) => !v)} aria-label={t("Toggle chat history")}>
+            <PanelLeft className="h-4 w-4" />
+          </Button>
+          {!panelOpen && (
+            <Button variant="ghost" size="icon" className="hidden h-8 w-8 md:inline-flex" onClick={newChat} aria-label={t("New chat")}>
+              <SquarePen className="h-4 w-4" />
+            </Button>
+          )}
+          <ChatModelPicker models={modelInfos} selected={selectedModel} onSelect={chooseModel} disabled={isStreaming} />
+          <div className="ml-auto">
+            <ChatKeyPicker keys={apiKeys} selected={selectedKeyId} onSelect={chooseKey} onCreated={refetchKeys} isAdmin={!!isAdmin} disabled={isStreaming} />
+          </div>
+        </header>
+
+        {empty ? (
+          <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-4 pb-16">
+            <div className="w-full max-w-[760px] space-y-6">
+              <ChatEmptyState onPick={(p) => composer.current?.fill(p)} />
+              {composerEl}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div ref={scroll.ref} onScroll={scroll.onScroll} className="flex-1 overflow-y-auto [overflow-anchor:none]">
+              <ChatMessageList messages={messages} isStreaming={isStreaming} isReasoning={isReasoning} onRegenerate={handleRegenerate} onEdit={handleEdit} />
+            </div>
+            {!scroll.atBottom && (
+              <Button
+                variant="outline" size="icon"
+                className="absolute bottom-36 left-1/2 h-8 w-8 -translate-x-1/2 rounded-full shadow-md"
+                onClick={() => scroll.scrollToBottom()}
+                aria-label={t("Scroll to bottom")}
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+            )}
+            <div className="shrink-0 px-4 pb-4 pt-1">
+              <div className="mx-auto w-full max-w-[760px]">
+                {composerEl}
+                <p className="mt-2 text-center text-[11px] text-muted-foreground">{t("Answers come from community garages and can be wrong. Check important facts.")}</p>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

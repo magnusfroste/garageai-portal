@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { t } from "@/i18n";
 
 const DEFAULT_SYSTEM_PROMPT = "You are a helpful, friendly AI assistant. Answer concisely and accurately.";
 
@@ -23,7 +24,7 @@ export const ChatSystemPrompt = ({ systemPrompt, onChangeSystemPrompt, disabled 
           size="icon"
           className={`h-8 w-8 ${!isDefault ? "text-primary" : "text-muted-foreground"}`}
           disabled={disabled}
-          title="System Prompt"
+          title={t("System prompt")}
         >
           <Settings2 className="w-4 h-4" />
         </Button>
@@ -31,7 +32,7 @@ export const ChatSystemPrompt = ({ systemPrompt, onChangeSystemPrompt, disabled 
       <PopoverContent className="w-80" align="start">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">System Prompt</Label>
+            <Label className="text-sm font-medium">{t("System prompt")}</Label>
             {!isDefault && (
               <Button
                 variant="ghost"
@@ -39,18 +40,18 @@ export const ChatSystemPrompt = ({ systemPrompt, onChangeSystemPrompt, disabled 
                 className="h-6 text-xs text-muted-foreground"
                 onClick={() => onChangeSystemPrompt(DEFAULT_SYSTEM_PROMPT)}
               >
-                Reset
+                {t("Reset")}
               </Button>
             )}
           </div>
           <Textarea
             value={systemPrompt}
             onChange={(e) => onChangeSystemPrompt(e.target.value)}
-            placeholder="Enter system prompt..."
+            placeholder={t("Enter system prompt...")}
             className="min-h-[120px] text-xs resize-none"
           />
           <p className="text-[10px] text-muted-foreground">
-            Defines how the model behaves. Changes apply to new messages.
+            {t("Defines how the model behaves. Changes apply to new messages.")}
           </p>
         </div>
       </PopoverContent>

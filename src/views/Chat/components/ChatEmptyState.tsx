@@ -1,17 +1,26 @@
-import { Sparkles } from "lucide-react";
+import { t } from "@/i18n";
 
-export const ChatEmptyState = () => {
-  return (
-    <div className="flex flex-col items-center text-center px-4">
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-border/50 flex items-center justify-center mb-5">
-        <Sparkles className="w-6 h-6 text-primary" />
-      </div>
-      <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground mb-2">
-        How can I help you today?
-      </h2>
-      <p className="text-sm text-muted-foreground">
-        Pick a model above and ask anything.
-      </p>
+const PROMPTS = [
+  "Explain how a GPU runs a language model, in simple terms",
+  "Write a Python function that removes duplicates from a list",
+  "Summarise the pros and cons of running AI locally",
+  "Draft a short, friendly email asking for a meeting",
+];
+
+export const ChatEmptyState = ({ onPick }: { onPick: (text: string) => void }) => (
+  <div className="text-center">
+    <h1 className="mb-6 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{t("What can I help you with?")}</h1>
+    <div className="mx-auto mt-4 grid max-w-[640px] gap-2 sm:grid-cols-2">
+      {PROMPTS.map((p) => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => onPick(t(p))}
+          className="rounded-xl border border-border/70 px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/40 hover:text-foreground"
+        >
+          {t(p)}
+        </button>
+      ))}
     </div>
-  );
-};
+  </div>
+);
