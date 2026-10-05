@@ -18,8 +18,9 @@ export const buildGarageCommand = (
   runtime: string,
   opts: BuildCommandOptions = {}
 ): string => {
+  const appOrigin = globalThis.location?.origin || "https://app.garageai.eu";
   const lines = [
-    "curl -fsSLo garageai-connect.sh https://app.garageai.eu/garageai-connect.sh",
+    `curl -fsSLo garageai-connect.sh ${appOrigin}/garageai-connect.sh`,
   ];
   const parts = [`${opts.sudo ? "sudo " : ""}bash garageai-connect.sh`];
   if (result.setup_key) {
