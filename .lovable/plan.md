@@ -67,3 +67,13 @@ Applicera en idempotent migration som:
 - “Båda” sparar inget särskilt `signup_intent`; det markerar bara onboarding klar och öppnar dashboarden.
 - **Kom igång** visas för profiler med buyer-intent; användare som väljer “Båda” landar på den vanliga dashboarden.
 - Befintlig e-post/lösenordsinloggning behålls; inga nya inloggningsleverantörer läggs till i denna ändring.
+
+## Nästa leverans: garage-heartbeat och automatisk modelldetektering
+Efter branding/onboarding genomförs även följande i samma arbetsflöde:
+- Extrahera registreringskärnan till `_shared/registerGarage.ts`; `register-node` behåller sitt svar och testar alla modeller, medan heartbeat kan testa endast nytillkomna modeller och återanvända tidigare resultat för övriga.
+- Lägg till `garages.last_heartbeat_at timestamptz null` via en idempotent migration.
+- Skapa `node-heartbeat` med register-token-autentisering, identitetskontroll och samma payloadvalidering som registrering. Oförändrade heartbeats gör endast databasuppdateringen; ändringar registrerar nya modeller och tar bort gamla; tom modellista tömmer garaget och sätter status `pending`.
+- Utöka den befintliga femminuterssynken: heartbeat-installationer äldre än 15 minuter blir offline och deras katalograder unhealthy utan att `enabled` ändras; äldre installationer fortsätter använda NetBird-status.
+- Köparvyer erbjuder inte en deduplicerad modell när alla underliggande rader är unhealthy/offline; modeller som fortfarande visas markeras tydligt som tillfälligt otillgängliga och utesluts ur chattväljaren.
+- Visa senaste livstecken relativt, eller “Ingen heartbeat (äldre installation)”, i Admin → Garages och Mina garage.
+- Testa `node-heartbeat` med saknad och felaktig token och bekräfta 401 utan att logga registertoken eller runtime-nyckel.
