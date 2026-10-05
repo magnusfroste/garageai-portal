@@ -10,7 +10,7 @@ export class ProfileRepository {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Profile;
   }
 
   async update(userId: string, updates: { full_name?: string; company?: string }): Promise<void> {

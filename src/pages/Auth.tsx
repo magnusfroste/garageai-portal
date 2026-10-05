@@ -27,7 +27,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "Private AI";
+  const siteName = settings?.site_name || "AI Portal";
   const logoUrl = settings?.logo_url;
   const intent = onboardingService.readUrlIntent(location.search);
   const heading = intent === "operator"
@@ -131,11 +131,11 @@ const Auth = () => {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">E-post</Label>
                     <Input id="signin-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password">Lösenord</Label>
                     <Input id="signin-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
@@ -151,19 +151,19 @@ const Auth = () => {
                     <Input id="signup-name" type="text" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={isLoading} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">E-post</Label>
                     <Input id="signup-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">Lösenord</Label>
                     <Input id="signup-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                   </div>
                   <div className="bg-accent/10 border border-accent/20 rounded-lg p-4 space-y-2">
-                    <p className="text-sm font-semibold text-accent">Free credit included:</p>
+                     <p className="text-sm font-semibold text-accent">Startkredit ingår:</p>
                     <ul className="text-sm space-y-1 text-muted-foreground">
-                      <li>• $25 in credits (25M tokens)</li>
-                      <li>• All LLM models included</li>
-                      <li>• No credit card required</li>
+                       <li>• 25 USD i krediter</li>
+                       <li>• Alla tillgängliga modeller</li>
+                       <li>• Inget betalkort krävs</li>
                     </ul>
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
