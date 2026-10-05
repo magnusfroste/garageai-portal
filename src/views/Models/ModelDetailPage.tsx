@@ -22,6 +22,7 @@ import { CopyButton } from "./components/CopyButton";
 import { ModelSnippets } from "./components/ModelSnippets";
 import { cn } from "@/lib/utils";
 
+import { t } from "@/i18n";
 type SortKey = "garage" | "grade" | "price" | "ttft" | "tps" | "availability" | "online";
 const GRADE_RANK = { Nytt: 0, D: 1, C: 2, B: 3, A: 4 } as const;
 const sortVal = (o: GarageOffer, k: SortKey): number | string => {
@@ -37,7 +38,7 @@ const sortVal = (o: GarageOffer, k: SortKey): number | string => {
 };
 
 const MiniBar = ({ days }: { days: GarageDay[] | undefined }) => (
-  <div className="flex gap-px h-3 w-24" title="Senaste 30 dagarna">
+  <div className="flex gap-px h-3 w-24" title={t("Last 30 days")}>
     {(days ?? []).map((d) => {
       const l = dayLevel(d.online_pct, d.samples);
       return <div key={d.day} className={cn("flex-1 rounded-[1px]", {
@@ -82,7 +83,7 @@ const ModelDetailPage = () => {
   }, [m, sort]);
 
   if (isLoading) return <div className="p-6"><Skeleton className="h-40" /></div>;
-  if (!m) return <p className="p-6 text-sm text-muted-foreground">Modellen hittades inte.</p>;
+  if (!m) return <p className="p-6 text-sm text-muted-foreground">{t("Model not found.")}</p>;
 
   const baseUrl = `${(settings?.api_base_url || "https://llm.garageai.eu").replace(/\/+$/, "")}/v1`;
   const modelId = m.poolId ?? offers[0]?.modelId ?? m.name;
@@ -106,22 +107,22 @@ const ModelDetailPage = () => {
           <h1 className="text-2xl font-bold font-mono">{m.name}</h1>
           {m.bestGrade && <GradeBadge grade={m.bestGrade} />}
           {m.supportsTools && <ToolsBadge />}
-          {!m.available && <Badge variant="outline">Inte tillgänglig just nu</Badge>}
+          {!m.available && <Badge variant="outline">{t("Not available right now")}</Badge>}
         </div>
         <div className="flex items-center gap-2 text-sm">
           <code className="font-mono text-xs bg-secondary/50 rounded px-2 py-1">{modelId}</code>
           <CopyButton text={modelId} />
         </div>
         <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-          <Fact label="Kontextlängd" value={formatContext(m.contextLength)} />
-          <Fact label="Max svar" value={formatContext(m.maxOutput)} />
-          <Fact label="Pris in / 1M" value={priceRange(m.minPrice.input, m.maxPrice.input)} />
-          <Fact label="Pris ut / 1M" value={priceRange(m.minPrice.output, m.maxPrice.output)} />
+          <Fact label={t("Context length")} value={formatContext(m.contextLength)} />
+          <Fact label={t("Max output")} value={formatContext(m.maxOutput)} />
+          <Fact label={t("Price in / 1M")} value={priceRange(m.minPrice.input, m.maxPrice.input)} />
+          <Fact label={t("Price out / 1M")} value={priceRange(m.minPrice.output, m.maxPrice.output)} />
           <Fact label="Garage" value={String(m.offers.length)} />
-          <Fact label="Tokens senaste 7 d" value={formatTokens(m.tokens7d)} />
+          <Fact label={t("Tokens last 7 days")} value={formatTokens(m.tokens7d)} />
         </div>
         {m.huggingfaceUrl && (
-          <a href={m.huggingfaceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Modellkort på HuggingFace</a>
+          <a href={m.huggingfaceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">{t("Model card on HuggingFace")}</a>
         )}
       </div>
 
@@ -129,24 +130,24 @@ const ModelDetailPage = () => {
         <Card className="glass-card border-primary/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" />Pool</CardTitle>
-            <CardDescription>Vi väljer det bästa tillgängliga garaget åt dig.</CardDescription>
+            <CardDescription>{t("We pick the best available garage for you.")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-6 text-sm">
-            <div><div className="text-xs text-muted-foreground">Pris in / ut per 1M</div>{formatPrice(m.poolPrice.input)} / {formatPrice(m.poolPrice.output)}</div>
-            <div><div className="text-xs text-muted-foreground">Sammanlagd tillgänglighet (30 d)</div>{formatPct(m.poolAvailability)}</div>
-            <div><div className="text-xs text-muted-foreground">Modell-id</div><code className="font-mono text-xs">{m.poolId}</code></div>
+            <div><div className="text-xs text-muted-foreground">{t("Price in / out per 1M")}</div>{formatPrice(m.poolPrice.input)} / {formatPrice(m.poolPrice.output)}</div>
+            <div><div className="text-xs text-muted-foreground">{t("Combined availability (30 d)")}</div>{formatPct(m.poolAvailability)}</div>
+            <div><div className="text-xs text-muted-foreground">{t("Model ID")}</div><code className="font-mono text-xs">{m.poolId}</code></div>
           </CardContent>
         </Card>
       )}
 
       <Card className="glass-card">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Garage som kör modellen</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base">{t("Garages running this model")}</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto px-0">
           <table className="w-full text-sm">
             <thead className="text-[11px] text-muted-foreground border-b border-border/50">
               <tr>
-                <Th k="garage">Garage</Th><Th k="grade">Betyg</Th><Th k="price">Pris in / ut</Th>
-                <Th k="ttft">Median TTFT</Th><Th k="tps">Median tok/s</Th><Th k="availability">Tillgänglighet 30 d</Th><Th k="online">Status</Th>
+                <Th k="garage">Garage</Th><Th k="grade">{t("Grade")}</Th><Th k="price">{t("Price in / out")}</Th>
+                <Th k="ttft">Median TTFT</Th><Th k="tps">Median tok/s</Th><Th k="availability">{t("Availability 30 d")}</Th><Th k="online">Status</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
@@ -159,7 +160,7 @@ const ModelDetailPage = () => {
                   <td className="px-3 py-2">{o.grade ? <GradeBadge grade={o.grade} /> : "—"}</td>
                   <td className="px-3 py-2 tabular-nums">{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</td>
                   <td className="px-3 py-2 tabular-nums">{formatNumber(o.ttftMs, " ms")}</td>
-                  <td className="px-3 py-2 tabular-nums">{o.tokensPerSecond == null ? "—" : String(o.tokensPerSecond).replace(".", ",")}</td>
+                  <td className="px-3 py-2 tabular-nums">{o.tokensPerSecond == null ? "—" : String(o.tokensPerSecond)}</td>
                   <td className="px-3 py-2"><div className="flex items-center gap-2"><MiniBar days={profileOf(o.garage)} /><span className="text-xs tabular-nums">{formatPct(o.availability30d)}</span></div></td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1.5 text-xs">
@@ -172,17 +173,17 @@ const ModelDetailPage = () => {
             </tbody>
           </table>
           {offers.some((o) => o.modelId) && (
-            <p className="px-3 pt-3 text-[11px] text-muted-foreground">Vill du köra mot ett specifikt garage? Använd modell-id <code className="font-mono">garage/&lt;garage&gt;/{m.name}</code>.</p>
+            <p className="px-3 pt-3 text-[11px] text-muted-foreground">{t("Want to target a specific garage? Use the model ID")} <code className="font-mono">garage/&lt;garage&gt;/{m.name}</code>.</p>
           )}
         </CardContent>
       </Card>
 
       <Card className="glass-card">
         <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">Kom igång</CardTitle>
+          <CardTitle className="text-base">{t("Get started")}</CardTitle>
           {session && (
             <Button asChild size="sm" variant="outline">
-              <Link to={`/dashboard/chat?model=${encodeURIComponent(modelId)}`}><MessageSquare className="w-4 h-4 mr-1" />Testa i chatten</Link>
+              <Link to={`/dashboard/chat?model=${encodeURIComponent(modelId)}`}><MessageSquare className="w-4 h-4 mr-1" />{t("Try in chat")}</Link>
             </Button>
           )}
         </CardHeader>
@@ -192,8 +193,8 @@ const ModelDetailPage = () => {
       {hasUsage && (
         <Card className="glass-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Användning</CardTitle>
-            <CardDescription>Genererade tokens per dag, senaste 30 dagarna (alla garage som kör modellen).</CardDescription>
+            <CardTitle className="text-base">{t("Usage")}</CardTitle>
+            <CardDescription>{t("Generated tokens per day, last 30 days (all garages running the model).")}</CardDescription>
           </CardHeader>
           <CardContent className="h-48">
             <ResponsiveContainer width="100%" height="100%">

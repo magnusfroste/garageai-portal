@@ -114,7 +114,7 @@ const Auth = () => {
       if (error) toast.error(error.message);
       else toast.success(t("Welcome back!"));
     } catch (error) {
-      toast.error(error instanceof z.ZodError ? error.errors[0].message : t("An unexpected error occurred");
+      toast.error(error instanceof z.ZodError ? error.errors[0].message : t("An unexpected error occurred"));
     } finally {
       setIsLoading(false);
     }

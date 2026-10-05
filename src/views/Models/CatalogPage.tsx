@@ -16,12 +16,13 @@ import { GradeBadge } from "@/views/Garages/components/Reliability";
 import { ToolsBadge } from "@/views/Models/components/ToolsBadge";
 import { cn } from "@/lib/utils";
 
+import { t } from "@/i18n";
 const ANY = "__any";
 const SORT_LABEL: Record<CatalogSort, string> = {
-  popular: "Populärast",
-  cheapest: "Billigast",
-  fastest: "Snabbast",
-  reliable: "Högst tillförlitlighet",
+  popular: "Most popular",
+  cheapest: "Cheapest",
+  fastest: "Fastest",
+  reliable: "Most reliable",
 };
 
 const Pick = ({
@@ -43,7 +44,7 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
   >
     <span
       className={cn("w-2 h-2 rounded-full", m.available ? "bg-emerald-500" : "bg-muted-foreground/40")}
-      title={m.available ? "Tillgänglig" : "Inte tillgänglig just nu"}
+      title={m.available ? t("Available") : t("Not available right now")}
     />
     <div className="min-w-0">
       <div className="flex items-center gap-2 min-w-0">
@@ -51,14 +52,14 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
         {m.supportsTools && <ToolsBadge />}
       </div>
       <div className="text-xs text-muted-foreground truncate">
-        {m.provider}{m.mode ? ` · ${m.mode}` : ""}{!m.available ? " · Inte tillgänglig just nu" : ""}
+        {m.provider}{m.mode ? ` · ${m.mode}` : ""}{!m.available ? ` · ${t("Not available right now")}` : ""}
       </div>
     </div>
     <span className="text-xs tabular-nums text-muted-foreground hidden sm:block">{formatContext(m.contextLength)}</span>
     <span className="text-xs tabular-nums hidden sm:block">
-      från {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}
+      {t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}
     </span>
-    <span className="text-xs text-muted-foreground hidden sm:block">{m.offers.length} garage</span>
+    <span className="text-xs text-muted-foreground hidden sm:block">{t("{n} garages", { n: m.offers.length })}</span>
     <span className="justify-self-end">{m.bestGrade && <GradeBadge grade={m.bestGrade} />}</span>
   </Link>
 );
@@ -80,35 +81,35 @@ export const CatalogPage = () => {
       <div>
         <div className="flex items-center gap-3 mb-1">
           <Cpu className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Modeller</h1>
+          <h1 className="text-2xl font-bold">{t("Models")}</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Öppna modeller som körs i garage. Priser per 1 miljon tokens (in / ut).
+          {t("Open models running in garages. Prices per 1 million tokens (in / out).")}
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full sm:w-64">
           <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder="Sök modell eller garage" className="h-8 pl-8 text-sm" />
+          <Input value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder={t("Search model or garage")} className="h-8 pl-8 text-sm" />
         </div>
         <Pick value={f.minContext ? String(f.minContext) : null} onChange={(v) => set({ minContext: v ? Number(v) : null })}
-          placeholder="Alla kontextlängder" options={[["8000", "≥ 8k"], ["32000", "≥ 32k"], ["128000", "≥ 128k"]]} />
+          placeholder={t("All context lengths")} options={[["8000", "≥ 8k"], ["32000", "≥ 32k"], ["128000", "≥ 128k"]]} />
         <Pick value={f.maxPrice != null ? String(f.maxPrice) : null} onChange={(v) => set({ maxPrice: v != null ? Number(v) : null })}
-          placeholder="Alla priser" options={[["0.5", "Ut ≤ $0,5"], ["1", "Ut ≤ $1"], ["2", "Ut ≤ $2"], ["5", "Ut ≤ $5"]]} />
-        <Pick value={f.runtime} onChange={(v) => set({ runtime: v })} placeholder="Alla motorer"
+          placeholder={t("All prices")} options={[["0.5", `${t("Out")} ≤ $0.5`], ["1", `${t("Out")} ≤ $1`], ["2", `${t("Out")} ≤ $2`], ["5", `${t("Out")} ≤ $5`]]} />
+        <Pick value={f.runtime} onChange={(v) => set({ runtime: v })} placeholder={t("All engines")}
           options={runtimes.map((r) => [r, runtimeLabel(r)])} />
-        <Pick value={f.minGrade} onChange={(v) => set({ minGrade: v as CatalogFilters["minGrade"] })} placeholder="Alla betyg"
-          options={[["A", "Betyg A"], ["B", "B eller bättre"], ["C", "C eller bättre"]]} />
+        <Pick value={f.minGrade} onChange={(v) => set({ minGrade: v as CatalogFilters["minGrade"] })} placeholder={t("All grades")}
+          options={[["A", t("Grade A")], ["B", t("B or better")], ["C", t("C or better")]]} />
         <div className="flex items-center gap-2 px-2">
           <Switch id="multi" checked={f.multiGarage} onCheckedChange={(c) => set({ multiGarage: c })} />
-          <Label htmlFor="multi" className="text-xs">Endast modeller med flera garage</Label>
+          <Label htmlFor="multi" className="text-xs">{t("Only models with several garages")}</Label>
         </div>
         <div className="sm:ml-auto">
           <Select value={f.sort} onValueChange={(v) => set({ sort: v as CatalogSort })}>
             <SelectTrigger className="h-8 w-[190px] text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {(Object.keys(SORT_LABEL) as CatalogSort[]).map((s) => <SelectItem key={s} value={s}>{SORT_LABEL[s]}</SelectItem>)}
+              {(Object.keys(SORT_LABEL) as CatalogSort[]).map((s) => <SelectItem key={s} value={s}>{t(SORT_LABEL[s])}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -116,17 +117,17 @@ export const CatalogPage = () => {
 
       <div className="rounded-lg border border-border/50 bg-card/60 divide-y divide-border/50">
         <div className="hidden sm:grid grid-cols-[auto_minmax(0,1fr)_70px_150px_80px_80px] gap-x-4 px-4 py-2 text-[11px] text-muted-foreground">
-          <span className="w-2" /><span>Modell</span><span>Kontext</span><span>Lägsta pris in / ut</span><span>Garage</span><span className="justify-self-end">Bästa betyg</span>
+          <span className="w-2" /><span>{t("Model")}</span><span>{t("Context")}</span><span>{t("Lowest price in / out")}</span><span>Garage</span><span className="justify-self-end">{t("Best grade")}</span>
         </div>
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 m-2" />)
         ) : list.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">Inga modeller matchar.</p>
+          <p className="p-6 text-sm text-muted-foreground">{t("No models match.")}</p>
         ) : (
           list.map((m) => <CatalogRow key={m.name} m={m} />)
         )}
       </div>
-      <p className="text-xs text-muted-foreground">{list.length} av {models.length} modeller</p>
+      <p className="text-xs text-muted-foreground">{t("{a} of {b} models", { a: list.length, b: models.length })}</p>
     </div>
   );
 };
