@@ -1,11 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Profile } from "@/models/types/profile.types";
+import { OnboardingUpdateData, Profile } from "@/models/types/profile.types";
 
 export class ProfileRepository {
   async findById(userId: string): Promise<Profile | null> {
     const { data, error } = await supabase
       .from("profiles")
-      .select("full_name, email, company, purchased_credits_usd")
+      .select("full_name, email, company, purchased_credits_usd, signup_intent, onboarding_done")
       .eq("id", userId)
       .single();
 
@@ -19,6 +19,11 @@ export class ProfileRepository {
       .update(updates)
       .eq("id", userId);
 
+    if (error) throw error;
+  }
+
+  async updateOnboarding(userId: string, updates: OnboardingUpdateData): Promise<void> {
+    const { error } = await supabase.from("profiles").update(updates).eq("id", userId);
     if (error) throw error;
   }
 }
