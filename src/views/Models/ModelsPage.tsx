@@ -24,8 +24,7 @@ export const ModelsPage = () => {
           <h1 className="text-2xl font-bold text-foreground">Modeller</h1>
         </div>
         <p className="text-muted-foreground mb-8 max-w-xl">
-          These are the models currently available through {siteName}.
-          Use any model ID below via the API — click the HuggingFace link for full documentation.
+          Modellerna som just nu finns tillgängliga via {siteName}. Använd modellnamnet i API:et – HuggingFace-länken leder till full dokumentation.
         </p>
 
         {isLoading ? (
