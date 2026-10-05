@@ -21,13 +21,6 @@ async function sha256Hex(s: string): Promise<string> {
   return Array.from(new Uint8Array(d)).map((x) => x.toString(16).padStart(2, "0")).join("");
 }
 
-interface NetbirdPeer {
-  id: string;
-  name: string;
-  ip: string;
-  groups?: Array<{ id: string; name: string }>;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
