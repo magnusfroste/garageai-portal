@@ -212,8 +212,8 @@ export async function runHourlyProbes(admin: SupabaseClient) {
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const { data: garages } = await admin.from("garages")
-    .select("id, name, operator_id, api_host, mesh_ip, port, runtime, models, status, disabled, last_heartbeat_at, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million").eq("disabled", false).eq("status", "online");
-  const list = (garages || []) as RoutingGarage[];
+    .select("id, name, operator_id, api_host, mesh_ip, port, runtime, models, status, disabled, last_heartbeat_at, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million").eq("disabled", false).in("status", ["online", "failed_test", "offline"]);
+  const list = ((garages || []) as RoutingGarage[]).filter((g) => (g.api_host || g.mesh_ip) && g.port);
   if (!list.length) return { probed: [] as string[] };
 
   const healthy = await healthyModelsByGarage(admin);
@@ -235,16 +235,18 @@ export async function runHourlyProbes(admin: SupabaseClient) {
     .sort((a, b) => (lastAny.get(a.id) ?? 0) - (lastAny.get(b.id) ?? 0))
     .slice(0, MAX_PROBES_PER_RUN);
 
-  const probed: Array<{ garage: string; model: string; passed: boolean; supports_tools: boolean | null; tools_error: string | null }> = [];
+  const probed: Array<{ garage: string; model: string; passed: boolean; inconclusive: boolean; supports_tools: boolean | null; tools_error: string | null }> = [];
   await Promise.all(due.map(async (g) => {
     const candidates = [...(g.models || [])];
     if (!candidates.length) return;
     // Rotate: the model tested longest ago goes next.
     candidates.sort((a, b) => (lastByModel.get(`${g.id}::${a}`) ?? 0) - (lastByModel.get(`${g.id}::${b}`) ?? 0));
     const [r] = await withProbeDeployments(admin, g, [candidates[0]], (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, g, [candidates[0]], routeFor));
-    probed.push({ garage: g.name, model: r.model, passed: r.passed, supports_tools: r.supports_tools, tools_error: r.tools_error });
+    if (r.passed && g.status !== "online") await admin.from("garages").update({ status: "online" }).eq("id", g.id);
+    probed.push({ garage: g.name, model: r.model, passed: r.passed, inconclusive: !!r.inconclusive, supports_tools: r.supports_tools, tools_error: r.tools_error });
   }));
   for (const r of probed) {
+    if (r.inconclusive) continue;
     await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true, testResults: { garage: r.garage, results: new Map([[r.model, r.passed]]) } });
   }
   return { probed };

@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     if (!changed) {
       if (garage.status === "offline") {
-        const { data: tests } = await admin.from("garage_model_tests").select("model, passed, tested_at").eq("garage_id", garage.id).order("tested_at", { ascending: false });
+        const { data: tests } = await admin.from("garage_model_tests").select("model, passed, tested_at").eq("garage_id", garage.id).eq("inconclusive", false).order("tested_at", { ascending: false });
         const latest = new Map<string, boolean>();
         for (const test of (tests || []) as Array<{ model: string; passed: boolean }>) if (!latest.has(test.model)) latest.set(test.model, test.passed);
         if (payload.models.some((model) => latest.get(model) === true)) {
