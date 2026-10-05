@@ -16,6 +16,8 @@ export interface AcceptanceResult {
   output_tokens: number | null;
   tokens_per_second: number | null;
   instruction_followed: boolean;
+  supports_tools: boolean | null;
+  tools_error: string | null;
 }
 
 const TIMEOUT_MS = 90_000;
@@ -33,6 +35,7 @@ export async function runAcceptanceTest(
   const result: AcceptanceResult = {
     model, passed: false, http_status: null, error: null, ttft_ms: null,
     duration_ms: null, output_tokens: null, tokens_per_second: null, instruction_followed: false,
+    supports_tools: null, tools_error: null,
   };
 
   let content = "";
@@ -114,6 +117,61 @@ export async function runAcceptanceTest(
   return result;
 }
 
+const TOOL_TIMEOUT_MS = 60_000;
+
+/** Capability probe: does the model emit a valid OpenAI-style tool call? Does not affect `passed`. */
+export async function runToolProbe(
+  litellmBase: string, masterKey: string, garageName: string, model: string,
+): Promise<{ supports_tools: boolean; tools_error: string | null }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TOOL_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${litellmBase}/v1/chat/completions`, {
+      method: "POST",
+      signal: controller.signal,
+      headers: { Authorization: `Bearer ${masterKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: `garage/${garageName}/${model}`,
+        stream: false,
+        max_tokens: 256,
+        temperature: 0,
+        messages: [{ role: "user", content: "Vad är klockan i Stockholm just nu? Använd verktyget." }],
+        tools: [{
+          type: "function",
+          function: {
+            name: "get_time",
+            description: "Returns the current time for a city",
+            parameters: { type: "object", properties: { city: { type: "string" } }, required: ["city"] },
+          },
+        }],
+        tool_choice: "auto",
+        metadata: { tags: ["acceptance-test"], garage: garageName },
+      }),
+    });
+    if (res.status !== 200) {
+      await res.body?.cancel().catch(() => {});
+      return { supports_tools: false, tools_error: `HTTP error ${res.status}` };
+    }
+    const json = await res.json().catch(() => null);
+    const call = json?.choices?.[0]?.message?.tool_calls?.[0];
+    if (!call) return { supports_tools: false, tools_error: "no tool_calls" };
+    if (call?.function?.name !== "get_time") return { supports_tools: false, tools_error: "wrong name" };
+    let args: unknown;
+    try {
+      const raw = call.function.arguments;
+      args = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch { return { supports_tools: false, tools_error: "invalid JSON" }; }
+    if (!args || typeof (args as { city?: unknown }).city !== "string") {
+      return { supports_tools: false, tools_error: "invalid JSON (missing city)" };
+    }
+    return { supports_tools: true, tools_error: null };
+  } catch {
+    return { supports_tools: false, tools_error: controller.signal.aborted ? "HTTP error (timeout)" : "HTTP error (request failed)" };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Runs all tests in parallel and stores one garage_model_tests row per model. */
 export async function runAndStoreAcceptanceTests(
   admin: SupabaseClient,
@@ -122,13 +180,17 @@ export async function runAndStoreAcceptanceTests(
   garage: { id: string; name: string },
   models: string[],
 ): Promise<AcceptanceResult[]> {
-  const results = await Promise.all(models.map((m) => runAcceptanceTest(litellmBase, masterKey, garage.name, m)));
+  const results = await Promise.all(models.map(async (m) => {
+    const r = await runAcceptanceTest(litellmBase, masterKey, garage.name, m);
+    if (r.passed) Object.assign(r, await runToolProbe(litellmBase, masterKey, garage.name, m));
+    return r;
+  }));
   const { error } = await admin.from("garage_model_tests").insert(
     results.map((r) => ({ garage_id: garage.id, ...r })),
   );
   if (error) console.error("[acceptance] failed to store results:", error.message);
   for (const r of results) {
-    console.log("[acceptance]", { garage: garage.name, model: r.model, passed: r.passed, status: r.http_status, ttft_ms: r.ttft_ms });
+    console.log("[acceptance]", { garage: garage.name, model: r.model, passed: r.passed, status: r.http_status, ttft_ms: r.ttft_ms, supports_tools: r.supports_tools, tools_error: r.tools_error });
   }
   return results;
 }
@@ -136,4 +198,5 @@ export async function runAndStoreAcceptanceTests(
 export const toPublicResult = (r: AcceptanceResult) => ({
   model: r.model, passed: r.passed, error: r.error, ttft_ms: r.ttft_ms,
   tokens_per_second: r.tokens_per_second, instruction_followed: r.instruction_followed,
+  supports_tools: r.supports_tools, tools_error: r.tools_error,
 });
