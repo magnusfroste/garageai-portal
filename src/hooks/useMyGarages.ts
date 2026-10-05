@@ -18,7 +18,10 @@ export const useMyGarages = () => {
   const garagesQuery = useQuery({
     queryKey: ["my-garages", userId],
     enabled: !!userId,
-    queryFn: () => garageRepository.listOwn(userId!),
+    queryFn: () => {
+      if (!userId) return Promise.resolve([]);
+      return garageRepository.listOwn(userId);
+    },
   });
 
   const ids = (garagesQuery.data ?? []).map((g) => g.id);
