@@ -13,6 +13,7 @@ import { runtimeLabel } from "@/models/services/garageRuntime";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
 import { GarageReliabilityPanel } from "./components/GarageReliabilityPanel";
 import { CommandBlock, GarageStatusBadge, ModelTestBadge, ToolsTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
+import { t } from "@/i18n";
 
 const MyGaragesPage = () => {
   const navigate = useNavigate();
@@ -27,10 +28,10 @@ const MyGaragesPage = () => {
     try {
       const res = await garageRepository.retest(g.name);
       const ok = res.acceptance.filter((a) => a.passed).length;
-      toast({ title: `Test klart: ${ok}/${res.acceptance.length} godkända` });
+      toast({ title: t("Test done: {ok}/{n} passed", { ok, n: res.acceptance.length }) });
       invalidate();
     } catch (e) {
-      toast({ title: "Testet misslyckades", description: e instanceof Error ? e.message : "Okänt fel", variant: "destructive" });
+      toast({ title: t("The test failed"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
       setBusy(null);
     }
@@ -43,7 +44,7 @@ const MyGaragesPage = () => {
       setCreds({ c, runtime: g.runtime || "ollama" });
       invalidate();
     } catch (e) {
-      toast({ title: "Kunde inte skapa nytt kommando", description: e instanceof Error ? e.message : "Okänt fel", variant: "destructive" });
+      toast({ title: t("Could not create a new command"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
       setBusy(null);
     }
@@ -53,27 +54,26 @@ const MyGaragesPage = () => {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Server className="w-6 h-6 text-primary" />Mina garage</h1>
-          <p className="text-sm text-muted-foreground mt-1">Dina anslutna GPU-maskiner och deras modeller.</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Server className="w-6 h-6 text-primary" />{t("My garages")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t("Your connected GPU machines and their models.")}</p>
         </div>
-        <Button onClick={() => navigate("/dashboard/offer-gpu")}><Plus className="w-4 h-4 mr-2" />Lägg till garage</Button>
+        <Button onClick={() => navigate("/dashboard/offer-gpu")}><Plus className="w-4 h-4 mr-2" />{t("Add garage")}</Button>
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Laddar...</p>
+        <p className="text-sm text-muted-foreground">{t("Loading...")}</p>
       ) : isError ? (
-        <p className="text-sm text-destructive">Kunde inte ladda dina garage.</p>
+        <p className="text-sm text-destructive">{t("Could not load your garages.")}</p>
       ) : garages.length === 0 ? (
         <Card className="glass-card">
           <CardHeader>
-            <CardTitle>Du har inga garage än</CardTitle>
+            <CardTitle>{t("You have no garages yet")}</CardTitle>
             <CardDescription>
-              Har du en dator med bra GPU? Anslut den som ett garage så kör den öppna modeller åt plattformens användare –
-              krypterat via ett privat meshnät, utan att något exponeras mot internet.
+              {t("Have a computer with a good GPU? Connect it as a garage and it will run open models for the platform's users – encrypted over a private mesh network, with nothing exposed to the internet.")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate("/dashboard/offer-gpu")}>Erbjud din GPU</Button>
+            <Button onClick={() => navigate("/dashboard/offer-gpu")}>{t("Offer your GPU")}</Button>
           </CardContent>
         </Card>
       ) : (
@@ -85,12 +85,12 @@ const MyGaragesPage = () => {
                   <GarageStatusBadge status={g.status} />
                   <span className="font-mono">{g.name}</span>
                    {g.runtime && <Badge variant="outline" className="text-[10px]">{runtimeLabel(g.runtime)}{g.port ? `:${g.port}` : ""}</Badge>}
-                  <span className="text-xs text-muted-foreground ml-auto">Registrerad: {relativeTimeSv(g.last_registered_at)}</span>
-                   <span className="text-xs text-muted-foreground">Senaste livstecken: {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : "Ingen heartbeat (äldre installation)"}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">{t("Registered:")} {relativeTimeSv(g.last_registered_at)}</span>
+                   <span className="text-xs text-muted-foreground">{t("Last heartbeat:")} {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>
                 </div>
                 <div className="flex gap-1.5 flex-wrap">
                   {g.models.length === 0
-                    ? <span className="text-xs text-muted-foreground">Inga modeller registrerade än</span>
+                    ? <span className="text-xs text-muted-foreground">{t("No models registered yet")}</span>
                     : g.models.map((m) => (
                       <span key={m} className="inline-flex flex-wrap gap-1">
                         <ModelTestBadge model={m} test={latestTests.get(`${g.id}::${m}`)} />
@@ -101,14 +101,14 @@ const MyGaragesPage = () => {
                 {!g.disabled && (
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" disabled={!!busy || g.models.length === 0} onClick={() => retest(g)}>
-                      <FlaskConical className="w-3.5 h-3.5 mr-1.5" />{busy === `t:${g.name}` ? "Testar..." : "Testa igen"}
+                      <FlaskConical className="w-3.5 h-3.5 mr-1.5" />{busy === `t:${g.name}` ? t("Testing...") : t("Test again")}
                     </Button>
                     <Button size="sm" variant="outline" disabled={!!busy} onClick={() => rotate(g)}>
-                      <KeyRound className="w-3.5 h-3.5 mr-1.5" />{busy === `c:${g.name}` ? "Skapar..." : "Nytt kommando"}
+                      <KeyRound className="w-3.5 h-3.5 mr-1.5" />{busy === `c:${g.name}` ? t("Creating...") : t("New command")}
                     </Button>
                   </div>
                 )}
-                {g.disabled && <p className="text-xs text-destructive">Garaget är avstängt av plattformen.</p>}
+                {g.disabled && <p className="text-xs text-destructive">{t("The garage has been disabled by the platform.")}</p>}
                 <GarageReliabilityPanel name={g.name} reliability={reliability.get(g.name)} />
               </CardContent>
             </Card>
@@ -119,14 +119,14 @@ const MyGaragesPage = () => {
       <Dialog open={!!creds} onOpenChange={(o) => !o && setCreds(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Nytt kommando</DialogTitle>
-            <DialogDescription>Kör kommandot på maskinen {creds?.c.garage.name}. Använd sudo på Linux.</DialogDescription>
+            <DialogTitle>{t("New command")}</DialogTitle>
+            <DialogDescription>{t("Run the command on the machine {name}. Use sudo on Linux.", { name: creds?.c.garage.name ?? "" })}</DialogDescription>
           </DialogHeader>
           {creds && (
             <div className="space-y-4">
               <OneTimeWarning />
               <CommandBlock command={buildGarageCommand(creds.c, creds.runtime)} />
-              <Button className="w-full" onClick={() => setCreds(null)}>Klar – jag har kopierat</Button>
+              <Button className="w-full" onClick={() => setCreds(null)}>{t("Done – I have copied it")}</Button>
             </div>
           )}
         </DialogContent>
