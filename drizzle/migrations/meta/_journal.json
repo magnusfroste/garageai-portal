@@ -29,6 +29,13 @@
       "when": 1791157708046,
       "tag": "0003_cron_secret_verifier",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791160188362,
+      "tag": "0004_create_garage_model_tests",
+      "breakpoints": true
     }
   ]
 }

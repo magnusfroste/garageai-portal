@@ -191,6 +191,59 @@ export type Database = {
         }
         Relationships: []
       }
+      garage_model_tests: {
+        Row: {
+          duration_ms: number | null
+          error: string | null
+          garage_id: string
+          http_status: number | null
+          id: string
+          instruction_followed: boolean | null
+          model: string
+          output_tokens: number | null
+          passed: boolean
+          tested_at: string
+          tokens_per_second: number | null
+          ttft_ms: number | null
+        }
+        Insert: {
+          duration_ms?: number | null
+          error?: string | null
+          garage_id: string
+          http_status?: number | null
+          id?: string
+          instruction_followed?: boolean | null
+          model: string
+          output_tokens?: number | null
+          passed: boolean
+          tested_at?: string
+          tokens_per_second?: number | null
+          ttft_ms?: number | null
+        }
+        Update: {
+          duration_ms?: number | null
+          error?: string | null
+          garage_id?: string
+          http_status?: number | null
+          id?: string
+          instruction_followed?: boolean | null
+          model?: string
+          output_tokens?: number | null
+          passed?: boolean
+          tested_at?: string
+          tokens_per_second?: number | null
+          ttft_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_model_tests_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_tokens: {
         Row: {
           created_at: string | null
