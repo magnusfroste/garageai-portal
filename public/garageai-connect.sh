@@ -16,7 +16,7 @@
 #
 # Usage:
 #   ./garageai-connect.sh --setup-key KEY --management-url https://netbird.example.eu \
-#       [--runtime ollama|lmstudio|llamacpp|vllm|paddock|unsloth|other] [--port PORT] \
+#       [--runtime ollama|lmstudio|llamacpp|vllm|sglang|paddock|unsloth|mlx|lemonade|other] [--port PORT] \
 #       [--name NODE_NAME] [--runtime-api-key KEY] [--register-url URL --register-token TOKEN] \
 #       [--skip-install] [--yes]
 #
@@ -76,13 +76,18 @@ default_port() {
     lmstudio) echo 1234 ;;
     llamacpp) echo 8080 ;;
     vllm)     echo 8000 ;;
+    sglang)   echo 30000 ;;
+    paddock)  echo 11540 ;;
+    unsloth)  echo 8888 ;;
+    mlx)      echo 8080 ;;
+    lemonade) echo 13305 ;;
     *)        echo "" ;;
   esac
 }
 
 case "$RUNTIME" in
-  ollama|lmstudio|llamacpp|vllm|paddock|unsloth|other) ;;
-  *) die "Unknown runtime '$RUNTIME' (use ollama, lmstudio, llamacpp, vllm, paddock, unsloth or other)" ;;
+  ollama|lmstudio|llamacpp|vllm|sglang|paddock|unsloth|mlx|lemonade|other) ;;
+  *) die "Unknown runtime '$RUNTIME' (use ollama, lmstudio, llamacpp, vllm, sglang, paddock, unsloth, mlx, lemonade or other)" ;;
 esac
 
 [ -n "$PORT" ] || PORT="$(default_port "$RUNTIME")"
@@ -109,7 +114,22 @@ runtime_hint() {
     vllm)
       info "vLLM:"
       info "    vllm serve <model> --host ${bind} --port ${PORT}" ;;
-    paddock|unsloth|other)
+    sglang)
+      info "SGLang:"
+      info "    python -m sglang.launch_server --model-path <model> --host ${bind} --port ${PORT}" ;;
+    paddock)
+      info "Paddock:"
+      info "    paddock-runner --model /path/to/model.gguf --host ${bind} --port ${PORT} --api-key KEY" ;;
+    unsloth)
+      info "Unsloth:"
+      info "    unsloth run --model <repo>:<quant> -H ${bind} -p ${PORT} --disable-tools" ;;
+    mlx)
+      info "MLX:"
+      info "    mlx_lm.server --model <model> --host ${bind} --port ${PORT}" ;;
+    lemonade)
+      info "Lemonade:"
+      info "    LEMONADE_API_KEY=KEY lemond --host ${bind} --port ${PORT}" ;;
+    other)
       info "Start the ${RUNTIME} OpenAI-compatible server on port ${PORT}, bound to"
       info "  ${bind} instead of 127.0.0.1 (see its documentation for the bind option)." ;;
   esac

@@ -19,7 +19,7 @@ export const buildGarageCommand = (
   opts: BuildCommandOptions = {}
 ): string => {
   const lines = [
-    "curl -fsSLO https://raw.githubusercontent.com/magnusfroste/garageai/main/scripts/garageai-connect.sh",
+    "curl -fsSLo garageai-connect.sh https://app.garageai.eu/garageai-connect.sh",
   ];
   const parts = [`${opts.sudo ? "sudo " : ""}bash garageai-connect.sh`];
   if (result.setup_key) {
