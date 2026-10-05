@@ -39,7 +39,7 @@ serve(async (req: Request) => {
     // Get litellm_user_id from profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('litellm_user_id, purchased_credits_usd')
+      .select('litellm_user_id, starting_credit_usd, purchased_credits_usd')
       .eq('id', user.id)
       .single();
 
@@ -70,11 +70,11 @@ serve(async (req: Request) => {
 
     if (!litellmResponse.ok) {
       console.error('LiteLLM /user/info error:', litellmResponse.status);
-      // Return defaults if LiteLLM is unavailable
+      const configuredBudget = Number(profile.starting_credit_usd ?? 0) + Number(profile.purchased_credits_usd ?? 0);
       return new Response(JSON.stringify({
-        max_budget: 25,
+        max_budget: configuredBudget,
         spend: 0,
-        budget_remaining: 25,
+        budget_remaining: configuredBudget,
         purchased_credits_usd: profile.purchased_credits_usd ?? 0,
         litellm_user_id: profile.litellm_user_id,
       }), {
