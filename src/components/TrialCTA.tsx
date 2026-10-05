@@ -13,7 +13,7 @@ export const TrialCTA = () => {
   const buttonText = settings?.cta_button_text || "Get started";
 
   return (
-    <section className="py-24 relative">
+    <section id="priser" className="py-24 relative scroll-mt-20">
       <div className="absolute inset-0" style={{
         background: 'radial-gradient(circle at 50% 50%, hsla(160, 40%, 25%, 0.15), transparent 70%)'
       }} />
