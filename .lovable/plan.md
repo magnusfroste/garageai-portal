@@ -1,51 +1,69 @@
+# Plan: GarageAI-brandning och intentbaserad onboarding
 
+## Mål
+Göra denna installation till GarageAI utan att ta bort white-label-stödet: allt varumärkes- och landningsinnehåll fortsätter hämtas från admininställningarna. Nya och befintliga användare får samtidigt en svensk, intentbaserad väg in som köpare, operatör eller båda.
 
-## Improvements Found
+## Genomförande
 
-After reviewing the admin panel, edge function, frontend components, RLS policies, and database state, here are the issues and improvements:
+### 1. Uppdatera lagrat innehåll för denna installation
+- Ersätt posten `site_settings` med GarageAI-namn, titel, beskrivning, hero, tre feature-kort, CTA-, footer-, SEO- och AEO-innehåll enligt briefen.
+- Behåll tekniska värden som API- och NetBird-adresser samt befintliga synlighets- och avgiftsinställningar.
+- Ta bort gamla PrivAI/Privat AI/Sverige-påståenden, gamla länkar och gamla OG-bildreferenser ur den lagrade posten.
+- Behåll robotsregeln och sätt sitemap till GarageAI:s startsida.
+- Använd befintlig favicon som neutral ikon och lämna `logo_url` tom så den dynamiska ikon+text-logotypen används.
 
-### 1. RLS Policy Bug — All Policies Are Restrictive (CRITICAL)
-All RLS policies on `user_roles` use `RESTRICTIVE` mode (indicated by `Permissive: No`). In Postgres, restrictive policies are combined with AND, meaning a user needs to pass **all** policies simultaneously. This makes the "Admins can view all roles" policy useless because it conflicts with "Users can view own roles" — an admin trying to view another user's role fails the `auth.uid() = user_id` check.
+### 2. Gör båda hero-knapparna white-label-konfigurerbara
+- Lägg till lagrade fält för primär CTA-URL samt sekundär CTA-text och URL.
+- Visa `Använd AI` till `/auth?intent=buyer` och `Erbjud din GPU` till `/auth?intent=operator`.
+- Lägg till motsvarande redigerbara fält i adminens landningsinställningar.
+- Behåll bakåtkompatibla standardvärden så andra white-label-installationer inte bryts.
 
-**Fix:** Change the three `user_roles` policies to `PERMISSIVE` (the default). Drop and recreate them without `AS RESTRICTIVE`.
+### 3. Utöka profil och registrering säkert
+Applicera en idempotent migration som:
+- lägger till `profiles.signup_intent text` med kontrollen `buyer`, `operator` eller `NULL`;
+- lägger till `profiles.onboarding_done boolean not null default false`;
+- uppdaterar `handle_new_user()` så signup-metadata kopieras atomiskt till profilen, utan att ändra första-användaren-blir-admin-logiken;
+- behåller RLS och utökar column-level UPDATE till `full_name`, `company`, `signup_intent` och `onboarding_done` för `authenticated`; `anon` får ingen UPDATE.
 
-### 2. Same RLS Bug on `profiles`, `api_keys`, `token_usage`
-All existing policies across these tables are also restrictive. This likely causes issues if you ever add a second policy on the same operation. Not immediately broken for single-policy-per-operation cases, but should be fixed for correctness.
+### 4. Separera intent- och onboardinglogik
+- Lägg typer, lokal lagring och validering i en egen onboardingmodell/service.
+- Utöka profile repository/service/hook med de två nya profilfälten och en avgränsad onboardinguppdatering.
+- `/auth` läser endast `buyer|operator`, lagrar värdet före signup, skickar det som signup-metadata och använder en säker callback till samma origin.
+- Efter session och profilladdning prioriteras lagrat URL-intent, därefter profilens metadata-intent. När det används markeras onboarding klar och lokal lagring rensas.
 
-**Fix:** Recreate the policies as permissive.
+### 5. Bygg första inloggningens vägval
+- Operator går direkt till `/dashboard/offer-gpu`.
+- Buyer går till dashboarden, där en kompakt svensk **Kom igång**-sektion länkar till API-nycklar, chatten och API-sidan.
+- Användare utan intent och med `onboarding_done = false` går till `/onboarding` och väljer:
+  - **Använda AI** → sparar buyer och går till dashboarden.
+  - **Erbjuda min GPU** → sparar operator och går till GPU-guiden.
+  - **Båda – visa mig runt** → markerar onboarding klar och går till dashboarden.
+- Intentbaserade rubriker visas på registreringssidan. Befintliga användare får valet exakt en gång.
 
-### 3. Admin Edge Function — Missing `try/catch` on `req.json()`
-In the PATCH handler, `await req.json()` can throw if the body is malformed. This would result in an unhandled error and a 500 with no useful message.
+### 6. Svenska navigationsetiketter och köparnamn
+- Gör användarsidans meny och toppfält konsekvent svenska, inklusive Profil och Logga ut; admininnehållet lämnas oförändrat.
+- Visa modellnivån `dedicated` som **Specifikt garage** och `pool` som **Pool** endast i köparvyer. Databasvärden och adminens tekniska namn ändras inte.
+- Ta bort kvarvarande hårdkodad PrivAI-text från den dashboardyta som berörs.
 
-**Fix:** Wrap in try/catch with a 400 response for invalid JSON.
+### 7. Auth-domän
+- Sätt auth Site URL till `https://app.garageai.eu`.
+- Behåll befintliga Lovable-previewadresser och `https://app.garageai.eu/**` i redirect-listan.
+- Bekräftelselänkar använder `/auth` på samma origin så intent från profilen fortfarande kan lösas efter e-postbekräftelse.
 
-### 4. Admin Edge Function — No Validation on `user_id` Format
-The `user_id` from the PATCH body is passed directly to `.eq("id", user_id)` without UUID format validation. While not a SQL injection risk (Supabase SDK parameterizes), it could cause confusing errors.
+## Tekniska detaljer
+- Nya filer skapas före importörer och följer projektets lager: repository → service/model → hook/view.
+- White-label-innehåll seedas inte i komponenterna; installationsspecifika värden skrivs endast till `admin_settings.site_settings`.
+- Den statiska sidhuvud-fallbacken får GarageAI:s korrekta domänmetadata och ingen gammal OG-bild, medan den dynamiska rendering som redan finns fortsatt använder lagrade SEO-värden.
+- Ingen roll eller behörighet lagras i profilen; onboardingfälten är endast produktpreferenser.
 
-**Fix:** Add basic UUID format validation.
+## Verifiering
+- Kontrollera databaskolumner, constraints, grants och att triggern bevarar admin-bootstrap.
+- Testa buyer-, operator- och intentlös registrering/inloggning, inklusive omladdning och återkomst från bekräftelselänk om en testsession kan skapas.
+- Kontrollera att intent rensas lokalt efter användning och att valet inte visas igen.
+- Kontrollera hero-knappar, svenska menyer, Kom igång-länkar och tieretiketter i desktop och mobil.
+- Kontrollera live auth-konfiguration, preview-redirects, byggstatus, runtime-fel och den renderade sidans metadata.
 
-### 5. Frontend — `EditUserDialog` Doesn't Include Reset Option
-The dialog only lets admins change `max_trial_keys`. The reset button is separate in the table. It would be more cohesive to include a "Reset trial keys" button inside the edit dialog as well.
-
-**Fix:** Add a reset button inside `EditUserDialog`.
-
-### 6. Frontend — No Confirmation for Reset Action
-Clicking the reset button in `UserTable` immediately resets without confirmation. This is a destructive action.
-
-**Fix:** Add an `AlertDialog` confirmation before resetting.
-
-### 7. Missing Error Boundary on Admin Route
-If the admin page crashes, the whole app breaks. No error boundary wraps it.
-
-**Fix:** Add a simple error boundary or use React Router's `errorElement`.
-
----
-
-### Implementation Priority
-
-1. **Fix RLS policies** (critical — current restrictive policies will block admin from viewing other users' roles)
-2. **Edge function hardening** (try/catch, UUID validation)
-3. **Reset confirmation dialog** (UX safety)
-4. **Move reset into EditUserDialog** (UX cohesion)
-5. **Error boundary** (resilience)
-
+## Antaganden
+- “Båda” sparar inget särskilt `signup_intent`; det markerar bara onboarding klar och öppnar dashboarden.
+- **Kom igång** visas för profiler med buyer-intent; användare som väljer “Båda” landar på den vanliga dashboarden.
+- Befintlig e-post/lösenordsinloggning behålls; inga nya inloggningsleverantörer läggs till i denna ändring.
