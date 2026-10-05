@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { getNetbirdApiUrl, netbirdHeaders } from "./netbirdConfig.ts";
+import { GARAGE_SELECT, deploymentId, isModelSellable, latestTests, reconcileGarageRouting, type RoutingGarage } from "./garageRouting.ts";
 
 interface LiteLLMModelInfo {
   model_name: string;
@@ -201,13 +202,30 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   if (upsertError) throw new Error(`Failed to save models: ${upsertError.message}`);
 
   const liveIds = new Set(rows.map((r) => r.id));
-  const staleIds = ((existing || []) as Row[]).map((r) => r.id).filter((id) => !liveIds.has(id));
+  const staleIds = ((existing || []) as Row[]).map((r) => r.id).filter((id) => !liveIds.has(id) && !/__(dedicated|pool)$/.test(id));
   let deleted = 0;
   if (staleIds.length > 0) {
     const { error, count } = await admin.from("curated_models").delete({ count: "exact" }).in("id", staleIds);
     if (error) console.error("Delete error:", error.message);
     else deleted = count ?? staleIds.length;
   }
+
+  const { data: routingRows } = await admin.from("garages").select(GARAGE_SELECT);
+  const routingGarages = (routingRows || []) as RoutingGarage[];
+  const tests = await latestTests(admin, routingGarages.map((g) => g.id));
+  const sellable = new Set<string>();
+  for (const g of routingGarages) for (const model of g.models || []) {
+    if (isModelSellable(g, model, tests.get(`${g.id}::${model}`))) sellable.add(`${g.name}::${model}`);
+  }
+  const { data: tierRows } = await admin.from("curated_models").select("id, enabled, disabled_reason");
+  const enabledTiers = new Set(((tierRows || []) as Array<{ id: string; enabled: boolean; disabled_reason: string | null }>)
+    .filter((r) => r.enabled && !r.disabled_reason).map((r) => r.id));
+  // First-time garage rows are desired by default once their acceptance test passes.
+  for (const g of routingGarages) for (const model of g.models || []) for (const tier of ["dedicated", "pool"] as const) {
+    const id = deploymentId(g.name, model, tier);
+    if (!((tierRows || []) as Array<{ id: string }>).some((r) => r.id === id) && sellable.has(`${g.name}::${model}`)) enabledTiers.add(id);
+  }
+  await reconcileGarageRouting(admin, routingGarages, sellable, enabledTiers);
 
   const health = rows.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {} as Record<string, number>);
   const garageConnectivity: SyncResult["garageConnectivity"] = {};

@@ -10,3 +10,6 @@ verify_jwt = false
 
 [functions.ingest-usage-stats]
 verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false

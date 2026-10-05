@@ -25,6 +25,7 @@ export interface GarageOffer {
   price: Price;
   grade: ReliabilityGrade | null;
   score: number | null;
+  sampleDays: number | null;
   ttftMs: number | null;
   tokensPerSecond: number | null;
   availability30d: number | null;

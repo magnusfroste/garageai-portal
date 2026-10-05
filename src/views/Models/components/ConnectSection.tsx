@@ -1,6 +1,8 @@
 import { Terminal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyButton } from "./CopyButton";
+import { Link } from "react-router-dom";
+import { t } from "@/i18n";
 
 export const ConnectSection = ({ defaultModel, baseUrl }: { defaultModel: string; baseUrl: string }) => (
   <Card className="border-border/50 bg-card/60">
@@ -13,7 +15,7 @@ export const ConnectSection = ({ defaultModel, baseUrl }: { defaultModel: string
     <CardContent className="space-y-4">
       <p className="text-sm text-muted-foreground">
         Point any OpenAI-compatible client at the base URL below and use your API key.
-        Pass the model ID from the list above as the <code className="text-primary font-mono text-xs">model</code> parameter.
+        Pass a model ID as the <code className="text-primary font-mono text-xs">model</code> parameter. <Link to="/models" className="text-primary hover:underline">{t("Browse models →")}</Link>
       </p>
 
       <div className="space-y-3">

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQueries } from "@tanstack/react-query";
-import { ArrowUpDown, MessageSquare, Users } from "lucide-react";
+import { ArrowUpDown, KeyRound, MessageSquare, Server, Users } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,11 @@ const Fact = ({ label, value }: { label: string; value: string }) => (
     <div className="text-sm font-semibold tabular-nums">{value}</div>
   </div>
 );
+
+const measuredLabel = (sampleDays: number | null | undefined) => {
+  const days = Math.max(1, Math.floor(sampleDays ?? 0));
+  return days < 30 ? t("measured over {n} days", { n: days }) : t("30 days");
+};
 
 const ModelDetailPage = () => {
   const { name = "" } = useParams<{ name: string }>();
@@ -109,10 +114,6 @@ const ModelDetailPage = () => {
           {m.supportsTools && <ToolsBadge />}
           {!m.available && <Badge variant="outline">{t("Not available right now")}</Badge>}
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <code className="font-mono text-xs bg-secondary/50 rounded px-2 py-1">{modelId}</code>
-          <CopyButton text={modelId} />
-        </div>
         <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           <Fact label={t("Context length")} value={formatContext(m.contextLength)} />
           <Fact label={t("Max output")} value={formatContext(m.maxOutput)} />
@@ -126,19 +127,33 @@ const ModelDetailPage = () => {
         )}
       </div>
 
-      {m.poolPrice && (
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold">{t("Connection options")}</h2>
+      {m.poolPrice && m.poolId && (
         <Card className="glass-card border-primary/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" />Pool</CardTitle>
             <CardDescription>{t("We pick the best available garage for you.")}</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-6 text-sm">
+          <CardContent className="flex flex-wrap items-end gap-6 text-sm">
             <div><div className="text-xs text-muted-foreground">{t("Price in / out per 1M")}</div>{formatPrice(m.poolPrice.input)} / {formatPrice(m.poolPrice.output)}</div>
-            <div><div className="text-xs text-muted-foreground">{t("Combined availability (30 d)")}</div>{formatPct(m.poolAvailability)}</div>
-            <div><div className="text-xs text-muted-foreground">{t("Model ID")}</div><code className="font-mono text-xs">{m.poolId}</code></div>
+            <div><div className="text-xs text-muted-foreground">{t("Combined availability ({period})", { period: measuredLabel(Math.max(0, ...offers.map((o) => o.sampleDays ?? 0))) })}</div>{formatPct(m.poolAvailability)}</div>
+            <div><div className="text-xs text-muted-foreground">{t("Model ID")}</div><div className="flex items-center gap-2"><code className="font-mono text-xs">{m.poolId}</code><CopyButton text={m.poolId} /></div></div>
           </CardContent>
         </Card>
       )}
+
+      <Card className="glass-card">
+        <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Server className="h-4 w-4 text-primary" />{t("Specific garage")}</CardTitle><CardDescription>{t("Choose one garage directly. Availability depends on that machine.")}</CardDescription></CardHeader>
+        <CardContent className="space-y-2">
+          {offers.map((o) => <div key={o.garage} className="grid gap-2 border-b border-border/50 py-3 last:border-0 sm:grid-cols-[1fr_auto_1.5fr] sm:items-center">
+            <div><Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-sm text-primary hover:underline">{o.garage}</Link>{o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}</div>
+            <div className="text-sm tabular-nums"><span className="text-xs text-muted-foreground">{t("Price in / out")}</span><br />{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</div>
+            {o.modelId && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><code className="truncate font-mono text-xs">{o.modelId}</code><CopyButton text={o.modelId} /></div>}
+          </div>)}
+        </CardContent>
+      </Card>
+      </div>
 
       <Card className="glass-card">
         <CardHeader className="pb-2"><CardTitle className="text-base">{t("Garages running this model")}</CardTitle></CardHeader>
@@ -147,7 +162,7 @@ const ModelDetailPage = () => {
             <thead className="text-[11px] text-muted-foreground border-b border-border/50">
               <tr>
                 <Th k="garage">Garage</Th><Th k="grade">{t("Grade")}</Th><Th k="price">{t("Price in / out")}</Th>
-                <Th k="ttft">Median TTFT</Th><Th k="tps">Median tok/s</Th><Th k="availability">{t("Availability 30 d")}</Th><Th k="online">Status</Th>
+                <Th k="ttft">Median TTFT</Th><Th k="tps">Median tok/s</Th><Th k="availability">{t("Availability")}</Th><Th k="online">Status</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
@@ -161,7 +176,7 @@ const ModelDetailPage = () => {
                   <td className="px-3 py-2 tabular-nums">{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</td>
                   <td className="px-3 py-2 tabular-nums">{formatNumber(o.ttftMs, " ms")}</td>
                   <td className="px-3 py-2 tabular-nums">{o.tokensPerSecond == null ? "—" : String(o.tokensPerSecond)}</td>
-                  <td className="px-3 py-2"><div className="flex items-center gap-2"><MiniBar days={profileOf(o.garage)} /><span className="text-xs tabular-nums">{formatPct(o.availability30d)}</span></div></td>
+                  <td className="px-3 py-2"><div className="flex items-center gap-2"><MiniBar days={profileOf(o.garage)} /><span className="text-xs tabular-nums">{formatPct(o.availability30d)} · {measuredLabel(o.sampleDays)}</span></div></td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1.5 text-xs">
                       <span className={cn("w-2 h-2 rounded-full", o.online ? "bg-emerald-500" : "bg-muted-foreground/40")} />
@@ -186,6 +201,7 @@ const ModelDetailPage = () => {
               <Link to={`/dashboard/chat?model=${encodeURIComponent(modelId)}`}><MessageSquare className="w-4 h-4 mr-1" />{t("Try in chat")}</Link>
             </Button>
           )}
+          {!session && <Button asChild size="sm"><Link to={`/auth?intent=buyer&next=${encodeURIComponent(`/models/${name}`)}`}><KeyRound className="mr-1 h-4 w-4" />{t("Create account to get an API key")}</Link></Button>}
         </CardHeader>
         <CardContent><ModelSnippets baseUrl={baseUrl} model={modelId} /></CardContent>
       </Card>

@@ -87,7 +87,7 @@ export const ModelCurationPanel = () => {
                 key={model.id}
                 className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
               >
-                <TooltipProvider delayDuration={200}>
+                {model.garage_tier === "pool" && <TooltipProvider delayDuration={200}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -109,7 +109,7 @@ export const ModelCurationPanel = () => {
                       {model.is_default ? "Default model" : "Set as default"}
                     </TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
+                </TooltipProvider>}
                 <Switch
                   checked={model.enabled}
                   onCheckedChange={(enabled) => toggleModel({ id: model.id, enabled })}

@@ -4,7 +4,7 @@ import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, type NetbirdPeer } fr
 import { runAndStoreAcceptanceTests, type AcceptanceResult } from "./acceptanceTest.ts";
 import { syncModels } from "./syncModels.ts";
 import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
-import { modelIdError } from "./garageRouting.ts";
+import { modelIdError, storeRuntimeKey, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
 const sanitize = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
@@ -42,31 +42,13 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   const apiBase = `http://${garage.api_host || peer.ip}:${payload.port}/v1`;
   const litellm = await getProxyBaseUrl(admin);
   const headers = { Authorization: `Bearer ${masterKey}`, "Content-Type": "application/json" };
-  const registeredIds = new Set<string>();
-
-  for (const model of payload.models) {
-    for (const tier of [
-      { name: "dedicated", id: `${garage.name}__${sanitize(model)}__dedicated`, route: `garage/${garage.name}/${model}`, input: Number(garage.dedicated_input_cost_per_million), output: Number(garage.dedicated_output_cost_per_million) },
-      { name: "pool", id: `${garage.name}__${sanitize(model)}__pool`, route: model, input: Number(garage.pool_input_cost_per_million), output: Number(garage.pool_output_cost_per_million) },
-    ]) {
-      await fetch(`${litellm}/model/delete`, { method: "POST", headers, body: JSON.stringify({ id: tier.id }) }).catch(() => undefined);
-      const response = await fetch(`${litellm}/model/new`, { method: "POST", headers, body: JSON.stringify({ model_name: tier.route, litellm_params: { model: `openai/${model}`, api_base: apiBase, api_key: payload.runtime_api_key || "garage-node", input_cost_per_token: tier.input / 1e6, output_cost_per_token: tier.output / 1e6 }, model_info: { id: tier.id, mode: "chat", garage: garage.name, operator_id: garage.operator_id, runtime: payload.runtime, garage_tier: tier.name } }) });
-      if (!response.ok) throw new Error(`Failed to register model ${model} (${tier.name}) in proxy (status ${response.status})`);
-      registeredIds.add(tier.id);
-    }
-  }
-
-  const infoRes = await fetch(`${litellm}/model/info`, { headers });
-  if (infoRes.ok) {
-    const info = await infoRes.json();
-    for (const deployment of (info?.data || []) as Array<{ model_info?: { id?: string } }>) {
-      const id = deployment.model_info?.id;
-      if (id?.startsWith(`${garage.name}__`) && !registeredIds.has(id)) await fetch(`${litellm}/model/delete`, { method: "POST", headers, body: JSON.stringify({ id }) });
-    }
-  }
+  await storeRuntimeKey(admin, garage.id, payload.runtime_api_key);
 
   const testModels = opts.testOnly ?? payload.models;
-  const acceptance = testModels.length ? await runAndStoreAcceptanceTests(admin, litellm, masterKey, garage, testModels) : [];
+  const routingGarage = { ...garage, api_host: garage.api_host, mesh_ip: peer.ip, port: payload.port, runtime: payload.runtime, models: payload.models, status: "pending", disabled: false, last_heartbeat_at: null } as RoutingGarage;
+  const acceptance = testModels.length
+    ? await withProbeDeployments(admin, routingGarage, testModels, (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, garage, testModels, routeFor))
+    : [];
   const latest = payload.models.length
     ? (await admin.from("garage_model_tests").select("model, passed, tested_at").eq("garage_id", garage.id).in("model", payload.models).order("tested_at", { ascending: false })).data
     : [];

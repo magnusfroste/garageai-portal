@@ -86,6 +86,14 @@ export class AdminRepository {
 
     return !!data;
   }
+
+  async repairLiteLLMUsers(): Promise<{ repaired: number; failed: number }> {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(this.functionUrl, { method: "PATCH", headers, body: JSON.stringify({ action: "repair_litellm_users" }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Repair failed");
+    return data;
+  }
 }
 
 export const adminRepository = new AdminRepository();

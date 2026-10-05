@@ -3,6 +3,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { runAndStoreAcceptanceTests } from "./acceptanceTest.ts";
+import { withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
+import { syncModels } from "./syncModels.ts";
 import type { SyncResult } from "./syncModels.ts";
 
 const HEARTBEAT_STALE_MS = 15 * 60 * 1000;
@@ -148,7 +150,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number };
   const buckets = new Map<string, Bucket>();
   const perGarage: Record<string, number> = {};
-  let excludedAcceptance = 0, nonGarage = 0, outOfWindow = 0;
+  let excludedAcceptance = 0, excludedPlatform = 0, nonGarage = 0, outOfWindow = 0;
 
   for (const r of rows) {
     const modelId = typeof r.model_id === "string" ? r.model_id : "";
@@ -156,7 +158,9 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const garage = sep > 0 ? modelId.slice(0, sep) : "";
     const gid = garage ? garageIds.get(garage) : undefined;
     if (!gid) { nonGarage++; continue; }
-    if (tagsOf(r).includes("acceptance-test")) { excludedAcceptance++; continue; }
+    const tags = tagsOf(r);
+    if (tags.includes("acceptance-test")) { excludedAcceptance++; continue; }
+    if (tags.includes("platform")) { excludedPlatform++; continue; }
     const start = parseTs(r.startTime);
     if (start === null || start < fromMs || start >= toMs) { outOfWindow++; continue; }
     const hour = floorHour(start);
@@ -197,7 +201,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
 
   return {
     source, fetched: rows.length, aggregated: perGarage, hours: upserts.length,
-    excluded_acceptance: excludedAcceptance, non_garage: nonGarage, out_of_window: outOfWindow,
+    excluded_acceptance: excludedAcceptance, excluded_platform: excludedPlatform, non_garage: nonGarage, out_of_window: outOfWindow,
     from: new Date(fromMs).toISOString(), to: new Date(toMs).toISOString(),
   };
 }
@@ -208,8 +212,8 @@ export async function runHourlyProbes(admin: SupabaseClient) {
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const { data: garages } = await admin.from("garages")
-    .select("id, name, models").eq("disabled", false).eq("status", "online");
-  const list = (garages || []) as Array<{ id: string; name: string; models: string[] }>;
+    .select("id, name, operator_id, api_host, mesh_ip, port, runtime, models, status, disabled, last_heartbeat_at, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million").eq("disabled", false).eq("status", "online");
+  const list = (garages || []) as RoutingGarage[];
   if (!list.length) return { probed: [] as string[] };
 
   const healthy = await healthyModelsByGarage(admin);
@@ -231,15 +235,17 @@ export async function runHourlyProbes(admin: SupabaseClient) {
     .sort((a, b) => (lastAny.get(a.id) ?? 0) - (lastAny.get(b.id) ?? 0))
     .slice(0, MAX_PROBES_PER_RUN);
 
-  const base = await getProxyBaseUrl(admin);
   const probed: Array<{ garage: string; model: string; passed: boolean; supports_tools: boolean | null; tools_error: string | null }> = [];
   await Promise.all(due.map(async (g) => {
     const candidates = (g.models || []).filter((m) => healthy.get(g.name)?.has(m));
     if (!candidates.length) return;
     // Rotate: the model tested longest ago goes next.
     candidates.sort((a, b) => (lastByModel.get(`${g.id}::${a}`) ?? 0) - (lastByModel.get(`${g.id}::${b}`) ?? 0));
-    const [r] = await runAndStoreAcceptanceTests(admin, base, masterKey, g, [candidates[0]]);
+    const [r] = await withProbeDeployments(admin, g, [candidates[0]], (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, g, [candidates[0]], routeFor));
     probed.push({ garage: g.name, model: r.model, passed: r.passed, supports_tools: r.supports_tools, tools_error: r.tools_error });
   }));
+  for (const r of probed) {
+    await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true, testResults: { garage: r.garage, results: new Map([[r.model, r.passed]]) } });
+  }
   return { probed };
 }

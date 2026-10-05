@@ -13,13 +13,14 @@ interface Props {
   webSearch?: boolean;
   onToggleWebSearch?: () => void;
   webSearchAvailable?: boolean;
+  error?: string | null;
   children?: React.ReactNode; // extra controls (e.g. system prompt)
 }
 
 export interface ChatComposerHandle { focus: () => void; fill: (text: string) => void }
 
 export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
-  ({ onSend, onStop, streaming, canSend, webSearch, onToggleWebSearch, webSearchAvailable, children }, ref) => {
+  ({ onSend, onStop, streaming, canSend, webSearch, onToggleWebSearch, webSearchAvailable, error, children }, ref) => {
     const [value, setValue] = useState("");
     const ta = useRef<HTMLTextAreaElement>(null);
     useImperativeHandle(ref, () => ({
@@ -35,7 +36,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }, [value]);
 
     const submit = () => {
-      if (!value.trim() || streaming || !canSend) return;
+      if (!value.trim() || streaming) return;
       onSend(value.trim());
       setValue("");
     };
@@ -90,6 +91,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
             )}
           </div>
         </div>
+        {error && <p role="alert" className="px-4 pb-3 text-xs text-destructive">{error}</p>}
       </div>
     );
   },

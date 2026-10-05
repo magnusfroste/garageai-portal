@@ -40,6 +40,7 @@ serve(async (req: Request) => {
 
     // Determine which key to use
     let apiKeyForRequest: string;
+    let platformRequest = false;
 
     if (api_key_id) {
       // User selected a specific key — look it up and verify ownership
@@ -93,6 +94,7 @@ serve(async (req: Request) => {
         });
       }
       apiKeyForRequest = LITELLM_MASTER_KEY;
+      platformRequest = true;
     }
 
     // Build messages array with optional system prompt
@@ -104,7 +106,7 @@ serve(async (req: Request) => {
 
     if (web_search === true) {
       if (!(await modelSupportsTools(supabase, String(model || '')))) {
-        return new Response(JSON.stringify({ error: 'Den här modellen har inte stöd för verktyg' }), {
+        return new Response(JSON.stringify({ error: 'tools_not_supported' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -112,7 +114,7 @@ serve(async (req: Request) => {
       const searxngUrl = await getSearxngUrl(supabase);
       const stream = streamWithWebSearch({
         proxyBase, apiKey: apiKeyForRequest, model: String(model), messages: finalMessages, searxngUrl,
-        signal: req.signal,
+        signal: req.signal, platformRequest,
       });
       return new Response(stream, {
         headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
@@ -126,10 +128,11 @@ serve(async (req: Request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: model || 'gpt-4o',
+        model,
         messages: finalMessages,
         stream: true,
         stream_options: { include_usage: true },
+        ...(platformRequest ? { metadata: { tags: ["platform"] } } : {}),
       }),
       signal: req.signal,
     });

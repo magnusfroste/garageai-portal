@@ -29,6 +29,8 @@ export const AdminPage = () => {
     isAdminLoading,
     updateBudget,
     isUpdating,
+    repairUsers,
+    isRepairing,
   } = useAdminData();
 
   const [editUser, setEditUser] = useState<AdminUser | null>(null);
@@ -85,6 +87,7 @@ export const AdminPage = () => {
         </TabsList>
 
         <TabsContent value="users" className="mt-6 space-y-6">
+          <div className="flex justify-end"><Button variant="outline" onClick={() => repairUsers()} disabled={isRepairing}>{isRepairing ? "Repairing…" : "Repair LiteLLM users"}</Button></div>
           {isLoading && (
             <div className="text-center py-12 text-muted-foreground">Loading users...</div>
           )}

@@ -94,6 +94,8 @@ export interface SiteSettings {
 
   // Platform economics: share (0–100) of usage revenue kept by the platform
   platform_fee_percent: number;
+  /** Public signup display value, mirrored from default_user_budget_usd. */
+  starting_credit_usd?: number;
 }
 
 export const defaultSiteSettings: SiteSettings = {
@@ -106,10 +108,10 @@ export const defaultSiteSettings: SiteSettings = {
   favicon_url: "/favicon.png",
 
   // Hero
-  hero_badge: "Open model platform",
+  hero_badge: "Encrypted in transit",
   hero_headline: "Open model access",
   hero_headline_accent: "through one API",
-  hero_subtitle: "Use available open models through an OpenAI-compatible API.",
+  hero_subtitle: "Encrypted in transit: TLS to our EU gateway and WireGuard to the garage. The gateway does not store your prompts or responses. Your prompt is processed on the operator's machine, so don't send sensitive data to the public pool yet.",
   hero_cta_text: "Get started",
   hero_cta_url: "/auth",
   hero_secondary_cta_text: "",
@@ -117,7 +119,7 @@ export const defaultSiteSettings: SiteSettings = {
   hero_doc_url: "",
   hero_doc_text: "Documentation",
   hero_pillars: [
-    { title: "Private & Secure", description: "Your data stays yours. Full control over your AI infrastructure." },
+    { title: "Encrypted in transit", description: "TLS to our EU gateway and WireGuard to the garage." },
     { title: "Lightning Fast", description: "Optimized LiteLLM proxy infrastructure. Low latency, high throughput." },
     { title: "Enterprise Ready", description: "Scale from prototype to production with transparent pricing." },
   ],

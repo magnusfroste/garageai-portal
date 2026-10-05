@@ -4,6 +4,7 @@ import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { ConnectSection } from "./components/ConnectSection";
 import { AgenticToolsSection } from "./components/AgenticToolsSection";
+import { t } from "@/i18n";
 
 export const ApiPage = () => {
   const { models } = useCuratedModels(true);
@@ -11,10 +12,9 @@ export const ApiPage = () => {
 
 
   const defaultModel =
-    models.find((m) => m.is_default)?.model_name ||
-    models[0]?.model_name ||
-    "gpt-4o";
-  const baseUrl = settings?.api_base_url || "https://your-lite-llm-proxy.example.com";
+    models.find((m) => m.is_default && m.garage_tier === "pool")?.model_name ||
+    models.find((m) => m.garage_tier === "pool")?.model_name || "";
+  const baseUrl = settings?.api_base_url || "https://llm.garageai.eu";
 
   return (
     <>
@@ -23,10 +23,10 @@ export const ApiPage = () => {
       <div>
         <div className="flex items-center gap-3 mb-2">
           <Terminal className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">Dokumentation</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("Documentation")}</h1>
         </div>
         <p className="text-muted-foreground mb-8 max-w-xl">
-          Everything you need to connect to the API and start building with agentic coding tools.
+          {t("Everything you need to connect to the API and start building with agentic coding tools.")}
         </p>
       </div>
 

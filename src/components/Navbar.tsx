@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Warehouse } from "lucide-react";
+import { Menu, Warehouse } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 import { t, getLanguage, setLanguage } from "@/i18n";
 const LINKS = [
   { label: "Models", to: "/models" },
   { label: "Garages", to: "/garages" },
-  { label: "Pricing", to: "/#priser" },
+  { label: "Pricing", to: "/#pricing" },
   { label: "Documentation", to: "/api" },
 ];
 
@@ -36,15 +37,26 @@ export const Navbar = () => {
               </Link>
             ))}
           </div>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setLanguage(getLanguage() === "en" ? "sv" : "en")} aria-label={t("Language")}>
+          <Button variant="ghost" size="sm" className="hidden text-xs md:inline-flex" onClick={() => setLanguage(getLanguage() === "en" ? "sv" : "en")} aria-label={t("Language")}>
             {getLanguage() === "en" ? "SV" : "EN"}
           </Button>
-          <Link to="/auth">
+          <Link to="/auth" className="hidden md:block">
             <Button variant="ghost" size="sm">{t("Sign in")}</Button>
           </Link>
-          <Link to="/auth?mode=signup">
+          <Link to="/auth?mode=signup" className="hidden md:block">
             <Button size="sm" className="glow">{t("Create account")}</Button>
           </Link>
+          <Sheet>
+            <SheetTrigger asChild><Button variant="ghost" size="icon" className="md:hidden" aria-label={t("Open menu")}><Menu className="h-5 w-5" /></Button></SheetTrigger>
+            <SheetContent side="right" className="w-72 pt-12">
+              <div className="flex flex-col gap-2">
+                {LINKS.map((l) => <Button key={l.to} asChild variant="ghost" className="justify-start"><Link to={l.to}>{t(l.label)}</Link></Button>)}
+                <Button variant="ghost" className="justify-start" onClick={() => setLanguage(getLanguage() === "en" ? "sv" : "en")}>{t("Language")}: {getLanguage() === "en" ? "Svenska" : "English"}</Button>
+                <Button asChild variant="outline"><Link to="/auth">{t("Sign in")}</Link></Button>
+                <Button asChild><Link to="/auth?mode=signup">{t("Create account")}</Link></Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </nav>

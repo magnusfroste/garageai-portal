@@ -38,6 +38,7 @@ const MyGaragesPage = () => {
   };
 
   const rotate = async (g: GarageRow) => {
+    if (!window.confirm(t("This will create a new command for your existing garage {name}.", { name: g.name }))) return;
     setBusy(`c:${g.name}`);
     try {
       const c = await garageRepository.create({ name: g.name, create_setup_key: !g.netbird_peer_id });

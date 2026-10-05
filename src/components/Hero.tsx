@@ -2,16 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Shield, Zap, Lock, ArrowRight } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { t } from "@/i18n";
 
 const pillarIcons = [Lock, Zap, Shield];
 
 export const Hero = () => {
   const { settings } = useSiteSettings();
 
-  const badge = settings?.hero_badge || "Your data never leaves your control";
+  const badge = settings?.hero_badge || t("Encrypted in transit");
   const headline = settings?.hero_headline || "Open model access";
   const headlineAccent = settings?.hero_headline_accent || "built for developers";
-  const subtitle = settings?.hero_subtitle || "Secure LLM proxy with OpenAI-compatible API. Access multiple models, transparent pricing, and full data privacy. Get started in minutes.";
+  const subtitle = settings?.hero_subtitle || t("Encrypted in transit: TLS to our EU gateway and WireGuard to the garage. The gateway does not store your prompts or responses. Your prompt is processed on the operator's machine, so don't send sensitive data to the public pool yet.");
   const ctaText = settings?.hero_cta_text || "Get started";
   const ctaUrl = settings?.hero_cta_url || "/auth";
   const secondaryCtaText = settings?.hero_secondary_cta_text || "";
