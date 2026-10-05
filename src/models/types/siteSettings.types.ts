@@ -26,6 +26,8 @@ export interface FeatureCard {
 }
 
 export interface SiteSettings {
+  /** Optional per-language overrides of the text fields; top-level values are English (default). */
+  translations?: { sv?: Partial<Omit<SiteSettings, "translations">> };
   // Branding
   site_name: string;
   tagline: string;

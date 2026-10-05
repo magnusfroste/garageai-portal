@@ -23,7 +23,7 @@ interface ProxyStatus {
 }
 
 export const ProxyConfigCard = () => {
-  const { settings, save, isSaving } = useSiteSettings();
+  const { rawSettings: settings, save, isSaving } = useSiteSettings();
   const [status, setStatus] = useState<ProxyStatus | null>(null);
   const [checking, setChecking] = useState(false);
   const [editingUrl, setEditingUrl] = useState(false);
