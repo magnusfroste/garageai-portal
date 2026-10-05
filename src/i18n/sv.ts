@@ -46,6 +46,8 @@ export const sv: Record<string, string> = {
   "Open the confirmation link we sent to {email} to finish creating your account.": "Öppna bekräftelselänken vi skickade till {email} för att slutföra registreringen.",
   "• {amount} USD in credits": "• {amount} USD i krediter",
   "This will create a new command for your existing garage {name}.": "Detta skapar ett nytt kommando för ditt befintliga garage {name}.",
+  "Garage name already exists": "Garagenamnet finns redan",
+  "Create new command": "Skapa nytt kommando",
   "Open menu": "Öppna menyn",
   "Everything you need to connect to the API and start building with agentic coding tools.": "Allt du behöver för att ansluta till API:et och börja bygga med agentbaserade kodverktyg.",
   "Browse models →": "Bläddra bland modeller →",

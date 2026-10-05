@@ -162,33 +162,18 @@ serve(async (req: Request) => {
         .eq("id", user_id)
         .single();
 
-      if (profile?.litellm_user_id && LITELLM_MASTER_KEY) {
+      if (profile && LITELLM_MASTER_KEY) {
         try {
-          const proxyBase = await getProxyBaseUrl(supabase);
-          const resp = await fetch(`${proxyBase}/user/update`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${LITELLM_MASTER_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              user_id: profile.litellm_user_id,
-              max_budget: litellm_max_budget,
-            }),
-          });
-          const data = await resp.json();
-          console.log('LiteLLM user budget updated:', { status: resp.status, data });
-          if (!resp.ok) {
-            return jsonResponse({ error: `Failed to update LiteLLM budget: ${data.error?.message || resp.status}` }, 500);
-          }
           const purchased = Math.max(0, litellm_max_budget - Number(profile.starting_credit_usd || 0));
-          await supabase.from("profiles").update({ purchased_credits_usd: purchased }).eq("id", user_id);
+          const { error: updateError } = await supabase.from("profiles").update({ purchased_credits_usd: purchased }).eq("id", user_id);
+          if (updateError) throw updateError;
+          await ensureLiteLLMUser(supabase, { ...profile, purchased_credits_usd: purchased });
         } catch (e) {
           console.error('LiteLLM budget update error:', e);
           return jsonResponse({ error: "Failed to update LiteLLM budget" }, 500);
         }
-      } else if (!profile?.litellm_user_id) {
-        return jsonResponse({ error: "User has no LiteLLM account" }, 400);
+      } else if (!profile) {
+        return jsonResponse({ error: "User profile not found" }, 404);
       }
     }
 

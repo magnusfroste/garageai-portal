@@ -48,6 +48,7 @@ const OfferGpuPage = () => {
   const [otherRuntimesOpen, setOtherRuntimesOpen] = useState(false);
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [confirmReuse, setConfirmReuse] = useState(false);
   const [creds, setCreds] = useState<GarageCredentials | null>(null);
   const [liveName, setLiveName] = useState<string | null>(null);
   const [retesting, setRetesting] = useState(false);
@@ -66,6 +67,14 @@ const OfferGpuPage = () => {
     if (!GARAGE_NAME_RE.test(name)) {
       toast({ title: t("Invalid name"), description: t("Lowercase letters, digits and hyphens (2–41 characters)."), variant: "destructive" });
       return;
+    }
+    if (profile?.id) {
+      const existing = await garageRepository.listOwn(profile.id);
+      if (existing.some((garage) => garage.name === name) && !confirmReuse) {
+        setConfirmReuse(true);
+        toast({ title: t("Garage name already exists"), description: t("This will create a new command for your existing garage {name}.", { name }) });
+        return;
+      }
     }
     setCreating(true);
     try {
@@ -212,12 +221,12 @@ const OfferGpuPage = () => {
               <>
                 <div className="space-y-1.5">
                   <Label htmlFor="g-name">{t("Name")}</Label>
-                  <Input id="g-name" value={name} onChange={(e) => setName(e.target.value.toLowerCase())} disabled={creating} />
+                  <Input id="g-name" value={name} onChange={(e) => { setName(e.target.value.toLowerCase()); setConfirmReuse(false); }} disabled={creating} />
                   <p className="text-xs text-muted-foreground">{t("Lowercase letters, digits and hyphens (2–41 characters).")}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setStep(1)} disabled={creating}>{t("Back")}</Button>
-                  <Button onClick={create} disabled={creating || !name}>{creating ? t("Creating...") : t("Create garage")}</Button>
+                  <Button onClick={create} disabled={creating || !name}>{creating ? t("Creating...") : confirmReuse ? t("Create new command") : t("Create garage")}</Button>
                 </div>
               </>
             ) : (
