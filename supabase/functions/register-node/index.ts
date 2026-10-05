@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
 
     const { data: garage } = await admin.from("garages").select("*").eq("id", tokRow.garage_id).maybeSingle();
     if (!garage) return json({ error: "Unauthorized" }, 401);
+    if (garage.disabled) return json({ error: "garage disabled by platform" }, 403);
 
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
