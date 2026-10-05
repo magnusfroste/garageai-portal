@@ -13,7 +13,7 @@ export const ModelsPage = () => {
   const siteName = settings?.site_name || "portalen";
 
 
-  const defaultModel = models.find((m) => m.is_default)?.model_name || models[0]?.model_name || "gpt-4o";
+  const defaultModel = models.find((m) => m.is_default && m.garage_tier === "pool")?.model_name || models.find((m) => m.garage_tier === "pool")?.model_name || "";
 
   return (
     <>
@@ -45,7 +45,7 @@ export const ModelsPage = () => {
         )}
       </div>
 
-      <ConnectSection defaultModel={defaultModel} baseUrl={settings?.api_base_url || "https://your-lite-llm-proxy.example.com"} />
+      <ConnectSection defaultModel={defaultModel} baseUrl={settings?.api_base_url || "https://llm.garageai.eu"} />
     </div>
     </>
   );

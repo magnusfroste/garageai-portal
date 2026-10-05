@@ -53,8 +53,8 @@ const OfferGpuPage = () => {
   const [retesting, setRetesting] = useState(false);
 
   useEffect(() => {
-    if (!name && profile?.email) setName(suggestGarageName(profile.email));
-  }, [profile?.email, name]);
+    if (!name) setName(suggestGarageName());
+  }, [name]);
 
   const status = useGarageStatusPolling(liveName);
   const data = status.data;
