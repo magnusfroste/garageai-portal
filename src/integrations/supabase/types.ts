@@ -194,6 +194,35 @@ export type Database = {
         }
         Relationships: []
       }
+      garage_model_failures: {
+        Row: {
+          consecutive_failures: number
+          garage_id: string
+          model: string
+          updated_at: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          garage_id: string
+          model: string
+          updated_at?: string
+        }
+        Update: {
+          consecutive_failures?: number
+          garage_id?: string
+          model?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_model_failures_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_model_tests: {
         Row: {
           duration_ms: number | null
@@ -201,6 +230,7 @@ export type Database = {
           garage_id: string
           http_status: number | null
           id: string
+          inconclusive: boolean
           instruction_followed: boolean | null
           model: string
           output_tokens: number | null
@@ -217,6 +247,7 @@ export type Database = {
           garage_id: string
           http_status?: number | null
           id?: string
+          inconclusive?: boolean
           instruction_followed?: boolean | null
           model: string
           output_tokens?: number | null
@@ -233,6 +264,7 @@ export type Database = {
           garage_id?: string
           http_status?: number | null
           id?: string
+          inconclusive?: boolean
           instruction_followed?: boolean | null
           model?: string
           output_tokens?: number | null
