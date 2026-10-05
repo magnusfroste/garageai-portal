@@ -1,3 +1,4 @@
+import { toolSupportHint } from "@/models/services/toolSupportService";
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,21 @@ export const ModelTestBadge = ({ model, test }: { model: string; test?: GarageTe
   return (
     <Badge variant="outline" className="text-[10px] font-mono border-destructive/50 text-destructive" title={test.error ?? ""}>
       ✗ {model}
+    </Badge>
+  );
+};
+
+/** Tool-calling probe result ("Verktyg ✓/✗") with failure reason and a runtime-specific fix hint. */
+export const ToolsTestBadge = ({ test, runtime }: { test?: { supports_tools: boolean | null; tools_error: string | null }; runtime?: string | null }) => {
+  if (!test || test.supports_tools == null) return null;
+  if (test.supports_tools) {
+    return <Badge variant="outline" className="text-[10px] border-primary/50 text-primary" title="Modellen klarade verktygstestet">Verktyg ✓</Badge>;
+  }
+  const hint = toolSupportHint(runtime);
+  return (
+    <Badge variant="outline" className="text-[10px] border-muted-foreground/40 text-muted-foreground cursor-help"
+      title={`${test.tools_error ?? "misslyckades"}${hint ? ` — Tips: ${hint}` : ""}`}>
+      Verktyg ✗{test.tools_error ? ` · ${test.tools_error}` : ""}{hint ? ` · ${hint}` : ""}
     </Badge>
   );
 };

@@ -19,6 +19,7 @@ import {
 import { ArrowUpDown } from "lucide-react";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
+import { ToolsTestBadge } from "@/views/Garages/components/GarageShared";
 import { useGarages, Garage, CreateGarageResult, GarageModelTest } from "../hooks/useGarages";
 
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
@@ -309,7 +310,10 @@ export const GaragePanel = () => {
                   {g.models.length > 0 && (
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
                       {g.models.map((m) => (
-                        <TestBadge key={m} model={m} test={latestTests.get(`${g.id}::${m}`)} />
+                        <span key={m} className="inline-flex flex-wrap gap-1">
+                          <TestBadge model={m} test={latestTests.get(`${g.id}::${m}`)} />
+                          <ToolsTestBadge test={latestTests.get(`${g.id}::${m}`)} runtime={g.runtime} />
+                        </span>
                       ))}
                     </div>
                   )}
