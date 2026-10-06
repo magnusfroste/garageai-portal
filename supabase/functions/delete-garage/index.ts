@@ -33,7 +33,43 @@ Deno.serve(async (req) => {
     if (!caller.isAdmin && garage.operator_id !== caller.userId) return json({ error: "Forbidden" }, 403);
     const name = garage.name as string;
 
-    // 1. LiteLLM deployments (same prefix path as disable/pause).
+    // 1. NetBird first (mesh only). Every NetBird error is non-fatal: collected and reported.
+    let netbird_peer_deleted = false, netbird_group_deleted = false, netbird_setup_keys_deleted = 0;
+    const netbird_errors: string[] = [];
+    const netbird_left_for_admin: string[] = [];
+    if (garage.connection_type !== "endpoint") {
+      let api: string | null = null;
+      try { api = await getNetbirdApiUrl(admin); } catch (e) { netbird_errors.push(`api url: ${e instanceof Error ? e.message : "unknown"}`); }
+      if (api) {
+        if (garage.netbird_peer_id) {
+          try { netbird_peer_deleted = await nbDelete(`${api}/peers/${encodeURIComponent(garage.netbird_peer_id)}`); }
+          catch (e) { netbird_errors.push(`peer: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`peer ${garage.netbird_peer_id}`); }
+        }
+        try {
+          const gRes = await fetch(`${api}/groups`, { headers: netbirdHeaders() });
+          if (!gRes.ok) { await gRes.text(); throw new Error(`GET /groups failed with status ${gRes.status}`); }
+          const group = ((await gRes.json()) as Array<{ id: string; name: string }>).find((g) => g.name === `garage-${name}`);
+          if (group) {
+            try {
+              const kRes = await fetch(`${api}/setup-keys`, { headers: netbirdHeaders() });
+              if (!kRes.ok) { await kRes.text(); throw new Error(`GET /setup-keys failed with status ${kRes.status}`); }
+              for (const k of (await kRes.json()) as Array<{ id: string; auto_groups?: string[] }>) {
+                if (!(k.auto_groups || []).includes(group.id)) continue;
+                try { if (await nbDelete(`${api}/setup-keys/${encodeURIComponent(k.id)}`)) netbird_setup_keys_deleted++; }
+                catch (e) { netbird_errors.push(`setup key ${k.id}: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`setup key ${k.id}`); }
+              }
+            } catch (e) { netbird_errors.push(`setup keys: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`setup keys of group garage-${name}`); }
+            try { netbird_group_deleted = await nbDelete(`${api}/groups/${encodeURIComponent(group.id)}`); }
+            catch (e) { netbird_errors.push(`group: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`group garage-${name} (${group.id})`); }
+          }
+        } catch (e) { netbird_errors.push(`groups: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`group garage-${name} and its setup keys`); }
+      } else {
+        if (garage.netbird_peer_id) netbird_left_for_admin.push(`peer ${garage.netbird_peer_id}`);
+        netbird_left_for_admin.push(`group garage-${name} and its setup keys`);
+      }
+    }
+
+    // 2. LiteLLM deployments (same prefix path as disable/pause).
     let litellm_removed = 0;
     const MASTER_KEY = Deno.env.get("LITELLM_MASTER_KEY");
     if (MASTER_KEY) {
@@ -52,7 +88,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Credentials.
+    // 3. Credentials.
     const rows_deleted: Record<string, number> = {};
     const del = async (table: string, col: string, val: string) => {
       const { count, error: e } = await admin.from(table).delete({ count: "exact" }).eq(col, val);
@@ -62,24 +98,6 @@ Deno.serve(async (req) => {
     await del("garage_tokens", "garage_id", garageId);
     await del("garage_runtime_secrets", "garage_id", garageId);
 
-    // 3. NetBird (mesh only).
-    let netbird_peer_deleted = false, netbird_group_deleted = false, netbird_setup_keys_deleted = 0;
-    if (garage.connection_type !== "endpoint") {
-      const api = await getNetbirdApiUrl(admin);
-      if (garage.netbird_peer_id) netbird_peer_deleted = await nbDelete(`${api}/peers/${encodeURIComponent(garage.netbird_peer_id)}`);
-      const gRes = await fetch(`${api}/groups`, { headers: netbirdHeaders() });
-      if (!gRes.ok) { await gRes.text(); throw new Error(`NetBird GET /groups failed with status ${gRes.status}`); }
-      const group = ((await gRes.json()) as Array<{ id: string; name: string }>).find((g) => g.name === `garage-${name}`);
-      if (group) {
-        const kRes = await fetch(`${api}/setup-keys`, { headers: netbirdHeaders() });
-        if (!kRes.ok) { await kRes.text(); throw new Error(`NetBird GET /setup-keys failed with status ${kRes.status}`); }
-        for (const k of (await kRes.json()) as Array<{ id: string; auto_groups?: string[] }>) {
-          if ((k.auto_groups || []).includes(group.id) && await nbDelete(`${api}/setup-keys/${encodeURIComponent(k.id)}`)) netbird_setup_keys_deleted++;
-        }
-        netbird_group_deleted = await nbDelete(`${api}/groups/${encodeURIComponent(group.id)}`);
-      }
-    }
-
     // 4. Rows (ledger tables are intentionally kept).
     for (const t of ["garage_models", "garage_model_tests", "garage_model_failures", "garage_status_samples", "garage_country_history"]) await del(t, "garage_id", garageId);
     await del("curated_models", "garage", name);
@@ -88,8 +106,8 @@ Deno.serve(async (req) => {
     try { await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: false }); }
     catch (e) { console.error("[delete-garage] sync failed:", e instanceof Error ? e.message : "unknown"); }
 
-    console.log("[delete-garage] deleted", { garage: name, by_admin: caller.isAdmin, litellm_removed });
-    return json({ ok: true, garage: name, litellm_removed, netbird_peer_deleted, netbird_group_deleted, netbird_setup_keys_deleted, rows_deleted });
+    console.log("[delete-garage] deleted", { garage: name, by_admin: caller.isAdmin, litellm_removed, netbird_errors: netbird_errors.length });
+    return json({ ok: true, garage: name, litellm_removed, netbird_peer_deleted, netbird_group_deleted, netbird_setup_keys_deleted, netbird_errors, netbird_left_for_admin, rows_deleted });
   } catch (e) {
     console.error("[delete-garage] error:", e instanceof Error ? e.message : "unknown");
     return json({ error: e instanceof Error ? e.message : "Internal error" }, 500);
