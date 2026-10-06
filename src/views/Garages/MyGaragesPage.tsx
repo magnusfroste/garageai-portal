@@ -8,19 +8,21 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/components/ui/use-toast";
 import { useMyGarages } from "@/hooks/useMyGarages";
 import { garageRepository, GarageRow } from "@/data/repositories/garageRepository";
-import { buildGarageCommand, GarageCredentials } from "@/models/services/garageCommand";
+import { GarageCredentials } from "@/models/services/garageCommand";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
 import { GarageReliabilityPanel } from "./components/GarageReliabilityPanel";
-import { CommandBlock, ModelTestBadge, ToolsTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
+import { GarageConnectCommand, ModelTestBadge, ToolsTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
 import { GarageHealthIndicators, GarageModelList, GarageTroubleshooting } from "./components/GarageHealth";
 import { useGarageModels } from "@/hooks/useGarageModels";
 import { t } from "@/i18n";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const MyGaragesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { garages, isLoading, isError, latestTests, invalidate } = useMyGarages();
+  const [confirmGarage, setConfirmGarage] = useState<GarageRow | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const { reliability } = useGarageReliability();
   const [creds, setCreds] = useState<{ c: GarageCredentials; runtime: string; models: string[] } | null>(null);
@@ -41,7 +43,7 @@ const MyGaragesPage = () => {
   };
 
   const rotate = async (g: GarageRow) => {
-    if (!window.confirm(t("This will create a new command for your existing garage {name}.", { name: g.name }))) return;
+    setConfirmGarage(null);
     setBusy(`c:${g.name}`);
     try {
       const c = await garageRepository.create({ name: g.name, create_setup_key: !g.netbird_peer_id });
@@ -92,7 +94,7 @@ const MyGaragesPage = () => {
                    <span className="text-xs text-muted-foreground">{t("Last heartbeat:")} {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>
                 </div>
                 <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
-                <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} />
+                <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
                 <div className="flex gap-1.5 flex-wrap">
                   {g.models.length === 0
                     ? <span className="text-xs text-muted-foreground">{t("No models registered yet")}</span>
@@ -108,7 +110,7 @@ const MyGaragesPage = () => {
                     <Button size="sm" variant="outline" disabled={!!busy || g.models.length === 0} onClick={() => retest(g)}>
                       <FlaskConical className="w-3.5 h-3.5 mr-1.5" />{busy === `t:${g.name}` ? t("Testing...") : t("Test again")}
                     </Button>
-                    <Button size="sm" variant="outline" disabled={!!busy} onClick={() => rotate(g)}>
+                    <Button size="sm" variant="outline" disabled={!!busy} onClick={() => setConfirmGarage(g)}>
                       <KeyRound className="w-3.5 h-3.5 mr-1.5" />{busy === `c:${g.name}` ? t("Creating...") : t("New command")}
                     </Button>
                   </div>
@@ -122,16 +124,19 @@ const MyGaragesPage = () => {
         </div>
       )}
 
+      <AlertDialog open={!!confirmGarage} onOpenChange={(open) => !open && setConfirmGarage(null)}>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t("New command")}</AlertDialogTitle><AlertDialogDescription>{t("This will create a new command for your existing garage {name}.", { name: confirmGarage?.name ?? "" })}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t("Cancel")}</AlertDialogCancel><AlertDialogAction onClick={() => { if (confirmGarage) void rotate(confirmGarage); }}>{t("Create new command")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+      </AlertDialog>
       <Dialog open={!!creds} onOpenChange={(o) => !o && setCreds(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("New command")}</DialogTitle>
-            <DialogDescription>{t("Run the command on the machine {name}. Use sudo on Linux.", { name: creds?.c.garage.name ?? "" })}</DialogDescription>
+            <DialogDescription>{t("Run the command on the machine {name}. Choose its operating system below.", { name: creds?.c.garage.name ?? "" })}</DialogDescription>
           </DialogHeader>
           {creds && (
             <div className="space-y-4">
               <OneTimeWarning />
-              <CommandBlock command={buildGarageCommand(creds.c, creds.runtime, { models: creds.models })} />
+              <GarageConnectCommand credentials={creds.c} runtime={creds.runtime} options={{ models: creds.models }} />
               <Button className="w-full" onClick={() => setCreds(null)}>{t("Done – I have copied it")}</Button>
             </div>
           )}
