@@ -18,6 +18,7 @@ import { formatNumber, formatPct, formatTokens, dayLevel } from "@/models/servic
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { LocationBadge, liveHoursText } from "@/views/Garages/components/LocationBadge";
+import { locationLabel } from "@/models/services/location";
 import type { GarageOffer } from "@/models/types/catalog.types";
 import type { GarageDay } from "@/models/types/reliability.types";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
@@ -109,6 +110,7 @@ const ModelDetailPage = () => {
   const chart = dailyTotals(daily.data ?? []);
   const hasUsage = chart.some((d) => d.tokens > 0);
   const profileOf = (g: string) => profiles[garages.indexOf(g)]?.data?.daily;
+  const headerFlags = [...new Set(m.offers.map((o) => locationLabel(o.location ?? undefined)?.flag).filter(Boolean))];
 
   const Th = ({ k, children, className }: { k: SortKey; children: React.ReactNode; className?: string }) => (
     <th className={cn("px-3 py-2 font-normal text-left", className)}>
@@ -123,6 +125,7 @@ const ModelDetailPage = () => {
     <div className="min-w-0 p-4 sm:p-6 space-y-6">
       <div className="space-y-3">
         <div className="flex items-center gap-3 flex-wrap">
+          {headerFlags.length > 0 && <span aria-hidden className="text-2xl leading-none shrink-0">{headerFlags.join(" ")}</span>}
           <h1 className="text-2xl font-bold font-mono break-all">{m.name}</h1>
           {m.privateModel && <ProviderModelBadge />}
           {m.bestGrade && <GradeBadge grade={m.bestGrade} />}
