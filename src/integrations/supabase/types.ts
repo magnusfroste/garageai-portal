@@ -259,6 +259,7 @@ export type Database = {
           dedicated_prompt_tokens: number
           failures: number
           garage_id: string
+          garage_name: string | null
           hour: string
           model: string
           prompt_tokens: number
@@ -271,6 +272,7 @@ export type Database = {
           dedicated_prompt_tokens?: number
           failures?: number
           garage_id: string
+          garage_name?: string | null
           hour: string
           model: string
           prompt_tokens?: number
@@ -283,21 +285,14 @@ export type Database = {
           dedicated_prompt_tokens?: number
           failures?: number
           garage_id?: string
+          garage_name?: string | null
           hour?: string
           model?: string
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "garage_model_stats_hourly_garage_id_fkey"
-            columns: ["garage_id"]
-            isOneToOne: false
-            referencedRelation: "garages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       garage_model_tests: {
         Row: {
@@ -413,6 +408,7 @@ export type Database = {
           changed_by: string | null
           effective_from: string
           garage_id: string
+          garage_name: string | null
           id: string
           prices: Json
         }
@@ -420,6 +416,7 @@ export type Database = {
           changed_by?: string | null
           effective_from?: string
           garage_id: string
+          garage_name?: string | null
           id?: string
           prices: Json
         }
@@ -427,24 +424,18 @@ export type Database = {
           changed_by?: string | null
           effective_from?: string
           garage_id?: string
+          garage_name?: string | null
           id?: string
           prices?: Json
         }
-        Relationships: [
-          {
-            foreignKeyName: "garage_price_history_garage_id_fkey"
-            columns: ["garage_id"]
-            isOneToOne: false
-            referencedRelation: "garages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       garage_request_stats_hourly: {
         Row: {
           completion_tokens: number
           failures: number
           garage_id: string
+          garage_name: string | null
           hour: string
           prompt_tokens: number
           requests: number
@@ -456,6 +447,7 @@ export type Database = {
           completion_tokens?: number
           failures?: number
           garage_id: string
+          garage_name?: string | null
           hour: string
           prompt_tokens?: number
           requests?: number
@@ -467,6 +459,7 @@ export type Database = {
           completion_tokens?: number
           failures?: number
           garage_id?: string
+          garage_name?: string | null
           hour?: string
           prompt_tokens?: number
           requests?: number
@@ -474,15 +467,7 @@ export type Database = {
           tokens_per_second_p50?: number | null
           ttft_ms_p50?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "garage_request_stats_hourly_garage_id_fkey"
-            columns: ["garage_id"]
-            isOneToOne: false
-            referencedRelation: "garages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       garage_runtime_secrets: {
         Row: {

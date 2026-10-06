@@ -31,6 +31,7 @@ import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { ProviderDialog } from "./ProviderDialog";
 import { GarageCountryCell } from "./GarageCountryEditor";
 import { PausedBadge } from "@/views/Garages/components/GarageOperatorControls";
+import { DeleteGarageButton } from "@/views/Garages/components/DeleteGarageButton";
 import { ReliabilityAvailability } from "@/views/Garages/components/ReliabilityAvailability";
 import { useGarageLocations } from "@/hooks/useGarageLocations";
 import { useQuery } from "@tanstack/react-query";
@@ -365,6 +366,7 @@ export const GaragePanel = () => {
                   {g.disabled ? <Power className="w-3.5 h-3.5 mr-1.5" /> : <Ban className="w-3.5 h-3.5 mr-1.5" />}
                   {g.disabled ? "Enable" : "Disable"}
                 </Button>
+                <DeleteGarageButton garage={g} onDone={invalidate} />
               </div>
             ))}
           </div>

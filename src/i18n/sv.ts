@@ -604,4 +604,12 @@ export const sv: Record<string, string> = {
   "Use a safe slug: a-z, 0-9, dot, dash, underscore.": "Använd en säker slug: a-z, 0-9, punkt, bindestreck, understreck.",
   "Use creator/model, e.g. deepseek/deepseek-v4-flash.": "Använd skapare/modell, t.ex. deepseek/deepseek-v4-flash.",
   "Clear alias": "Ta bort alias",
+  "Remove garage": "Ta bort garage",
+  "Garage deleted": "Garaget borttaget",
+  "Could not delete garage": "Kunde inte ta bort garaget",
+  "Removes the garage from the mesh and the catalogue. Usage history and earnings are kept.": "Tar bort garaget från nätet och katalogen. Användningshistorik och intäkter sparas.",
+  "To fully clean up your machine, run the connect script with --uninstall.": "Kör anslutningsskriptet med --uninstall för att städa upp din maskin helt.",
+  "Type the garage name to confirm.": "Skriv garagets namn för att bekräfta.",
+  "Garage name": "Garagets namn",
+  "Deleting...": "Tar bort...",
 };
