@@ -1,4 +1,4 @@
-import { currentLanguage } from "@/i18n";
+import { getLanguage } from "@/i18n";
 
 /** EU27 + EEA (IS, LI, NO). */
 export const EU_EEA = new Set([
@@ -25,7 +25,7 @@ export const flagEmoji = (code: string) =>
   /^[A-Z]{2}$/i.test(code) ? String.fromCodePoint(...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)) : "";
 
 export const countryName = (code: string) => {
-  try { return new Intl.DisplayNames([currentLanguage?.() || "en"], { type: "region" }).of(code.toUpperCase()) ?? code; }
+  try { return new Intl.DisplayNames([getLanguage()], { type: "region" }).of(code.toUpperCase()) ?? code; }
   catch { return code; }
 };
 

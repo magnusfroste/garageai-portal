@@ -5,6 +5,7 @@ import type {
   CatalogFilters, CatalogModel, CatalogSort, GarageDailyTokens, GarageOffer, GaragePublicStat, Price,
 } from "@/models/types/catalog.types";
 import { bestGrade } from "./reliabilityService";
+import { qualifiesEu, type GarageLocation } from "./location";
 
 const GRADE_RANK: Record<ReliabilityGrade, number> = { Nytt: 0, D: 1, C: 2, B: 3, A: 4 };
 
@@ -30,6 +31,7 @@ export const buildCatalog = (
   reliability: Map<string, GarageReliability>,
   tools: GarageToolSupport[] = [],
   providers: Map<string, string> = new Map(),
+  locations: Map<string, GarageLocation> = new Map(),
 ): CatalogModel[] => {
   const statOf = new Map(stats.map((s) => [s.garage_name, s]));
   const groups = new Map<string, CuratedModel[]>();
@@ -61,6 +63,7 @@ export const buildCatalog = (
         runtime: st?.runtime ?? null,
         tokens7d: st?.tokens_7d ?? 0,
         providerName: providers.get(g) ?? null,
+        location: locations.get(g) ?? null,
       };
     });
     const allPrices = list.map((r) => ({ i: r.input_cost_per_million, o: r.output_cost_per_million }));
@@ -91,7 +94,7 @@ export const buildCatalog = (
 };
 
 export const DEFAULT_FILTERS: CatalogFilters = {
-  q: "", minContext: null, maxPrice: null, runtime: null, minGrade: null, multiGarage: false, sort: "popular",
+  q: "", minContext: null, maxPrice: null, runtime: null, minGrade: null, multiGarage: false, sort: "popular", euOnly: false,
 };
 
 const SORTS: CatalogSort[] = ["popular", "cheapest", "fastest", "reliable"];
@@ -106,6 +109,7 @@ export const filtersFromParams = (p: URLSearchParams): CatalogFilters => ({
   minGrade: GRADES.includes((p.get("grade") ?? p.get("betyg")) as ReliabilityGrade) ? ((p.get("grade") ?? p.get("betyg")) as ReliabilityGrade) : null,
   multiGarage: (p.get("multi") ?? p.get("flera")) === "1",
   sort: SORTS.includes(p.get("sort") as CatalogSort) ? (p.get("sort") as CatalogSort) : "popular",
+  euOnly: p.get("eu") === "1",
 });
 
 export const filtersToParams = (f: CatalogFilters): Record<string, string> => {
@@ -117,12 +121,26 @@ export const filtersToParams = (f: CatalogFilters): Record<string, string> => {
   if (f.minGrade) o.grade = f.minGrade;
   if (f.multiGarage) o.multi = "1";
   if (f.sort !== "popular") o.sort = f.sort;
+  if (f.euOnly) o.eu = "1";
   return o;
+};
+
+/** Restricts a model to its EU/EEA garages (visible location); null when none qualify. */
+export const euOnlyModel = (m: CatalogModel): CatalogModel | null => {
+  const offers = m.offers.filter((o) => qualifiesEu(o.location ?? undefined));
+  if (!offers.length) return null;
+  const live = offers.some((o) => o.online);
+  return {
+    ...m, offers, available: live, poolId: live ? m.poolId : null, poolPrice: live ? m.poolPrice : null,
+    bestGrade: bestGrade(offers.map((o) => o.grade).filter((g): g is ReliabilityGrade => !!g)),
+    tokens7d: offers.reduce((s, o) => s + o.tokens7d, 0),
+  };
 };
 
 export const applyFilters = (models: CatalogModel[], f: CatalogFilters): CatalogModel[] => {
   const q = f.q.trim().toLowerCase();
-  const res = models.filter((m) => {
+  const scoped = f.euOnly ? models.map(euOnlyModel).filter((m): m is CatalogModel => !!m) : models;
+  const res = scoped.filter((m) => {
     if (q && !m.name.toLowerCase().includes(q) && !m.offers.some((o) => o.garage.toLowerCase().includes(q))) return false;
     if (f.minContext && (m.contextLength ?? 0) < f.minContext) return false;
     if (f.maxPrice != null && (m.minPrice.output ?? Infinity) > f.maxPrice) return false;

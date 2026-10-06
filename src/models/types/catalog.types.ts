@@ -1,4 +1,5 @@
 import type { ReliabilityGrade } from "./reliability.types";
+import type { GarageLocation } from "@/models/services/location";
 
 export interface GaragePublicStat {
   garage_name: string;
@@ -34,6 +35,7 @@ export interface GarageOffer {
   tokens7d: number;
   /** Display name when this garage is an endpoint provider (company), else null. */
   providerName: string | null;
+  location: GarageLocation | null;
 }
 
 /** Buyer-facing catalogue entry: one per base model name. */
@@ -68,4 +70,5 @@ export interface CatalogFilters {
   minGrade: ReliabilityGrade | null;
   multiGarage: boolean;
   sort: CatalogSort;
+  euOnly: boolean;
 }
