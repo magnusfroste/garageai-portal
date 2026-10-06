@@ -184,7 +184,7 @@ export const ChatPage = () => {
   );
 
   return (
-    <div className="flex h-full overflow-hidden bg-background">
+    <div className="flex h-[calc(100dvh-3rem)] overflow-hidden bg-background">
       <ChatHistoryPanel
         open={panelOpen}
         mobileOpen={drawerOpen}
@@ -197,7 +197,7 @@ export const ChatPage = () => {
         onDelete={convs.deleteConversation}
       />
 
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex h-12 shrink-0 items-center gap-1 px-2">
           <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden" onClick={() => setDrawerOpen(true)} aria-label={t("Chat history")}>
             <Menu className="h-4 w-4" />
@@ -226,17 +226,16 @@ export const ChatPage = () => {
           </div>
         ) : (
           <>
-            <div ref={scroll.ref} onScroll={scroll.onScroll} className="flex-1 overflow-y-auto [overflow-anchor:none]">
+            <div ref={scroll.ref} onScroll={scroll.onScroll} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden [overflow-anchor:none]">
               <ChatMessageList messages={messages} isStreaming={isStreaming} isReasoning={isReasoning} onRegenerate={handleRegenerate} onEdit={handleEdit} />
             </div>
             {!scroll.atBottom && (
               <Button
-                variant="outline" size="icon"
-                className="absolute bottom-36 left-1/2 h-8 w-8 -translate-x-1/2 rounded-full shadow-md"
+                variant="outline" size="sm"
+                className="absolute bottom-36 left-1/2 h-8 -translate-x-1/2 gap-1 rounded-full text-xs shadow-md"
                 onClick={() => scroll.scrollToBottom()}
-                aria-label={t("Scroll to bottom")}
               >
-                <ArrowDown className="h-4 w-4" />
+                <ArrowDown className="h-3.5 w-3.5" /> {t("Jump to latest")}
               </Button>
             )}
             <div className="shrink-0 px-4 pb-4 pt-1">

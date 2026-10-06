@@ -613,4 +613,5 @@ export const sv: Record<string, string> = {
   "Garage name": "Garagets namn",
   "Deleting...": "Tar bort...",
   "Models on provider endpoints are offered by GarageAI admins.": "Modeller på leverantörsendpoints erbjuds av GarageAI-administratörer.",
+  "Jump to latest": "Till senaste",
 };
