@@ -9,12 +9,16 @@ import { formatTokens, formatDecimal } from "@/models/services/reliabilityServic
 import { GradeBadge, honestNote, ReliabilityStats, StatusBar } from "./components/Reliability";
 
 import { t, locale } from "@/i18n";
+import { ReliabilityAvailability } from "./components/ReliabilityAvailability";
+import { LocationBadge } from "./components/LocationBadge";
+import { useGarageLocations } from "@/hooks/useGarageLocations";
 const GarageProfilePage = () => {
   const { name } = useParams<{ name: string }>();
   const profile = useGarageProfile(name);
   const { reliability } = useGarageReliability(name ? [name] : undefined);
   const r = name ? reliability.get(name) : undefined;
   const p = profile.data;
+  const { locations } = useGarageLocations();
 
   if (profile.isLoading) return <p className="p-6 text-sm text-muted-foreground">{t("Loading...")}</p>;
   if (profile.isError || !p) return <p className="p-6 text-sm text-muted-foreground">{t("Garage not found.")}</p>;
@@ -27,6 +31,7 @@ const GarageProfilePage = () => {
         {r && <GradeBadge grade={r.grade} className="text-xs" />}
         {r?.grade !== "Nytt" && r?.score != null && <span className="text-sm text-muted-foreground">{formatDecimal(r.score)} / 100</span>}
         {p.disabled && <Badge variant="destructive">{t("Disabled")}</Badge>}
+        <LocationBadge location={locations.get(p.name)} />
       </div>
       <p className="text-sm text-muted-foreground max-w-2xl">{honestNote()}</p>
       {r?.grade === "Nytt" && (
@@ -40,6 +45,7 @@ const GarageProfilePage = () => {
         </CardHeader>
         <CardContent className="space-y-5">
           <HowWeMeasure />
+          <ReliabilityAvailability reliability={r} location={locations.get(p.name)} />
           <ReliabilityStats r={r} />
           <StatusBar days={p.daily} />
         </CardContent>
