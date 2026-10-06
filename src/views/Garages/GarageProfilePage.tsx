@@ -1,27 +1,23 @@
-import { HowWeMeasure } from "./components/HowWeMeasure";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useGarageProfile, useGarageReliability } from "@/hooks/useGarageReliability";
 import { runtimeLabel } from "@/models/services/garageRuntime";
-import { formatTokens, formatDecimal } from "@/models/services/reliabilityService";
+import { formatTokens } from "@/models/services/reliabilityService";
 import { honestNote, ReliabilityStats, StatusBar } from "./components/Reliability";
 import { usePublicGarages } from "@/hooks/usePublicGarages";
 import { PublicGarageHeader, OfferedModelChips } from "./components/PublicGarageHeader";
 
 import { t, locale } from "@/i18n";
-import { ReliabilityAvailability } from "./components/ReliabilityAvailability";
-import { LocationBadge } from "./components/LocationBadge";
 import { useGarageLocations } from "@/hooks/useGarageLocations";
 const GarageProfilePage = () => {
   const { name } = useParams<{ name: string }>();
   const profile = useGarageProfile(name);
   const { reliability } = useGarageReliability(name ? [name] : undefined);
-  const r = name ? reliability.get(name) : undefined;
   const p = profile.data;
   const { locations } = useGarageLocations();
   const publicGarages = usePublicGarages();
   const garage = publicGarages.data?.find((g) => g.profile.name === name);
+  const r = garage?.reliability ?? (name ? reliability.get(name) : undefined);
 
   if (profile.isLoading) return <p className="p-6 text-sm text-muted-foreground">{t("Loading...")}</p>;
   if (profile.isError || !p) return <p className="p-6 text-sm text-muted-foreground">{t("Garage not found.")}</p>;
@@ -40,8 +36,6 @@ const GarageProfilePage = () => {
           <CardDescription>{t("Measured every five minutes, plus one test request per hour.")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <HowWeMeasure />
-          <ReliabilityAvailability reliability={r} location={locations.get(p.name)} />
           <ReliabilityStats r={r} />
           <StatusBar days={p.daily} />
         </CardContent>
