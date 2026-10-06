@@ -64,14 +64,21 @@ const measuredLabel = (sampleDays: number | null | undefined) => {
   return days < 30 ? t(days === 1 ? "measured over {n} day" : "measured over {n} days", { n: days }) : t("30 days");
 };
 
+/** Decode the splat once (tolerating bad escapes), then fall back to the raw splat. */
+const safeDecode = (s: string) => { try { return decodeURIComponent(s); } catch { return s; } };
+function findModelBySplat<T extends { name: string }>(models: T[], splat: string): T | undefined {
+  const raw = splat.replace(/\/+$/, "");
+  const decoded = safeDecode(raw);
+  return models.find((x) => x.name === decoded) ?? models.find((x) => x.name === raw);
+}
+
 const ModelDetailPage = () => {
   // Splat route: canonical names contain a slash (/models/qwen/qwen3-4b; %2F also accepted).
   const { "*": splat = "" } = useParams();
-  const name = decodeURIComponent(splat);
   const { models, isLoading, isError, refetch } = useModelCatalog();
   const { settings } = useSiteSettings();
   const { session } = useSession();
-  const m = models.find((x) => x.name === name);
+  const m = findModelBySplat(models, splat);
   const garages = m?.offers.map((o) => o.garage) ?? [];
   const daily = useDailyTokens(garages);
   const profiles = useQueries({
@@ -212,7 +219,7 @@ const ModelDetailPage = () => {
               <Link to={`/dashboard/chat?model=${encodeURIComponent(modelId)}`}><MessageSquare className="w-4 h-4 mr-1" />{t("Try in chat")}</Link>
             </Button>
           )}
-          {!session && <Button asChild size="sm" className="max-w-full h-auto min-h-9 whitespace-normal text-center"><Link to={`/auth?intent=buyer&next=${encodeURIComponent(`/models/${name}`)}`}><KeyRound className="mr-1 h-4 w-4" />{t("Create account to get an API key")}</Link></Button>}
+          {!session && <Button asChild size="sm" className="max-w-full h-auto min-h-9 whitespace-normal text-center"><Link to={`/auth?intent=buyer&next=${encodeURIComponent(`/models/${encodeURIComponent(m.name)}`)}`}><KeyRound className="mr-1 h-4 w-4" />{t("Create account to get an API key")}</Link></Button>}
         </CardHeader>
         <CardContent><ModelSnippets baseUrl={baseUrl} model={modelId} /></CardContent>
       </Card>
