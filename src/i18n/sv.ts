@@ -614,4 +614,10 @@ export const sv: Record<string, string> = {
   "Deleting...": "Tar bort...",
   "Models on provider endpoints are offered by GarageAI admins.": "Modeller på leverantörsendpoints erbjuds av GarageAI-administratörer.",
   "Jump to latest": "Till senaste",
+  "I will not log, store, read, forward or analyse buyers' prompts or responses. I understand that a garage found doing so is removed from the marketplace and the account is closed.": "Jag kommer inte att logga, lagra, läsa, vidarebefordra eller analysera köparnas prompter eller svar. Jag förstår att ett garage som gör det tas bort från marknadsplatsen och att kontot stängs.",
+  "The provider has agreed in writing not to log, store, read, forward or analyse buyers' prompts or responses.": "Leverantören har skriftligen åtagit sig att inte logga, lagra, läsa, vidarebefordra eller analysera köparnas prompter eller svar.",
+  "Why this matters": "Varför detta är viktigt",
+  "Please confirm the operator terms": "Bekräfta villkoren för operatörer",
+  "Accept": "Godkänn",
+  "Terms": "Villkor",
 };
