@@ -587,4 +587,6 @@ export const sv: Record<string, string> = {
   "Declared country": "Deklarerat land",
   "Admin override (support cases)": "Admin-åsidosättning (supportärenden)",
   "Choose country": "Välj land",
+  "Live {h} h (new)": "Live {h} h (ny)",
+  "hours live per week over the observed period (up to the last 4 weeks; new garages show total hours). Informational only; it never affects the grade. Paused time is simply not live.": "timmar live per vecka under den observerade perioden (upp till 4 veckor; nya garage visar totalt antal timmar). Endast information; påverkar aldrig betyget. Pausad tid är helt enkelt inte live.",
 };

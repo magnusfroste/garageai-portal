@@ -176,6 +176,13 @@
       "when": 1791285177355,
       "tag": "0024_garage_pause_and_location",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791285826019,
+      "tag": "0025_availability_observed_window",
+      "breakpoints": true
     }
   ]
 }

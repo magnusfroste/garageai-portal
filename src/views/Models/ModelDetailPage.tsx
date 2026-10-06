@@ -179,7 +179,7 @@ const ModelDetailPage = () => {
                     {o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}
                     <LocationBadge location={o.location ?? undefined} />
                   </td>
-                  <td className="px-3 py-2">{o.grade ? <GradeBadge grade={o.grade} /> : "—"}{!o.location?.is_endpoint && liveHoursText(o.location?.live_hours_per_week, true) && <div className="text-[10px] text-muted-foreground whitespace-nowrap">{liveHoursText(o.location?.live_hours_per_week, true)}</div>}</td>
+                  <td className="px-3 py-2">{o.grade ? <GradeBadge grade={o.grade} /> : "—"}{!o.location?.is_endpoint && liveHoursText(o.location, true) && <div className="text-[10px] text-muted-foreground whitespace-nowrap">{liveHoursText(o.location, true)}</div>}</td>
                   <td className="px-3 py-2 tabular-nums">{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</td>
                   <td className="px-3 py-2 tabular-nums">{formatNumber(o.ttftMs, " ms")}</td>
                   <td className="px-3 py-2 tabular-nums">{o.tokensPerSecond == null ? "—" : String(o.tokensPerSecond)}</td>

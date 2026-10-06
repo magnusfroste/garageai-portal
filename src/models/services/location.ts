@@ -19,6 +19,8 @@ export interface GarageLocation {
   location_source: LocationSource;
   is_endpoint: boolean;
   live_hours_per_week: number | null;
+  live_hours_total?: number | null;
+  is_new?: boolean | null;
 }
 
 export const flagEmoji = (code: string) =>
