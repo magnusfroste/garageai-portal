@@ -24,14 +24,38 @@ export interface PrepStep {
 }
 
 /** Instructions so the runtime listens on all interfaces. */
-export const prepSteps = (os: GarageOs, runtime: GarageRuntime, port?: number): PrepStep[] => {
+export type OllamaMacMethod = "app" | "brew";
+
+export const RAM_BUCKETS = [
+  { value: 8, label: "8 GB" },
+  { value: 16, label: "16 GB" },
+  { value: 24, label: "24–32 GB" },
+  { value: 64, label: "64+ GB" },
+] as const;
+
+/** Pull instruction for the chosen model and runtime. */
+export const pullStep = (runtime: GarageRuntime, model: string): PrepStep | null => {
+  if (!model) return null;
+  if (runtime === "ollama") return { text: t("Download the model:"), code: `ollama pull ${model}` };
+  if (runtime === "lmstudio") return { text: t("Search for {model} in LM Studio's Discover tab and download it.", { model }) };
+  return { text: t("Load {model} in your runtime.", { model }) };
+};
+
+export const prepSteps = (os: GarageOs, runtime: GarageRuntime, port?: number, macMethod: OllamaMacMethod = "app"): PrepStep[] => {
   switch (runtime) {
     case "ollama":
       return os === "macos"
-        ? [
-            { text: t("Let Ollama listen on all network interfaces and serve several buyers at once:"), code: "launchctl setenv OLLAMA_HOST 0.0.0.0\nlaunchctl setenv OLLAMA_NUM_PARALLEL 4" },
-            { text: t("Then restart the Ollama app (quit from the menu bar and open it again).") },
-          ]
+        ? macMethod === "brew"
+          ? [
+              { text: t("Let Ollama listen on all network interfaces and serve several buyers at once:"), code: "launchctl setenv OLLAMA_HOST 0.0.0.0\nlaunchctl setenv OLLAMA_NUM_PARALLEL 4" },
+              { text: t("Restart the Homebrew service:"), code: "brew services restart ollama" },
+              { text: t("The connect script will offer to make OLLAMA_HOST permanent on macOS.") },
+            ]
+          : [
+              { text: t("Let Ollama listen on all network interfaces and serve several buyers at once:"), code: "launchctl setenv OLLAMA_HOST 0.0.0.0\nlaunchctl setenv OLLAMA_NUM_PARALLEL 4" },
+              { text: t("Then restart the Ollama app (quit from the menu bar and open it again).") },
+              { text: t("The connect script will offer to make OLLAMA_HOST permanent on macOS.") },
+            ]
         : [
             { text: t("Open Ollama's service settings:"), code: "sudo systemctl edit ollama" },
             { text: t("Add the following and save:"), code: '[Service]\nEnvironment="OLLAMA_HOST=0.0.0.0"\nEnvironment="OLLAMA_NUM_PARALLEL=4"' },
