@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { locationLabel } from "@/models/services/location";
 import { garageStatus, type PublicGarage } from "@/models/services/publicGarageService";
-import { GradeBadge } from "./Reliability";
 import { LocationBadge } from "./LocationBadge";
 import { ProviderBadge } from "./ProviderBadge";
 import { ReliabilityAvailability } from "./ReliabilityAvailability";
@@ -23,9 +22,9 @@ export const PublicGarageHeader = ({ garage, heading = false }: { garage: Public
           {flag && <span aria-hidden className="text-2xl leading-none shrink-0">{flag}</span>}
           {heading ? p.display_name : <Link className="after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring after:rounded-lg" to={`/garages/${encodeURIComponent(p.name)}`}>{p.display_name}</Link>}
         </Heading>
-        {reliability && <GradeBadge grade={reliability.grade} className="shrink-0" />}
+        {!heading && location && <div className="relative z-10 shrink-0"><LocationBadge location={location} /></div>}
       </div>
-      <div className="relative z-10 w-fit flex flex-wrap items-center gap-2"><LocationBadge location={location} /><ProviderBadge name={location?.is_endpoint ? providerName ?? p.display_name : null} /></div>
+      <div className="relative z-10 w-fit flex flex-wrap items-center gap-2">{heading && <LocationBadge location={location} />}<ProviderBadge name={location?.is_endpoint ? providerName ?? p.display_name : null} /></div>
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5"><span aria-hidden className={cn("h-2 w-2 rounded-full", status === "Live" ? "bg-primary" : status === "Paused" ? "bg-accent" : "bg-muted-foreground/40")} />{t(status)}</span>
         {p.runtime && <span>{runtimeLabel(p.runtime)}</span>}
