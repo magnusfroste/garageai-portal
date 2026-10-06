@@ -25,6 +25,9 @@ export interface GarageRow {
   mesh_connected?: boolean | null;
   runtime_ok?: boolean | null;
   runtime_error?: string | null;
+  paused_at?: string | null;
+  paused_reason?: string | null;
+  location_display?: "country" | "region" | "hidden";
 }
 
 export type GarageModelStatus = "untested" | "testing" | "live" | "failed" | "paused";
@@ -34,6 +37,7 @@ export interface GarageModelRow {
   installed: boolean;
   offered: boolean;
   status: GarageModelStatus;
+  paused_at?: string | null;
   updated_at: string;
 }
 
@@ -103,7 +107,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, location_display")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -147,6 +151,35 @@ export const garageRepository = {
 
   setOffered: (name: string, model: string, offered: boolean) =>
     invoke<{ ok: boolean; acceptance: Array<{ model: string; passed: boolean }> }>("set-model-offered", { name, model, offered }),
+
+  setPaused: (name: string, paused: boolean, opts: { model?: string; reason?: string } = {}) =>
+    invoke<{ ok: boolean; paused: boolean; routing_synced: boolean }>("set-garage-paused", { name, paused, ...opts }),
+
+  async setLocationDisplay(garageId: string, mode: "country" | "region" | "hidden") {
+    const { error } = await supabase.rpc("set_garage_location_display", { _garage_id: garageId, _mode: mode });
+    if (error) throw error;
+  },
+
+  /** Admin only (RLS): declared country for providers, or a support override for any garage. */
+  async setCountry(garageId: string, patch: { declared_country?: string | null; country_override?: string | null }) {
+    const { error } = await supabase.from("garages").update(patch).eq("id", garageId);
+    if (error) throw error;
+  },
+
+  async countryChangedRecently(garageIds: string[]): Promise<Set<string>> {
+    const out = new Set<string>();
+    if (!garageIds.length) return out;
+    const since = new Date(Date.now() - 7 * 86400_000).toISOString();
+    const { data, error } = await supabase.from("garage_country_history").select("garage_id, seen_at").in("garage_id", garageIds).order("seen_at", { ascending: true });
+    if (error) throw error;
+    const seen = new Map<string, number>();
+    for (const r of data ?? []) {
+      const n = (seen.get(r.garage_id) ?? 0) + 1; seen.set(r.garage_id, n);
+      // The first row is the initial measurement; later rows in the last 7 days are changes.
+      if (n > 1 && r.seen_at >= since) out.add(r.garage_id);
+    }
+    return out;
+  },
 
   async demandModels(): Promise<DemandModel[]> {
     const { data, error } = await supabase.from("admin_settings").select("value").eq("key", "demand_models").maybeSingle();

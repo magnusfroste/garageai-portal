@@ -33,9 +33,10 @@ export const GarageHealthIndicators = ({ garage, models }: { garage: GarageHealt
 
 const STATUS_LABEL: Record<string, string> = { untested: "Untested", testing: "Testing...", live: "Live", failed: "Failed", paused: "Paused" };
 
-export const GarageModelList = ({ garageName, models, pending, onToggle, offline = false }: {
+export const GarageModelList = ({ garageName, models, pending, onToggle, onPause, offline = false }: {
   garageName: string; models: GarageModelRow[]; pending: string | null;
   onToggle: (garageName: string, model: string, offered: boolean) => Promise<unknown>;
+  onPause?: (garageName: string, model: string, paused: boolean) => Promise<unknown>;
   offline?: boolean;
 }) => {
   const { toast } = useToast();
@@ -44,6 +45,15 @@ export const GarageModelList = ({ garageName, models, pending, onToggle, offline
     try {
       await onToggle(garageName, m.model, offered);
       toast({ title: offered ? t("Offered: {m}", { m: m.model }) : t("Paused: {m}", { m: m.model }) });
+    } catch (e) {
+      toast({ title: t("Could not change the model"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
+    }
+  };
+  const pause = async (m: GarageModelRow, paused: boolean) => {
+    if (!onPause) return;
+    try {
+      await onPause(garageName, m.model, paused);
+      toast({ title: paused ? t("Paused: {m}", { m: m.model }) : t("Resumed: {m}", { m: m.model }) });
     } catch (e) {
       toast({ title: t("Could not change the model"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     }
@@ -60,6 +70,12 @@ export const GarageModelList = ({ garageName, models, pending, onToggle, offline
             {embedding ? <span className="text-muted-foreground">{t("Embedding models are not supported yet")}</span>
               : !m.offered && m.installed && m.status === "untested" ? <span className="text-primary">{t("New on your machine — offer it?")}</span>
               : <Badge variant="outline" className="text-[10px]">{busy ? t("Testing...") : t(STATUS_LABEL[m.status] ?? m.status)}</Badge>}
+            {m.paused_at && <Badge variant="secondary" className="text-[10px] text-muted-foreground">{t("Paused")}</Badge>}
+            {onPause && m.offered && (
+              <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" disabled={busy} onClick={() => pause(m, !m.paused_at)}>
+                {m.paused_at ? t("Resume") : t("Pause")}
+              </Button>
+            )}
             <label className="flex items-center gap-1.5">
               <span>{t("Offer")}</span>
               <TooltipProvider><Tooltip><TooltipTrigger asChild><span tabIndex={offline ? 0 : undefined}>
