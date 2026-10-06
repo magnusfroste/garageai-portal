@@ -10,6 +10,8 @@ export const useLanguagePreference = (profileLanguage?: string | null) => {
   const language = useLanguage();
 
   useEffect(() => {
+    const chosen = localStorage.getItem("garageai.language");
+    if (isLanguage(chosen)) return;
     if (isLanguage(profileLanguage)) setLanguage(profileLanguage);
   }, [profileLanguage]);
 

@@ -226,6 +226,8 @@ export type Database = {
       garage_model_stats_hourly: {
         Row: {
           completion_tokens: number
+          dedicated_completion_tokens: number
+          dedicated_prompt_tokens: number
           failures: number
           garage_id: string
           hour: string
@@ -236,6 +238,8 @@ export type Database = {
         }
         Insert: {
           completion_tokens?: number
+          dedicated_completion_tokens?: number
+          dedicated_prompt_tokens?: number
           failures?: number
           garage_id: string
           hour: string
@@ -246,6 +250,8 @@ export type Database = {
         }
         Update: {
           completion_tokens?: number
+          dedicated_completion_tokens?: number
+          dedicated_prompt_tokens?: number
           failures?: number
           garage_id?: string
           hour?: string
@@ -354,6 +360,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "garage_models_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      garage_price_history: {
+        Row: {
+          changed_by: string | null
+          effective_from: string
+          garage_id: string
+          id: string
+          prices: Json
+        }
+        Insert: {
+          changed_by?: string | null
+          effective_from?: string
+          garage_id: string
+          id?: string
+          prices: Json
+        }
+        Update: {
+          changed_by?: string | null
+          effective_from?: string
+          garage_id?: string
+          id?: string
+          prices?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_price_history_garage_id_fkey"
             columns: ["garage_id"]
             isOneToOne: false
             referencedRelation: "garages"
@@ -812,6 +850,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      operator_garage_activity: {
+        Args: never
+        Returns: {
+          completion_tokens: number
+          estimated_earnings: number
+          garage_id: string
+          period: string
+          prompt_tokens: number
+          recorded_spend: number
+          requests: number
+        }[]
       }
       verify_cron_secret: { Args: { secret: string }; Returns: boolean }
     }

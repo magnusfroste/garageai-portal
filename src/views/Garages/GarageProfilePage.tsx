@@ -1,3 +1,4 @@
+import { HowWeMeasure } from "./components/HowWeMeasure";
 import { useParams } from "react-router-dom";
 import { Server } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ const GarageProfilePage = () => {
           <CardDescription>{t("Measured every five minutes, plus one test request per hour.")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
+          <HowWeMeasure />
           <ReliabilityStats r={r} />
           <StatusBar days={p.daily} />
         </CardContent>

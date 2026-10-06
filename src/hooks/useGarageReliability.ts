@@ -13,7 +13,7 @@ export const useGarageReliability = (names?: string[]) => {
     staleTime: STALE,
     retry: false,
   });
-  return { reliability: q.data ?? new Map<string, GarageReliability>(), isLoading: q.isLoading };
+  return { reliability: q.data ?? new Map<string, GarageReliability>(), isLoading: q.isLoading, isError: q.isError, refetch: q.refetch };
 };
 
 /** Grades for buyer model lists, including pool summaries per model name. */

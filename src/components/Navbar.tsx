@@ -8,7 +8,7 @@ import { t, getLanguage, setLanguage } from "@/i18n";
 const LINKS = [
   { label: "Models", to: "/models" },
   { label: "Garages", to: "/garages" },
-  { label: "Pricing", to: "/#pricing" },
+  { label: "Pricing", to: "/models" },
   { label: "Documentation", to: "/api" },
 ];
 

@@ -1,3 +1,4 @@
+import { HowWeMeasure } from "./HowWeMeasure";
 import { Link } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
@@ -11,7 +12,7 @@ import { formatDecimal } from "@/models/services/reliabilityService";
 export const GarageReliabilityPanel = ({ name, reliability }: { name: string; reliability?: GarageReliability }) => {
   const periods = useOfflinePeriods(name);
   return (
-    <Collapsible className="rounded-md border border-border/50 p-3">
+    <><HowWeMeasure /><Collapsible className="rounded-md border border-border/50 p-3">
       <CollapsibleTrigger className="flex w-full items-center gap-2 text-sm font-medium">
         {t("Reliability")}
         {reliability && <GradeBadge grade={reliability.grade} />}
@@ -27,6 +28,6 @@ export const GarageReliabilityPanel = ({ name, reliability }: { name: string; re
         <p className="text-[11px] text-muted-foreground">{honestNote()}</p>
         <Link to={`/garages/${name}`} className="text-xs text-primary hover:underline">{t("View public profile")}</Link>
       </CollapsibleContent>
-    </Collapsible>
+    </Collapsible></>
   );
 };

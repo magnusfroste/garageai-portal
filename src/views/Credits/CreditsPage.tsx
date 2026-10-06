@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { useState, useEffect, useRef } from "react";
 import { Loader2, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -32,6 +33,7 @@ export const CreditsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loadingPack, setLoadingPack] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
+  const [txError, setTxError] = useState(false);
   const [txLoading, setTxLoading] = useState(true);
   const verifiedRef = useRef(false);
 
@@ -45,26 +47,26 @@ export const CreditsPage = () => {
 
     if (payment === "success" && sessionId && !verifiedRef.current) {
       verifiedRef.current = true;
-      toast.loading("Verifying payment...", { id: "verify-payment" });
+      toast.loading(t(t("Verifying payment...")), { id: "verify-payment" });
 
       supabase.functions
         .invoke("verify-payment", { body: { session_id: sessionId } })
         .then(({ data, error }) => {
           if (error || data?.error) {
-            toast.error("Could not verify payment. Contact support if credits are missing.", { id: "verify-payment" });
+            toast.error(t(t("Could not verify payment. Contact support if credits are missing.")), { id: "verify-payment" });
           } else if (data?.status === "paid") {
-            toast.success(`Payment verified! ${data.credits_added} credits added.`, { id: "verify-payment" });
+            toast.success(t("Payment verified! {n} credits added.", { n: data.credits_added }), { id: "verify-payment" });
             refetchProfile();
             refetchBudget();
             loadTransactions();
           } else {
-            toast.info("Payment not yet completed.", { id: "verify-payment" });
+            toast.info(t(t("Payment not yet completed.")), { id: "verify-payment" });
           }
         });
 
       setSearchParams({});
     } else if (payment === "canceled") {
-      toast.info("Payment was canceled.");
+      toast.info(t("Payment was canceled."));
       setSearchParams({});
     }
   }, [searchParams, setSearchParams, refetchProfile, refetchBudget]);
@@ -72,10 +74,11 @@ export const CreditsPage = () => {
   const loadTransactions = async () => {
     try {
       setTxLoading(true);
+      setTxError(false);
       const data = await transactionRepository.fetchTransactions();
       setTransactions(data);
     } catch (err) {
-      console.error("Failed to load transactions:", err);
+      setTxError(true);
     } finally {
       setTxLoading(false);
     }
@@ -93,7 +96,7 @@ export const CreditsPage = () => {
       }
     } catch (err) {
       console.error("Checkout error:", err);
-      toast.error("Failed to start checkout");
+      toast.error(t("Failed to start checkout"));
     } finally {
       setLoadingPack(null);
     }
@@ -107,8 +110,8 @@ export const CreditsPage = () => {
   return (
     <div className="p-6 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-1">Credits</h1>
-        <p className="text-muted-foreground text-sm">Manage your API credit balance</p>
+        <h1 className="text-3xl font-bold mb-1">{t("Credits")}</h1>
+        <p className="text-muted-foreground text-sm">{t("Manage your API credit balance")}</p>
       </div>
 
       {/* Budget Overview */}
@@ -116,11 +119,11 @@ export const CreditsPage = () => {
         <Card className="glass-card">
           <CardContent className="pt-5 pb-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-sm text-muted-foreground">Budget</p>
+              <p className="text-sm text-muted-foreground">{t("Balance")}</p>
               <Wallet className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight">
-              ${budgetLoading ? "—" : maxBudget.toFixed(2)}
+              ${budgetLoading ? "—" : remaining.toFixed(2)}
             </p>
           </CardContent>
         </Card>
@@ -128,7 +131,7 @@ export const CreditsPage = () => {
         <Card className="glass-card">
           <CardContent className="pt-5 pb-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-sm text-muted-foreground">Spent</p>
+              <p className="text-sm text-muted-foreground">{t("Spent")}</p>
               <TrendingUp className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight">
@@ -140,11 +143,11 @@ export const CreditsPage = () => {
         <Card className="glass-card">
           <CardContent className="pt-5 pb-4">
             <div className="flex items-center justify-between mb-1">
-              <p className="text-sm text-muted-foreground">Remaining</p>
+              <p className="text-sm text-muted-foreground">{t("Total credit")}</p>
               <TrendingDown className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight text-primary">
-              ${budgetLoading ? "—" : remaining.toFixed(2)}
+              ${budgetLoading ? "—" : maxBudget.toFixed(2)}
             </p>
           </CardContent>
         </Card>
@@ -153,7 +156,7 @@ export const CreditsPage = () => {
       {!budgetLoading && maxBudget > 0 && (
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{usagePercent.toFixed(1)}% used</span>
+            <span>{t("{n}% used", { n: usagePercent.toFixed(1) })}</span>
             <span>${spent.toFixed(4)} / ${maxBudget.toFixed(2)}</span>
           </div>
           <Progress value={usagePercent} className="h-2" />
@@ -163,8 +166,8 @@ export const CreditsPage = () => {
       {/* Buy Credits */}
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle className="text-lg">Add Credits</CardTitle>
-          <CardDescription>Top up your account with API credits</CardDescription>
+          <CardTitle className="text-lg">{t("Add Credits")}</CardTitle>
+          <CardDescription>{t("Top up your account with API credits")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-3">
@@ -181,9 +184,9 @@ export const CreditsPage = () => {
                 ) : (
                   <>
                     <span className="text-lg font-bold">{pack.label}</span>
-                    <span className="text-xs opacity-70">{pack.description}</span>
+                    <span className="text-xs opacity-70">{t("{n} credits", { n: pack.credits })}</span>
                     {pack.popular && (
-                      <Badge variant="secondary" className="text-[10px] mt-1">Popular</Badge>
+                      <Badge variant="secondary" className="text-[10px] mt-1">{t("Popular")}</Badge>
                     )}
                   </>
                 )}
@@ -193,25 +196,26 @@ export const CreditsPage = () => {
         </CardContent>
       </Card>
 
+      <div className="space-y-2 text-xs text-muted-foreground"><p>{t("Prices in USD, VAT handled per your country at checkout")}</p><p>{t("Stripe sends your receipt by email after checkout. Check your inbox for the receipt link.")}</p></div>
       {/* Transaction History */}
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle className="text-lg">Recent Transactions</CardTitle>
-          <CardDescription>Your credit purchase history</CardDescription>
+          <CardTitle className="text-lg">{t("Recent Transactions")}</CardTitle>
+          <CardDescription>{t("Your credit purchase history")}</CardDescription>
         </CardHeader>
         <CardContent>
-          {txLoading ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
+          {txError ? <div className="text-sm text-destructive">{t("Could not load purchases.")} <Button variant="link" onClick={loadTransactions}>{t("Try again")}</Button></div> : txLoading ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">{t("Loading...")}</p>
           ) : transactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No transactions yet</p>
+            <p className="text-sm text-muted-foreground py-4 text-center">{t("No purchases yet — choose an amount above to top up.")}</p>
           ) : (
             <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Credits</TableHead>
+                    <TableHead>{t("Date")}</TableHead>
+                    <TableHead className="text-right">{t("Amount")}</TableHead>
+                    <TableHead className="text-right">{t("Credits")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

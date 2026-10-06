@@ -77,4 +77,11 @@ All colors MUST be HSL.
   .glow {
     box-shadow: var(--shadow-glow);
   }
+
+  .catalogue-home {
+    --primary: var(--accent);
+    --primary-foreground: var(--accent-foreground);
+    --ring: var(--accent);
+    --gradient-accent: linear-gradient(hsl(var(--accent)), hsl(var(--accent)));
+  }
 }

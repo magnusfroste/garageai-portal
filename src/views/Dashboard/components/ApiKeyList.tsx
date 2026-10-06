@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { Key } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiKey } from "@/models/types/apiKey.types";
@@ -28,14 +29,14 @@ export const ApiKeyList = ({
   return (
     <Card className="glass-card">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Key className="w-6 h-6" />
-              API Keys
+              {t("API keys")}
             </CardTitle>
             <CardDescription className="mt-2">
-              All keys share your account budget
+              {t("All keys share your account balance")}
             </CardDescription>
           </div>
           <KeyCreationDialog
@@ -50,7 +51,7 @@ export const ApiKeyList = ({
         {apiKeys.length === 0 ? (
           <div className="text-center py-12">
             <Key className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground mb-4">No API keys yet</p>
+            <p className="text-muted-foreground mb-4">{t("No API keys yet — create one to start using models.")}</p>
             <KeyCreationDialog
               onCreateKey={onCreateKey}
               isCreating={isCreatingKey}

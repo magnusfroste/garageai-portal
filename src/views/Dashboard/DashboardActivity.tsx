@@ -11,7 +11,7 @@ import { useAccountData } from "@/views/Account/hooks/useAccountData";
 import { ActivityCard } from "./components/ActivityCard";
 import { MonthlyUsageChart } from "./components/MonthlyUsageChart";
 import { DailySpendChart } from "@/views/Account/components/DailySpendChart";
-import { BuyerGettingStarted } from "./components/BuyerGettingStarted";
+import { SetupChecklist } from "./components/SetupChecklist";
 
 import { t } from "@/i18n";
 const PRESETS = [
@@ -23,7 +23,7 @@ const PRESETS = [
 
 export const DashboardActivity = () => {
   const { profile, loading: profileLoading } = useProfile();
-  const { loading: keysLoading } = useDashboardData();
+  const { apiKeys, loading: keysLoading } = useDashboardData();
 
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -59,7 +59,7 @@ export const DashboardActivity = () => {
       <div className="flex items-center justify-center py-24">
         <div className="text-center">
           <Shield className="w-12 h-12 text-primary animate-pulse mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading dashboard...</p>
+          <p className="text-muted-foreground">{t("Loading dashboard...")}</p>
         </div>
       </div>
     );
@@ -81,10 +81,9 @@ export const DashboardActivity = () => {
 
   return (
     <div className="p-6 space-y-8">
-      {profile?.signup_intent === "buyer" && <BuyerGettingStarted />}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t("Activity")}</h1>
+          <h1 className="text-3xl font-bold">{t("Overview")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {t("Your model usage on GarageAI")}
           </p>
@@ -111,7 +110,7 @@ export const DashboardActivity = () => {
                 className={cn("text-xs gap-1.5", startDate && "text-foreground")}
               >
                 <CalendarIcon className="h-3.5 w-3.5" />
-                {startDate ? format(startDate, "d MMM") : "From"}
+                {startDate ? format(startDate, "d MMM") : t("From")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
@@ -134,7 +133,7 @@ export const DashboardActivity = () => {
                 className={cn("text-xs gap-1.5", endDate && "text-foreground")}
               >
                 <CalendarIcon className="h-3.5 w-3.5" />
-                {endDate ? format(endDate, "d MMM") : "To"}
+                {endDate ? format(endDate, "d MMM") : t("To")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
@@ -151,21 +150,22 @@ export const DashboardActivity = () => {
         </div>
       </div>
 
+      <SetupChecklist hasKey={apiKeys.some(k => k.is_active && !k.revoked_at)} hasRequest={allLogs.length > 0 || dailyBreakdown.some(d => d.api_requests > 0)} />
       {usageLoading ? (
         <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground text-sm animate-pulse">Loading usage data...</p>
+          <p className="text-muted-foreground text-sm animate-pulse">{t("Loading usage data...")}</p>
         </div>
-      ) : (
+      ) : totalRequests > 0 || dailyBreakdown.some(d => d.api_requests > 0) ? (
         <>
-          <DailySpendChart data={dailyBreakdown} loading={usageLoading} />
+          {dailyBreakdown.some(d => d.api_requests > 0 || d.spend > 0) && <DailySpendChart data={dailyBreakdown} loading={usageLoading} />}
 
-          <MonthlyUsageChart logs={allLogs} />
+          {allLogs.length > 0 && <MonthlyUsageChart logs={allLogs} />}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <ActivityCard
               title="Spend"
               value={`$${totalSpend.toFixed(3)}`}
-              data={spendData}
+              data={spendData.filter(d => d.value > 0)}
               formatLegend={(v) => v.toFixed(4)}
             />
             <ActivityCard
@@ -182,7 +182,7 @@ export const DashboardActivity = () => {
             />
           </div>
         </>
-      )}
+      ) : <p className="text-sm text-muted-foreground">{t("No usage yet — create an API key and send your first request.")}</p>}
     </div>
   );
 };

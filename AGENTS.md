@@ -18,3 +18,6 @@
 - Generate garage setup commands as download / `export` secrets / run lines (zsh and bash safe); with sudo, use `--preserve-env` rather than putting secrets in flags.
 - Render connect commands through the shared OS selector and resolve demand model IDs in a service by runtime; runtime-specific IDs avoid unmatched install filters.
 - Treat gateway health reports (L1 tunnel, L2 /v1/models) as the primary routing signal for garages that have one; heartbeats only carry inventory, and only `garage_models.offered` models may be routed.
+
+- Audit garage price changes with an atomic database trigger, then reconcile both token prices; statements always sum recorded request spend to preserve historical rates.
+- Read operator earnings through an ownership-scoped aggregate RPC; estimates are separate from invoice totals to prevent current-price repricing.

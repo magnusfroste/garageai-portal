@@ -1,0 +1,7 @@
+ALTER TABLE public.garage_model_stats_hourly ADD COLUMN dedicated_prompt_tokens bigint NOT NULL DEFAULT 0, ADD COLUMN dedicated_completion_tokens bigint NOT NULL DEFAULT 0;
+CREATE OR REPLACE FUNCTION public.operator_garage_activity() RETURNS TABLE(garage_id uuid,period text,requests bigint,prompt_tokens bigint,completion_tokens bigint,recorded_spend numeric,estimated_earnings numeric) LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$
+ SELECT g.id,w.period,coalesce(sum(s.requests),0)::bigint,coalesce(sum(s.prompt_tokens),0)::bigint,coalesce(sum(s.completion_tokens),0)::bigint,coalesce(sum(s.spend_usd),0),coalesce(sum(((s.prompt_tokens-s.dedicated_prompt_tokens)*g.pool_input_cost_per_million+s.dedicated_prompt_tokens*g.dedicated_input_cost_per_million+(s.completion_tokens-s.dedicated_completion_tokens)*g.pool_output_cost_per_million+s.dedicated_completion_tokens*g.dedicated_output_cost_per_million)/1000000),0)
+ FROM public.garages g CROSS JOIN (VALUES('7d',interval '7 days'),('30d',interval '30 days')) w(period,span)
+ LEFT JOIN public.garage_model_stats_hourly s ON s.garage_id=g.id AND s.hour>=now()-w.span
+ WHERE g.operator_id=auth.uid() OR public.has_role(auth.uid(),'admin') GROUP BY g.id,w.period
+$$;

@@ -17,6 +17,10 @@ export interface Garage {
   last_registered_at: string | null;
   last_heartbeat_at: string | null;
   created_at: string;
+  pool_input_cost_per_million?: number;
+  pool_output_cost_per_million?: number;
+  dedicated_input_cost_per_million?: number;
+  dedicated_output_cost_per_million?: number;
   connection_type?: string;
   endpoint_url?: string | null;
   display_name?: string | null;

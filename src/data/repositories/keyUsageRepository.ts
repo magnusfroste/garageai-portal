@@ -24,6 +24,9 @@ export interface SpendLog {
   spend: number;
   status: string;
   api_key?: string;
+  model_id?: string;
+  endTime?: string;
+  latency?: number;
 }
 
 export interface DailyModelBreakdown {
@@ -56,7 +59,8 @@ export const keyUsageRepository = {
       body: { keyId },
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
-    if (error || !data) return null;
+    if (error) throw error;
+    if (!data) throw new Error("Could not load API usage");
     return {
       info: data.info,
       spend_logs: data.spend_logs || [],

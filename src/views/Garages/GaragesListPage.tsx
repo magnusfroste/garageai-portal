@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Warehouse } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { GradeBadge, honestNote } from "./components/Reliability";
 
 import { t } from "@/i18n";
 const GaragesListPage = () => {
-  const { reliability, isLoading } = useGarageReliability();
+  const { reliability, isLoading, isError, refetch } = useGarageReliability();
   const list = [...reliability.values()].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
 
   return (
@@ -21,9 +22,9 @@ const GaragesListPage = () => {
         <p className="text-sm text-muted-foreground max-w-2xl">{honestNote()}</p>
       </div>
       {isLoading ? (
-        <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
-      ) : list.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("No garages to show yet.")}</p>
+        <div className="space-y-2"><p className="text-sm text-muted-foreground">{t("Loading garages and reliability…")}</p>{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
+      ) : isError ? <div className="text-sm text-destructive">{t("Could not load garages.")} <Button variant="link" onClick={() => refetch()}>{t("Try again")}</Button></div> : list.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("No garages to show yet.")} <Button asChild variant="link"><Link to="/auth?intent=operator">{t("Offer your GPU")}</Link></Button></p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((g) => (

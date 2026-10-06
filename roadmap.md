@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Clarify operator earnings and add audited admin pricing
+- [x] Finish catalogue home, overview checklist, logs, reliability, credits and navigation
+- [ ] Review all pages at desktop/mobile sizes, report screenshots and publish
+
 - [x] Complete v1.0 onboarding review fixes 1–9 and verify mobile, commands, and starter credit
 - [x] Request publication of the v1.0 onboarding review fixes to app.garageai.eu (deployment scheduled)
 

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { Shield } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
@@ -18,7 +19,7 @@ export const KeysPage = () => {
   const poolModel = curated.find((model) => model.is_default && model.garage_tier === "pool")?.model_name || models.find((model) => model.available && model.poolId)?.poolId || models.find((model) => model.poolId)?.poolId;
   const { profile, loading: profileLoading } = useProfile();
   const [revoking, setRevoking] = useState(false);
-  const { apiKeys, loading: keysLoading, refetch } = useDashboardData();
+  const { apiKeys, loading: keysLoading, isError, refetch } = useDashboardData();
   const { createKey, isCreatingKey, copyToClipboard } = useKeyManagement();
   const syncRan = useRef(false);
 
@@ -92,7 +93,7 @@ export const KeysPage = () => {
       <div className="flex items-center justify-center py-24">
         <div className="text-center">
           <Shield className="w-12 h-12 text-primary animate-pulse mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading keys...</p>
+          <p className="text-muted-foreground">{t("Loading your API keys…")}</p>
         </div>
       </div>
     );
@@ -113,6 +114,7 @@ export const KeysPage = () => {
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify({ model: poolModel, messages: [{ role: "user", content: "Hello" }] })}'`} />}
       </section>
+      {isError && <div className="text-sm text-destructive">{t("Could not load API keys.")} <Button variant="link" onClick={refetch}>{t("Try again")}</Button></div>}
       <ApiKeyList
         apiKeys={activeKeys}
         onCopy={copyToClipboard}

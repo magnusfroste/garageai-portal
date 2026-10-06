@@ -36,6 +36,7 @@ export const useAdminData = () => {
     users: usersQuery.data ?? [],
     isLoading: usersQuery.isLoading,
     isError: usersQuery.isError,
+    refetch: usersQuery.refetch,
     isAdmin: isAdminQuery.data ?? false,
     isAdminLoading: isAdminQuery.isLoading,
     updateBudget: updateBudgetMutation.mutate,

@@ -1,3 +1,4 @@
+import { EditGaragePrices } from "./EditGaragePrices";
 import { useState } from "react";
 import { Server, RefreshCw, Plus, Copy, Check, KeyRound, FlaskConical, Ban, Power } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -249,24 +250,24 @@ export const GaragePanel = () => {
   return (
     <TooltipProvider>
     <Card className="glass-card">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
         <div>
           <CardTitle className="flex items-center gap-2">
             <Server className="w-5 h-5 text-primary" />
             Garages
           </CardTitle>
           <CardDescription>
-            {garages.length} registered · GPU nodes that join the mesh and serve models via LiteLLM
+            {t("{n} registered garages and providers", { n: garages.length })}
           </CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setSortDir(sortDir === "desc" ? "asc" : sortDir === "asc" ? "none" : "desc")}>
             <ArrowUpDown className="w-4 h-4 mr-2" />
-            Grade{sortDir === "desc" ? " ↓" : sortDir === "asc" ? " ↑" : ""}
+            {t("Grade")}{sortDir === "desc" ? " ↓" : sortDir === "asc" ? " ↑" : ""}
           </Button>
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefetching ? "animate-spin" : ""}`} />
-            Refresh
+            {t("Refresh")}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setProviderOpen(true)}>
             <Building2 className="w-4 h-4 mr-2" />
@@ -274,25 +275,25 @@ export const GaragePanel = () => {
           </Button>
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            Add garage
+            {t("Add garage")}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground py-4">Loading garages...</p>
+          <p className="text-sm text-muted-foreground py-4">{t("Loading garages...")}</p>
         ) : isError ? (
-          <p className="text-sm text-destructive py-4">Failed to load garages.</p>
+          <p className="text-sm text-destructive py-4">{t("Failed to load garages.")} <Button variant="link" onClick={() => refetch()}>{t("Try again")}</Button></p>
         ) : garages.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4">No garages yet — click "Add garage" to register one.</p>
         ) : (
           <div className="divide-y divide-border/50">
             {sortedGarages.map((g) => (
-              <div key={g.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                <a href={`/garages/${g.name}`} className="shrink-0 w-16" title={reliability.get(g.name)?.grade !== "Nytt" && reliability.get(g.name)?.score != null ? `Score ${reliability.get(g.name)!.score}` : "No score yet"}>
-                  {reliability.get(g.name) ? <GradeBadge grade={reliability.get(g.name)!.grade} /> : <span className="text-[10px] text-muted-foreground">—</span>}
+              <div key={g.id} className="flex flex-wrap items-start gap-3 py-3 first:pt-0 last:pb-0">
+                <a href={`/garages/${g.name}`} className="shrink-0 w-16" title={reliability.get(g.name)?.grade !== "Nytt" && reliability.get(g.name)?.score != null ? `Score ${reliability.get(g.name)?.score}` : "No score yet"}>
+                  {reliability.get(g.name) ? <GradeBadge grade={reliability.get(g.name)?.grade ?? "Nytt"} /> : <span className="text-[10px] text-muted-foreground">—</span>}
                 </a>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 w-full sm:flex-1 sm:w-auto">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-sm truncate">{g.name}</span>
                     {g.connection_type === "endpoint" && <ProviderBadge name={g.display_name || g.name} />}
@@ -328,6 +329,7 @@ export const GaragePanel = () => {
                     </div>
                   )}
                 </div>
+                <EditGaragePrices garage={g} onSaved={invalidate} />
                 <Button
                   variant="ghost"
                   size="sm"
@@ -375,7 +377,7 @@ export const GaragePanel = () => {
           ) : (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="garage-name">Name</Label>
+                <Label htmlFor="garage-name">{t("Name")}</Label>
                 <Input
                   id="garage-name"
                   value={name}
@@ -388,7 +390,7 @@ export const GaragePanel = () => {
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label>Runtime</Label>
+                <Label>{t("Runtime")}</Label>
                 <Select value={runtime} onValueChange={setRuntime} disabled={submitting}>
                   <SelectTrigger>
                     <SelectValue />
@@ -459,12 +461,12 @@ export const GaragePanel = () => {
             <AlertDialogTitle>{confirmGarage?.disabled ? "Enable" : "Disable"} {confirmGarage?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
               {confirmGarage?.disabled
-                ? "The garage goes back to pending. The operator must run the connect command again to re-register."
+                ? t("The garage is relisted automatically when its runtime and tests are healthy. No new command is needed.")
                 : "Revokes all tokens, removes its deployments from the proxy and disables its models in the catalog."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={toggling}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={toggling}>{t("Cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); handleToggleDisabled(); }} disabled={toggling}>
               {toggling ? "Working..." : confirmGarage?.disabled ? "Enable" : "Disable"}
             </AlertDialogAction>
