@@ -850,7 +850,9 @@ export type Database = {
           country: string
           garage_name: string
           is_endpoint: boolean
+          is_new: boolean
           live_hours_per_week: number
+          live_hours_total: number
           location_display: string
           location_source: string
         }[]
