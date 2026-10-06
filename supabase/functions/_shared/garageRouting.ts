@@ -19,7 +19,7 @@ export interface RoutingGarage {
   port: number | null; runtime: string | null; models: string[]; status: string; disabled: boolean;
   last_heartbeat_at: string | null;
   last_gateway_check_at?: string | null; runtime_ok?: boolean | null; mesh_connected?: boolean | null;
-  connection_type?: string | null; endpoint_url?: string | null;
+  connection_type?: string | null; endpoint_url?: string | null; paused_at?: string | null;
   dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number;
   pool_input_cost_per_million: number; pool_output_cost_per_million: number;
 }
@@ -85,7 +85,7 @@ export const hasGatewaySignal = (g: Pick<RoutingGarage, "last_gateway_check_at">
 export const gatewayHealthy = (g: Pick<RoutingGarage, "runtime_ok" | "mesh_connected">) => g.runtime_ok === true && g.mesh_connected !== false;
 
 export function isModelSellable(g: RoutingGarage, model: string, test: { passed: boolean; tested_at: number } | undefined, now = Date.now()) {
-  if (g.disabled || !apiBaseFor(g)) return false;
+  if (g.disabled || g.paused_at || !apiBaseFor(g)) return false;
   if (!test?.passed) return false;
   if (hasGatewaySignal(g)) return gatewayHealthy(g) && now - test.tested_at <= GATEWAY_TEST_MAX_AGE_MS;
   if (g.status !== "online") return false;
@@ -93,7 +93,7 @@ export function isModelSellable(g: RoutingGarage, model: string, test: { passed:
   return now - test.tested_at <= NO_HEARTBEAT_TEST_MAX_AGE_MS;
 }
 
-export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connection_type, endpoint_url, port, runtime, models, status, disabled, last_heartbeat_at, last_gateway_check_at, runtime_ok, mesh_connected, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million";
+export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connection_type, endpoint_url, port, runtime, models, status, disabled, last_heartbeat_at, last_gateway_check_at, runtime_ok, mesh_connected, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million, paused_at";
 
 /**
  * Makes LiteLLM garage deployments equal the desired set.
