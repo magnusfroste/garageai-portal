@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
+import { runtimeLabel } from "@/models/services/garageRuntime";
 import { locationLabel } from "@/models/services/location";
 import { garageStatus, type PublicGarage } from "@/models/services/publicGarageService";
 import { GradeBadge } from "./Reliability";
