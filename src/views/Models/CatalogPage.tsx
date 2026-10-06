@@ -41,7 +41,7 @@ const Pick = ({
 const CatalogRow = ({ m }: { m: CatalogModel }) => (
   <Link
     to={`/models/${encodeURIComponent(m.name)}`}
-    className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_minmax(0,1fr)_70px_150px_80px_80px] items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-accent/30 transition-colors"
+    className="grid grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_70px_150px_80px_80px] items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-accent/30 transition-colors"
   >
     <span
       className={cn("w-2 h-2 rounded-full", m.available ? "bg-emerald-500" : "bg-muted-foreground/40")}
@@ -55,13 +55,18 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
       <div className="text-xs text-muted-foreground truncate">
         {m.provider}{m.mode ? ` · ${m.mode}` : ""}{!m.available ? ` · ${t("Not available right now")}` : ""}
       </div>
+      {m.offers.find((o) => o.providerName)?.providerName && <ProviderBadge name={m.offers.find((o) => o.providerName)?.providerName} />}
+      <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground tabular-nums">
+        <span>{t("Context")}: {formatContext(m.contextLength)}</span>
+        <span>{t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}</span>
+        <span>{t(m.offers.length === 1 ? "{n} garage" : "{n} garages", { n: m.offers.length })}</span>
+      </div>
     </div>
     <span className="text-xs tabular-nums text-muted-foreground hidden sm:block">{formatContext(m.contextLength)}</span>
     <span className="text-xs tabular-nums hidden sm:block">
       {t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}
     </span>
-    <span className="text-xs text-muted-foreground hidden sm:block">{t("{n} garages", { n: m.offers.length })}</span>
-    {m.offers.some((o) => o.providerName) && <ProviderBadge name={m.offers.find((o) => o.providerName)!.providerName} />}
+    <span className="text-xs text-muted-foreground hidden sm:block">{t(m.offers.length === 1 ? "{n} garage" : "{n} garages", { n: m.offers.length })}</span>
     <span className="justify-self-end">{m.bestGrade && <GradeBadge grade={m.bestGrade} />}</span>
   </Link>
 );

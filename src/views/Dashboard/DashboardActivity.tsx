@@ -27,7 +27,7 @@ export const DashboardActivity = () => {
 
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [activePreset, setActivePreset] = useState<string>("Alla");
+  const [activePreset, setActivePreset] = useState<string>("All");
 
   const { usageByModel, totalSpend, allLogs, dailyBreakdown, loading: usageLoading } = useAccountData({
     startDate,
@@ -99,7 +99,7 @@ export const DashboardActivity = () => {
               onClick={() => applyPreset(p)}
               className="text-xs"
             >
-              {p.label}
+              {t(p.label)}
             </Button>
           ))}
 

@@ -33,7 +33,7 @@ export interface GarageModelRow {
   updated_at: string;
 }
 
-export interface DemandModel { model: string; min_gb: number; note?: string }
+export interface DemandModel { model: string; min_gb: number; note?: string; ids?: { ollama?: string; lmstudio?: string; hf?: string; [runtime: string]: string | undefined } }
 
 export interface GarageTestRow {
   id: string;

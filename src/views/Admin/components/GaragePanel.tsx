@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { buildGarageCommand } from "@/models/services/garageCommand";
+import { GarageConnectCommand } from "@/views/Garages/components/GarageShared";
 import { useGarageModels } from "@/hooks/useGarageModels";
 import { GarageHealthIndicators, GarageModelList } from "@/views/Garages/components/GarageHealth";
 import { GARAGE_RUNTIME_OPTIONS, runtimeLabel } from "@/models/services/garageRuntime";
@@ -106,7 +106,7 @@ const SecretRow = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-const buildCommand = (result: CreateGarageResult, runtime: string, models: string[] = []) => buildGarageCommand(result, runtime, { models });
+
 
 interface ResultViewProps {
   result: CreateGarageResult;
@@ -116,27 +116,16 @@ interface ResultViewProps {
 }
 
 const ResultView = ({ result, runtime, models, onClose }: ResultViewProps) => {
-  const command = buildCommand(result, runtime, models);
   return (
     <div className="space-y-4">
       <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
-        Copy these now — the token and setup key cannot be shown again.
+        {t("Copy the command now – it is only shown once. The token and key cannot be shown again.")}
       </div>
       <SecretRow label="Register token" value={result.register_token} />
       {result.setup_key && <SecretRow label="NetBird setup key" value={result.setup_key} />}
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Run on the garage machine</Label>
-        <div className="relative">
-          <pre className="text-xs font-mono bg-muted/50 rounded p-3 pr-10 overflow-x-auto whitespace-pre-wrap break-all">
-            {command}
-          </pre>
-          <div className="absolute top-1.5 right-1.5">
-            <CopyButton value={command} />
-          </div>
-        </div>
-      </div>
+      <GarageConnectCommand credentials={result} runtime={runtime} options={{ models }} />
       <Button className="w-full" onClick={onClose}>
-        Done — I've copied everything
+        {t("Done – I have copied it")}
       </Button>
     </div>
   );
@@ -326,7 +315,7 @@ export const GaragePanel = () => {
                   </div>
                   <div className="mt-1.5 space-y-1.5">
                     <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
-                    <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} />
+                    <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
                   </div>
                   {g.models.length > 0 && (
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">

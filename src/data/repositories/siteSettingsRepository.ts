@@ -8,14 +8,13 @@ export class SiteSettingsRepository {
   async getSettings(): Promise<SiteSettings> {
     const { data, error } = await supabase
       .from("admin_settings")
-      .select("value")
-      .eq("key", SETTINGS_KEY)
-      .maybeSingle();
+      .select("key,value")
+      .in("key", [SETTINGS_KEY, "default_user_budget_usd"]);
 
     if (error) throw error;
-    if (!data) return defaultSiteSettings;
-
-    const merged = { ...defaultSiteSettings, ...(data.value as Record<string, unknown>) } as SiteSettings;
+    const site = data?.find((row) => row.key === SETTINGS_KEY);
+    const credit = Number(data?.find((row) => row.key === "default_user_budget_usd")?.value ?? 0);
+    const merged = { ...defaultSiteSettings, ...(site?.value as Record<string, unknown>), starting_credit_usd: Number.isFinite(credit) ? Math.max(0, credit) : 0 } as SiteSettings;
 
     // Migrate legacy single footer link → footer_links array
     if ((!merged.footer_links || merged.footer_links.length === 0) && merged.footer_link_text && merged.footer_link_url) {

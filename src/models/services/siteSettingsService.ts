@@ -23,5 +23,5 @@ export const siteSettingsService = new SiteSettingsService();
 export const localizeSiteSettings = (settings: SiteSettings | undefined, lang: string): SiteSettings | undefined => {
   if (!settings || lang === "en") return settings;
   const overrides = settings.translations?.[lang as "sv"];
-  return overrides ? { ...settings, ...overrides } : settings;
+  return overrides ? { ...settings, ...overrides, starting_credit_usd: settings.starting_credit_usd } : settings;
 };

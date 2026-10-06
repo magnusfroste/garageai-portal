@@ -58,7 +58,7 @@ const Fact = ({ label, value }: { label: string; value: string }) => (
 
 const measuredLabel = (sampleDays: number | null | undefined) => {
   const days = Math.max(1, Math.floor(sampleDays ?? 0));
-  return days < 30 ? t("measured over {n} days", { n: days }) : t("30 days");
+  return days < 30 ? t(days === 1 ? "measured over {n} day" : "measured over {n} days", { n: days }) : t("30 days");
 };
 
 const ModelDetailPage = () => {
@@ -99,18 +99,18 @@ const ModelDetailPage = () => {
 
   const Th = ({ k, children, className }: { k: SortKey; children: React.ReactNode; className?: string }) => (
     <th className={cn("px-3 py-2 font-normal text-left", className)}>
-      <button className="inline-flex items-center gap-1 hover:text-foreground"
+      <Button variant="ghost" size="sm" className="h-auto p-0 inline-flex items-center gap-1 hover:text-foreground"
         onClick={() => setSort((s) => ({ k, asc: s.k === k ? !s.asc : true }))}>
         {children}<ArrowUpDown className={cn("w-3 h-3", sort.k === k ? "text-foreground" : "opacity-40")} />
-      </button>
+      </Button>
     </th>
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-w-0 p-4 sm:p-6 space-y-6">
       <div className="space-y-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl font-bold font-mono">{m.name}</h1>
+          <h1 className="text-2xl font-bold font-mono break-all">{m.name}</h1>
           {m.bestGrade && <GradeBadge grade={m.bestGrade} />}
           {m.supportsTools && <ToolsBadge />}
           {!m.available && <Badge variant="outline">{t("Not available right now")}</Badge>}
@@ -148,7 +148,7 @@ const ModelDetailPage = () => {
         <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Server className="h-4 w-4 text-primary" />{t("Specific garage")}</CardTitle><CardDescription>{t("Choose one garage directly. Availability depends on that machine.")}</CardDescription></CardHeader>
         <CardContent className="space-y-2">
           {offers.map((o) => <div key={o.garage} className="grid gap-2 border-b border-border/50 py-3 last:border-0 sm:grid-cols-[1fr_auto_1.5fr] sm:items-center">
-            <div><Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-sm text-primary hover:underline">{o.garage}</Link><ProviderBadge name={o.providerName} />{o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}</div>
+            <div className="min-w-0">{o.providerName ? <Link to={`/garages/${encodeURIComponent(o.garage)}`}><ProviderBadge name={o.providerName} /></Link> : <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-sm text-primary hover:underline">{o.garage}</Link>}{o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}</div>
             <div className="text-sm tabular-nums"><span className="text-xs text-muted-foreground">{t("Price in / out")}</span><br />{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</div>
             {o.modelId && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><code className="truncate font-mono text-xs">{o.modelId}</code><CopyButton text={o.modelId} /></div>}
           </div>)}
@@ -158,7 +158,8 @@ const ModelDetailPage = () => {
 
       <Card className="glass-card">
         <CardHeader className="pb-2"><CardTitle className="text-base">{t("Garages running this model")}</CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto px-0">
+        <CardContent className="min-w-0 px-0">
+          <div className="w-full min-w-0 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-[11px] text-muted-foreground border-b border-border/50">
               <tr>
@@ -170,7 +171,7 @@ const ModelDetailPage = () => {
               {offers.map((o) => (
                 <tr key={o.garage}>
                   <td className="px-3 py-2">
-                    <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-primary hover:underline">{o.garage}</Link><ProviderBadge name={o.providerName} />
+                    {o.providerName ? <Link to={`/garages/${encodeURIComponent(o.garage)}`}><ProviderBadge name={o.providerName} /></Link> : <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-primary hover:underline">{o.garage}</Link>}
                     {o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}
                   </td>
                   <td className="px-3 py-2">{o.grade ? <GradeBadge grade={o.grade} /> : "—"}</td>
@@ -187,7 +188,7 @@ const ModelDetailPage = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           {offers.some((o) => o.modelId) && (
             <p className="px-3 pt-3 text-[11px] text-muted-foreground">{t("Want to target a specific garage? Use the model ID")} <code className="font-mono">garage/&lt;garage&gt;/{m.name}</code>.</p>
           )}
@@ -195,14 +196,14 @@ const ModelDetailPage = () => {
       </Card>
 
       <Card className="glass-card">
-        <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+        <CardHeader className="pb-3 flex-row flex-wrap items-center justify-between gap-3 space-y-0">
           <CardTitle className="text-base">{t("Get started")}</CardTitle>
           {session && (
             <Button asChild size="sm" variant="outline">
               <Link to={`/dashboard/chat?model=${encodeURIComponent(modelId)}`}><MessageSquare className="w-4 h-4 mr-1" />{t("Try in chat")}</Link>
             </Button>
           )}
-          {!session && <Button asChild size="sm"><Link to={`/auth?intent=buyer&next=${encodeURIComponent(`/models/${name}`)}`}><KeyRound className="mr-1 h-4 w-4" />{t("Create account to get an API key")}</Link></Button>}
+          {!session && <Button asChild size="sm" className="max-w-full h-auto min-h-9 whitespace-normal text-center"><Link to={`/auth?intent=buyer&next=${encodeURIComponent(`/models/${name}`)}`}><KeyRound className="mr-1 h-4 w-4" />{t("Create account to get an API key")}</Link></Button>}
         </CardHeader>
         <CardContent><ModelSnippets baseUrl={baseUrl} model={modelId} /></CardContent>
       </Card>

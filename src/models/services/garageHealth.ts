@@ -45,6 +45,7 @@ export const garageHealth = (g: GarageHealthInput, models: GarageModelRow[]): Ga
     text: "Runtime: nothing answers on port {port} — start {runtime} (see Troubleshooting)",
     params: { port: g.port ?? "?", runtime: g.runtime ? runtimeLabel(g.runtime) : "the runtime" },
   };
+  else if (g.status === "offline") reason = { text: "Garage is offline" };
   else if (models.length > 0 && offeredRows.length === 0) reason = { text: "No models offered — turn on Offer for a model below" };
   else if (offeredRows.length > 0 && offeredRows.every((m) => m.status === "failed")) reason = { text: "All offered models failed the acceptance test" };
   else if (g.status === "offline" && !g.last_gateway_check_at) reason = { text: "No recent heartbeat — the machine may be asleep or the token revoked (get a new command)" };

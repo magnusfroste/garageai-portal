@@ -14,7 +14,7 @@ const LINKS = [
 
 export const Navbar = () => {
   const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "AI Portal";
+  const siteName = settings?.site_name || "GarageAI";
   const logoUrl = settings?.logo_url;
 
   return (

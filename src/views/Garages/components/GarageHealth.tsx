@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import type { GarageModelRow } from "@/data/repositories/garageRepository";
 import { garageHealth, isEmbeddingModel, type GarageHealthInput, type Indicator } from "@/models/services/garageHealth";
 import { t } from "@/i18n";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const mark = (i: Indicator) => (i === "ok" ? "✓" : i === "fail" ? "✗" : "–");
 const tone = (i: Indicator) =>
@@ -32,9 +33,10 @@ export const GarageHealthIndicators = ({ garage, models }: { garage: GarageHealt
 
 const STATUS_LABEL: Record<string, string> = { untested: "Untested", testing: "Testing...", live: "Live", failed: "Failed", paused: "Paused" };
 
-export const GarageModelList = ({ garageName, models, pending, onToggle }: {
+export const GarageModelList = ({ garageName, models, pending, onToggle, offline = false }: {
   garageName: string; models: GarageModelRow[]; pending: string | null;
   onToggle: (garageName: string, model: string, offered: boolean) => Promise<unknown>;
+  offline?: boolean;
 }) => {
   const { toast } = useToast();
   if (models.length === 0) return null;
@@ -52,7 +54,7 @@ export const GarageModelList = ({ garageName, models, pending, onToggle }: {
         const embedding = isEmbeddingModel(m.model);
         const busy = pending === `${garageName}::${m.model}`;
         return (
-          <div key={m.model} className="flex items-center gap-3 px-3 py-2 text-xs">
+          <div key={m.model} className="flex flex-wrap items-center gap-3 px-3 py-2 text-xs">
             <span className="font-mono flex-1 min-w-0 truncate">{m.model}</span>
             <span className="text-muted-foreground">{m.installed ? t("Installed") : t("Not installed")}</span>
             {embedding ? <span className="text-muted-foreground">{t("Embedding models are not supported yet")}</span>
@@ -60,7 +62,9 @@ export const GarageModelList = ({ garageName, models, pending, onToggle }: {
               : <Badge variant="outline" className="text-[10px]">{busy ? t("Testing...") : t(STATUS_LABEL[m.status] ?? m.status)}</Badge>}
             <label className="flex items-center gap-1.5">
               <span>{t("Offer")}</span>
-              <Switch checked={m.offered} disabled={busy || embedding || (!m.installed && !m.offered)} onCheckedChange={(v) => toggle(m, v)} />
+              <TooltipProvider><Tooltip><TooltipTrigger asChild><span tabIndex={offline ? 0 : undefined}>
+                <Switch aria-label={`${t("Offer")} ${m.model}`} checked={m.offered} disabled={offline || busy || embedding || (!m.installed && !m.offered)} onCheckedChange={(v) => toggle(m, v)} />
+              </span></TooltipTrigger><TooltipContent>{offline ? t("Garage is offline") : embedding ? t("Embedding models are not supported yet") : !m.installed ? t("Not installed") : t("Offer")}</TooltipContent></Tooltip></TooltipProvider>
             </label>
           </div>
         );

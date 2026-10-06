@@ -12,7 +12,7 @@ import { useMyGarages } from "@/hooks/useMyGarages";
 import { useGarageStatusPolling } from "@/hooks/useGarageStatusPolling";
 import { garageRepository } from "@/data/repositories/garageRepository";
 import {
-  buildGarageCommand, GarageCredentials, GARAGE_NAME_RE, suggestGarageName,
+  GarageCredentials, GARAGE_NAME_RE, suggestGarageName,
 } from "@/models/services/garageCommand";
 import { OS_OPTIONS, OFFICIAL_RUNTIMES, OTHER_RUNTIMES, RUNTIME_OPTIONS, RAM_BUCKETS, prepSteps, pullStep, GarageOs, GarageRuntime, OllamaMacMethod } from "@/models/services/garageInstructions";
 import { useQuery } from "@tanstack/react-query";
@@ -20,8 +20,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGarageModels } from "@/hooks/useGarageModels";
 import { GarageHealthIndicators, GarageTroubleshooting } from "./components/GarageHealth";
 import { runtimeLabel, RUNTIMES_WITH_API_KEY } from "@/models/services/garageRuntime";
-import { CommandBlock, OneTimeWarning } from "./components/GarageShared";
+import { CommandBlock, GarageConnectCommand, OneTimeWarning } from "./components/GarageShared";
 import { t } from "@/i18n";
+import { demandModelId } from "@/models/services/demandModelService";
 
 const STEPS = ["Your machine", "Choose a model", "Prepare", "Name", "Live"];
 
@@ -57,12 +58,17 @@ const OfferGpuPage = () => {
   const [liveName, setLiveName] = useState<string | null>(null);
   const [retesting, setRetesting] = useState(false);
   const [ramGb, setRamGb] = useState<number>(16);
+  const [runtimeApiKey, setRuntimeApiKey] = useState("");
+  const [runtimeWaitAt, setRuntimeWaitAt] = useState<number | null>(null);
   const [model, setModel] = useState("");
   const [customModel, setCustomModel] = useState("");
   const [macMethod, setMacMethod] = useState<OllamaMacMethod>("app");
   const demand = useQuery({ queryKey: ["demand-models"], queryFn: () => garageRepository.demandModels(), staleTime: 300_000 });
   const suggestions = (demand.data ?? []).filter((d) => d.min_gb <= ramGb).sort((a, b) => b.min_gb - a.min_gb).slice(0, 3);
-  const chosenModel = model === "__other" ? customModel.trim() : model;
+  const selectedDemand = suggestions.find((d) => d.model === model);
+  const runtimeModel = selectedDemand ? demandModelId(selectedDemand, runtime) : "";
+  const needsCustomModel = model === "__other" || (!!selectedDemand && !runtimeModel);
+  const chosenModel = needsCustomModel ? customModel.trim() : runtimeModel;
 
   useEffect(() => {
     if (!name) setName(suggestGarageName());
@@ -71,6 +77,10 @@ const OfferGpuPage = () => {
   const status = useGarageStatusPolling(liveName);
   const data = status.data;
   const meshOk = !!data?.mesh.connected;
+  useEffect(() => {
+    setRuntimeWaitAt(meshOk && data?.garage.runtime_ok !== true ? (previous) => previous ?? Date.now() : null);
+  }, [meshOk, data?.garage.runtime_ok]);
+  const showHints = (!meshOk && status.elapsedMs >= 180_000) || (meshOk && runtimeWaitAt != null && Date.now() - runtimeWaitAt >= 120_000);
   const registered = !!data?.garage.last_registered_at;
   const anyPassed = !!data?.latest_tests.some((t) => t.passed);
   const liveModels = useGarageModels(data?.garage.id ? [data.garage.id] : []);
@@ -110,11 +120,7 @@ const OfferGpuPage = () => {
 
   const osSupported = OS_OPTIONS.find((o) => o.value === os)?.supported;
   const port = runtime === "other" ? otherPort : RUNTIME_OPTIONS.find((r) => r.value === runtime)?.port;
-  const apiKeyHelp = runtime === "paddock"
-    ? t("Replace <YOUR_KEY> with the key from Paddock. The key is required.")
-    : RUNTIMES_WITH_API_KEY.includes(runtime)
-      ? t("Replace <YOUR_KEY> with the runtime key. If you don't use a key you can remove the flag.")
-      : null;
+
 
   return (
     <div className="p-6 space-y-6 max-w-3xl">
@@ -215,7 +221,7 @@ const OfferGpuPage = () => {
               {suggestions.map((d) => (
                 <Label key={d.model} htmlFor={`m-${d.model}`} className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-3 font-normal">
                   <RadioGroupItem value={d.model} id={`m-${d.model}`} />
-                  <span className="font-mono flex-1">{d.model}</span>
+                  <span className="font-mono flex-1 min-w-0 break-all">{demandModelId(d, runtime) || d.model}</span>
                   <span className="rounded border border-primary/40 px-1.5 py-0.5 text-[10px] text-primary">{t(d.note || "Requested by buyers")}</span>
                 </Label>
               ))}
@@ -224,8 +230,10 @@ const OfferGpuPage = () => {
                 <span>{t("Any other model you have")}</span>
               </Label>
             </RadioGroup>
-            {model === "__other" && (
-              <Input placeholder="llama3.1:8b" value={customModel} onChange={(e) => setCustomModel(e.target.value.trim())} />
+            {needsCustomModel && (
+              <div className="space-y-2"><Label htmlFor="runtime-model">{t("Pick it in your runtime, then enter the model id as your runtime lists it.")}</Label>
+                <Input id="runtime-model" value={customModel} onChange={(e) => setCustomModel(e.target.value)} />
+              </div>
             )}
             {(() => { const p = pullStep(runtime, chosenModel); return p ? (
               <div className="space-y-1.5"><p className="text-sm">{p.text}</p>{p.code && <CommandBlock command={p.code} />}</div>
@@ -253,6 +261,9 @@ const OfferGpuPage = () => {
                 {s.code && <CommandBlock command={s.code} />}
               </div>
             ))}
+            <div className="space-y-2"><Label htmlFor="runtime-key">{t("Runtime API key (if configured)")}</Label><Input id="runtime-key" type="password" autoComplete="off" value={runtimeApiKey} onChange={(e) => setRuntimeApiKey(e.target.value)} />
+              {RUNTIMES_WITH_API_KEY.includes(runtime) && !runtimeApiKey && <p className="text-xs text-muted-foreground">{t("Replace <YOUR_KEY> with your runtime's API key.")}</p>}
+            </div>
             <div className="flex gap-2 rounded-md border border-border/60 bg-muted/30 p-3 text-sm text-muted-foreground">
               <ShieldCheck className="w-5 h-5 text-primary shrink-0" />
               <p>{t("Your runtime is not exposed to the internet as long as your router does not forward the port. Only the GarageAI gateway reaches it, via the encrypted mesh network.")}</p>
@@ -285,9 +296,9 @@ const OfferGpuPage = () => {
               <>
                 <OneTimeWarning />
                 <p className="text-sm">{t("Run this in a terminal on the machine:")}</p>
-                <CommandBlock command={buildGarageCommand(creds, runtime, { sudo: os === "linux", port, models: chosenModel ? [chosenModel] : [] })} />
-                {apiKeyHelp && <p className="text-xs text-muted-foreground">{apiKeyHelp}</p>}
-                <Button onClick={() => { setLiveName(creds.garage.name); setCreds(null); setStep(4); }}>
+                <GarageConnectCommand credentials={creds} runtime={runtime} initialOs={os === "linux" ? "linux" : "macos"} options={{ port, models: chosenModel ? [chosenModel] : [], runtimeApiKey }} />
+                <p className="text-xs text-muted-foreground">{t("The script asks for your sudo password and may ask to install jq. The setup key is single-use and valid for 3 days. A sleeping machine goes offline.")}</p>
+                <Button onClick={() => { setLiveName(creds.garage.name); setStep(4); }}>
                   {t("I have copied and run the command")}
                 </Button>
               </>
@@ -329,8 +340,9 @@ const OfferGpuPage = () => {
               </div>
             )}
 
+            {creds && <Collapsible><CollapsibleTrigger asChild><Button variant="outline" size="sm">{t("Show connect command")}</Button></CollapsibleTrigger><CollapsibleContent className="pt-2"><GarageConnectCommand credentials={creds} runtime={runtime} initialOs={os === "linux" ? "linux" : "macos"} options={{ port, models: chosenModel ? [chosenModel] : [], runtimeApiKey }} /></CollapsibleContent></Collapsible>}
             <GarageTroubleshooting />
-            {status.timedOut && !anyPassed && (
+            {(status.timedOut || showHints) && !anyPassed && (
               <div className="rounded-md border border-border/60 bg-muted/30 p-4 mt-4 text-sm space-y-2">
                 <p className="font-semibold">{t("This seems to be taking longer than expected. Common causes:")}</p>
                 <ul className="list-disc pl-5 text-muted-foreground space-y-1">

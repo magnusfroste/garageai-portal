@@ -30,7 +30,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [checkInbox, setCheckInbox] = useState(false);
   const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "AI Portal";
+  const siteName = settings?.site_name || "GarageAI";
   const logoUrl = settings?.logo_url;
   const intent = onboardingService.readUrlIntent(location.search);
   const params = new URLSearchParams(location.search);
@@ -194,7 +194,7 @@ const Auth = () => {
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">{t("Name")}</Label>
-                    <Input id="signup-name" type="text" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={isLoading} />
+                    <Input id="signup-name" type="text" placeholder={t("Your name")} value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={isLoading} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">{t("Email")}</Label>
@@ -205,9 +205,9 @@ const Auth = () => {
                     <Input id="signup-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isLoading} />
                   </div>
                   <div className="bg-accent/10 border border-accent/20 rounded-lg p-4 space-y-2">
-                     <p className="text-sm font-semibold text-accent">{t("Starter credit included:")}</p>
+                      {starterCredit > 0 && <p className="text-sm font-semibold text-accent">{t("Starter credit included:")}</p>}
                     <ul className="text-sm space-y-1 text-muted-foreground">
-                       <li>{t("• {amount} USD in credits", { amount: starterCredit })}</li>
+                       {starterCredit > 0 && <li>{t("• {amount} USD in credits", { amount: starterCredit })}</li>}
                        <li>{t("• All available models")}</li>
                        <li>{t("• No credit card required")}</li>
                     </ul>

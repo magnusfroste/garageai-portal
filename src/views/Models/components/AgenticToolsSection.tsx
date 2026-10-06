@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "./CopyButton";
 import { t } from "@/i18n";
+import { useModelCatalog } from "@/hooks/useModelCatalog";
+import { useCuratedModels } from "@/hooks/useCuratedModels";
 
 interface AgenticTool {
   name: string;
@@ -22,12 +24,11 @@ const tools: AgenticTool[] = [
     features: [
       "Full codebase awareness with automatic context gathering",
       "Runs terminal commands, edits files, creates commits",
-      "Supports extended thinking for complex multi-step tasks",
-      "Works with any OpenAI-compatible proxy out of the box",
     ],
     envVars: [
       { key: "ANTHROPIC_BASE_URL", value: "{{baseUrl}}" },
-      { key: "ANTHROPIC_API_KEY", value: "<your-api-key>" },
+      { key: "ANTHROPIC_API_KEY", value: "$GARAGE_API_KEY" },
+      { key: "ANTHROPIC_MODEL", value: "{{model}}" },
     ],
     link: { url: "https://docs.anthropic.com/en/docs/claude-code", label: "Claude Code docs" },
   },
@@ -61,7 +62,11 @@ const tools: AgenticTool[] = [
   },
 ];
 
-export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => (
+export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
+  const { models } = useModelCatalog();
+  const { models: curated } = useCuratedModels(true);
+  const model = curated.find((m) => m.is_default && m.garage_tier === "pool")?.model_name || models.find((m) => m.available && m.poolId)?.poolId || models.find((m) => m.poolId)?.poolId || "<pool-model-id>";
+  return (
   <Card className="border-border/50 bg-card/60">
     <CardHeader>
       <CardTitle className="flex items-center gap-2 text-lg">
@@ -101,10 +106,10 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => (
           {tool.envVars.length > 0 && (
             <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm space-y-2">
               {tool.envVars.map((env) => {
-                const val = env.value.replace("{{baseUrl}}", baseUrl);
+                const val = env.value.replace("{{baseUrl}}", baseUrl.replace(/\/v1\/?$/, "")).replace("{{model}}", model);
                 return (
                   <div key={env.key} className="flex items-center justify-between gap-2">
-                    <span>
+                    <span className="min-w-0 break-all">
                       export {env.key}={val}
                     </span>
                     <CopyButton text={`export ${env.key}=${val}`} />
@@ -128,3 +133,4 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => (
     </CardContent>
   </Card>
 );
+};

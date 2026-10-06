@@ -7,7 +7,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const Index = () => {
   const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "AI Portal";
+  const siteName = settings?.site_name || "GarageAI";
   const tagline = settings?.tagline || "Open model access through an EU gateway.";
 
   return (

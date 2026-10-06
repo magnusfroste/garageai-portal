@@ -30,7 +30,7 @@ export const AppLayout = () => {
   const { profile } = useProfile();
   const { budget } = useUserBudget();
   const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "AI Portal";
+  const siteName = settings?.site_name || "GarageAI";
   useLitellmUser();
   useLanguagePreference(profile?.preferred_language);
 

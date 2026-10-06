@@ -42,6 +42,7 @@ export const runtimeOption = (runtime?: string | null) =>
 
 export const runtimeLabel = (runtime?: string | null): string => {
   if (!runtime) return t("Unknown runtime");
+  if (runtime === "openai") return t("API endpoint");
   const option = runtimeOption(runtime);
   return option ? `${option.label}${option.beta ? " (beta)" : ""}` : runtime;
 };

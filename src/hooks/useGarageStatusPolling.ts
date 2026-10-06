@@ -25,12 +25,12 @@ export const useGarageStatusPolling = (name: string | null) => {
   const query = useQuery({
     queryKey: ["garage-status", name],
     enabled: !!name,
-    queryFn: () => garageRepository.status(name!),
+    queryFn: () => { if (!name) throw new Error("Garage name required"); return garageRepository.status(name); },
     refetchInterval: (q) => {
       const live = q.state.data?.latest_tests.some((t) => t.passed);
       return live || timedOut ? false : POLL_MS;
     },
   });
 
-  return { ...query, timedOut, restart: () => { setStartedAt(Date.now()); setNow(Date.now()); query.refetch(); } };
+  return { ...query, timedOut, elapsedMs: startedAt ? Math.max(0, now - startedAt) : 0, restart: () => { setStartedAt(Date.now()); setNow(Date.now()); query.refetch(); } };
 };

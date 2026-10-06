@@ -69,7 +69,7 @@ export const UserBudgetCard = ({ budget, loading, onRefresh }: UserBudgetCardPro
           <AlertTitle className="font-semibold">{budgetWarning.title}</AlertTitle>
           <AlertDescription className="opacity-90 flex items-center justify-between gap-4">
             <span>{budgetWarning.description}</span>
-            <Link to="/credits" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2 hover:opacity-80 whitespace-nowrap shrink-0">
+            <Link to="/dashboard/credits" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2 hover:opacity-80 whitespace-nowrap shrink-0">
               Buy credits <ArrowRight className="h-3 w-3" />
             </Link>
           </AlertDescription>

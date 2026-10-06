@@ -148,6 +148,13 @@
       "when": 1791248010421,
       "tag": "0020_netbird_url_admin_only",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791249636195,
+      "tag": "0021_public_starter_credit_setting",
+      "breakpoints": true
     }
   ]
 }
