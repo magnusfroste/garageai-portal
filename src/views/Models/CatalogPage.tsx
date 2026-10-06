@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
+import { useEuOnly } from "@/hooks/useEuOnly";
 import { LocationBadge, liveHoursText } from "@/views/Garages/components/LocationBadge";
 import { Link, useSearchParams } from "react-router-dom";
 import { Cpu, Search } from "lucide-react";
@@ -81,12 +82,8 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
 
 export const CatalogPage = () => {
   const [params, setParams] = useSearchParams();
-  const f = filtersFromParams(params);
-  // "EU only" persists in the URL (?eu=1) and localStorage.
-  useEffect(() => {
-    if (!params.has("eu") && localStorage.getItem("catalog-eu-only") === "1") setParams(filtersToParams({ ...f, euOnly: true }), { replace: true });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { localStorage.setItem("catalog-eu-only", f.euOnly ? "1" : "0"); }, [f.euOnly]);
+  const { euOnly, setEuOnly } = useEuOnly();
+  const f = { ...filtersFromParams(params), euOnly };
   const { models, isLoading, isError, refetch } = useModelCatalog();
   const set = (patch: Partial<CatalogFilters>) => setParams(filtersToParams({ ...f, ...patch }), { replace: true });
 
@@ -122,7 +119,7 @@ export const CatalogPage = () => {
         <Pick value={f.minGrade} onChange={(v) => set({ minGrade: v as CatalogFilters["minGrade"] })} placeholder={t("All grades")}
           options={[["A", t("Grade A")], ["B", t("B or better")], ["C", t("C or better")]]} />
         <div className="flex items-center gap-2 px-2">
-          <Switch id="eu-only" checked={f.euOnly} onCheckedChange={(c) => set({ euOnly: c })} />
+          <Switch id="eu-only" checked={f.euOnly} onCheckedChange={setEuOnly} />
           <Label htmlFor="eu-only" className="text-xs">{t("EU only")}</Label>
         </div>
         <div className="flex items-center gap-2 px-2">

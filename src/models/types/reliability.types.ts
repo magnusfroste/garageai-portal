@@ -29,6 +29,9 @@ export interface GarageDay {
 
 export interface GarageProfile {
   name: string;
+  display_name: string;
+  paused: boolean;
+  online: boolean;
   runtime: string | null;
   models: string[];
   status: string;

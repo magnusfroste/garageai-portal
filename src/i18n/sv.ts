@@ -1,5 +1,8 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
+  "Sort garages": "Sortera garage",
+  "No offered models": "Inga erbjudna modeller",
+  "Offered models": "Erbjudna modeller",
   "30 days ago": "30 dagar sedan",
   "A firewall on the machine blocks incoming traffic on the port.": "En brandvägg på maskinen blockerar inkommande trafik på porten.",
   "API keys": "API-nycklar",
