@@ -27,6 +27,8 @@ export interface GarageRow {
   runtime_error?: string | null;
   paused_at?: string | null;
   paused_reason?: string | null;
+  terms_accepted_at?: string | null;
+  terms_version?: string | null;
   location_display?: "country" | "region" | "hidden";
 }
 
@@ -101,7 +103,7 @@ export const garageRepository = {
   listProviderModels: (endpoint_url: string, api_key: string) =>
     invoke<{ endpoint_url: string; models: string[] }>("create-provider", { list_only: true, endpoint_url, api_key }),
 
-  createProvider: (body: { name: string; display_name: string; endpoint_url: string; api_key?: string; models: string[]; prices: ProviderPrices; declared_country?: string }) =>
+  createProvider: (body: { terms_accepted: boolean; name: string; display_name: string; endpoint_url: string; api_key?: string; models: string[]; prices: ProviderPrices; declared_country?: string }) =>
     invoke<ProviderResult>("create-provider", body),
 
   updateProviderKey: (name: string, api_key: string) =>
@@ -111,7 +113,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, location_display")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, location_display, terms_accepted_at, terms_version")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -135,9 +137,10 @@ export const garageRepository = {
     return latest;
   },
 
-  create: (body: { name: string; create_setup_key: boolean }) =>
+  create: (body: { name: string; create_setup_key: boolean; terms_accepted?: boolean }) =>
     invoke<GarageCredentials>("create-garage", body),
 
+  acceptTerms: (name: string) => invoke<{ ok: boolean }>("set-garage-terms", { name, terms_accepted: true }),
   status: (name: string) => invoke<GarageStatusResult>("garage-status", { name }),
 
   retest: (name: string) =>

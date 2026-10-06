@@ -30,6 +30,8 @@ export interface Garage {
   runtime_error?: string | null;
   paused_at?: string | null;
   paused_reason?: string | null;
+  terms_accepted_at?: string | null;
+  terms_version?: string | null;
   location_display?: string;
   measured_country?: string | null;
   measured_country_at?: string | null;
@@ -120,6 +122,7 @@ export const useGarages = () => {
     name: string;
     api_host?: string;
     create_setup_key: boolean;
+    terms_accepted?: boolean;
   }): Promise<CreateGarageResult> => {
     const { data, error } = await supabase.functions.invoke("create-garage", { body });
     if (error) throw new Error(error.message || "Failed to create garage");
