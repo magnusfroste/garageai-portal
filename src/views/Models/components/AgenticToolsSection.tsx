@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "./CopyButton";
 import { t } from "@/i18n";
 import { useModelCatalog } from "@/hooks/useModelCatalog";
+import { useCuratedModels } from "@/hooks/useCuratedModels";
 
 interface AgenticTool {
   name: string;
@@ -63,7 +64,8 @@ const tools: AgenticTool[] = [
 
 export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
   const { models } = useModelCatalog();
-  const model = models.find((m) => m.available && m.poolId)?.poolId || models.find((m) => m.poolId)?.poolId || "<pool-model-id>";
+  const { models: curated } = useCuratedModels(true);
+  const model = curated.find((m) => m.is_default && m.garage_tier === "pool")?.model_name || models.find((m) => m.available && m.poolId)?.poolId || models.find((m) => m.poolId)?.poolId || "<pool-model-id>";
   return (
   <Card className="border-border/50 bg-card/60">
     <CardHeader>

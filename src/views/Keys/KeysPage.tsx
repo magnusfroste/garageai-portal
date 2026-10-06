@@ -8,12 +8,14 @@ import { ApiKey } from "@/models/types/apiKey.types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useModelCatalog } from "@/hooks/useModelCatalog";
+import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { CommandBlock } from "@/views/Garages/components/GarageShared";
 import { t } from "@/i18n";
 
 export const KeysPage = () => {
   const { models } = useModelCatalog();
-  const poolModel = models.find((model) => model.available && model.poolId)?.poolId || models.find((model) => model.poolId)?.poolId;
+  const { models: curated } = useCuratedModels(true);
+  const poolModel = curated.find((model) => model.is_default && model.garage_tier === "pool")?.model_name || models.find((model) => model.available && model.poolId)?.poolId || models.find((model) => model.poolId)?.poolId;
   const { profile, loading: profileLoading } = useProfile();
   const [revoking, setRevoking] = useState(false);
   const { apiKeys, loading: keysLoading, refetch } = useDashboardData();
