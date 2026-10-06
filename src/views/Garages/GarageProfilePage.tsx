@@ -1,12 +1,13 @@
 import { HowWeMeasure } from "./components/HowWeMeasure";
 import { useParams } from "react-router-dom";
-import { Server } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useGarageProfile, useGarageReliability } from "@/hooks/useGarageReliability";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { formatTokens, formatDecimal } from "@/models/services/reliabilityService";
-import { GradeBadge, honestNote, ReliabilityStats, StatusBar } from "./components/Reliability";
+import { honestNote, ReliabilityStats, StatusBar } from "./components/Reliability";
+import { usePublicGarages } from "@/hooks/usePublicGarages";
+import { PublicGarageHeader, OfferedModelChips } from "./components/PublicGarageHeader";
 
 import { t, locale } from "@/i18n";
 import { ReliabilityAvailability } from "./components/ReliabilityAvailability";
@@ -19,20 +20,15 @@ const GarageProfilePage = () => {
   const r = name ? reliability.get(name) : undefined;
   const p = profile.data;
   const { locations } = useGarageLocations();
+  const publicGarages = usePublicGarages();
+  const garage = publicGarages.data?.find((g) => g.profile.name === name);
 
   if (profile.isLoading) return <p className="p-6 text-sm text-muted-foreground">{t("Loading...")}</p>;
   if (profile.isError || !p) return <p className="p-6 text-sm text-muted-foreground">{t("Garage not found.")}</p>;
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3 flex-wrap">
-        <Server className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-bold font-mono">{p.name}</h1>
-        {r && <GradeBadge grade={r.grade} className="text-xs" />}
-        {r?.grade !== "Nytt" && r?.score != null && <span className="text-sm text-muted-foreground">{formatDecimal(r.score)} / 100</span>}
-        {p.disabled && <Badge variant="destructive">{t("Disabled")}</Badge>}
-        <LocationBadge location={locations.get(p.name)} />
-      </div>
+      <PublicGarageHeader garage={garage ?? { profile: p, location: locations.get(p.name), reliability: r, models: [] }} heading />
       <p className="text-sm text-muted-foreground max-w-2xl">{honestNote()}</p>
       {r?.grade === "Nytt" && (
         <p className="text-xs text-muted-foreground">{t("The garage has been measured for less than 7 days – the grade is set once there is enough data.")}</p>
@@ -58,9 +54,7 @@ const GarageProfilePage = () => {
           <div><div className="text-xs text-muted-foreground">{t("Total tokens delivered")}</div>{formatTokens(p.total_tokens)}</div>
           <div>
             <div className="text-xs text-muted-foreground mb-1">{t("Models")}</div>
-            <div className="flex gap-1 flex-wrap">
-              {p.models.length ? p.models.map((m) => <Badge key={m} variant="outline" className="font-mono text-[10px]">{m}</Badge>) : "—"}
-            </div>
+            <OfferedModelChips models={garage?.models ?? p.models.map((model) => ({ model, private: false }))} limit={Infinity} />
           </div>
         </CardContent>
       </Card>
