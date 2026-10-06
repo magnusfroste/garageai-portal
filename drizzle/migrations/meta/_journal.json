@@ -169,6 +169,13 @@
       "when": 1791270877673,
       "tag": "0023_operator_activity_tier_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791285177355,
+      "tag": "0024_garage_pause_and_location",
+      "breakpoints": true
     }
   ]
 }
