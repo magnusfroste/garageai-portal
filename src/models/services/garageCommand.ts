@@ -7,38 +7,37 @@ export interface GarageCredentials {
 }
 
 export interface BuildCommandOptions {
-  /** Prefix the script invocation with sudo (Linux). */
+  /** Run the script with sudo (Linux), preserving the exported secrets. */
   sudo?: boolean;
   port?: number;
+  /** Models passed as --models (wizard choice, or the offered models on a rerun). */
+  models?: string[];
 }
 
 const shellQuote = (value: string) => `'${value.replace(/'/g, `'"'"'`)}'`;
 
-/** Builds the one-time connect command shown after create-garage. */
+/** Builds the connect command (zsh- and bash-safe): download, export secrets, run. Without a setup key it is a --skip-install rerun. */
 export const buildGarageCommand = (
   result: GarageCredentials,
   runtime: string,
   opts: BuildCommandOptions = {}
 ): string => {
+  const env: Array<[string, string]> = [];
+  if (result.setup_key) env.push(["GARAGEAI_SETUP_KEY", shellQuote(result.setup_key)]);
+  env.push(["GARAGEAI_REGISTER_TOKEN", shellQuote(result.register_token)]);
+  if (["vllm", "sglang", "paddock", "unsloth", "lemonade"].includes(runtime)) env.push(["GARAGEAI_RUNTIME_API_KEY", "'<YOUR_KEY>'"]);
   const lines = [
-    "curl -fsSLo garageai-connect.sh https://raw.githubusercontent.com/magnusfroste/garageai/main/scripts/garageai-connect.sh",
+    "curl -fsSLO https://raw.githubusercontent.com/magnusfroste/garageai/main/scripts/garageai-connect.sh",
+    `export ${env.map(([k, v]) => `${k}=${v}`).join(" ")}`,
   ];
-  const env = [`GARAGEAI_REGISTER_TOKEN=${shellQuote(result.register_token)}`];
-  if (result.setup_key) env.push(`GARAGEAI_SETUP_KEY=${shellQuote(result.setup_key)}`);
-  if (["vllm", "sglang", "paddock", "unsloth", "lemonade"].includes(runtime)) {
-    env.push("GARAGEAI_RUNTIME_API_KEY=<YOUR_KEY>");
-  }
-  const parts = [`${opts.sudo ? "sudo env " : ""}${env.join(" ")} bash garageai-connect.sh`];
-  if (result.setup_key) {
-    parts.push(`--management-url ${result.management_url}`);
-  } else {
-    parts.push("--skip-install");
-  }
-  parts.push(
-    `--runtime ${runtime}`,
-    `--name ${result.garage.name}`,
-    `--register-url ${result.register_url}`
-  );
+  const run = opts.sudo ? `sudo --preserve-env=${env.map(([k]) => k).join(",")} bash garageai-connect.sh` : "bash garageai-connect.sh";
+  const parts = [run];
+  if (!result.setup_key) parts.push("--skip-install");
+  parts.push(`--runtime ${runtime}`, `--name ${result.garage.name}`);
+  const models = (opts.models ?? []).filter(Boolean);
+  if (models.length) parts.push(`--models ${shellQuote(models.join(","))}`);
+  parts.push(`--register-url ${result.register_url}`);
+  if (result.setup_key) parts.push(`--management-url ${result.management_url}`);
   if (runtime === "other" && opts.port) parts.push(`--port ${opts.port}`);
   lines.push(parts.join(" \\\n  "));
   return lines.join("\n");

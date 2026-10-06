@@ -1,3 +1,4 @@
+import { offeredByGarage } from "./garageModels.ts";
 // Garage reliability: status samples, LiteLLM usage ingestion and hourly probes.
 // Never stores prompts, responses or API keys — only per-garage aggregates.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -46,6 +47,7 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
   if (error) throw new Error(`garages read failed: ${error.message}`);
   const now = Date.now();
   const healthy = await healthyModelsByGarage(admin);
+  const offered = await offeredByGarage(admin, list.map((g) => g.id));
   const rows: Array<{ garage_id: string; online: boolean; reason: string | null }> = [];
   let skipped = 0;
   for (const g of (garages || []) as GarageRow[]) {
@@ -258,7 +260,8 @@ export async function runHourlyProbes(admin: SupabaseClient) {
 
   const probed: Array<{ garage: string; model: string; passed: boolean; inconclusive: boolean; supports_tools: boolean | null; tools_error: string | null }> = [];
   await Promise.all(due.map(async (g) => {
-    const candidates = [...(g.models || [])];
+    const off = offered.get(g.id);
+    const candidates = (g.models || []).filter((m) => !off || off.has(m));
     if (!candidates.length) return;
     // Rotate: the model tested longest ago goes next.
     candidates.sort((a, b) => (lastByModel.get(`${g.id}::${a}`) ?? 0) - (lastByModel.get(`${g.id}::${b}`) ?? 0));

@@ -18,6 +18,7 @@ export interface RoutingGarage {
   id: string; name: string; operator_id: string | null; api_host: string | null; mesh_ip: string | null;
   port: number | null; runtime: string | null; models: string[]; status: string; disabled: boolean;
   last_heartbeat_at: string | null;
+  last_gateway_check_at?: string | null; runtime_ok?: boolean | null; mesh_connected?: boolean | null;
   connection_type?: string | null; endpoint_url?: string | null;
   dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number;
   pool_input_cost_per_million: number; pool_output_cost_per_million: number;
@@ -78,14 +79,21 @@ export async function latestTests(admin: SupabaseClient, garageIds: string[]) {
 }
 
 /** Is this garage model sellable right now (ignoring per-tier admin choices)? */
+export const GATEWAY_TEST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+/** Garages the gateway health service reports on: its L1/L2 result is the primary signal. */
+export const hasGatewaySignal = (g: Pick<RoutingGarage, "last_gateway_check_at">) => !!g.last_gateway_check_at;
+export const gatewayHealthy = (g: Pick<RoutingGarage, "runtime_ok" | "mesh_connected">) => g.runtime_ok === true && g.mesh_connected !== false;
+
 export function isModelSellable(g: RoutingGarage, model: string, test: { passed: boolean; tested_at: number } | undefined, now = Date.now()) {
-  if (g.disabled || g.status !== "online" || !apiBaseFor(g)) return false;
+  if (g.disabled || !apiBaseFor(g)) return false;
   if (!test?.passed) return false;
+  if (hasGatewaySignal(g)) return gatewayHealthy(g) && now - test.tested_at <= GATEWAY_TEST_MAX_AGE_MS;
+  if (g.status !== "online") return false;
   if (g.last_heartbeat_at) return now - Date.parse(g.last_heartbeat_at) <= HEARTBEAT_STALE_MS;
   return now - test.tested_at <= NO_HEARTBEAT_TEST_MAX_AGE_MS;
 }
 
-export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connection_type, endpoint_url, port, runtime, models, status, disabled, last_heartbeat_at, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million";
+export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connection_type, endpoint_url, port, runtime, models, status, disabled, last_heartbeat_at, last_gateway_check_at, runtime_ok, mesh_connected, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million";
 
 /**
  * Makes LiteLLM garage deployments equal the desired set.

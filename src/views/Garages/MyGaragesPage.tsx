@@ -12,7 +12,9 @@ import { buildGarageCommand, GarageCredentials } from "@/models/services/garageC
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
 import { GarageReliabilityPanel } from "./components/GarageReliabilityPanel";
-import { CommandBlock, GarageStatusBadge, ModelTestBadge, ToolsTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
+import { CommandBlock, ModelTestBadge, ToolsTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
+import { GarageHealthIndicators, GarageModelList, GarageTroubleshooting } from "./components/GarageHealth";
+import { useGarageModels } from "@/hooks/useGarageModels";
 import { t } from "@/i18n";
 
 const MyGaragesPage = () => {
@@ -21,7 +23,8 @@ const MyGaragesPage = () => {
   const { garages, isLoading, isError, latestTests, invalidate } = useMyGarages();
   const [busy, setBusy] = useState<string | null>(null);
   const { reliability } = useGarageReliability();
-  const [creds, setCreds] = useState<{ c: GarageCredentials; runtime: string } | null>(null);
+  const [creds, setCreds] = useState<{ c: GarageCredentials; runtime: string; models: string[] } | null>(null);
+  const { byGarage, setOffered, pending } = useGarageModels(garages.map((g) => g.id));
 
   const retest = async (g: GarageRow) => {
     setBusy(`t:${g.name}`);
@@ -42,7 +45,7 @@ const MyGaragesPage = () => {
     setBusy(`c:${g.name}`);
     try {
       const c = await garageRepository.create({ name: g.name, create_setup_key: !g.netbird_peer_id });
-      setCreds({ c, runtime: g.runtime || "ollama" });
+      setCreds({ c, runtime: g.runtime || "ollama", models: (byGarage.get(g.id) ?? []).filter((m) => m.offered && m.installed).map((m) => m.model) });
       invalidate();
     } catch (e) {
       toast({ title: t("Could not create a new command"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
@@ -83,12 +86,13 @@ const MyGaragesPage = () => {
             <Card key={g.id} className="glass-card">
               <CardContent className="pt-6 space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <GarageStatusBadge status={g.status} />
                   <span className="font-mono">{g.name}</span>
                    {g.runtime && <Badge variant="outline" className="text-[10px]">{runtimeLabel(g.runtime)}{g.port ? `:${g.port}` : ""}</Badge>}
                   <span className="text-xs text-muted-foreground ml-auto">{t("Registered:")} {relativeTimeSv(g.last_registered_at)}</span>
                    <span className="text-xs text-muted-foreground">{t("Last heartbeat:")} {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>
                 </div>
+                <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
+                <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} />
                 <div className="flex gap-1.5 flex-wrap">
                   {g.models.length === 0
                     ? <span className="text-xs text-muted-foreground">{t("No models registered yet")}</span>
@@ -111,6 +115,7 @@ const MyGaragesPage = () => {
                 )}
                 {g.disabled && <p className="text-xs text-destructive">{t("The garage has been disabled by the platform.")}</p>}
                 <GarageReliabilityPanel name={g.name} reliability={reliability.get(g.name)} />
+                <GarageTroubleshooting />
               </CardContent>
             </Card>
           ))}
@@ -126,7 +131,7 @@ const MyGaragesPage = () => {
           {creds && (
             <div className="space-y-4">
               <OneTimeWarning />
-              <CommandBlock command={buildGarageCommand(creds.c, creds.runtime)} />
+              <CommandBlock command={buildGarageCommand(creds.c, creds.runtime, { models: creds.models })} />
               <Button className="w-full" onClick={() => setCreds(null)}>{t("Done – I have copied it")}</Button>
             </div>
           )}

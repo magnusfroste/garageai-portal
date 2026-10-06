@@ -134,6 +134,13 @@
       "when": 1791230176400,
       "tag": "0018_public_provider_names",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791246712019,
+      "tag": "0019_gateway_health_and_garage_models",
+      "breakpoints": true
     }
   ]
 }

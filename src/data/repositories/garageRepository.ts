@@ -16,7 +16,24 @@ export interface GarageRow {
   last_registered_at: string | null;
   last_heartbeat_at: string | null;
   created_at: string;
+  connection_type?: string | null;
+  last_gateway_check_at?: string | null;
+  mesh_connected?: boolean | null;
+  runtime_ok?: boolean | null;
+  runtime_error?: string | null;
 }
+
+export type GarageModelStatus = "untested" | "testing" | "live" | "failed" | "paused";
+export interface GarageModelRow {
+  garage_id: string;
+  model: string;
+  installed: boolean;
+  offered: boolean;
+  status: GarageModelStatus;
+  updated_at: string;
+}
+
+export interface DemandModel { model: string; min_gb: number; note?: string }
 
 export interface GarageTestRow {
   id: string;
@@ -81,7 +98,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -115,6 +132,22 @@ export const garageRepository = {
 
   setDisabled: (name: string, disabled: boolean) =>
     invoke<{ ok: boolean; status: string }>("set-garage-disabled", { name, disabled }),
+
+  async listModels(garageIds: string[]): Promise<GarageModelRow[]> {
+    if (garageIds.length === 0) return [];
+    const { data, error } = await supabase.from("garage_models").select("*").in("garage_id", garageIds).order("model");
+    if (error) throw error;
+    return (data ?? []) as GarageModelRow[];
+  },
+
+  setOffered: (name: string, model: string, offered: boolean) =>
+    invoke<{ ok: boolean; acceptance: Array<{ model: string; passed: boolean }> }>("set-model-offered", { name, model, offered }),
+
+  async demandModels(): Promise<DemandModel[]> {
+    const { data, error } = await supabase.from("admin_settings").select("value").eq("key", "demand_models").maybeSingle();
+    if (error) throw error;
+    return Array.isArray(data?.value) ? (data.value as unknown as DemandModel[]) : [];
+  },
 
   async operatorEmails(ids: string[]): Promise<Map<string, string>> {
     const map = new Map<string, string>();

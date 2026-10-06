@@ -3,7 +3,7 @@ import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, NetbirdPeer } from ".
 
 
 const GARAGE_COLUMNS =
-  "id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, connection_type, endpoint_url, display_name, status, disabled, last_registered_at, created_at, updated_at";
+  "id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, connection_type, endpoint_url, display_name, status, disabled, last_registered_at, last_heartbeat_at, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, runtime_models, created_at, updated_at";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
