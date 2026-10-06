@@ -5,6 +5,7 @@ import { ApiKey } from "@/models/types/apiKey.types";
 
 export const useDashboardData = () => {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,12 +15,13 @@ export const useDashboardData = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setIsError(false);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const keys = await apiKeyService.getKeysForCurrentUser();
       setApiKeys(keys);
     } catch (error) {
-      console.error("Error loading dashboard data:", error);
+      setIsError(true);
     } finally {
       setLoading(false);
     }
@@ -28,6 +30,7 @@ export const useDashboardData = () => {
   return {
     apiKeys,
     loading,
+    isError,
     refetch: loadData,
   };
 };

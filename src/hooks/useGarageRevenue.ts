@@ -18,5 +18,5 @@ export const useGarageRevenue = (period: RevenuePeriod) => {
   });
   const fee = Number(settings?.platform_fee_percent ?? 0) || 0;
   const summary = useMemo(() => summarize(q.data ?? [], fee), [q.data, fee]);
-  return { summary, range, isLoading: q.isLoading, isError: q.isError };
+  return { summary, range, isLoading: q.isLoading, isError: q.isError, refetch: q.refetch };
 };

@@ -1,3 +1,4 @@
+import { GarageEarnings } from "./components/GarageEarnings";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Server, Plus, FlaskConical, KeyRound } from "lucide-react";
@@ -69,7 +70,7 @@ const MyGaragesPage = () => {
       {isLoading ? (
         <p className="text-sm text-muted-foreground">{t("Loading...")}</p>
       ) : isError ? (
-        <p className="text-sm text-destructive">{t("Could not load your garages.")}</p>
+        <p className="text-sm text-destructive">{t("Could not load your garages.")} <Button variant="link" onClick={invalidate}>{t("Try again")}</Button></p>
       ) : garages.length === 0 ? (
         <Card className="glass-card">
           <CardHeader>
@@ -116,6 +117,7 @@ const MyGaragesPage = () => {
                   </div>
                 )}
                 {g.disabled && <p className="text-xs text-destructive">{t("The garage has been disabled by the platform.")}</p>}
+                <GarageEarnings garage={g} />
                 <GarageReliabilityPanel name={g.name} reliability={reliability.get(g.name)} />
                 <GarageTroubleshooting />
               </CardContent>

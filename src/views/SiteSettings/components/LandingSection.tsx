@@ -1,3 +1,5 @@
+import { Switch } from "@/components/ui/switch";
+import { t } from "@/i18n";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,6 +75,7 @@ export const LandingSection = ({ settings, onChange }: Props) => {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-3"><Switch id="landing-mode" checked={settings.homepage_mode === "landing"} onCheckedChange={v => onChange({ ...settings, homepage_mode: v ? "landing" : "catalogue" })} /><Label htmlFor="landing-mode">{t("Show full landing page instead of catalogue")}</Label></div>
       {/* Hero */}
       <Card>
         <CardHeader>

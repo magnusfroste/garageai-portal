@@ -155,6 +155,20 @@
       "when": 1791249636195,
       "tag": "0021_public_starter_credit_setting",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791270491620,
+      "tag": "0022_garage_price_history_and_operator_activity",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791270877673,
+      "tag": "0023_operator_activity_tier_tokens",
+      "breakpoints": true
     }
   ]
 }

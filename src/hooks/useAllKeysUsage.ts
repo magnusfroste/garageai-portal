@@ -24,11 +24,12 @@ export const useAllKeysUsage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return [];
 
-      const { data: keys } = await supabase
+      const { data: keys, error } = await supabase
         .from("api_keys")
         .select("id, name")
         .eq("user_id", session.user.id);
 
+      if (error) throw error;
       if (!keys || keys.length === 0) return [];
 
       const entries = await Promise.all(

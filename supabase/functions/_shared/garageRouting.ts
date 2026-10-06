@@ -126,7 +126,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   const infoRes = await fetch(`${base}/model/info`, { headers: litellmHeaders(masterKey) });
   if (!infoRes.ok) throw new Error(`LiteLLM /model/info failed (${infoRes.status})`);
   const info = await infoRes.json();
-  type Dep = { model_name: string; litellm_params?: { api_base?: string; input_cost_per_token?: number }; model_info?: { id?: string; garage?: string; garage_tier?: string; input_cost_per_token?: number } };
+  type Dep = { model_name: string; litellm_params?: { api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number }; model_info?: { id?: string; garage?: string; garage_tier?: string; input_cost_per_token?: number; output_cost_per_token?: number } };
   const actual = new Map<string, Dep>();
   const removed: string[] = [];
   const now = Date.now();
@@ -144,7 +144,8 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   for (const [id, d] of actual) {
     const want = desired.get(id);
     const cost = Number(d.model_info?.input_cost_per_token ?? d.litellm_params?.input_cost_per_token ?? NaN);
-    const drift = want && (d.model_name !== want.route || d.litellm_params?.api_base !== want.apiBase || Math.abs(cost - want.input / 1e6) > 1e-12);
+    const outputCost = Number(d.model_info?.output_cost_per_token ?? d.litellm_params?.output_cost_per_token ?? NaN);
+    const drift = want && (d.model_name !== want.route || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12);
     if (!want || drift) {
       if (await deleteDeployment(base, masterKey, id)) { removed.push(id); actual.delete(id); }
     }

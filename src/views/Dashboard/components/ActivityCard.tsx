@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart, Bar, ResponsiveContainer, Cell } from "recharts";
 import { ModelUsage } from "@/models/types/usage.types";
@@ -30,7 +31,7 @@ export const ActivityCard = ({ title, value, data, formatLegend }: ActivityCardP
     <Card className="glass-card flex flex-col">
       <CardContent className="p-5 flex flex-col flex-1">
         <div className="flex items-start justify-between mb-1">
-          <p className="text-sm text-muted-foreground font-medium">{title}</p>
+          <p className="text-sm text-muted-foreground font-medium">{t(title)}</p>
         </div>
         <p className="text-2xl font-bold tracking-tight mb-4">{value}</p>
 
@@ -50,13 +51,13 @@ export const ActivityCard = ({ title, value, data, formatLegend }: ActivityCardP
 
             <div className="space-y-1.5 mt-auto">
               {legendItems.map((item, i) => (
-                <div key={item.name} className="flex items-center justify-between text-xs">
+                <div key={t(item.name)} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <span
                       className="w-2 h-2 rounded-full shrink-0"
                       style={{ backgroundColor: i < 3 ? COLORS[i] : "hsl(var(--muted-foreground))" }}
                     />
-                    <span className="truncate text-muted-foreground">{item.name}</span>
+                    <span className="truncate text-muted-foreground">{t(item.name)}</span>
                   </div>
                   <span className="font-medium tabular-nums ml-2">{fmt(item.value)}</span>
                 </div>
@@ -65,7 +66,7 @@ export const ActivityCard = ({ title, value, data, formatLegend }: ActivityCardP
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground">
-            No data yet
+            {t("No data yet")}
           </div>
         )}
       </CardContent>

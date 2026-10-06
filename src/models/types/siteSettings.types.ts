@@ -40,6 +40,8 @@ export interface SiteSettings {
   /** SearXNG server used by chat web search. */
   searxng_url: string;
 
+  homepage_mode?: "catalogue" | "landing";
+
   // Landing – Hero
   hero_badge: string;
   hero_headline: string;
@@ -106,6 +108,8 @@ export const defaultSiteSettings: SiteSettings = {
   searxng_url: "https://search.liteit.se",
   logo_url: "",
   favicon_url: "/favicon.png",
+
+  homepage_mode: "catalogue",
 
   // Hero
   hero_badge: "Encrypted in transit",

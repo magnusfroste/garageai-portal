@@ -73,7 +73,7 @@ export const SiteSettingsPage = ({ embedded = false }: SiteSettingsPageProps) =>
       </div>
 
       <Tabs defaultValue="branding">
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto justify-start gap-1">
           <TabsTrigger value="branding">Branding</TabsTrigger>
           <TabsTrigger value="landing">Landing page</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>

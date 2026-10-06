@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -74,7 +75,7 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
 export const CatalogPage = () => {
   const [params, setParams] = useSearchParams();
   const f = filtersFromParams(params);
-  const { models, isLoading } = useModelCatalog();
+  const { models, isLoading, isError, refetch } = useModelCatalog();
   const set = (patch: Partial<CatalogFilters>) => setParams(filtersToParams({ ...f, ...patch }), { replace: true });
 
   const runtimes = useMemo(
@@ -127,9 +128,9 @@ export const CatalogPage = () => {
           <span className="w-2" /><span>{t("Model")}</span><span>{t("Context")}</span><span>{t("Lowest price in / out")}</span><span>Garage</span><span className="justify-self-end">{t("Best grade")}</span>
         </div>
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 m-2" />)
-        ) : list.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">{t("No models match.")}</p>
+          <div><p className="px-4 py-2 text-sm text-muted-foreground">{t("Loading available models…")}</p>{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 m-2" />)}</div>
+        ) : isError ? <div className="p-6 text-sm text-destructive">{t("Could not load the catalogue.")} <Button variant="link" onClick={refetch}>{t("Try again")}</Button></div> : list.length === 0 ? (
+          <p className="p-6 text-sm text-muted-foreground">{t("No models match — try a broader search.")} <Button variant="link" onClick={() => setParams({})}>{t("Clear filters")}</Button></p>
         ) : (
           list.map((m) => <CatalogRow key={m.name} m={m} />)
         )}

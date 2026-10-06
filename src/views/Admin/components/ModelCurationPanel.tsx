@@ -26,7 +26,7 @@ const formatCost = (cost: number | null): string => {
 };
 
 export const ModelCurationPanel = () => {
-  const { models, isLoading, syncModels, isSyncing, toggleModel, setHuggingfaceUrl, setDefault } = useCuratedModels();
+  const { models, isLoading, error, refetch, syncModels, isSyncing, toggleModel, setHuggingfaceUrl, setDefault } = useCuratedModels();
   const [search, setSearch] = useState("");
   const [editingHf, setEditingHf] = useState<string | null>(null);
   const [hfValue, setHfValue] = useState("");
@@ -46,7 +46,7 @@ export const ModelCurationPanel = () => {
 
   return (
     <Card className="glass-card">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <CardTitle className="flex items-center gap-2">
             <Cpu className="w-5 h-5 text-primary" />
@@ -74,7 +74,7 @@ export const ModelCurationPanel = () => {
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground py-4">Loading models...</p>
-        ) : filtered.length === 0 ? (
+        ) : error ? <div className="text-sm text-destructive">{t("Could not load the catalogue.")} <Button variant="link" onClick={() => refetch()}>{t("Try again")}</Button></div> : filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4">
             {models.length === 0
               ? 'No models — click "Sync models" to fetch from LiteLLM'
@@ -85,7 +85,7 @@ export const ModelCurationPanel = () => {
             {filtered.map((model) => (
               <div
                 key={model.id}
-                className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                className="flex flex-wrap items-start gap-3 py-3 first:pt-0 last:pb-0"
               >
                 {model.garage_tier === "pool" && <TooltipProvider delayDuration={200}>
                   <Tooltip>
@@ -115,7 +115,7 @@ export const ModelCurationPanel = () => {
                   onCheckedChange={(enabled) => toggleModel({ id: model.id, enabled })}
                 />
                 <StatusDot status={model.status} />
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1 basis-40">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-sm truncate">{model.model_name || model.id}</span>
                     {!model.enabled && model.disabled_reason && (
@@ -137,7 +137,7 @@ export const ModelCurationPanel = () => {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-0.5">
                     <span>In: {formatCost(model.input_cost_per_million)}/1M</span>
                     <span>Out: {formatCost(model.output_cost_per_million)}/1M</span>
                   </div>

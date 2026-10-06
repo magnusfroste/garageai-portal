@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useAllKeysUsage } from "@/hooks/useAllKeysUsage";
+import { requestDetails } from "@/models/services/requestLogService";
 
 export interface RequestLog {
   request_id: string;
@@ -11,10 +12,13 @@ export interface RequestLog {
   spend: number;
   status: string;
   key_name: string;
+  garage: string | null;
+  tier: string | null;
+  latencyMs: number | null;
 }
 
 export const useRequestLogs = () => {
-  const { data, isLoading, refetch } = useAllKeysUsage();
+  const { data, isLoading, isError, refetch } = useAllKeysUsage();
 
   const logs = useMemo<RequestLog[]>(() => {
     if (!data) return [];
@@ -33,6 +37,7 @@ export const useRequestLogs = () => {
           spend: log.spend || 0,
           status: log.status || "unknown",
           key_name: entry.keyName,
+          ...requestDetails(log),
         });
       }
     }
@@ -40,5 +45,5 @@ export const useRequestLogs = () => {
     return all;
   }, [data]);
 
-  return { logs, loading: isLoading, refetch };
+  return { logs, loading: isLoading, isError, refetch };
 };

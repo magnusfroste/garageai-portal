@@ -1,3 +1,4 @@
+import { HowWeMeasure } from "@/views/Garages/components/HowWeMeasure";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQueries } from "@tanstack/react-query";
@@ -63,7 +64,7 @@ const measuredLabel = (sampleDays: number | null | undefined) => {
 
 const ModelDetailPage = () => {
   const { name = "" } = useParams<{ name: string }>();
-  const { models, isLoading } = useModelCatalog();
+  const { models, isLoading, isError, refetch } = useModelCatalog();
   const { settings } = useSiteSettings();
   const { session } = useSession();
   const m = models.find((x) => x.name === name);
@@ -88,7 +89,8 @@ const ModelDetailPage = () => {
     return list;
   }, [m, sort]);
 
-  if (isLoading) return <div className="p-6"><Skeleton className="h-40" /></div>;
+  if (isLoading) return <div className="p-6"><p className="text-sm text-muted-foreground mb-3">{t("Loading available models…")}</p><Skeleton className="h-40" /></div>;
+  if (isError) return <div className="p-6 text-sm text-destructive">{t("Could not load the catalogue.")} <Button variant="link" onClick={refetch}>{t("Try again")}</Button></div>;
   if (!m) return <p className="p-6 text-sm text-muted-foreground">{t("Model not found.")}</p>;
 
   const baseUrl = `${(settings?.api_base_url || "https://llm.garageai.eu").replace(/\/+$/, "")}/v1`;
@@ -157,7 +159,7 @@ const ModelDetailPage = () => {
       </div>
 
       <Card className="glass-card">
-        <CardHeader className="pb-2"><CardTitle className="text-base">{t("Garages running this model")}</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base">{t("Garages running this model")}</CardTitle><HowWeMeasure /></CardHeader>
         <CardContent className="min-w-0 px-0">
           <div className="w-full min-w-0 overflow-x-auto">
           <table className="w-full text-sm">

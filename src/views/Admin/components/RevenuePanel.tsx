@@ -14,7 +14,7 @@ const num = (n: number) => n.toLocaleString();
 
 export const RevenuePanel = () => {
   const [period, setPeriod] = useState<RevenuePeriod>("30d");
-  const { summary, range, isLoading, isError } = useGarageRevenue(period);
+  const { summary, range, isLoading, isError, refetch } = useGarageRevenue(period);
   const { garages, totals, feePercent } = summary;
 
   const exportCsv = () => {
@@ -28,12 +28,12 @@ export const RevenuePanel = () => {
 
   return (
     <Card className="glass-card">
-      <CardHeader className="flex flex-row items-center justify-between gap-3">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <CardTitle className="flex items-center gap-2"><Wallet className="h-5 w-5 text-primary" />{t("Revenue")}</CardTitle>
           <CardDescription>{t("Per garage and provider. Platform fee: {p}%", { p: feePercent })}</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={period} onValueChange={(v) => setPeriod(v as RevenuePeriod)}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -48,10 +48,11 @@ export const RevenuePanel = () => {
           </Button>
         </div>
       </CardHeader>
+      <p className="px-6 pb-3 text-xs text-muted-foreground">{t("Statements use recorded request spend, not today’s prices.")}</p>
       <CardContent className="overflow-x-auto px-0">
         {isLoading ? <p className="px-6 py-4 text-sm text-muted-foreground">{t("Loading...")}</p>
-          : isError ? <p className="px-6 py-4 text-sm text-destructive">{t("Failed to load revenue.")}</p>
-          : garages.length === 0 ? <p className="px-6 py-4 text-sm text-muted-foreground">{t("No usage in this period.")}</p>
+          : isError ? <p className="px-6 py-4 text-sm text-destructive">{t("Failed to load revenue.")} <Button variant="link" onClick={() => refetch()}>{t("Try again")}</Button></p>
+          : garages.length === 0 ? <p className="px-6 py-4 text-sm text-muted-foreground">{t("No usage in this period — choose another period or check your garages.")}</p>
           : (
           <table className="w-full text-sm">
             <thead className="border-b border-border/50 text-[11px] text-muted-foreground">

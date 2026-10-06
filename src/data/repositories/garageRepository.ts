@@ -16,6 +16,10 @@ export interface GarageRow {
   last_registered_at: string | null;
   last_heartbeat_at: string | null;
   created_at: string;
+  pool_input_cost_per_million?: number;
+  pool_output_cost_per_million?: number;
+  dedicated_input_cost_per_million?: number;
+  dedicated_output_cost_per_million?: number;
   connection_type?: string | null;
   last_gateway_check_at?: string | null;
   mesh_connected?: boolean | null;
@@ -85,6 +89,7 @@ export interface ProviderResult {
 }
 
 export const garageRepository = {
+  setPrices: (name: string, prices: ProviderPrices) => invoke<{ ok: boolean; routing_synced: boolean }>("set-garage-prices", { name, prices }),
   listProviderModels: (endpoint_url: string, api_key: string) =>
     invoke<{ endpoint_url: string; models: string[] }>("create-provider", { list_only: true, endpoint_url, api_key }),
 
@@ -98,7 +103,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { useSession } from "@/hooks/useSession";
 import { useAuth } from "@/hooks/useAuth";
 import { useLitellmUser } from "@/hooks/useLitellmUser";
 import { useProfile } from "@/hooks/useProfile";
@@ -25,6 +26,13 @@ import {
 const formatBalance = (n: number) => `$${n.toFixed(2)}`;
 
 export const AppLayout = () => {
+  const { session, loading } = useSession();
+  if (loading) return <p className="p-6 text-sm text-muted-foreground">{t("Checking your session…")}</p>;
+  if (!session) return <Navigate to="/auth" replace />;
+  return <SignedInLayout />;
+};
+
+const SignedInLayout = () => {
   const { checkAuth, signOut } = useAuth();
   const navigate = useNavigate();
   const { profile } = useProfile();

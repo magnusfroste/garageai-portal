@@ -19,7 +19,7 @@ export const useModelCatalog = () => {
     () => buildCatalog(rows.data ?? [], stats.data ?? [], reliability, tools, providers.data),
     [rows.data, stats.data, reliability, tools, providers.data],
   );
-  return { models, isLoading: rows.isLoading || stats.isLoading || relLoading };
+  return { models, isError: rows.isError || stats.isError, refetch: () => { rows.refetch(); stats.refetch(); }, isLoading: rows.isLoading || stats.isLoading || relLoading };
 };
 
 export const useDailyTokens = (garages: string[]) =>

@@ -47,10 +47,11 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
   if (error) throw new Error(`garages read failed: ${error.message}`);
   const now = Date.now();
   const healthy = await healthyModelsByGarage(admin);
-  const offered = await offeredByGarage(admin, list.map((g) => g.id));
+  const offered = await offeredByGarage(admin, (garages || []).map((g) => g.id));
   const rows: Array<{ garage_id: string; online: boolean; reason: string | null }> = [];
   let skipped = 0;
   for (const g of (garages || []) as GarageRow[]) {
+    if (offered.has(g.id) && offered.get(g.id)?.size === 0) { skipped++; continue; }
     const hasModels = (healthy.get(g.name)?.size ?? 0) > 0;
     let reason: string | null = null;
     if ((g as { connection_type?: string }).connection_type === "endpoint") {
@@ -152,7 +153,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   const { rows, source } = await fetchSpendLogs(base, masterKey, new Date(fromMs), new Date(toMs));
 
   type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number };
-  type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number };
+  type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number; dedicatedPrompt: number; dedicatedTokens: number };
   const mbuckets = new Map<string, MBucket>();
   const buckets = new Map<string, Bucket>();
   const perGarage: Record<string, number> = {};
@@ -183,9 +184,10 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const model = modelId.slice(sep + 2).replace(/__(dedicated|pool)$/, "") || String(r.model ?? "unknown");
     const mkey = `${gid}|${model}|${hour}`;
     let mb = mbuckets.get(mkey);
-    if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0 }; mbuckets.set(mkey, mb); }
+    if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0, dedicatedPrompt: 0, dedicatedTokens: 0 }; mbuckets.set(mkey, mb); }
     mb.requests++; if (statusOf(r) !== "success") mb.failures++;
     mb.prompt += promptTokens; mb.tokens += completionTokens; mb.spend += spend;
+    if (modelId.endsWith("__dedicated")) { mb.dedicatedPrompt += promptTokens; mb.dedicatedTokens += completionTokens; }
     const end = parseTs(r.endTime);
     const first = parseTs(r.completionStartTime);
     const stream = r.stream === true || (r.stream === undefined && first !== null && end !== null && end - first >= 50);
@@ -214,7 +216,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   }
   const mUpserts = [...mbuckets.values()].map((b) => ({
     garage_id: b.garage_id, model: b.model, hour: new Date(b.hour).toISOString(), requests: b.requests, failures: b.failures,
-    prompt_tokens: b.prompt, completion_tokens: b.tokens, spend_usd: Math.round(b.spend * 1e8) / 1e8,
+    dedicated_prompt_tokens: b.dedicatedPrompt, dedicated_completion_tokens: b.dedicatedTokens, prompt_tokens: b.prompt, completion_tokens: b.tokens, spend_usd: Math.round(b.spend * 1e8) / 1e8,
   }));
   if (mUpserts.length) {
     const { error } = await admin.from("garage_model_stats_hourly").upsert(mUpserts, { onConflict: "garage_id,model,hour" });
@@ -253,6 +255,7 @@ export async function runHourlyProbes(admin: SupabaseClient) {
   }
 
   const now = Date.now();
+  const offered = await offeredByGarage(admin, list.map(g => g.id));
   const due = list
     .filter((g) => now - (lastAny.get(g.id) ?? 0) >= PROBE_INTERVAL_MS)
     .sort((a, b) => (lastAny.get(a.id) ?? 0) - (lastAny.get(b.id) ?? 0))
