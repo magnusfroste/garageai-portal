@@ -1,7 +1,7 @@
 # Roadmap
 
 - [x] Complete v1.0 onboarding review fixes 1–9 and verify mobile, commands, and starter credit
-- [ ] Publish the v1.0 onboarding review fixes
+- [x] Request publication of the v1.0 onboarding review fixes to app.garageai.eu (deployment scheduled)
 
 - [x] Audit the six remaining security/routing workstreams against current code and backend state
 - [x] Complete routing reconciliation, hourly probes, and runtime-secret persistence
