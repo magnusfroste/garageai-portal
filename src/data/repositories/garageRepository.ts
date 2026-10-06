@@ -39,6 +39,10 @@ export interface GarageModelRow {
   status: GarageModelStatus;
   paused_at?: string | null;
   updated_at: string;
+  /** Catalogue name / pool route. `model` is the runtime id sent upstream. */
+  canonical_model: string;
+  canonical_source: "auto" | "admin";
+  private: boolean;
 }
 
 export interface DemandModel { model: string; min_gb: number; note?: string; ids?: { ollama?: string; lmstudio?: string; hf?: string; [runtime: string]: string | undefined } }
@@ -151,6 +155,10 @@ export const garageRepository = {
 
   setOffered: (name: string, model: string, offered: boolean) =>
     invoke<{ ok: boolean; acceptance: Array<{ model: string; passed: boolean }> }>("set-model-offered", { name, model, offered }),
+
+  /** Admin only, endpoint providers only: empty canonical reverts to the automatic name. */
+  setAlias: (name: string, model: string, canonical: string, isPrivate: boolean) =>
+    invoke<{ ok: boolean; canonical_model: string }>("set-model-alias", { name, model, canonical, private: isPrivate }),
 
   setPaused: (name: string, paused: boolean, opts: { model?: string; reason?: string } = {}) =>
     invoke<{ ok: boolean; paused: boolean; routing_synced: boolean }>("set-garage-paused", { name, paused, ...opts }),

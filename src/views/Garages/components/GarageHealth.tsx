@@ -33,11 +33,13 @@ export const GarageHealthIndicators = ({ garage, models }: { garage: GarageHealt
 
 const STATUS_LABEL: Record<string, string> = { untested: "Untested", testing: "Testing...", live: "Live", failed: "Failed", paused: "Paused" };
 
-export const GarageModelList = ({ garageName, models, pending, onToggle, onPause, offline = false }: {
+export const GarageModelList = ({ garageName, models, pending, onToggle, onPause, offline = false, onAlias }: {
   garageName: string; models: GarageModelRow[]; pending: string | null;
   onToggle: (garageName: string, model: string, offered: boolean) => Promise<unknown>;
   onPause?: (garageName: string, model: string, paused: boolean) => Promise<unknown>;
   offline?: boolean;
+  /** Admin view of an endpoint provider: canonical name first, runtime id muted, alias editor. */
+  onAlias?: (garageName: string, model: string, canonical: string, isPrivate: boolean) => Promise<unknown>;
 }) => {
   const { toast } = useToast();
   if (models.length === 0) return null;
@@ -65,7 +67,17 @@ export const GarageModelList = ({ garageName, models, pending, onToggle, onPause
         const busy = pending === `${garageName}::${m.model}`;
         return (
           <div key={m.model} className="flex flex-wrap items-center gap-3 px-3 py-2 text-xs">
-            <span className="font-mono flex-1 min-w-0 truncate">{m.model}</span>
+            {onAlias ? (
+              <span className="flex-1 min-w-0">
+                <span className="font-mono block truncate">{m.canonical_model || m.model}{m.private && <span className="ml-2 text-[10px] text-muted-foreground">({t("Provider model")})</span>}</span>
+                {m.canonical_source === "admin" && <span className="block truncate text-[10px] text-muted-foreground">{t("runtime id: {id}", { id: m.model })}</span>}
+              </span>
+            ) : (
+              <span className="font-mono flex-1 min-w-0 truncate">
+                {m.model}{m.canonical_model && m.canonical_model !== m.model && <span className="text-muted-foreground"> → {m.canonical_model}</span>}
+              </span>
+            )}
+            {onAlias && <ModelAliasEditor model={m} busy={busy} onSave={(c, p) => onAlias(garageName, m.model, c, p)} />}
             <span className="text-muted-foreground">{m.installed ? t("Installed") : t("Not installed")}</span>
             {embedding ? <span className="text-muted-foreground">{t("Embedding models are not supported yet")}</span>
               : !m.offered && m.installed && m.status === "untested" ? <span className="text-primary">{t("New on your machine — offer it?")}</span>
@@ -117,5 +129,33 @@ export const GarageTroubleshooting = () => {
         ))}
       </CollapsibleContent>
     </Collapsible>
+  );
+};
+
+const ModelAliasEditor = ({ model, busy, onSave }: { model: GarageModelRow; busy: boolean; onSave: (canonical: string, isPrivate: boolean) => Promise<unknown> }) => {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [canonical, setCanonical] = useState(model.canonical_source === "admin" ? model.canonical_model : "");
+  const [priv, setPriv] = useState(model.private);
+  const save = async (value: string, p: boolean) => {
+    try {
+      await onSave(value.trim(), p);
+      toast({ title: value.trim() ? t("Alias saved: {m}", { m: value.trim() }) : t("Alias cleared") });
+      setOpen(false);
+    } catch (e) {
+      toast({ title: t("Could not save the alias"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
+    }
+  };
+  if (!open) return <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" disabled={busy} onClick={() => setOpen(true)}>{t("Alias")}</Button>;
+  return (
+    <div className="flex w-full flex-wrap items-center gap-2 rounded-md bg-muted/40 p-2">
+      <span className="font-mono text-muted-foreground">{model.model} →</span>
+      <input aria-label={t("Canonical model")} placeholder={t("Canonical model")} value={canonical} onChange={(e) => setCanonical(e.target.value)}
+        className="h-7 min-w-0 flex-1 rounded border border-input bg-background px-2 font-mono text-xs" />
+      <label className="flex items-center gap-1.5"><input type="checkbox" checked={priv} onChange={(e) => setPriv(e.target.checked)} />{t("Private model (own name, no pool)")}</label>
+      <Button size="sm" className="h-7 text-[11px]" disabled={busy} onClick={() => save(canonical, priv)}>{t("Save")}</Button>
+      {model.canonical_source === "admin" && <Button size="sm" variant="outline" className="h-7 text-[11px]" disabled={busy} onClick={() => save("", false)}>{t("Clear alias")}</Button>}
+      <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => setOpen(false)}>{t("Cancel")}</Button>
+    </div>
   );
 };

@@ -190,6 +190,13 @@
       "when": 1791285955313,
       "tag": "0026_availability_minimum_one_day",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791286964838,
+      "tag": "0027_model_identity_canonical",
+      "breakpoints": true
     }
   ]
 }

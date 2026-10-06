@@ -25,6 +25,13 @@ export const catalogRepository = {
     return new Map((data ?? []).map((r) => [r.garage_name, { ...r, live_hours_per_week: r.live_hours_per_week == null ? null : Number(r.live_hours_per_week), live_hours_total: r.live_hours_total == null ? null : Number(r.live_hours_total) } as GarageLocation]));
   },
 
+  /** "garage::canonical model" for provider-private models (public, no runtime ids). */
+  async privateModels(): Promise<Set<string>> {
+    const { data, error } = await supabase.rpc("garage_public_models");
+    if (error) throw error;
+    return new Set((data ?? []).filter((r) => r.private).map((r) => `${r.garage_name}::${r.model}`));
+  },
+
   /** Latest tool-calling probe result per garage + model (public). */
   async toolSupport(): Promise<GarageToolSupport[]> {
     const { data, error } = await supabase.rpc("garage_tool_support");

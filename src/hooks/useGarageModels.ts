@@ -37,5 +37,16 @@ export const useGarageModels = (garageIds: string[]) => {
       qc.invalidateQueries({ queryKey: ["garage-models"] });
     }
   };
-  return { byGarage, setOffered, setPaused, pending };
+  const setAlias = async (garageName: string, model: string, canonical: string, isPrivate: boolean) => {
+    setPending(`${garageName}::${model}`);
+    try {
+      return await garageRepository.setAlias(garageName, model, canonical, isPrivate);
+    } finally {
+      setPending(null);
+      qc.invalidateQueries({ queryKey: ["garage-models"] });
+      qc.invalidateQueries({ queryKey: ["catalog-rows"] });
+      qc.invalidateQueries({ queryKey: ["garage-public-models"] });
+    }
+  };
+  return { byGarage, setOffered, setPaused, setAlias, pending };
 };

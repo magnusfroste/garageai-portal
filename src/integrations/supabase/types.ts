@@ -363,29 +363,38 @@ export type Database = {
       }
       garage_models: {
         Row: {
+          canonical_model: string
+          canonical_source: string
           garage_id: string
           installed: boolean
           model: string
           offered: boolean
           paused_at: string | null
+          private: boolean
           status: string
           updated_at: string
         }
         Insert: {
+          canonical_model?: string
+          canonical_source?: string
           garage_id: string
           installed?: boolean
           model: string
           offered?: boolean
           paused_at?: string | null
+          private?: boolean
           status?: string
           updated_at?: string
         }
         Update: {
+          canonical_model?: string
+          canonical_source?: string
           garage_id?: string
           installed?: boolean
           model?: string
           offered?: boolean
           paused_at?: string | null
+          private?: boolean
           status?: string
           updated_at?: string
         }
@@ -857,6 +866,14 @@ export type Database = {
           location_source: string
         }[]
       }
+      garage_public_models: {
+        Args: never
+        Returns: {
+          garage_name: string
+          model: string
+          private: boolean
+        }[]
+      }
       garage_public_providers: {
         Args: never
         Returns: {
@@ -917,6 +934,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      normalise_model_id: { Args: { _id: string }; Returns: string }
       operator_garage_activity: {
         Args: never
         Returns: {

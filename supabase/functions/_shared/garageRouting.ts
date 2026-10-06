@@ -4,6 +4,18 @@
 // Tests never use sellable routes: they run through short-lived, unguessable "probe" deployments.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
+import { normaliseModelId } from "./modelIdentity.ts";
+
+/** "garage_id::runtime id" -> canonical model + provider-private flag. */
+export type ModelIdentity = Map<string, { canonical: string; private: boolean }>;
+export async function modelIdentities(admin: SupabaseClient, garageIds: string[]): Promise<ModelIdentity> {
+  const map: ModelIdentity = new Map();
+  if (!garageIds.length) return map;
+  const { data } = await admin.from("garage_models").select("garage_id, model, canonical_model, private").in("garage_id", garageIds);
+  for (const r of (data || []) as Array<{ garage_id: string; model: string; canonical_model: string; private: boolean }>) map.set(`${r.garage_id}::${r.model}`, { canonical: r.canonical_model || normaliseModelId(r.model), private: !!r.private });
+  return map;
+}
+export const identityOf = (ids: ModelIdentity, garageId: string, model: string) => ids.get(`${garageId}::${model}`) ?? { canonical: normaliseModelId(model), private: false };
 
 export const HEARTBEAT_STALE_MS = 15 * 60 * 1000;
 /** Garages without a heartbeat need a passed test this recent to count as healthy. */
@@ -99,7 +111,8 @@ export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connecti
  * Makes LiteLLM garage deployments equal the desired set.
  * `enabledTiers` = deployment ids whose curated row is enabled (admin/failed_test/garage-disabled rows are not).
  */
-export async function reconcileGarageRouting(admin: SupabaseClient, garages: RoutingGarage[], sellable: Set<string>, enabledTiers: Set<string>) {
+export async function reconcileGarageRouting(admin: SupabaseClient, garages: RoutingGarage[], sellable: Set<string>, enabledTiers: Set<string>, identities?: ModelIdentity) {
+  const ids = identities ?? await modelIdentities(admin, garages.map((g) => g.id));
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const base = await getProxyBaseUrl(admin);
@@ -111,11 +124,14 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     if (!apiBase) continue;
     for (const model of g.models || []) {
       if (!sellable.has(`${g.name}::${model}`)) continue;
+      const ident = identityOf(ids, g.id, model);
       for (const tier of ["dedicated", "pool"] as const) {
+        if (tier === "pool" && ident.private) continue; // provider-private models are never pooled
+        // Deployment id stays derived from the runtime id so aliases can change without new ids.
         const id = deploymentId(g.name, model, tier);
         if (!enabledTiers.has(id)) continue;
         desired.set(id, {
-          id, model, apiBase, garage: g, tier, route: tierRoute(g.name, model, tier), apiKey: keys.get(g.id) || "garage-node",
+          id, model, apiBase, garage: g, tier, route: tierRoute(g.name, ident.canonical, tier), apiKey: keys.get(g.id) || "garage-node",
           input: Number(tier === "dedicated" ? g.dedicated_input_cost_per_million : g.pool_input_cost_per_million),
           output: Number(tier === "dedicated" ? g.dedicated_output_cost_per_million : g.pool_output_cost_per_million),
         });
@@ -157,7 +173,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     catch (e) { console.error("[routing] add failed", e instanceof Error ? e.message : "unknown"); }
   }
   if (added.length || removed.length) console.log("[routing] reconciled", { added, removed });
-  return { added, removed };
+  return { added, removed, routes: new Map([...desired].map(([id, d]) => [id, d.route])) };
 }
 
 /** Runs `fn` with temporary unguessable deployments (one per model) and removes them afterwards. */

@@ -21,3 +21,4 @@
 
 - Audit garage price changes with an atomic database trigger, then reconcile both token prices; statements always sum recorded request spend to preserve historical rates.
 - Read operator earnings through an ownership-scoped aggregate RPC; estimates are separate from invoice totals to prevent current-price repricing.
+- Keep garage_models.model as the runtime id (sent upstream, never shown to buyers) and canonical_model as the catalogue/pool name; mesh names are always normalised by the DB trigger + shared `modelIdentity.ts`, only admins may alias endpoint-provider models, and deployment ids stay derived from the runtime id.
