@@ -594,6 +594,8 @@ export type Database = {
           runtime_models: string[]
           runtime_ok: boolean | null
           status: string
+          terms_accepted_at: string | null
+          terms_version: string | null
           updated_at: string
         }
         Insert: {
@@ -630,6 +632,8 @@ export type Database = {
           runtime_models?: string[]
           runtime_ok?: boolean | null
           status?: string
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Update: {
@@ -666,6 +670,8 @@ export type Database = {
           runtime_models?: string[]
           runtime_ok?: boolean | null
           status?: string
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Relationships: []

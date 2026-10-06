@@ -218,6 +218,13 @@
       "when": 1791290153988,
       "tag": "0030_ledger_survives_garage_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791297738766,
+      "tag": "0031_garage_terms",
+      "breakpoints": true
     }
   ]
 }
