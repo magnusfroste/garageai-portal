@@ -16,6 +16,7 @@ import { dailyTotals, formatContext, formatPrice, priceRange } from "@/models/se
 import { formatNumber, formatPct, formatTokens, dayLevel } from "@/models/services/reliabilityService";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
+import { LocationBadge, liveHoursText } from "@/views/Garages/components/LocationBadge";
 import type { GarageOffer } from "@/models/types/catalog.types";
 import type { GarageDay } from "@/models/types/reliability.types";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
@@ -142,6 +143,7 @@ const ModelDetailPage = () => {
             <div><div className="text-xs text-muted-foreground">{t("Price in / out per 1M")}</div>{formatPrice(m.poolPrice.input)} / {formatPrice(m.poolPrice.output)}</div>
             <div><div className="text-xs text-muted-foreground">{t("Combined availability ({period})", { period: measuredLabel(Math.max(0, ...offers.map((o) => o.sampleDays ?? 0))) })}</div>{formatPct(m.poolAvailability)}</div>
             <div><div className="text-xs text-muted-foreground">{t("Model ID")}</div><div className="flex items-center gap-2"><code className="font-mono text-xs">{m.poolId}</code><CopyButton text={m.poolId} /></div></div>
+            <p className="basis-full text-[11px] text-muted-foreground">{t("Pool may route to any garage offering this model")}</p>
           </CardContent>
         </Card>
       )}
@@ -150,7 +152,7 @@ const ModelDetailPage = () => {
         <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Server className="h-4 w-4 text-primary" />{t("Specific garage")}</CardTitle><CardDescription>{t("Choose one garage directly. Availability depends on that machine.")}</CardDescription></CardHeader>
         <CardContent className="space-y-2">
           {offers.map((o) => <div key={o.garage} className="grid gap-2 border-b border-border/50 py-3 last:border-0 sm:grid-cols-[1fr_auto_1.5fr] sm:items-center">
-            <div className="min-w-0">{o.providerName ? <Link to={`/garages/${encodeURIComponent(o.garage)}`}><ProviderBadge name={o.providerName} /></Link> : <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-sm text-primary hover:underline">{o.garage}</Link>}{o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}</div>
+            <div className="min-w-0">{o.providerName ? <Link to={`/garages/${encodeURIComponent(o.garage)}`}><ProviderBadge name={o.providerName} /></Link> : <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-sm text-primary hover:underline">{o.garage}</Link>}{o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}<LocationBadge location={o.location ?? undefined} /></div>
             <div className="text-sm tabular-nums"><span className="text-xs text-muted-foreground">{t("Price in / out")}</span><br />{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</div>
             {o.modelId && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><code className="truncate font-mono text-xs">{o.modelId}</code><CopyButton text={o.modelId} /></div>}
           </div>)}
@@ -175,8 +177,9 @@ const ModelDetailPage = () => {
                   <td className="px-3 py-2">
                     {o.providerName ? <Link to={`/garages/${encodeURIComponent(o.garage)}`}><ProviderBadge name={o.providerName} /></Link> : <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-primary hover:underline">{o.garage}</Link>}
                     {o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}
+                    <LocationBadge location={o.location ?? undefined} />
                   </td>
-                  <td className="px-3 py-2">{o.grade ? <GradeBadge grade={o.grade} /> : "—"}</td>
+                  <td className="px-3 py-2">{o.grade ? <GradeBadge grade={o.grade} /> : "—"}{!o.location?.is_endpoint && liveHoursText(o.location?.live_hours_per_week, true) && <div className="text-[10px] text-muted-foreground whitespace-nowrap">{liveHoursText(o.location?.live_hours_per_week, true)}</div>}</td>
                   <td className="px-3 py-2 tabular-nums">{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</td>
                   <td className="px-3 py-2 tabular-nums">{formatNumber(o.ttftMs, " ms")}</td>
                   <td className="px-3 py-2 tabular-nums">{o.tokensPerSecond == null ? "—" : String(o.tokensPerSecond)}</td>
