@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { buildGarageCommand } from "@/models/services/garageCommand";
+import { useGarageModels } from "@/hooks/useGarageModels";
+import { GarageHealthIndicators, GarageModelList } from "@/views/Garages/components/GarageHealth";
 import { GARAGE_RUNTIME_OPTIONS, runtimeLabel } from "@/models/services/garageRuntime";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -141,6 +143,7 @@ const ResultView = ({ result, runtime, onClose }: ResultViewProps) => {
 
 export const GaragePanel = () => {
   const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled, invalidate } = useGarages();
+  const { byGarage, setOffered, pending } = useGarageModels(garages.map((g) => g.id));
   const [providerOpen, setProviderOpen] = useState(false);
   const [keyGarage, setKeyGarage] = useState<Garage | null>(null);
   const [newKey, setNewKey] = useState("");
@@ -292,12 +295,6 @@ export const GaragePanel = () => {
           <div className="divide-y divide-border/50">
             {sortedGarages.map((g) => (
               <div key={g.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                <Badge
-                  variant="secondary"
-                  className={`text-[10px] shrink-0 ${STATUS_CLASS[g.status] ?? ""}`}
-                >
-                  {g.status}
-                </Badge>
                 <a href={`/garages/${g.name}`} className="shrink-0 w-16" title={reliability.get(g.name)?.grade !== "Nytt" && reliability.get(g.name)?.score != null ? `Score ${reliability.get(g.name)!.score}` : "No score yet"}>
                   {reliability.get(g.name) ? <GradeBadge grade={reliability.get(g.name)!.grade} /> : <span className="text-[10px] text-muted-foreground">—</span>}
                 </a>
@@ -321,6 +318,10 @@ export const GaragePanel = () => {
                     <span>Operator: {g.operator_id ? operatorEmails.get(g.operator_id) ?? "…" : "—"}</span>
                     <span>Registered: {relativeTime(g.last_registered_at)}</span>
                     {g.connection_type !== "endpoint" && <span>Heartbeat: {g.last_heartbeat_at ? relativeTime(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>}
+                  </div>
+                  <div className="mt-1.5 space-y-1.5">
+                    <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
+                    <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} />
                   </div>
                   {g.models.length > 0 && (
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
