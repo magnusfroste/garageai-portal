@@ -56,15 +56,35 @@ async function runtimeKeys(admin: SupabaseClient, ids: string[]) {
   return map;
 }
 
-interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string; input: number; output: number; garage: RoutingGarage; tier: string; }
+/** Placeholder sent to runtimes without auth (e.g. Ollama); the openai provider needs some key. */
+const NO_KEY = "garage-node";
+/** Stable marker of which key a deployment carries (/model/info hides api_key): first 8 hex of sha256, or "none". */
+export async function keyFingerprint(key: string | null | undefined) {
+  if (!key) return "none";
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key)));
+  return Array.from(h.slice(0, 4), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string | null; keyFp: string; input: number; output: number; garage: RoutingGarage; tier: string; }
+
+/**
+ * The ONE builder for every garage deployment (sellable tiers and probes).
+ * The key always comes from garage_runtime_secrets via `keys` (loaded with runtimeKeys) — never from a caller.
+ */
+async function buildDeploymentSpec(g: RoutingGarage, keys: Map<string, string>, p: { id: string; route: string; model: string; tier: string; input: number; output: number }): Promise<DeploymentSpec | null> {
+  const apiBase = apiBaseFor(g);
+  if (!apiBase) return null;
+  const apiKey = keys.get(g.id) ?? null;
+  return { ...p, apiBase, apiKey, keyFp: await keyFingerprint(apiKey), garage: g };
+}
 
 async function addDeployment(base: string, masterKey: string, s: DeploymentSpec) {
   const res = await fetch(`${base}/model/new`, {
     method: "POST", headers: litellmHeaders(masterKey),
     body: JSON.stringify({
       model_name: s.route,
-      litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6 },
-      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh" },
+      litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey || NO_KEY, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6 },
+      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh", key_fingerprint: s.keyFp },
     }),
   });
   await res.text().catch(() => "");
@@ -130,11 +150,12 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
         // Deployment id stays derived from the runtime id so aliases can change without new ids.
         const id = deploymentId(g.name, model, tier);
         if (!enabledTiers.has(id)) continue;
-        desired.set(id, {
-          id, model, apiBase, garage: g, tier, route: tierRoute(g.name, ident.canonical, tier), apiKey: keys.get(g.id) || "garage-node",
+        const spec = await buildDeploymentSpec(g, keys, {
+          id, model, tier, route: tierRoute(g.name, ident.canonical, tier),
           input: Number(tier === "dedicated" ? g.dedicated_input_cost_per_million : g.pool_input_cost_per_million),
           output: Number(tier === "dedicated" ? g.dedicated_output_cost_per_million : g.pool_output_cost_per_million),
         });
+        if (spec) desired.set(id, spec);
       }
     }
   }
@@ -142,7 +163,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   const infoRes = await fetch(`${base}/model/info`, { headers: litellmHeaders(masterKey) });
   if (!infoRes.ok) throw new Error(`LiteLLM /model/info failed (${infoRes.status})`);
   const info = await infoRes.json();
-  type Dep = { model_name: string; litellm_params?: { api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number }; model_info?: { id?: string; garage?: string; garage_tier?: string; input_cost_per_token?: number; output_cost_per_token?: number } };
+  type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number } };
   const actual = new Map<string, Dep>();
   const removed: string[] = [];
   const now = Date.now();
@@ -161,7 +182,8 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     const want = desired.get(id);
     const cost = Number(d.model_info?.input_cost_per_token ?? d.litellm_params?.input_cost_per_token ?? NaN);
     const outputCost = Number(d.model_info?.output_cost_per_token ?? d.litellm_params?.output_cost_per_token ?? NaN);
-    const drift = want && (d.model_name !== want.route || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12);
+    // Compare exactly what addDeployment writes; the key via its fingerprint (missing marker = stale, rewrite once).
+    const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== `openai/${want.model}` || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12);
     if (!want || drift) {
       if (await deleteDeployment(base, masterKey, id)) { removed.push(id); actual.delete(id); }
     }
@@ -172,6 +194,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     try { await addDeployment(base, masterKey, spec); added.push(id); }
     catch (e) { console.error("[routing] add failed", e instanceof Error ? e.message : "unknown"); }
   }
+  // Also log drifted ids so churn is visible (ids only, never keys).
   if (added.length || removed.length) console.log("[routing] reconciled", { added, removed });
   return { added, removed, routes: new Map([...desired].map(([id, d]) => [id, d.route])) };
 }
@@ -184,9 +207,8 @@ export async function withProbeDeployments<T>(
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const base = await getProxyBaseUrl(admin);
-  const apiBase = apiBaseFor(garage);
-  if (!apiBase) throw new Error("garage has no reachable address yet");
-  const key = (await runtimeKeys(admin, [garage.id])).get(garage.id) || "garage-node";
+  if (!apiBaseFor(garage)) throw new Error("garage has no reachable address yet");
+  const keys = await runtimeKeys(admin, [garage.id]);
   const routes = new Map<string, string>();
   const ids: string[] = [];
   try {
@@ -194,7 +216,9 @@ export async function withProbeDeployments<T>(
       const nonce = crypto.randomUUID();
       const id = `${garage.name}__probe__${Date.now()}__${nonce.slice(0, 8)}`;
       const route = `probe/${nonce}`;
-      await addDeployment(base, masterKey, { id, route, model, apiBase, apiKey: key, input: 0, output: 0, garage, tier: "probe" });
+      const spec = await buildDeploymentSpec(garage, keys, { id, route, model, tier: "probe", input: 0, output: 0 });
+      if (!spec) throw new Error("garage has no reachable address yet");
+      await addDeployment(base, masterKey, spec);
       ids.push(id);
       routes.set(model, route);
     }
