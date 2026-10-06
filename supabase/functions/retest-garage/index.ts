@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { syncModels } from "../_shared/syncModels.ts";
 import { runAndStoreAcceptanceTests, toPublicResult } from "../_shared/acceptanceTest.ts";
+import { offeredByGarage } from "../_shared/garageModels.ts";
 import { GARAGE_SELECT, withProbeDeployments, type RoutingGarage } from "../_shared/garageRouting.ts";
 
 const corsHeaders = {
@@ -43,8 +44,9 @@ Deno.serve(async (req) => {
     if (!garage) return json({ error: "Garage not found" }, 404);
     if (!isAdmin && garage.operator_id !== user.id) return json({ error: "Garage not found" }, 404);
     if (garage.disabled) return json({ error: "garage disabled by platform" }, 403);
-    const models = (garage.models || []) as string[];
-    if (models.length === 0) return json({ error: "Garage has no registered models" }, 400);
+    const offered = (await offeredByGarage(admin, [garage.id])).get(garage.id);
+    const models = ((garage.models || []) as string[]).filter((m) => !offered || offered.has(m));
+    if (models.length === 0) return json({ error: "Garage has no offered models" }, 400);
 
     // Probe routes work even when the garage is delisted (no sellable route exists).
     const acceptance = await withProbeDeployments(admin, garage as RoutingGarage, models, (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, garage, models, routeFor));

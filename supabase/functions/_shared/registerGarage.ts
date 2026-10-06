@@ -4,6 +4,7 @@ import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, type NetbirdPeer } fr
 import { runAndStoreAcceptanceTests, type AcceptanceResult } from "./acceptanceTest.ts";
 import { syncModels } from "./syncModels.ts";
 import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
+import { syncInventory } from "./garageModels.ts";
 import { modelIdError, storeRuntimeKey, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
@@ -48,7 +49,8 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   const headers = { Authorization: `Bearer ${masterKey}`, "Content-Type": "application/json" };
   await storeRuntimeKey(admin, garage.id, payload.runtime_api_key);
 
-  const testModels = opts.testOnly ?? payload.models;
+  const offered = await syncInventory(admin, garage.id, payload.models);
+  const testModels = (opts.testOnly ?? payload.models).filter((m) => offered.has(m));
   const routingGarage = { ...garage, api_host: garage.api_host, mesh_ip: peer.ip, port: payload.port, runtime: payload.runtime, models: payload.models, status: "pending", disabled: false, last_heartbeat_at: null, connection_type: garage.connection_type || "mesh", endpoint_url: garage.endpoint_url ?? null } as RoutingGarage;
   const acceptance = testModels.length
     ? await withProbeDeployments(admin, routingGarage, testModels, (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, garage, testModels, routeFor))
