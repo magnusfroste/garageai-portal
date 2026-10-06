@@ -20,6 +20,10 @@ export interface Garage {
   connection_type?: string;
   endpoint_url?: string | null;
   display_name?: string | null;
+  last_gateway_check_at?: string | null;
+  mesh_connected?: boolean | null;
+  runtime_ok?: boolean | null;
+  runtime_error?: string | null;
 }
 
 export interface CreateGarageResult {
