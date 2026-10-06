@@ -217,7 +217,10 @@ export function modelIdError(model: string): string | null {
   if (lower.startsWith("probe/")) return `model id "${model}" may not start with "probe/" (reserved)`;
   // Check the last path segment too, so "openai/gpt-4o" is also rejected.
   const tail = lower.split("/").pop() || lower;
+  // gpt-oss* are OpenAI's open-weight models — the one allowed exception to the gpt- ban.
+  const isGptOss = lower.startsWith("gpt-oss") || tail.startsWith("gpt-oss");
   for (const p of RESERVED_PREFIXES) {
+    if (isGptOss && p === "gpt-") continue;
     if (lower.startsWith(p) || tail.startsWith(p)) return `model id "${model}" uses a reserved proprietary model name (${p}…)`;
   }
   return null;
