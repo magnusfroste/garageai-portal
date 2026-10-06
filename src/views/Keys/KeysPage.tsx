@@ -7,8 +7,13 @@ import { ApiKeyList } from "@/views/Dashboard/components/ApiKeyList";
 import { ApiKey } from "@/models/types/apiKey.types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useModelCatalog } from "@/hooks/useModelCatalog";
+import { CommandBlock } from "@/views/Garages/components/GarageShared";
+import { t } from "@/i18n";
 
 export const KeysPage = () => {
+  const { models } = useModelCatalog();
+  const poolModel = models.find((model) => model.available && model.poolId)?.poolId || models.find((model) => model.poolId)?.poolId;
   const { profile, loading: profileLoading } = useProfile();
   const [revoking, setRevoking] = useState(false);
   const { apiKeys, loading: keysLoading, refetch } = useDashboardData();
@@ -94,10 +99,18 @@ export const KeysPage = () => {
   return (
     <div className="p-6 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-1">API Keys</h1>
-        <p className="text-muted-foreground text-sm">Manage your active API keys</p>
+        <h1 className="text-3xl font-bold mb-1">{t("API keys")}</h1>
+        <p className="text-muted-foreground text-sm">{t("Manage your active API keys")}</p>
       </div>
 
+      <section className="min-w-0 space-y-3">
+        <h2 className="text-sm font-medium">{t("Base URL")}</h2>
+        <CommandBlock command="https://llm.garageai.eu/v1" />
+        {poolModel && <CommandBlock command={`curl https://llm.garageai.eu/v1/chat/completions \
+  -H "Authorization: Bearer $GARAGE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '${JSON.stringify({ model: poolModel, messages: [{ role: "user", content: "Hello" }] })}'`} />}
+      </section>
       <ApiKeyList
         apiKeys={activeKeys}
         onCopy={copyToClipboard}
