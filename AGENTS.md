@@ -14,4 +14,5 @@
 - Chat answer footer data (garage, usage) comes only from chat-playground `garageai` meta events (garage = LiteLLM deployment-id prefix) plus `include_usage` chunks; cost/tok/s are computed client-side in `chatService` from catalogue prices.
 - Reconcile LiteLLM garage deployments from database status and tests on every sync; only sellable models may have routes, while acceptance probes use temporary private routes.
 - Grant purchased credits through one idempotent shared claim path, and define total user/key budget as starting credit plus purchased credits.
-- Generate garage setup commands with credentials in shell environment variables; with sudo, pass them through `sudo env` rather than command-line flags.
+- Generate garage setup commands as download / `export` secrets / run lines (zsh and bash safe); with sudo, use `--preserve-env` rather than putting secrets in flags.
+- Treat gateway health reports (L1 tunnel, L2 /v1/models) as the primary routing signal for garages that have one; heartbeats only carry inventory, and only `garage_models.offered` models may be routed.
