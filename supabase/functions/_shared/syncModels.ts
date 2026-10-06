@@ -230,6 +230,24 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const tests = await latestTests(admin, routingGarages.map((g) => g.id));
   const offered = await offeredByGarage(admin, routingGarages.map((g) => g.id));
   const paused = await pausedModels(admin, routingGarages.map((g) => g.id));
+  // Garage rows without a LiteLLM deployment: drop them if the runtime id is gone, otherwise mark unhealthy (never public).
+  {
+    const { data: inst } = await admin.from("garage_models").select("garage_id, model").eq("installed", true);
+    const nameById = new Map(routingGarages.map((g) => [g.id, g.name]));
+    const keep = new Set<string>();
+    for (const r of (inst || []) as Array<{ garage_id: string; model: string }>) {
+      const gn = nameById.get(r.garage_id);
+      if (gn) for (const t of ["dedicated", "pool"] as const) keep.add(deploymentId(gn, r.model, t));
+    }
+    const orphans = ((existing || []) as Row[]).filter((r) => !liveIds.has(r.id) && /__(dedicated|pool)$/.test(r.id));
+    const gone = orphans.filter((r) => !keep.has(r.id)).map((r) => r.id);
+    const idle = orphans.filter((r) => keep.has(r.id)).map((r) => r.id);
+    if (gone.length) {
+      const { count } = await admin.from("curated_models").delete({ count: "exact" }).in("id", gone);
+      deleted += count ?? 0;
+    }
+    if (idle.length) await admin.from("curated_models").update({ status: "unhealthy" }).in("id", idle);
+  }
   const sellable = new Set<string>();
   for (const g of routingGarages) for (const model of g.models || []) {
     const ids0 = [deploymentId(g.name, model, "dedicated"), deploymentId(g.name, model, "pool")];
