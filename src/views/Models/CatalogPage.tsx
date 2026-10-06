@@ -17,6 +17,7 @@ import { runtimeLabel } from "@/models/services/garageRuntime";
 import type { CatalogFilters, CatalogModel, CatalogSort } from "@/models/types/catalog.types";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
 import { ToolsBadge } from "@/views/Models/components/ToolsBadge";
+import { ProviderModelBadge } from "@/views/Models/components/ProviderModelBadge";
 import { cn } from "@/lib/utils";
 
 import { t } from "@/i18n";
@@ -52,6 +53,7 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
     <div className="min-w-0">
       <div className="flex items-center gap-2 min-w-0">
         <span className="font-mono text-sm font-semibold truncate">{m.name}</span>
+        {m.privateModel && <ProviderModelBadge />}
         {m.supportsTools && <ToolsBadge />}
       </div>
       <div className="text-xs text-muted-foreground truncate">

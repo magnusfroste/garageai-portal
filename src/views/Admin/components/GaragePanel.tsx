@@ -139,7 +139,7 @@ const ResultView = ({ result, runtime, models, onClose }: ResultViewProps) => {
 
 export const GaragePanel = () => {
   const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled, invalidate } = useGarages();
-  const { byGarage, setOffered, pending } = useGarageModels(garages.map((g) => g.id));
+  const { byGarage, setOffered, setAlias, pending } = useGarageModels(garages.map((g) => g.id));
   const [providerOpen, setProviderOpen] = useState(false);
   const [keyGarage, setKeyGarage] = useState<Garage | null>(null);
   const [newKey, setNewKey] = useState("");
@@ -326,7 +326,7 @@ export const GaragePanel = () => {
                   <div className="mt-1.5 space-y-1.5">
                     <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
                     <ReliabilityAvailability reliability={reliability.get(g.name)} location={locations.get(g.name)} />
-                    <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
+                    <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onAlias={g.connection_type === "endpoint" ? setAlias : undefined} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
                   </div>
                   {g.models.length > 0 && (
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">

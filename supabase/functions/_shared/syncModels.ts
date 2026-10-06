@@ -5,7 +5,7 @@ import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { getNetbirdApiUrl, netbirdHeaders } from "./netbirdConfig.ts";
 import { offeredByGarage, pausedModels } from "./garageModels.ts";
 import { updateMeasuredCountries } from "./garageLocation.ts";
-import { GARAGE_SELECT, gatewayHealthy, deploymentId, isModelSellable, latestTests, reconcileGarageRouting, type RoutingGarage } from "./garageRouting.ts";
+import { GARAGE_SELECT, modelIdentities, identityOf, gatewayHealthy, deploymentId, isModelSellable, latestTests, reconcileGarageRouting, type RoutingGarage } from "./garageRouting.ts";
 
 interface LiteLLMModelInfo {
   model_name: string;
@@ -130,6 +130,16 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const { data: disabledRows } = await admin.from("garages").select("name").eq("disabled", true);
   const disabledGarages = new Set(((disabledRows || []) as Array<{ name: string }>).map((g) => g.name));
 
+  // Test results are keyed by runtime id; routes carry the canonical name.
+  let testCanon: Map<string, string> | null = null;
+  if (opts.testResults) {
+    const { data: tg } = await admin.from("garages").select("id").eq("name", opts.testResults.garage).maybeSingle();
+    if (tg) {
+      const idents = await modelIdentities(admin, [(tg as { id: string }).id]);
+      testCanon = new Map();
+      for (const runtime of opts.testResults.results.keys()) testCanon.set(identityOf(idents, (tg as { id: string }).id, runtime).canonical, runtime);
+    }
+  }
   const rows = rawModels.map((m) => {
     const info = m.model_info || {};
     const litellmModel = m.litellm_params?.model || m.model_name;
@@ -150,7 +160,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
       const prefix = `garage/${garage}/`;
       const underlying = garage_tier === "dedicated" && m.model_name.startsWith(prefix)
         ? m.model_name.slice(prefix.length) : m.model_name;
-      const passed = opts.testResults.results.get(underlying);
+      const passed = opts.testResults.results.get(underlying) ?? opts.testResults.results.get(testCanon?.get(underlying) ?? "");
       if (passed === false) { enabled = false; disabled_reason = "failed_test"; }
       else if (passed === true) {
         const own = byId.get(id);
@@ -245,7 +255,12 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
     const id = deploymentId(g.name, model, tier);
     if (!((tierRows || []) as Array<{ id: string }>).some((r) => r.id === id) && sellable.has(`${g.name}::${model}`)) enabledTiers.add(id);
   }
-  await reconcileGarageRouting(admin, routingGarages, sellable, enabledTiers);
+  const { routes } = await reconcileGarageRouting(admin, routingGarages, sellable, enabledTiers);
+  // Keep curated names in step with the (canonical) routes right away, e.g. after an alias change.
+  for (const r of rows) {
+    const route = routes.get(r.id);
+    if (route && route !== r.model_name) await admin.from("curated_models").update({ model_name: route }).eq("id", r.id);
+  }
 
   const health = rows.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {} as Record<string, number>);
   const garageConnectivity: SyncResult["garageConnectivity"] = {};

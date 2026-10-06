@@ -32,6 +32,7 @@ export const buildCatalog = (
   tools: GarageToolSupport[] = [],
   providers: Map<string, string> = new Map(),
   locations: Map<string, GarageLocation> = new Map(),
+  privates: Set<string> = new Set(),
 ): CatalogModel[] => {
   const statOf = new Map(stats.map((s) => [s.garage_name, s]));
   const groups = new Map<string, CuratedModel[]>();
@@ -42,8 +43,9 @@ export const buildCatalog = (
 
   const out: CatalogModel[] = [];
   for (const [name, list] of groups) {
-    const pool = list.find((r) => r.garage_tier === "pool") ?? list.find((r) => !r.garage) ?? null;
     const garages = [...new Set(list.map((r) => r.garage).filter((g): g is string => !!g))];
+    const privateModel = garages.length > 0 && garages.every((g) => privates.has(`${g}::${name}`));
+    const pool = privateModel ? null : list.find((r) => r.garage_tier === "pool") ?? list.find((r) => !r.garage) ?? null;
     const offers: GarageOffer[] = garages.map((g) => {
       const ded = list.find((r) => r.garage === g && r.garage_tier === "dedicated");
       const any = ded ?? list.find((r) => r.garage === g)!;
@@ -88,6 +90,7 @@ export const buildCatalog = (
       tokens7d: offers.reduce((s, o) => s + o.tokens7d, 0),
       tokensPerSecond: maxOf(offers.map((o) => o.tokensPerSecond)),
       supportsTools: tools.some((t) => t.supports_tools && t.model === name && garages.includes(t.garage_name)),
+      privateModel,
     });
   }
   return out;

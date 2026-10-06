@@ -14,12 +14,13 @@ export const useModelCatalog = () => {
   const rows = useQuery({ queryKey: ["catalog-rows"], queryFn: () => curatedModelRepository.fetchEnabled(), staleTime: STALE });
   const stats = useQuery({ queryKey: ["garage-public-stats"], queryFn: () => catalogRepository.garageStats(), staleTime: STALE, retry: false });
   const providers = useQuery({ queryKey: ["garage-public-providers"], queryFn: () => catalogRepository.providers(), staleTime: STALE, retry: false });
+  const privates = useQuery({ queryKey: ["garage-public-models"], queryFn: () => catalogRepository.privateModels(), staleTime: STALE, retry: false });
   const { reliability, isLoading: relLoading } = useGarageReliability();
   const { rows: tools } = useToolSupport();
   const { locations } = useGarageLocations();
   const models = useMemo(
-    () => buildCatalog(rows.data ?? [], stats.data ?? [], reliability, tools, providers.data, locations),
-    [rows.data, stats.data, reliability, tools, providers.data, locations],
+    () => buildCatalog(rows.data ?? [], stats.data ?? [], reliability, tools, providers.data, locations, privates.data),
+    [rows.data, stats.data, reliability, tools, providers.data, locations, privates.data],
   );
   return { models, isError: rows.isError || stats.isError, refetch: () => { rows.refetch(); stats.refetch(); }, isLoading: rows.isLoading || stats.isLoading || relLoading };
 };

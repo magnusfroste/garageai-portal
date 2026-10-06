@@ -58,6 +58,8 @@ export interface CatalogModel {
   tokensPerSecond: number | null;
   /** Any garage serving this model passed the tool-calling probe. */
   supportsTools: boolean;
+  /** Provider-private model: own name, dedicated tier only, never pooled. */
+  privateModel: boolean;
 }
 
 export type CatalogSort = "popular" | "cheapest" | "fastest" | "reliable";

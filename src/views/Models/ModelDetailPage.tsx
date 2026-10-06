@@ -1,4 +1,5 @@
 import { HowWeMeasure } from "@/views/Garages/components/HowWeMeasure";
+import { ProviderModelBadge } from "@/views/Models/components/ProviderModelBadge";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQueries } from "@tanstack/react-query";
@@ -114,6 +115,7 @@ const ModelDetailPage = () => {
       <div className="space-y-3">
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-bold font-mono break-all">{m.name}</h1>
+          {m.privateModel && <ProviderModelBadge />}
           {m.bestGrade && <GradeBadge grade={m.bestGrade} />}
           {m.supportsTools && <ToolsBadge />}
           {!m.available && <Badge variant="outline">{t("Not available right now")}</Badge>}
