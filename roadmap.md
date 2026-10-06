@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Align public garage cards/profile headers with catalogue, verify anonymous data and desktop/mobile interactions
+
 - [x] Clarify operator earnings and add audited admin pricing
 - [x] Finish catalogue home, overview checklist, logs, reliability, credits and navigation
 - [ ] Review all pages at desktop/mobile sizes, report screenshots and publish

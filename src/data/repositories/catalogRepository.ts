@@ -26,6 +26,12 @@ export const catalogRepository = {
   },
 
   /** "garage::canonical model" for provider-private models (public, no runtime ids). */
+  async offeredModels(): Promise<{ garage_name: string; model: string; private: boolean }[]> {
+    const { data, error } = await supabase.rpc("garage_public_models");
+    if (error) throw error;
+    return data ?? [];
+  },
+
   async privateModels(): Promise<Set<string>> {
     const { data, error } = await supabase.rpc("garage_public_models");
     if (error) throw error;
