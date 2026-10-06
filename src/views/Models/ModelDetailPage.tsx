@@ -219,7 +219,7 @@ const ModelDetailPage = () => {
               <Link to={`/dashboard/chat?model=${encodeURIComponent(modelId)}`}><MessageSquare className="w-4 h-4 mr-1" />{t("Try in chat")}</Link>
             </Button>
           )}
-          {!session && <Button asChild size="sm" className="max-w-full h-auto min-h-9 whitespace-normal text-center"><Link to={`/auth?intent=buyer&next=${encodeURIComponent(`/models/${name}`)}`}><KeyRound className="mr-1 h-4 w-4" />{t("Create account to get an API key")}</Link></Button>}
+          {!session && <Button asChild size="sm" className="max-w-full h-auto min-h-9 whitespace-normal text-center"><Link to={`/auth?intent=buyer&next=${encodeURIComponent(`/models/${encodeURIComponent(m.name)}`)}`}><KeyRound className="mr-1 h-4 w-4" />{t("Create account to get an API key")}</Link></Button>}
         </CardHeader>
         <CardContent><ModelSnippets baseUrl={baseUrl} model={modelId} /></CardContent>
       </Card>
