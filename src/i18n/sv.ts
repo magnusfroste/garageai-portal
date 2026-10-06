@@ -612,4 +612,5 @@ export const sv: Record<string, string> = {
   "Type the garage name to confirm.": "Skriv garagets namn för att bekräfta.",
   "Garage name": "Garagets namn",
   "Deleting...": "Tar bort...",
+  "Models on provider endpoints are offered by GarageAI admins.": "Modeller på leverantörsendpoints erbjuds av GarageAI-administratörer.",
 };

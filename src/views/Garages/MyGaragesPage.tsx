@@ -18,6 +18,8 @@ import { GarageHealthIndicators, GarageModelList, GarageTroubleshooting } from "
 import { useGarageModels } from "@/hooks/useGarageModels";
 import { t } from "@/i18n";
 import { GaragePauseButton, LocationDisplaySetting, PausedBadge } from "./components/GarageOperatorControls";
+import { useQuery } from "@tanstack/react-query";
+import { adminService } from "@/models/services/adminService";
 import { DeleteGarageButton } from "./components/DeleteGarageButton";
 import { ReliabilityAvailability } from "./components/ReliabilityAvailability";
 import { LocationBadge } from "./components/LocationBadge";
@@ -25,6 +27,7 @@ import { useGarageLocations } from "@/hooks/useGarageLocations";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const MyGaragesPage = () => {
+  const { data: isAdmin = false } = useQuery({ queryKey: ["is-admin"], queryFn: () => adminService.isAdmin() });
   const navigate = useNavigate();
   const { toast } = useToast();
   const { garages, isLoading, isError, latestTests, invalidate } = useMyGarages();
@@ -103,7 +106,8 @@ const MyGaragesPage = () => {
                    <span className="text-xs text-muted-foreground">{t("Last heartbeat:")} {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>
                 </div>
                 <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
-                <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onPause={setPaused} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
+                {g.connection_type === "endpoint" && !isAdmin && <p className="text-xs text-muted-foreground">{t("Models on provider endpoints are offered by GarageAI admins.")}</p>}
+                <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onPause={setPaused} readOnly={g.connection_type === "endpoint" && !isAdmin} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
                 <div className="flex gap-1.5 flex-wrap">
                   {g.models.length === 0
                     ? <span className="text-xs text-muted-foreground">{t("No models registered yet")}</span>
