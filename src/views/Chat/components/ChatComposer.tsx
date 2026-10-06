@@ -53,7 +53,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
           placeholder={t("Message the model…")}
           rows={1}
           aria-label={t("Message")}
-          className="block max-h-[220px] w-full resize-none bg-transparent px-5 pt-4 text-[15px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
+          className="block max-h-[9.5rem] overflow-y-auto w-full resize-none bg-transparent px-5 pt-4 text-[15px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         <div className="flex items-center gap-1 px-3 pb-3 pt-2">
           {onToggleWebSearch && (
