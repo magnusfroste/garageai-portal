@@ -3,7 +3,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { getNetbirdApiUrl, netbirdHeaders } from "./netbirdConfig.ts";
-import { offeredByGarage } from "./garageModels.ts";
+import { offeredByGarage, pausedModels } from "./garageModels.ts";
+import { updateMeasuredCountries } from "./garageLocation.ts";
 import { GARAGE_SELECT, gatewayHealthy, deploymentId, isModelSellable, latestTests, reconcileGarageRouting, type RoutingGarage } from "./garageRouting.ts";
 
 interface LiteLLMModelInfo {
@@ -218,8 +219,16 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const routingGarages = (routingRows || []) as RoutingGarage[];
   const tests = await latestTests(admin, routingGarages.map((g) => g.id));
   const offered = await offeredByGarage(admin, routingGarages.map((g) => g.id));
+  const paused = await pausedModels(admin, routingGarages.map((g) => g.id));
   const sellable = new Set<string>();
   for (const g of routingGarages) for (const model of g.models || []) {
+    const ids0 = [deploymentId(g.name, model, "dedicated"), deploymentId(g.name, model, "pool")];
+    // Operator pause (garage or model): same as un-offer — out of LiteLLM, catalogue rows disabled as 'paused'.
+    if (g.paused_at || paused.has(`${g.id}::${model}`)) {
+      await admin.from("curated_models").update({ enabled: false, disabled_reason: "paused" }).in("id", ids0).or("disabled_reason.is.null,disabled_reason.neq.admin");
+      continue;
+    }
+    await admin.from("curated_models").update({ enabled: true, disabled_reason: null }).in("id", ids0).eq("disabled_reason", "paused");
     const test = tests.get(`${g.id}::${model}`);
     const isOffered = !offered.has(g.id) || offered.get(g.id)!.has(model);
     const okay = isOffered && isModelSellable(g, model, test);
@@ -242,5 +251,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const garageConnectivity: SyncResult["garageConnectivity"] = {};
   for (const g of garageNames) garageConnectivity[g] = garageStatus(g);
   const netbirdOk = pinnedPeer.size === 0 || peerConnected !== null;
+  try { await updateMeasuredCountries(admin); }
+  catch (e) { console.warn("[location] country update failed:", e instanceof Error ? e.message : "error"); }
   return { synced: rows.length, deleted, health, garageConnectivity, netbirdOk };
 }

@@ -43,3 +43,12 @@ export async function markTestStatus(admin: SupabaseClient, garageId: string, re
     await admin.from("garage_models").update({ status: r.passed ? "live" : "failed", updated_at: now }).eq("garage_id", garageId).eq("model", r.model).eq("offered", true);
   }
 }
+
+/** "garage_id::model" for models the operator paused (per-model pause). */
+export async function pausedModels(admin: SupabaseClient, garageIds: string[]) {
+  const set = new Set<string>();
+  if (!garageIds.length) return set;
+  const { data } = await admin.from("garage_models").select("garage_id, model").in("garage_id", garageIds).not("paused_at", "is", null);
+  for (const r of (data || []) as Array<{ garage_id: string; model: string }>) set.add(`${r.garage_id}::${r.model}`);
+  return set;
+}
