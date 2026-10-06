@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { runtimeLabel } from "@/models/services/garageRuntime";
+import { locationLabel } from "@/models/services/location";
 import { garageStatus, type PublicGarage } from "@/models/services/publicGarageService";
 import { GradeBadge } from "./Reliability";
 import { LocationBadge } from "./LocationBadge";
@@ -13,11 +14,13 @@ import { ProviderModelBadge } from "@/views/Models/components/ProviderModelBadge
 export const PublicGarageHeader = ({ garage, heading = false }: { garage: PublicGarage; heading?: boolean }) => {
   const { profile: p, location, reliability, providerName } = garage;
   const status = garageStatus(p);
+  const flag = heading ? locationLabel(location)?.flag : null;
   const Heading = heading ? "h1" : "h2";
   return <div className="space-y-4 min-w-0">
     <div className="space-y-2">
       <div className="flex items-start justify-between gap-3">
-        <Heading className={cn("font-semibold break-words min-w-0", heading ? "text-2xl" : "text-base")}>
+        <Heading className={cn("flex items-center gap-2 font-semibold break-words min-w-0", heading ? "text-2xl" : "text-base")}>
+          {flag && <span aria-hidden className="text-2xl leading-none shrink-0">{flag}</span>}
           {heading ? p.display_name : <Link className="after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring after:rounded-lg" to={`/garages/${encodeURIComponent(p.name)}`}>{p.display_name}</Link>}
         </Heading>
         {reliability && <GradeBadge grade={reliability.grade} className="shrink-0" />}

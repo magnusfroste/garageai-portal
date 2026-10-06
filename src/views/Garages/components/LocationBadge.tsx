@@ -16,7 +16,7 @@ export const LocationBadge = ({ location, compact = false }: { location?: Garage
   return (
     <TooltipProvider><Tooltip><TooltipTrigger asChild>
       <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground whitespace-nowrap cursor-help">
-        <span aria-hidden>{l.flag}</span>{!compact && <span>{t(l.name)}{l.suffix ? ` · ${t(l.suffix)}` : ""}</span>}
+        <span aria-hidden className="text-lg leading-none">{l.flag}</span>{!compact && <span>{t(l.name)}{l.suffix ? ` · ${t(l.suffix)}` : ""}</span>}
       </span>
     </TooltipTrigger><TooltipContent className="max-w-xs text-xs">{compact ? `${t(l.name)} — ` : ""}{t(TIP[l.kind])}</TooltipContent></Tooltip></TooltipProvider>
   );

@@ -60,11 +60,11 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
       <div className="text-xs text-muted-foreground truncate">
         {m.provider}{m.mode ? ` · ${m.mode}` : ""}{!m.available ? ` · ${t("Not available right now")}` : ""}
       </div>
-      {m.offers.find((o) => o.providerName)?.providerName && <ProviderBadge name={m.offers.find((o) => o.providerName)?.providerName} />}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         {[...new Map(m.offers.filter((o) => o.location?.country && o.location.location_display !== "hidden").map((o) => [`${o.location!.location_display}:${o.location!.country}`, o])).values()].slice(0, 3).map((o) => <LocationBadge key={o.garage} location={o.location!} compact={m.offers.length > 1} />)}
         {(() => { const best = m.offers.map((o) => o.location).filter((l) => l && !l.is_endpoint && (l.is_new ? l.live_hours_total : l.live_hours_per_week) != null).sort((a, b) => Number(!!a!.is_new) - Number(!!b!.is_new) || (b!.live_hours_per_week ?? 0) - (a!.live_hours_per_week ?? 0))[0]; const txt = liveHoursText(best, true); return txt ? <span className="text-[11px] text-muted-foreground">{txt}</span> : null; })()}
       </div>
+      {m.offers.find((o) => o.providerName)?.providerName && <ProviderBadge name={m.offers.find((o) => o.providerName)?.providerName} />}
       <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground tabular-nums">
         <span>{t("Context")}: {formatContext(m.contextLength)}</span>
         <span>{t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}</span>
