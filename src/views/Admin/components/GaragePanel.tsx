@@ -29,6 +29,11 @@ import { t } from "@/i18n";
 import { Building2 } from "lucide-react";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { ProviderDialog } from "./ProviderDialog";
+import { GarageCountryCell } from "./GarageCountryEditor";
+import { PausedBadge } from "@/views/Garages/components/GarageOperatorControls";
+import { ReliabilityAvailability } from "@/views/Garages/components/ReliabilityAvailability";
+import { useGarageLocations } from "@/hooks/useGarageLocations";
+import { useQuery } from "@tanstack/react-query";
 import { garageRepository } from "@/data/repositories/garageRepository";
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 
@@ -139,6 +144,8 @@ export const GaragePanel = () => {
   const [keyGarage, setKeyGarage] = useState<Garage | null>(null);
   const [newKey, setNewKey] = useState("");
   const { reliability } = useGarageReliability();
+  const { locations } = useGarageLocations();
+  const countryChanges = useQuery({ queryKey: ["garage-country-changes", garages.map((g) => g.id).join(",")], enabled: garages.length > 0, queryFn: () => garageRepository.countryChangedRecently(garages.map((g) => g.id)) });
   const [sortDir, setSortDir] = useState<"none" | "desc" | "asc">("none");
   const [confirmGarage, setConfirmGarage] = useState<Garage | null>(null);
   const [toggling, setToggling] = useState(false);
@@ -297,6 +304,8 @@ export const GaragePanel = () => {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-sm truncate">{g.name}</span>
                     {g.connection_type === "endpoint" && <ProviderBadge name={g.display_name || g.name} />}
+                    {g.paused_at && <PausedBadge reason={g.paused_reason} />}
+                    <GarageCountryCell garage={g} changedRecently={countryChanges.data?.has(g.id) ?? false} onSaved={invalidate} />
                     {g.runtime && (
                       <Badge variant="outline" className="text-[10px] shrink-0">
                         {runtimeLabel(g.runtime)}
@@ -316,6 +325,7 @@ export const GaragePanel = () => {
                   </div>
                   <div className="mt-1.5 space-y-1.5">
                     <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
+                    <ReliabilityAvailability reliability={reliability.get(g.name)} location={locations.get(g.name)} />
                     <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
                   </div>
                   {g.models.length > 0 && (

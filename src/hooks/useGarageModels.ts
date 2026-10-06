@@ -28,5 +28,14 @@ export const useGarageModels = (garageIds: string[]) => {
       qc.invalidateQueries({ queryKey: ["admin-garage-tests"] });
     }
   };
-  return { byGarage, setOffered, pending };
+  const setPaused = async (garageName: string, model: string, paused: boolean) => {
+    setPending(`${garageName}::${model}`);
+    try {
+      return await garageRepository.setPaused(garageName, paused, { model });
+    } finally {
+      setPending(null);
+      qc.invalidateQueries({ queryKey: ["garage-models"] });
+    }
+  };
+  return { byGarage, setOffered, setPaused, pending };
 };

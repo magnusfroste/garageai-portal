@@ -17,6 +17,10 @@ import { GarageConnectCommand, ModelTestBadge, ToolsTestBadge, OneTimeWarning, r
 import { GarageHealthIndicators, GarageModelList, GarageTroubleshooting } from "./components/GarageHealth";
 import { useGarageModels } from "@/hooks/useGarageModels";
 import { t } from "@/i18n";
+import { GaragePauseButton, LocationDisplaySetting, PausedBadge } from "./components/GarageOperatorControls";
+import { ReliabilityAvailability } from "./components/ReliabilityAvailability";
+import { LocationBadge } from "./components/LocationBadge";
+import { useGarageLocations } from "@/hooks/useGarageLocations";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const MyGaragesPage = () => {
@@ -27,7 +31,8 @@ const MyGaragesPage = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const { reliability } = useGarageReliability();
   const [creds, setCreds] = useState<{ c: GarageCredentials; runtime: string; models: string[] } | null>(null);
-  const { byGarage, setOffered, pending } = useGarageModels(garages.map((g) => g.id));
+  const { locations } = useGarageLocations();
+  const { byGarage, setOffered, setPaused, pending } = useGarageModels(garages.map((g) => g.id));
 
   const retest = async (g: GarageRow) => {
     setBusy(`t:${g.name}`);
@@ -90,12 +95,14 @@ const MyGaragesPage = () => {
               <CardContent className="pt-6 space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-mono">{g.name}</span>
+                  {g.paused_at && <PausedBadge reason={g.paused_reason} />}
+                  <LocationBadge location={locations.get(g.name)} />
                    {g.runtime && <Badge variant="outline" className="text-[10px]">{runtimeLabel(g.runtime)}{g.port ? `:${g.port}` : ""}</Badge>}
                   <span className="text-xs text-muted-foreground ml-auto">{t("Registered:")} {relativeTimeSv(g.last_registered_at)}</span>
                    <span className="text-xs text-muted-foreground">{t("Last heartbeat:")} {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>
                 </div>
                 <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
-                <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
+                <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onPause={setPaused} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
                 <div className="flex gap-1.5 flex-wrap">
                   {g.models.length === 0
                     ? <span className="text-xs text-muted-foreground">{t("No models registered yet")}</span>
@@ -111,12 +118,15 @@ const MyGaragesPage = () => {
                     <Button size="sm" variant="outline" disabled={!!busy || g.models.length === 0} onClick={() => retest(g)}>
                       <FlaskConical className="w-3.5 h-3.5 mr-1.5" />{busy === `t:${g.name}` ? t("Testing...") : t("Test again")}
                     </Button>
+                    <GaragePauseButton garage={g} onDone={invalidate} />
                     <Button size="sm" variant="outline" disabled={!!busy} onClick={() => setConfirmGarage(g)}>
                       <KeyRound className="w-3.5 h-3.5 mr-1.5" />{busy === `c:${g.name}` ? t("Creating...") : t("New command")}
                     </Button>
                   </div>
                 )}
                 {g.disabled && <p className="text-xs text-destructive">{t("The garage has been disabled by the platform.")}</p>}
+                <ReliabilityAvailability reliability={reliability.get(g.name)} location={locations.get(g.name)} />
+                <LocationDisplaySetting garageId={g.id} value={g.location_display ?? "country"} />
                 <GarageEarnings garage={g} />
                 <GarageReliabilityPanel name={g.name} reliability={reliability.get(g.name)} />
                 <GarageTroubleshooting />

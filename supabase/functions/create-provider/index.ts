@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
     if (!NAME_RE.test(name)) return bad("name must match ^[a-z0-9][a-z0-9-]{1,40}$");
     const displayName = typeof body.display_name === "string" ? body.display_name.trim().slice(0, 80) : "";
     if (!displayName) return bad("display_name is required");
+    const declared = typeof body.declared_country === "string" && /^[A-Za-z]{2}$/.test(body.declared_country) ? body.declared_country.toUpperCase() : null;
     let endpointUrl: string;
     try { endpointUrl = await validateEndpointUrl(body.endpoint_url, { allowPort, blockedHosts: await blockedHosts(admin) }); } catch (e) { return bad((e as Error).message); }
     const models = body.models;
@@ -88,7 +89,7 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await admin.from("garages").select("id, connection_type").eq("name", name).maybeSingle();
     if (existing && existing.connection_type !== "endpoint") return bad("A garage with this name already exists");
-    const row = { name, display_name: displayName, connection_type: "endpoint", endpoint_url: endpointUrl, models: Array.from(new Set(models as string[])), status: "pending", runtime: "openai", port: 443, ...prices };
+    const row = { name, display_name: displayName, connection_type: "endpoint", endpoint_url: endpointUrl, models: Array.from(new Set(models as string[])), status: "pending", runtime: "openai", port: 443, ...prices, ...(declared ? { declared_country: declared } : {}) };
     const q = existing
       ? admin.from("garages").update(row).eq("id", existing.id).select("*").single()
       : admin.from("garages").insert(row).select("*").single();

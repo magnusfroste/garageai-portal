@@ -5,6 +5,7 @@ import { catalogRepository } from "@/data/repositories/catalogRepository";
 import { buildCatalog } from "@/models/services/catalogService";
 import { useGarageReliability } from "./useGarageReliability";
 import { useToolSupport } from "./useToolSupport";
+import { useGarageLocations } from "./useGarageLocations";
 
 const STALE = 2 * 60 * 1000;
 
@@ -15,9 +16,10 @@ export const useModelCatalog = () => {
   const providers = useQuery({ queryKey: ["garage-public-providers"], queryFn: () => catalogRepository.providers(), staleTime: STALE, retry: false });
   const { reliability, isLoading: relLoading } = useGarageReliability();
   const { rows: tools } = useToolSupport();
+  const { locations } = useGarageLocations();
   const models = useMemo(
-    () => buildCatalog(rows.data ?? [], stats.data ?? [], reliability, tools, providers.data),
-    [rows.data, stats.data, reliability, tools, providers.data],
+    () => buildCatalog(rows.data ?? [], stats.data ?? [], reliability, tools, providers.data, locations),
+    [rows.data, stats.data, reliability, tools, providers.data, locations],
   );
   return { models, isError: rows.isError || stats.isError, refetch: () => { rows.refetch(); stats.refetch(); }, isLoading: rows.isLoading || stats.isLoading || relLoading };
 };

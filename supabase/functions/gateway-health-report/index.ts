@@ -65,7 +65,8 @@ Deno.serve(async (req) => {
       await admin.from("curated_models").update({ status: healthy ? "healthy" : "unhealthy" }).eq("garage", g.name);
 
       let tested: string[] | undefined;
-      if (healthy) {
+      // A paused garage is measured but never relisted or retested here (routing also excludes paused_at).
+      if (healthy && !g.paused_at) {
         const off = offered.get(g.id);
         const models = (g.models || []).filter((m) => !off || off.has(m));
         const stale = models.filter((m) => { const t = latest.get(m); return !t || Date.now() - t.at > GATEWAY_TEST_MAX_AGE_MS; });

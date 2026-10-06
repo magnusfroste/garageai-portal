@@ -24,14 +24,14 @@ export async function syncInventory(admin: SupabaseClient, garageId: string, mod
   return new Set(upserts.filter((u) => u.offered).map((u) => u.model));
 }
 
-/** garage_id -> offered models. Garages without inventory rows are absent (legacy: everything offered). */
+/** garage_id -> offered, installed and not paused models. Garages without inventory rows are absent (legacy: everything offered). */
 export async function offeredByGarage(admin: SupabaseClient, garageIds: string[]) {
   const map = new Map<string, Set<string>>();
   if (!garageIds.length) return map;
-  const { data } = await admin.from("garage_models").select("garage_id, model, offered, installed").in("garage_id", garageIds);
+  const { data } = await admin.from("garage_models").select("garage_id, model, offered, installed, paused_at").in("garage_id", garageIds);
   for (const r of (data || []) as Row[]) {
     if (!map.has(r.garage_id)) map.set(r.garage_id, new Set());
-    if (r.offered && r.installed) map.get(r.garage_id)!.add(r.model);
+    if (r.offered && r.installed && !(r as Row & { paused_at?: string | null }).paused_at) map.get(r.garage_id)!.add(r.model);
   }
   return map;
 }
@@ -42,4 +42,13 @@ export async function markTestStatus(admin: SupabaseClient, garageId: string, re
     if (r.inconclusive) continue;
     await admin.from("garage_models").update({ status: r.passed ? "live" : "failed", updated_at: now }).eq("garage_id", garageId).eq("model", r.model).eq("offered", true);
   }
+}
+
+/** "garage_id::model" for models the operator paused (per-model pause). */
+export async function pausedModels(admin: SupabaseClient, garageIds: string[]) {
+  const set = new Set<string>();
+  if (!garageIds.length) return set;
+  const { data } = await admin.from("garage_models").select("garage_id, model").in("garage_id", garageIds).not("paused_at", "is", null);
+  for (const r of (data || []) as Array<{ garage_id: string; model: string }>) set.add(`${r.garage_id}::${r.model}`);
+  return set;
 }

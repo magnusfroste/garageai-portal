@@ -43,7 +43,7 @@ async function healthyModelsByGarage(admin: SupabaseClient) {
 /** One sample per non-disabled garage, using the same online rules as the catalogue sync. */
 export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResult) {
   const { data: garages, error } = await admin.from("garages")
-    .select("id, name, status, disabled, models, netbird_peer_id, last_heartbeat_at, connection_type").eq("disabled", false);
+    .select("id, name, status, disabled, models, netbird_peer_id, last_heartbeat_at, connection_type, paused_at").eq("disabled", false);
   if (error) throw new Error(`garages read failed: ${error.message}`);
   const now = Date.now();
   const healthy = await healthyModelsByGarage(admin);
@@ -51,6 +51,8 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
   const rows: Array<{ garage_id: string; online: boolean; reason: string | null }> = [];
   let skipped = 0;
   for (const g of (garages || []) as GarageRow[]) {
+    // Paused garages are not sampled: paused time never counts for or against reliability.
+    if ((g as { paused_at?: string | null }).paused_at) { skipped++; continue; }
     if (offered.has(g.id) && offered.get(g.id)?.size === 0) { skipped++; continue; }
     const hasModels = (healthy.get(g.name)?.size ?? 0) > 0;
     let reason: string | null = null;
@@ -238,7 +240,7 @@ export async function runHourlyProbes(admin: SupabaseClient) {
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const { data: garages } = await admin.from("garages")
     .select(GARAGE_SELECT).eq("disabled", false).in("status", ["online", "failed_test", "offline"]);
-  const list = ((garages || []) as RoutingGarage[]).filter((g) => !!apiBaseFor(g));
+  const list = ((garages || []) as RoutingGarage[]).filter((g) => !!apiBaseFor(g) && !g.paused_at);
   if (!list.length) return { probed: [] as string[] };
 
   const healthy = await healthyModelsByGarage(admin);

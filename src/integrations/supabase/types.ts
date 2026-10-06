@@ -194,6 +194,35 @@ export type Database = {
         }
         Relationships: []
       }
+      garage_country_history: {
+        Row: {
+          country: string
+          garage_id: string
+          id: number
+          seen_at: string
+        }
+        Insert: {
+          country: string
+          garage_id: string
+          id?: number
+          seen_at?: string
+        }
+        Update: {
+          country?: string
+          garage_id?: string
+          id?: number
+          seen_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_country_history_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_model_failures: {
         Row: {
           consecutive_failures: number
@@ -338,6 +367,7 @@ export type Database = {
           installed: boolean
           model: string
           offered: boolean
+          paused_at: string | null
           status: string
           updated_at: string
         }
@@ -346,6 +376,7 @@ export type Database = {
           installed?: boolean
           model: string
           offered?: boolean
+          paused_at?: string | null
           status?: string
           updated_at?: string
         }
@@ -354,6 +385,7 @@ export type Database = {
           installed?: boolean
           model?: string
           offered?: boolean
+          paused_at?: string | null
           status?: string
           updated_at?: string
         }
@@ -537,7 +569,9 @@ export type Database = {
         Row: {
           api_host: string | null
           connection_type: string
+          country_override: string | null
           created_at: string
+          declared_country: string | null
           dedicated_input_cost_per_million: number
           dedicated_output_cost_per_million: number
           disabled: boolean
@@ -547,12 +581,17 @@ export type Database = {
           last_gateway_check_at: string | null
           last_heartbeat_at: string | null
           last_registered_at: string | null
+          location_display: string
+          measured_country: string | null
+          measured_country_at: string | null
           mesh_connected: boolean | null
           mesh_ip: string | null
           models: string[]
           name: string
           netbird_peer_id: string | null
           operator_id: string | null
+          paused_at: string | null
+          paused_reason: string | null
           pool_input_cost_per_million: number
           pool_output_cost_per_million: number
           port: number | null
@@ -566,7 +605,9 @@ export type Database = {
         Insert: {
           api_host?: string | null
           connection_type?: string
+          country_override?: string | null
           created_at?: string
+          declared_country?: string | null
           dedicated_input_cost_per_million?: number
           dedicated_output_cost_per_million?: number
           disabled?: boolean
@@ -576,12 +617,17 @@ export type Database = {
           last_gateway_check_at?: string | null
           last_heartbeat_at?: string | null
           last_registered_at?: string | null
+          location_display?: string
+          measured_country?: string | null
+          measured_country_at?: string | null
           mesh_connected?: boolean | null
           mesh_ip?: string | null
           models?: string[]
           name: string
           netbird_peer_id?: string | null
           operator_id?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
           pool_input_cost_per_million?: number
           pool_output_cost_per_million?: number
           port?: number | null
@@ -595,7 +641,9 @@ export type Database = {
         Update: {
           api_host?: string | null
           connection_type?: string
+          country_override?: string | null
           created_at?: string
+          declared_country?: string | null
           dedicated_input_cost_per_million?: number
           dedicated_output_cost_per_million?: number
           disabled?: boolean
@@ -605,12 +653,17 @@ export type Database = {
           last_gateway_check_at?: string | null
           last_heartbeat_at?: string | null
           last_registered_at?: string | null
+          location_display?: string
+          measured_country?: string | null
+          measured_country_at?: string | null
           mesh_connected?: boolean | null
           mesh_ip?: string | null
           models?: string[]
           name?: string
           netbird_peer_id?: string | null
           operator_id?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
           pool_input_cost_per_million?: number
           pool_output_cost_per_million?: number
           port?: number | null
@@ -791,6 +844,17 @@ export type Database = {
         }[]
       }
       garage_profile: { Args: { _name: string }; Returns: Json }
+      garage_public_locations: {
+        Args: never
+        Returns: {
+          country: string
+          garage_name: string
+          is_endpoint: boolean
+          live_hours_per_week: number
+          location_display: string
+          location_source: string
+        }[]
+      }
       garage_public_providers: {
         Args: never
         Returns: {
@@ -862,6 +926,10 @@ export type Database = {
           recorded_spend: number
           requests: number
         }[]
+      }
+      set_garage_location_display: {
+        Args: { _garage_id: string; _mode: string }
+        Returns: undefined
       }
       verify_cron_secret: { Args: { secret: string }; Returns: boolean }
     }

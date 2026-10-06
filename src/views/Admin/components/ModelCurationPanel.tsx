@@ -120,7 +120,7 @@ export const ModelCurationPanel = () => {
                     <span className="font-mono text-sm truncate">{model.model_name || model.id}</span>
                     {!model.enabled && model.disabled_reason && (
                       <Badge variant="outline" className="text-[10px] shrink-0 text-muted-foreground">
-                        {model.disabled_reason === "failed_test" ? t("Disabled: failed test") : t("Disabled by admin")}
+                        {model.disabled_reason === "failed_test" ? t("Disabled: failed test") : model.disabled_reason === "paused" ? t("Paused") : t("Disabled by admin")}
                       </Badge>
                     )}
                     <Badge variant="outline" className="text-[10px] shrink-0">

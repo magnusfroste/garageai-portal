@@ -28,6 +28,13 @@ export interface Garage {
   mesh_connected?: boolean | null;
   runtime_ok?: boolean | null;
   runtime_error?: string | null;
+  paused_at?: string | null;
+  paused_reason?: string | null;
+  location_display?: string;
+  measured_country?: string | null;
+  measured_country_at?: string | null;
+  declared_country?: string | null;
+  country_override?: string | null;
 }
 
 export interface CreateGarageResult {

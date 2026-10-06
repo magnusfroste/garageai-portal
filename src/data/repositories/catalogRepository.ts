@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { GarageDailyTokens, GaragePublicStat } from "@/models/types/catalog.types";
 import type { GarageToolSupport } from "@/models/services/toolSupportService";
+import type { GarageLocation } from "@/models/services/location";
 
 /** Public, aggregate-only data used by the model catalogue (readable by visitors). */
 export const catalogRepository = {
@@ -15,6 +16,13 @@ export const catalogRepository = {
     const { data, error } = await supabase.rpc("garage_public_providers");
     if (error) throw error;
     return new Map((data ?? []).map((r) => [r.garage_name, r.display_name]));
+  },
+
+  /** Effective country (null when hidden), display mode and live hours/week per garage. Never IPs or cities. */
+  async locations(): Promise<Map<string, GarageLocation>> {
+    const { data, error } = await supabase.rpc("garage_public_locations");
+    if (error) throw error;
+    return new Map((data ?? []).map((r) => [r.garage_name, { ...r, live_hours_per_week: r.live_hours_per_week == null ? null : Number(r.live_hours_per_week) } as GarageLocation]));
   },
 
   /** Latest tool-calling probe result per garage + model (public). */

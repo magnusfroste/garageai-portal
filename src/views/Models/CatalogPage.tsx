@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { LocationBadge, liveHoursText } from "@/views/Garages/components/LocationBadge";
 import { Link, useSearchParams } from "react-router-dom";
 import { Cpu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,10 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
         {m.provider}{m.mode ? ` · ${m.mode}` : ""}{!m.available ? ` · ${t("Not available right now")}` : ""}
       </div>
       {m.offers.find((o) => o.providerName)?.providerName && <ProviderBadge name={m.offers.find((o) => o.providerName)?.providerName} />}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+        {[...new Map(m.offers.filter((o) => o.location?.country && o.location.location_display !== "hidden").map((o) => [`${o.location!.location_display}:${o.location!.country}`, o])).values()].slice(0, 3).map((o) => <LocationBadge key={o.garage} location={o.location!} compact={m.offers.length > 1} />)}
+        {(() => { const h = m.offers.filter((o) => !o.location?.is_endpoint).map((o) => o.location?.live_hours_per_week).filter((x): x is number => x != null); return h.length ? <span className="text-[11px] text-muted-foreground">{liveHoursText(Math.max(...h), true)}</span> : null; })()}
+      </div>
       <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground tabular-nums">
         <span>{t("Context")}: {formatContext(m.contextLength)}</span>
         <span>{t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}</span>
@@ -75,6 +80,11 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
 export const CatalogPage = () => {
   const [params, setParams] = useSearchParams();
   const f = filtersFromParams(params);
+  // "EU only" persists in the URL (?eu=1) and localStorage.
+  useEffect(() => {
+    if (!params.has("eu") && localStorage.getItem("catalog-eu-only") === "1") setParams(filtersToParams({ ...f, euOnly: true }), { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { localStorage.setItem("catalog-eu-only", f.euOnly ? "1" : "0"); }, [f.euOnly]);
   const { models, isLoading, isError, refetch } = useModelCatalog();
   const set = (patch: Partial<CatalogFilters>) => setParams(filtersToParams({ ...f, ...patch }), { replace: true });
 
@@ -110,6 +120,10 @@ export const CatalogPage = () => {
         <Pick value={f.minGrade} onChange={(v) => set({ minGrade: v as CatalogFilters["minGrade"] })} placeholder={t("All grades")}
           options={[["A", t("Grade A")], ["B", t("B or better")], ["C", t("C or better")]]} />
         <div className="flex items-center gap-2 px-2">
+          <Switch id="eu-only" checked={f.euOnly} onCheckedChange={(c) => set({ euOnly: c })} />
+          <Label htmlFor="eu-only" className="text-xs">{t("EU only")}</Label>
+        </div>
+        <div className="flex items-center gap-2 px-2">
           <Switch id="multi" checked={f.multiGarage} onCheckedChange={(c) => set({ multiGarage: c })} />
           <Label htmlFor="multi" className="text-xs">{t("Only models with several garages")}</Label>
         </div>
@@ -135,6 +149,7 @@ export const CatalogPage = () => {
           list.map((m) => <CatalogRow key={m.name} m={m} />)
         )}
       </div>
+      {f.euOnly && <p className="text-xs text-muted-foreground">{t("EU only shows garages with a visible EU/EEA location. Pool may route to any garage offering this model.")}</p>}
       <p className="text-xs text-muted-foreground">{t("{a} of {b} models", { a: list.length, b: models.length })}</p>
     </div>
   );
