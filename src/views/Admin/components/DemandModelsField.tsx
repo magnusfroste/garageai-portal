@@ -11,7 +11,7 @@ const parse = (text: string): DemandModel[] | null => {
   try {
     const v = JSON.parse(text);
     if (!Array.isArray(v)) return null;
-    return v.every((d) => typeof d?.model === "string" && typeof d?.min_gb === "number") ? v : null;
+    return v.every((d) => typeof d?.model === "string" && typeof d?.min_gb === "number" && (d.ids == null || (typeof d.ids === "object" && !Array.isArray(d.ids) && Object.values(d.ids).every((id) => typeof id === "string")))) ? v : null;
   } catch { return null; }
 };
 
@@ -22,7 +22,7 @@ export const DemandModelsField = () => {
   useEffect(() => { garageRepository.demandModels().then((d) => setText(JSON.stringify(d, null, 2))).catch(() => undefined); }, []);
   const save = async () => {
     const value = parse(text);
-    if (!value) { toast.error(t("Must be a JSON list of { model, min_gb, note }")); return; }
+    if (!value) { toast.error(t("Must be a JSON list of { model, min_gb, note, ids: { ollama, lmstudio, hf } }")); return; }
     setSaving(true);
     const { error } = await supabase.from("admin_settings").upsert({ key: "demand_models", value: value as never, updated_at: new Date().toISOString() });
     setSaving(false);
@@ -32,7 +32,7 @@ export const DemandModelsField = () => {
     <div className="space-y-2">
       <Label htmlFor="demand">{t("Demand list (models requested by buyers)")}</Label>
       <Textarea id="demand" rows={8} className="font-mono text-xs" value={text} onChange={(e) => setText(e.target.value)} />
-      <p className="text-xs text-muted-foreground">{t("Shown in the Offer your GPU wizard. min_gb = memory needed.")}</p>
+      <p className="text-xs text-muted-foreground">{t("min_gb = memory needed. ids = exact model ids for ollama, lmstudio, hf or a specific runtime.")}</p>
       <Button size="sm" variant="outline" onClick={save} disabled={saving}>{saving ? t("Saving...") : t("Save demand list")}</Button>
     </div>
   );

@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Complete v1.0 onboarding review fixes 1–9, verify mobile and commands, check starter credit, publish
+
 - [x] Audit the six remaining security/routing workstreams against current code and backend state
 - [x] Complete routing reconciliation, hourly probes, and runtime-secret persistence
 - [x] Complete connect-script command hardening and remove the legacy public script
