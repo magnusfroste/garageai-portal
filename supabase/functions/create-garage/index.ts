@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { termsAccepted, termsFields } from "../_shared/garageTerms.ts";
 import { getNetbirdApiUrl, netbirdHeaders, getGaragesGroupId, ensureGarageGroup } from "../_shared/netbirdConfig.ts";
 
 const corsHeaders = {
@@ -46,6 +47,7 @@ Deno.serve(async (req) => {
 
     const name = typeof body.name === "string" ? body.name.trim() : "";
     if (!NAME_RE.test(name)) return json({ error: "name must match ^[a-z0-9][a-z0-9-]{1,40}$" }, 400);
+    if (!termsAccepted(body)) return json({ error: "terms must be accepted" }, 400);
 
     if (!isAdmin && body.api_host !== undefined && body.api_host !== null && body.api_host !== "") {
       return json({ error: "api_host is not allowed" }, 400);
@@ -92,7 +94,7 @@ Deno.serve(async (req) => {
 
     let garage;
     if (existing) {
-      const patch: Record<string, unknown> = {};
+      const patch: Record<string, unknown> = { ...termsFields() };
       if (apiHost !== undefined) patch.api_host = apiHost;
       if (operatorId !== undefined) patch.operator_id = operatorId;
       if (Object.keys(patch).length) {
@@ -105,7 +107,7 @@ Deno.serve(async (req) => {
     } else {
       const { data, error } = await admin
         .from("garages")
-        .insert({ name, api_host: apiHost ?? null, operator_id: operatorId ?? null, status: "pending" })
+        .insert({ name, api_host: apiHost ?? null, operator_id: operatorId ?? null, status: "pending", ...termsFields() })
         .select("*")
         .single();
       if (error) throw error;
