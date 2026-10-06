@@ -217,7 +217,10 @@ export function modelIdError(model: string): string | null {
   if (lower.startsWith("probe/")) return `model id "${model}" may not start with "probe/" (reserved)`;
   // Check the last path segment too, so "openai/gpt-4o" is also rejected.
   const tail = lower.split("/").pop() || lower;
+  // gpt-oss* are OpenAI's open-weight models — the one allowed exception to the gpt- ban.
+  const isGptOss = lower.startsWith("gpt-oss") || tail.startsWith("gpt-oss");
   for (const p of RESERVED_PREFIXES) {
+    if (isGptOss && p === "gpt-") continue;
     if (lower.startsWith(p) || tail.startsWith(p)) return `model id "${model}" uses a reserved proprietary model name (${p}…)`;
   }
   return null;
@@ -226,7 +229,7 @@ export function modelIdError(model: string): string | null {
 // Unit-style self check: runs once per cold start, throws loudly if the rules regress.
 (function selfCheck() {
   const reject = ["garage/x/y", "GARAGE/garage-lund/mimo", "gpt-4o", "chatgpt-4o-latest", "o1", "o3-mini", "o4-mini", "claude-3-5-sonnet", "gemini-2.0-flash", "grok-2", "openai/gpt-4o", "probe/abc"];
-  const accept = ["Qwen/Qwen3-32B", "qwen3:4b", "mimo-v2.6-flash", "llama3.1:8b", "mistralai/Mistral-7B-Instruct-v0.3", "gemma3:4b"];
+  const accept = ["Qwen/Qwen3-32B", "qwen3:4b", "mimo-v2.6-flash", "llama3.1:8b", "mistralai/Mistral-7B-Instruct-v0.3", "gemma3:4b", "gpt-oss:20b", "openai/gpt-oss-120b"];
   for (const m of reject) if (modelIdError(m) === null) throw new Error(`modelIdError selfcheck: "${m}" should be rejected`);
   for (const m of accept) if (modelIdError(m) !== null) throw new Error(`modelIdError selfcheck: "${m}" should be accepted`);
 })();
