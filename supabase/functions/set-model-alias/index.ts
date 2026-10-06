@@ -23,6 +23,12 @@ Deno.serve(async (req) => {
     if (body.private !== undefined && typeof body.private !== "boolean") return json({ error: "private must be a boolean" }, 400);
     const canonical = rawAlias ? rawAlias.toLowerCase() : "";
     if (canonical) {
+      if (canonical.length > 128) return json({ error: "canonical must be at most 128 characters" }, 400);
+      if (isPrivate ? !PRIVATE_SLUG_RE.test(canonical) : !CANONICAL_RE.test(canonical)) {
+        return json({ error: isPrivate
+          ? "private model name must be a safe slug (a-z, 0-9, . _ -, optional creator/)"
+          : "canonical must be <creator>/<model>, matching ^[a-z0-9.-]+/[a-z0-9._-]+$" }, 400);
+      }
       const err = modelIdError(canonical);
       if (err) return json({ error: err }, 400);
     }
