@@ -194,7 +194,6 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     try { await addDeployment(base, masterKey, spec); added.push(id); }
     catch (e) { console.error("[routing] add failed", e instanceof Error ? e.message : "unknown"); }
   }
-  // Also log drifted ids so churn is visible (ids only, never keys).
   if (added.length || removed.length) console.log("[routing] reconciled", { added, removed });
   return { added, removed, routes: new Map([...desired].map(([id, d]) => [id, d.route])) };
 }
