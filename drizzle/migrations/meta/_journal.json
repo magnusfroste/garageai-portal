@@ -183,6 +183,13 @@
       "when": 1791285826019,
       "tag": "0025_availability_observed_window",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791285955313,
+      "tag": "0026_availability_minimum_one_day",
+      "breakpoints": true
     }
   ]
 }
