@@ -211,6 +211,13 @@
       "when": 1791288492034,
       "tag": "0029_openrouter_canonical_names",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791290153988,
+      "tag": "0030_ledger_survives_garage_delete",
+      "breakpoints": true
     }
   ]
 }
