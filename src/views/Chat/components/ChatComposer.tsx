@@ -32,7 +32,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       const el = ta.current;
       if (!el) return;
       el.style.height = "auto";
-      el.style.height = Math.min(el.scrollHeight, 220) + "px";
+      el.style.height = Math.min(el.scrollHeight, 152) + "px";
     }, [value]);
 
     const submit = () => {
