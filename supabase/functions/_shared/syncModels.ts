@@ -3,7 +3,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { getNetbirdApiUrl, netbirdHeaders } from "./netbirdConfig.ts";
-import { GARAGE_SELECT, deploymentId, isModelSellable, latestTests, reconcileGarageRouting, type RoutingGarage } from "./garageRouting.ts";
+import { offeredByGarage } from "./garageModels.ts";
+import { GARAGE_SELECT, gatewayHealthy, deploymentId, isModelSellable, latestTests, reconcileGarageRouting, type RoutingGarage } from "./garageRouting.ts";
 
 interface LiteLLMModelInfo {
   model_name: string;
@@ -93,11 +94,13 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   let peerConnected: Map<string, boolean> | null = null;
   const pinnedPeer = new Map<string, string>();
   const heartbeatStatus = new Map<string, "healthy" | "unhealthy">();
+  const gatewayGarages = new Set<string>();
   if (garageNames.size > 0) {
-    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id, last_heartbeat_at, connection_type").in("name", Array.from(garageNames));
+    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id, last_heartbeat_at, connection_type, last_gateway_check_at, runtime_ok, mesh_connected").in("name", Array.from(garageNames));
     const staleBefore = Date.now() - 15 * 60 * 1000;
-    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null; last_heartbeat_at: string | null; connection_type: string | null }>) {
-      if (g.connection_type === "endpoint") heartbeatStatus.set(g.name, "healthy"); // no tunnel; routes follow recent tests
+    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null; last_heartbeat_at: string | null; connection_type: string | null; last_gateway_check_at: string | null; runtime_ok: boolean | null; mesh_connected: boolean | null }>) {
+      if (g.last_gateway_check_at) { gatewayGarages.add(g.name); heartbeatStatus.set(g.name, gatewayHealthy(g) ? "healthy" : "unhealthy"); }
+      else if (g.connection_type === "endpoint") heartbeatStatus.set(g.name, "healthy"); // no tunnel; routes follow recent tests
       else if (g.last_heartbeat_at) heartbeatStatus.set(g.name, Date.parse(g.last_heartbeat_at) < staleBefore ? "unhealthy" : "healthy");
       else if (g.netbird_peer_id) pinnedPeer.set(g.name, g.netbird_peer_id);
     }
@@ -194,7 +197,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
     }
   }
   for (const [garage, status] of heartbeatStatus) {
-    if (status !== "unhealthy" || disabledGarages.has(garage)) continue;
+    if (status !== "unhealthy" || disabledGarages.has(garage) || gatewayGarages.has(garage)) continue;
     const { error } = await admin.from("garages").update({ status: "offline" }).eq("name", garage);
     if (error) console.warn(`Failed to mark stale garage ${garage} offline:`, error.message);
   }
@@ -214,10 +217,12 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const { data: routingRows } = await admin.from("garages").select(GARAGE_SELECT);
   const routingGarages = (routingRows || []) as RoutingGarage[];
   const tests = await latestTests(admin, routingGarages.map((g) => g.id));
+  const offered = await offeredByGarage(admin, routingGarages.map((g) => g.id));
   const sellable = new Set<string>();
   for (const g of routingGarages) for (const model of g.models || []) {
     const test = tests.get(`${g.id}::${model}`);
-    const okay = isModelSellable(g, model, test);
+    const isOffered = !offered.has(g.id) || offered.get(g.id)!.has(model);
+    const okay = isOffered && isModelSellable(g, model, test);
     if (okay) sellable.add(`${g.name}::${model}`);
     const ids = [deploymentId(g.name, model, "dedicated"), deploymentId(g.name, model, "pool")];
     if (test?.passed === false) await admin.from("curated_models").update({ enabled: false, disabled_reason: "failed_test" }).in("id", ids).neq("disabled_reason", "admin");

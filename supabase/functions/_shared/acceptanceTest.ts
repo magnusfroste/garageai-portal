@@ -5,6 +5,7 @@
 // metadata (metadata.tags). These requests MUST be excluded when computing
 // operator earnings — they are platform traffic, not buyer usage.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { markTestStatus } from "./garageModels.ts";
 
 export interface AcceptanceResult {
   model: string;
@@ -218,6 +219,7 @@ export async function runAndStoreAcceptanceTests(
     results.map((r) => ({ garage_id: garage.id, ...r, inconclusive: !!r.inconclusive })),
   );
   if (error) console.error("[acceptance] failed to store results:", error.message);
+  await markTestStatus(admin, garage.id, results).catch(() => undefined);
   for (const r of results) {
     console.log("[acceptance]", { garage: garage.name, model: r.model, passed: r.passed, status: r.http_status, ttft_ms: r.ttft_ms, supports_tools: r.supports_tools, tools_error: r.tools_error });
   }
