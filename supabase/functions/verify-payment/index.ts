@@ -18,6 +18,7 @@ serve(async (req) => {
     if (!session_id) return json({ error: "missing_session_id" }, 400);
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
     const session = await stripe.checkout.sessions.retrieve(session_id);
+    if (session.metadata?.app !== "garageai") return json({ status: "ignored" });
     if (session.metadata?.user_id !== user.id) return json({ error: "session_owner_mismatch" }, 403);
     if (session.payment_status !== "paid") return json({ status: "unpaid" });
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);

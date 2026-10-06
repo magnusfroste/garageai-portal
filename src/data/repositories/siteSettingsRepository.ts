@@ -25,13 +25,26 @@ export class SiteSettingsRepository {
   }
 
   async saveSettings(settings: SiteSettings): Promise<void> {
+    // netbird_api_url lives in its own admin-only row, never in public site_settings.
+    const { netbird_api_url: _omit, ...publicSettings } = settings;
     const { error } = await supabase
       .from("admin_settings")
       .upsert(
-        [{ key: SETTINGS_KEY, value: JSON.parse(JSON.stringify(settings)) as Json }],
+        [{ key: SETTINGS_KEY, value: JSON.parse(JSON.stringify(publicSettings)) as Json }],
         { onConflict: "key" }
       );
 
+    if (error) throw error;
+  }
+
+  async getNetbirdApiUrl(): Promise<string> {
+    const { data, error } = await supabase.from("admin_settings").select("value").eq("key", "netbird_api_url").maybeSingle();
+    if (error) throw error;
+    return typeof data?.value === "string" ? data.value : "";
+  }
+
+  async saveNetbirdApiUrl(url: string): Promise<void> {
+    const { error } = await supabase.from("admin_settings").upsert([{ key: "netbird_api_url", value: url as Json }], { onConflict: "key" });
     if (error) throw error;
   }
 

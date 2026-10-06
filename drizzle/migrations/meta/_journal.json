@@ -141,6 +141,13 @@
       "when": 1791246712019,
       "tag": "0019_gateway_health_and_garage_models",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791248010421,
+      "tag": "0020_netbird_url_admin_only",
+      "breakpoints": true
     }
   ]
 }

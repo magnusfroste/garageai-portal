@@ -19,10 +19,9 @@ export async function getNetbirdApiUrl(client?: SupabaseClient): Promise<string>
       const { data } = await supabase
         .from("admin_settings")
         .select("value")
-        .eq("key", "site_settings")
+        .eq("key", "netbird_api_url")
         .maybeSingle();
-      const settings = data?.value as Record<string, unknown> | null;
-      const configured = (settings?.netbird_api_url as string | undefined)?.trim();
+      const configured = typeof data?.value === "string" ? data.value.trim() : "";
       if (configured) url = configured.replace(/\/+$/, "");
     }
   } catch (e) {

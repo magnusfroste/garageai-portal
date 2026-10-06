@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { userBudgetRepository } from "@/data/repositories/userBudgetRepository";
 import { UserBudget } from "@/models/types/userBudget.types";
 
@@ -9,6 +10,8 @@ export const useUserBudget = () => {
   const fetchBudget = async () => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
       const data = await userBudgetRepository.fetchBudget();
       setBudget(data);
     } catch (error) {
