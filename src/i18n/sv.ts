@@ -138,6 +138,7 @@ export const sv: Record<string, string> = {
   "New": "Nytt",
   "New Swedish inference engine (Truespar). One GPU at a time.": "Ny svensk inferensmotor (Truespar). En GPU i taget.",
   "New command": "Nytt kommando",
+  "Settings saved": "Inställningar sparade",
   "Next": "Nästa",
   "No data": "Ingen data",
   "No garages to show yet.": "Inga garage att visa ännu.",
