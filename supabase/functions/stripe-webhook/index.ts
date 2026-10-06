@@ -13,6 +13,9 @@ serve(async (req) => {
     const event = await stripe.webhooks.constructEventAsync(await req.text(), signature, secret);
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (session.metadata?.app !== "garageai") {
+        return new Response(JSON.stringify({ received: true, ignored: true }), { headers: { "Content-Type": "application/json" } });
+      }
       if (session.payment_status === "paid") {
         const userId = session.metadata?.user_id || "";
         const credits = Number(session.metadata?.credits || 0);

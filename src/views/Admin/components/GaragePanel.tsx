@@ -106,16 +106,17 @@ const SecretRow = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-const buildCommand = (result: CreateGarageResult, runtime: string) => buildGarageCommand(result, runtime);
+const buildCommand = (result: CreateGarageResult, runtime: string, models: string[] = []) => buildGarageCommand(result, runtime, { models });
 
 interface ResultViewProps {
   result: CreateGarageResult;
   runtime: string;
+  models?: string[];
   onClose: () => void;
 }
 
-const ResultView = ({ result, runtime, onClose }: ResultViewProps) => {
-  const command = buildCommand(result, runtime);
+const ResultView = ({ result, runtime, models, onClose }: ResultViewProps) => {
+  const command = buildCommand(result, runtime, models);
   return (
     <div className="space-y-4">
       <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
@@ -162,6 +163,7 @@ export const GaragePanel = () => {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreateGarageResult | null>(null);
   const [resultRuntime, setResultRuntime] = useState("ollama");
+  const [resultModels, setResultModels] = useState<string[]>([]);
 
   const resetForm = () => {
     setName("");
@@ -169,6 +171,7 @@ export const GaragePanel = () => {
     setApiHost("");
     setCreateSetupKey(true);
     setResult(null);
+    setResultModels([]);
   };
 
   const handleDialogChange = (open: boolean) => {
@@ -241,9 +244,11 @@ export const GaragePanel = () => {
     setName(garage.name);
     setRuntime(garage.runtime || "ollama");
     setApiHost(garage.api_host || "");
-    setCreateSetupKey(false);
+    const setupKey = !garage.netbird_peer_id;
+    setCreateSetupKey(setupKey);
+    setResultModels((byGarage.get(garage.id) ?? []).filter((m) => m.offered && m.installed).map((m) => m.model));
     setDialogOpen(true);
-    submit(garage.name, garage.api_host || "", false, garage.runtime || "ollama");
+    submit(garage.name, garage.api_host || "", setupKey, garage.runtime || "ollama");
   };
 
   const sortedGarages = sortDir === "none" ? garages : [...garages].sort((a, b) => {
@@ -352,7 +357,7 @@ export const GaragePanel = () => {
                 ) : (
                   <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => handleNewToken(g)}>
                     <KeyRound className="w-3.5 h-3.5 mr-1.5" />
-                    New token
+                    {t("New command")}
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => setConfirmGarage(g)}>
@@ -377,7 +382,7 @@ export const GaragePanel = () => {
           </DialogHeader>
 
           {result ? (
-            <ResultView result={result} runtime={resultRuntime} onClose={() => handleDialogChange(false)} />
+            <ResultView result={result} runtime={resultRuntime} models={resultModels} onClose={() => handleDialogChange(false)} />
           ) : (
             <div className="space-y-4">
               <div className="space-y-1.5">

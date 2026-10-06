@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { siteSettingsRepository } from "@/data/repositories/siteSettingsRepository";
 import { toast } from "sonner";
 
 import { t } from "@/i18n";
@@ -41,14 +42,21 @@ export const ProxyConfigCard = () => {
     toast.success(t("Search server saved"));
   };
 
+  const [netbirdUrl, setNetbirdUrl] = useState("");
   useEffect(() => {
-    if (settings?.netbird_api_url) setNetbirdDraft(settings.netbird_api_url);
-  }, [settings?.netbird_api_url]);
+    siteSettingsRepository.getNetbirdApiUrl().then((u) => { setNetbirdUrl(u); setNetbirdDraft(u); }).catch(() => {});
+  }, []);
 
-  const handleSaveNetbird = () => {
-    if (!settings) return;
-    save({ ...settings, netbird_api_url: netbirdDraft.trim().replace(/\/+$/, "") });
-    setEditingNetbird(false);
+  const handleSaveNetbird = async () => {
+    const url = netbirdDraft.trim().replace(/\/+$/, "");
+    try {
+      await siteSettingsRepository.saveNetbirdApiUrl(url);
+      setNetbirdUrl(url);
+      setEditingNetbird(false);
+      toast.success(t("Settings saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save");
+    }
   };
 
   useEffect(() => {
@@ -149,14 +157,14 @@ export const ProxyConfigCard = () => {
                 <Save className="w-3.5 h-3.5 mr-1.5" />
                 Save
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setEditingNetbird(false); setNetbirdDraft(settings?.netbird_api_url || ""); }}>
+              <Button size="sm" variant="ghost" onClick={() => { setEditingNetbird(false); setNetbirdDraft(netbirdUrl); }}>
                 Cancel
               </Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <code className="text-sm bg-muted px-2 py-1 rounded font-mono flex-1 truncate">
-                {settings?.netbird_api_url || "Not configured"}
+                {netbirdUrl || "Not configured"}
               </code>
               <Button size="sm" variant="ghost" onClick={() => setEditingNetbird(true)}>
                 <Pencil className="w-3.5 h-3.5" />

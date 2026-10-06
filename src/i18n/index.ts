@@ -18,7 +18,9 @@ const dictionaries: Record<Language, Record<string, string>> = { en: {}, sv };
 function readStored(): Language {
   try {
     const v = globalThis.localStorage?.getItem(STORAGE_KEY);
-    return v === "sv" ? "sv" : "en";
+    if (v === "sv" || v === "en") return v;
+    const nav = globalThis.navigator?.language?.toLowerCase() ?? "";
+    return nav.startsWith("sv") ? "sv" : "en";
   } catch {
     return "en";
   }

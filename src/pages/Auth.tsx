@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield } from "lucide-react";
+import { Warehouse } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -137,7 +137,7 @@ const Auth = () => {
           {logoUrl ? (
             <img src={logoUrl} alt={siteName} className="h-8 group-hover:scale-110 transition-transform" />
           ) : (
-            <Shield className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
+            <Warehouse className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
           )}
           <span className="text-2xl font-bold gradient-text">{siteName}</span>
         </Link>
