@@ -143,6 +143,10 @@ export const garageRepository = {
   retest: (name: string) =>
     invoke<{ status: string; acceptance: Array<{ model: string; passed: boolean }> }>("retest-garage", { name }),
 
+  /** Permanent: admins or the owning operator. Ledger rows are kept. */
+  remove: (garage_id: string) =>
+    invoke<{ ok: boolean; litellm_removed: number; netbird_peer_deleted: boolean; netbird_group_deleted: boolean; rows_deleted: Record<string, number> }>("delete-garage", { garage_id }),
+
   setDisabled: (name: string, disabled: boolean) =>
     invoke<{ ok: boolean; status: string }>("set-garage-disabled", { name, disabled }),
 

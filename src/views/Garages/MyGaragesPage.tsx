@@ -18,6 +18,7 @@ import { GarageHealthIndicators, GarageModelList, GarageTroubleshooting } from "
 import { useGarageModels } from "@/hooks/useGarageModels";
 import { t } from "@/i18n";
 import { GaragePauseButton, LocationDisplaySetting, PausedBadge } from "./components/GarageOperatorControls";
+import { DeleteGarageButton } from "./components/DeleteGarageButton";
 import { ReliabilityAvailability } from "./components/ReliabilityAvailability";
 import { LocationBadge } from "./components/LocationBadge";
 import { useGarageLocations } from "@/hooks/useGarageLocations";
@@ -119,6 +120,7 @@ const MyGaragesPage = () => {
                       <FlaskConical className="w-3.5 h-3.5 mr-1.5" />{busy === `t:${g.name}` ? t("Testing...") : t("Test again")}
                     </Button>
                     <GaragePauseButton garage={g} onDone={invalidate} />
+                    <DeleteGarageButton garage={g} operator onDone={invalidate} />
                     <Button size="sm" variant="outline" disabled={!!busy} onClick={() => setConfirmGarage(g)}>
                       <KeyRound className="w-3.5 h-3.5 mr-1.5" />{busy === `c:${g.name}` ? t("Creating...") : t("New command")}
                     </Button>
