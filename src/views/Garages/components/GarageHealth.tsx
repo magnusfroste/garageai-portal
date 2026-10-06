@@ -1,3 +1,4 @@
+import { CANONICAL_RE, PRIVATE_SLUG_RE } from "@/models/services/modelIdentity";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -138,6 +139,11 @@ const ModelAliasEditor = ({ model, busy, onSave }: { model: GarageModelRow; busy
   const [canonical, setCanonical] = useState(model.canonical_source === "admin" ? model.canonical_model : "");
   const [priv, setPriv] = useState(model.private);
   const save = async (value: string, p: boolean) => {
+    const v = value.trim().toLowerCase();
+    if (v && !(p ? PRIVATE_SLUG_RE : CANONICAL_RE).test(v)) {
+      toast({ title: t("Could not save the alias"), description: p ? t("Use a safe slug: a-z, 0-9, dot, dash, underscore.") : t("Use creator/model, e.g. deepseek/deepseek-v4-flash."), variant: "destructive" });
+      return;
+    }
     try {
       await onSave(value.trim(), p);
       toast({ title: value.trim() ? t("Alias saved: {m}", { m: value.trim() }) : t("Alias cleared") });
@@ -150,7 +156,7 @@ const ModelAliasEditor = ({ model, busy, onSave }: { model: GarageModelRow; busy
   return (
     <div className="flex w-full flex-wrap items-center gap-2 rounded-md bg-muted/40 p-2">
       <span className="font-mono text-muted-foreground">{model.model} →</span>
-      <input aria-label={t("Canonical model")} placeholder={t("Canonical model")} value={canonical} onChange={(e) => setCanonical(e.target.value)}
+      <input aria-label={t("Canonical model")} placeholder="creator/model" value={canonical} onChange={(e) => setCanonical(e.target.value)}
         className="h-7 min-w-0 flex-1 rounded border border-input bg-background px-2 font-mono text-xs" />
       <label className="flex items-center gap-1.5"><input type="checkbox" checked={priv} onChange={(e) => setPriv(e.target.checked)} />{t("Private model (own name, no pool)")}</label>
       <Button size="sm" className="h-7 text-[11px]" disabled={busy} onClick={() => save(canonical, priv)}>{t("Save")}</Button>

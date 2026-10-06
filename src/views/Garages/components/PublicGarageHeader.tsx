@@ -34,7 +34,7 @@ export const PublicGarageHeader = ({ garage, heading = false }: { garage: Public
 
 export const OfferedModelChips = ({ models, limit = 4 }: { models: PublicGarage["models"]; limit?: number }) => <div className="relative z-10 flex flex-wrap gap-1.5">
   {models.slice(0, limit).map((m) => <div key={m.model} className="inline-flex items-center flex-wrap gap-1 max-w-full">
-    <Link to={`/models/${encodeURIComponent(m.model)}`} className="max-w-full hover:text-primary"><Badge variant="outline" className="max-w-full whitespace-normal break-all font-mono text-[11px] font-normal">{m.model}</Badge></Link>
+    <Link to={`/models/${m.model}`} className="max-w-full hover:text-primary"><Badge variant="outline" className="max-w-full whitespace-normal break-all font-mono text-[11px] font-normal">{m.model}</Badge></Link>
     {m.private && <ProviderModelBadge />}
   </div>)}
   {models.length > limit && <Badge variant="secondary" className="text-[11px]">+{models.length - limit}</Badge>}

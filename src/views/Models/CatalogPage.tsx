@@ -44,7 +44,7 @@ const Pick = ({
 
 const CatalogRow = ({ m }: { m: CatalogModel }) => (
   <Link
-    to={`/models/${encodeURIComponent(m.name)}`}
+    to={`/models/${m.name}`}
     className="grid grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_70px_150px_80px_80px] items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-accent/30 transition-colors"
   >
     <span

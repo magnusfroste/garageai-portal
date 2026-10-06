@@ -601,5 +601,7 @@ export const sv: Record<string, string> = {
   "Alias saved: {m}": "Alias sparat: {m}",
   "Alias cleared": "Alias borttaget",
   "Could not save the alias": "Kunde inte spara aliaset",
+  "Use a safe slug: a-z, 0-9, dot, dash, underscore.": "Använd en säker slug: a-z, 0-9, punkt, bindestreck, understreck.",
+  "Use creator/model, e.g. deepseek/deepseek-v4-flash.": "Använd skapare/modell, t.ex. deepseek/deepseek-v4-flash.",
   "Clear alias": "Ta bort alias",
 };

@@ -204,6 +204,13 @@
       "when": 1791287710297,
       "tag": "0028_public_garage_profile_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791288492034,
+      "tag": "0029_openrouter_canonical_names",
+      "breakpoints": true
     }
   ]
 }
