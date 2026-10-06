@@ -11,6 +11,8 @@ import { poolSummaryText } from "@/models/services/reliabilityService";
 import { useToolSupport } from "@/hooks/useToolSupport";
 import { useModelGarageGrades } from "@/hooks/useGarageReliability";
 import { GradeBadge } from "@/views/Garages/components/Reliability";
+import { useGarageLocations } from "@/hooks/useGarageLocations";
+import { locationLabel } from "@/models/services/location";
 
 interface Props {
   models: ModelInfo[];
@@ -32,6 +34,8 @@ export const ChatModelPicker = ({ models, selected, onSelect, disabled }: Props)
   const [open, setOpen] = useState(false);
   const { gradeOf, poolSummary } = useModelGarageGrades();
   const { supportsTools } = useToolSupport();
+  const { locations } = useGarageLocations();
+  const flag = (g?: string | null) => (g ? locationLabel(locations.get(g))?.flag ?? "" : "");
   const { pool, garage } = orderChatModels(models);
   const current = models.find((m) => m.id === selected);
 
@@ -47,7 +51,7 @@ export const ChatModelPicker = ({ models, selected, onSelect, disabled }: Props)
       <span className="min-w-0 flex-1 truncate font-mono text-xs">{label(m)}</span>
       {m.garage_tier === "dedicated" ? (
         <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
-          {m.garage}{gradeOf(m.garage) && <GradeBadge grade={gradeOf(m.garage)!} />}
+          {flag(m.garage) && <span aria-hidden>{flag(m.garage)}</span>}{m.garage}{gradeOf(m.garage) && <GradeBadge grade={gradeOf(m.garage)!} />}
         </span>
       ) : (() => {
         const p = poolSummary(m.model_name || m.id);
@@ -62,7 +66,7 @@ export const ChatModelPicker = ({ models, selected, onSelect, disabled }: Props)
       <PopoverTrigger asChild>
         <Button variant="ghost" disabled={disabled} className="h-9 max-w-[60vw] gap-1.5 px-2 text-base font-semibold" aria-label={t("Choose model")}>
           <span className="truncate">{current ? label(current) : t("Choose model")}</span>
-          {current?.garage_tier === "dedicated" && <span className="hidden truncate text-xs font-normal text-muted-foreground sm:inline">· {current.garage}</span>}
+          {current?.garage_tier === "dedicated" && <span className="hidden truncate text-xs font-normal text-muted-foreground sm:inline">· {flag(current.garage)} {current.garage}</span>}
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Button>
       </PopoverTrigger>

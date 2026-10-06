@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/components/ui/use-toast";
 import { garageRepository, type ProviderPrices, type ProviderResult } from "@/data/repositories/garageRepository";
 import { t } from "@/i18n";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { COUNTRY_CODES, countryName, flagEmoji } from "@/models/services/location";
 
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 const PRICE_FIELDS: Array<[keyof ProviderPrices, string, string]> = [
@@ -25,6 +27,7 @@ export const ProviderDialog = ({ open, onOpenChange, onCreated }: Props) => {
   const [displayName, setDisplayName] = useState("");
   const [url, setUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [country, setCountry] = useState("");
   const [available, setAvailable] = useState<string[]>([]);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [prices, setPrices] = useState<Record<string, string>>({});
@@ -51,7 +54,7 @@ export const ProviderDialog = ({ open, onOpenChange, onCreated }: Props) => {
     try {
       const p: ProviderPrices = {};
       for (const [k] of PRICE_FIELDS) if (prices[k]?.trim()) p[k] = Number(prices[k]);
-      const res = await garageRepository.createProvider({ name, display_name: displayName, endpoint_url: url, api_key: apiKey || undefined, models: [...picked], prices: p });
+      const res = await garageRepository.createProvider({ name, display_name: displayName, endpoint_url: url, api_key: apiKey || undefined, models: [...picked], prices: p, declared_country: country || undefined });
       setResult(res);
       onCreated();
     } catch (e) { fail(t("Failed to create provider"), e); } finally { setBusy(null); }
@@ -84,6 +87,10 @@ export const ProviderDialog = ({ open, onOpenChange, onCreated }: Props) => {
             </div>
             <div className="space-y-1.5"><Label htmlFor="pv-url">{t("Endpoint URL")}</Label><Input id="pv-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://api.example.com/v1" /></div>
             <div className="space-y-1.5"><Label htmlFor="pv-key">{t("API key")}</Label><Input id="pv-key" type="password" autoComplete="off" value={apiKey} onChange={(e) => setApiKey(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>{t("Declared country")}</Label>
+              <Select value={country} onValueChange={setCountry}><SelectTrigger><SelectValue placeholder={t("Choose country")} /></SelectTrigger>
+                <SelectContent>{COUNTRY_CODES.map((c) => <SelectItem key={c} value={c}>{flagEmoji(c)} {countryName(c)} ({c})</SelectItem>)}</SelectContent>
+              </Select></div>
             <Button variant="outline" className="w-full" onClick={fetchModels} disabled={!url || busy !== null}>
               {busy === "fetch" ? t("Fetching...") : t("Fetch models")}
             </Button>

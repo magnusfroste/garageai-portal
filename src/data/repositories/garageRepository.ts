@@ -97,7 +97,7 @@ export const garageRepository = {
   listProviderModels: (endpoint_url: string, api_key: string) =>
     invoke<{ endpoint_url: string; models: string[] }>("create-provider", { list_only: true, endpoint_url, api_key }),
 
-  createProvider: (body: { name: string; display_name: string; endpoint_url: string; api_key?: string; models: string[]; prices: ProviderPrices }) =>
+  createProvider: (body: { name: string; display_name: string; endpoint_url: string; api_key?: string; models: string[]; prices: ProviderPrices; declared_country?: string }) =>
     invoke<ProviderResult>("create-provider", body),
 
   updateProviderKey: (name: string, api_key: string) =>
