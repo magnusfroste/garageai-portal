@@ -14,12 +14,16 @@ import { garageRepository } from "@/data/repositories/garageRepository";
 import {
   buildGarageCommand, GarageCredentials, GARAGE_NAME_RE, suggestGarageName,
 } from "@/models/services/garageCommand";
-import { OS_OPTIONS, OFFICIAL_RUNTIMES, OTHER_RUNTIMES, RUNTIME_OPTIONS, prepSteps, GarageOs, GarageRuntime } from "@/models/services/garageInstructions";
+import { OS_OPTIONS, OFFICIAL_RUNTIMES, OTHER_RUNTIMES, RUNTIME_OPTIONS, RAM_BUCKETS, prepSteps, pullStep, GarageOs, GarageRuntime, OllamaMacMethod } from "@/models/services/garageInstructions";
+import { useQuery } from "@tanstack/react-query";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGarageModels } from "@/hooks/useGarageModels";
+import { GarageHealthIndicators, GarageTroubleshooting } from "./components/GarageHealth";
 import { runtimeLabel, RUNTIMES_WITH_API_KEY } from "@/models/services/garageRuntime";
 import { CommandBlock, OneTimeWarning } from "./components/GarageShared";
 import { t } from "@/i18n";
 
-const STEPS = ["Your machine", "Prepare", "Name", "Live"];
+const STEPS = ["Your machine", "Choose a model", "Prepare", "Name", "Live"];
 
 const CheckItem = ({ state, label, detail, action }: {
   state: "done" | "wait" | "fail" | "todo"; label: string; detail?: string; action?: React.ReactNode;
@@ -52,6 +56,13 @@ const OfferGpuPage = () => {
   const [creds, setCreds] = useState<GarageCredentials | null>(null);
   const [liveName, setLiveName] = useState<string | null>(null);
   const [retesting, setRetesting] = useState(false);
+  const [ramGb, setRamGb] = useState<number>(16);
+  const [model, setModel] = useState("");
+  const [customModel, setCustomModel] = useState("");
+  const [macMethod, setMacMethod] = useState<OllamaMacMethod>("app");
+  const demand = useQuery({ queryKey: ["demand-models"], queryFn: () => garageRepository.demandModels(), staleTime: 300_000 });
+  const suggestions = (demand.data ?? []).filter((d) => d.min_gb <= ramGb).sort((a, b) => b.min_gb - a.min_gb).slice(0, 3);
+  const chosenModel = model === "__other" ? customModel.trim() : model;
 
   useEffect(() => {
     if (!name) setName(suggestGarageName());
@@ -62,6 +73,7 @@ const OfferGpuPage = () => {
   const meshOk = !!data?.mesh.connected;
   const registered = !!data?.garage.last_registered_at;
   const anyPassed = !!data?.latest_tests.some((t) => t.passed);
+  const liveModels = useGarageModels(data?.garage.id ? [data.garage.id] : []);
 
   const create = async () => {
     if (!GARAGE_NAME_RE.test(name)) {
@@ -190,9 +202,52 @@ const OfferGpuPage = () => {
 
       {step === 1 && (
         <Card className="glass-card">
+          <CardHeader><CardTitle>{t("Choose a model")}</CardTitle><CardDescription>{os === "macos" ? t("How much unified memory does your Mac have?") : t("How much GPU memory (VRAM) does your PC have?")}</CardDescription></CardHeader>
+          <CardContent className="space-y-5">
+            <RadioGroup value={String(ramGb)} onValueChange={(v) => { setRamGb(Number(v)); setModel(""); }} className="flex gap-4 flex-wrap">
+              {RAM_BUCKETS.map((b) => (
+                <Label key={b.value} htmlFor={`ram-${b.value}`} className="flex items-center gap-2 font-normal">
+                  <RadioGroupItem value={String(b.value)} id={`ram-${b.value}`} />{b.label}
+                </Label>
+              ))}
+            </RadioGroup>
+            <RadioGroup value={model} onValueChange={setModel} className="grid gap-2">
+              {suggestions.map((d) => (
+                <Label key={d.model} htmlFor={`m-${d.model}`} className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-3 font-normal">
+                  <RadioGroupItem value={d.model} id={`m-${d.model}`} />
+                  <span className="font-mono flex-1">{d.model}</span>
+                  <span className="rounded border border-primary/40 px-1.5 py-0.5 text-[10px] text-primary">{t(d.note || "Requested by buyers")}</span>
+                </Label>
+              ))}
+              <Label htmlFor="m-other" className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-3 font-normal">
+                <RadioGroupItem value="__other" id="m-other" />
+                <span>{t("Any other model you have")}</span>
+              </Label>
+            </RadioGroup>
+            {model === "__other" && (
+              <Input placeholder="llama3.1:8b" value={customModel} onChange={(e) => setCustomModel(e.target.value.trim())} />
+            )}
+            {(() => { const p = pullStep(runtime, chosenModel); return p ? (
+              <div className="space-y-1.5"><p className="text-sm">{p.text}</p>{p.code && <CommandBlock command={p.code} />}</div>
+            ) : null; })()}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep(0)}>{t("Back")}</Button>
+              <Button onClick={() => setStep(2)} disabled={!chosenModel}>{t("Next")}</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 2 && (
+        <Card className="glass-card">
           <CardHeader><CardTitle>{t("Prepare")}</CardTitle><CardDescription>{t("Make sure your runtime listens on all network interfaces (port {port}).", { port: port ?? "" })}</CardDescription></CardHeader>
           <CardContent className="space-y-4">
-            {prepSteps(os, runtime, port).map((s, i) => (
+            {os === "macos" && runtime === "ollama" && (
+              <Tabs value={macMethod} onValueChange={(v) => setMacMethod(v as OllamaMacMethod)}>
+                <TabsList><TabsTrigger value="app">{t("Ollama app")}</TabsTrigger><TabsTrigger value="brew">Homebrew</TabsTrigger></TabsList>
+              </Tabs>
+            )}
+            {prepSteps(os, runtime, port, macMethod).map((s, i) => (
               <div key={i} className="space-y-1.5">
                 <p className="text-sm">{i + 1}. {s.text}</p>
                 {s.code && <CommandBlock command={s.code} />}
@@ -203,14 +258,14 @@ const OfferGpuPage = () => {
               <p>{t("Your runtime is not exposed to the internet as long as your router does not forward the port. Only the GarageAI gateway reaches it, via the encrypted mesh network.")}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(0)}>{t("Back")}</Button>
-              <Button onClick={() => setStep(2)}>{t("Next")}</Button>
+              <Button variant="outline" onClick={() => setStep(1)}>{t("Back")}</Button>
+              <Button onClick={() => setStep(3)}>{t("Next")}</Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {step === 2 && (
+      {step === 3 && (
         <Card className="glass-card">
           <CardHeader><CardTitle>{t("Name your garage")}</CardTitle><CardDescription>{t("The name is visible to the platform and used in the command.")}</CardDescription></CardHeader>
           <CardContent className="space-y-4">
@@ -222,7 +277,7 @@ const OfferGpuPage = () => {
                   <p className="text-xs text-muted-foreground">{t("Lowercase letters, digits and hyphens (2–41 characters).")}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setStep(1)} disabled={creating}>{t("Back")}</Button>
+                  <Button variant="outline" onClick={() => setStep(2)} disabled={creating}>{t("Back")}</Button>
                   <Button onClick={create} disabled={creating || !name}>{creating ? t("Creating...") : confirmReuse ? t("Create new command") : t("Create garage")}</Button>
                 </div>
               </>
@@ -230,9 +285,9 @@ const OfferGpuPage = () => {
               <>
                 <OneTimeWarning />
                 <p className="text-sm">{t("Run this in a terminal on the machine:")}</p>
-                <CommandBlock command={buildGarageCommand(creds, runtime, { sudo: os === "linux", port })} />
+                <CommandBlock command={buildGarageCommand(creds, runtime, { sudo: os === "linux", port, models: chosenModel ? [chosenModel] : [] })} />
                 {apiKeyHelp && <p className="text-xs text-muted-foreground">{apiKeyHelp}</p>}
-                <Button onClick={() => { setLiveName(creds.garage.name); setCreds(null); setStep(3); }}>
+                <Button onClick={() => { setLiveName(creds.garage.name); setCreds(null); setStep(4); }}>
                   {t("I have copied and run the command")}
                 </Button>
               </>
@@ -241,10 +296,11 @@ const OfferGpuPage = () => {
         </Card>
       )}
 
-      {step === 3 && liveName && (
+      {step === 4 && liveName && (
         <Card className="glass-card">
           <CardHeader><CardTitle className="font-mono">{liveName}</CardTitle><CardDescription>{t("We check the status every 5 seconds.")}</CardDescription></CardHeader>
           <CardContent className="space-y-2">
+            {data && <GarageHealthIndicators garage={{ ...data.garage, mesh_connected: data.garage.mesh_connected ?? data.mesh.connected }} models={liveModels.byGarage.get(data.garage.id) ?? []} />}
             <CheckItem state={meshOk ? "done" : "wait"} label={t("Machine connected to the network")} />
             <CheckItem state={registered ? "done" : meshOk ? "wait" : "todo"} label={t("Garage registered")}
               detail={registered && data?.garage.runtime ? `${runtimeLabel(data.garage.runtime)}:${data.garage.port}` : undefined} />
@@ -273,6 +329,7 @@ const OfferGpuPage = () => {
               </div>
             )}
 
+            <GarageTroubleshooting />
             {status.timedOut && !anyPassed && (
               <div className="rounded-md border border-border/60 bg-muted/30 p-4 mt-4 text-sm space-y-2">
                 <p className="font-semibold">{t("This seems to be taking longer than expected. Common causes:")}</p>
