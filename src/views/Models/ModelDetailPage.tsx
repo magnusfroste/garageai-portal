@@ -65,7 +65,9 @@ const measuredLabel = (sampleDays: number | null | undefined) => {
 };
 
 const ModelDetailPage = () => {
-  const { name = "" } = useParams<{ name: string }>();
+  // Splat route: canonical names contain a slash (/models/qwen/qwen3-4b; %2F also accepted).
+  const { "*": splat = "" } = useParams();
+  const name = decodeURIComponent(splat);
   const { models, isLoading, isError, refetch } = useModelCatalog();
   const { settings } = useSiteSettings();
   const { session } = useSession();

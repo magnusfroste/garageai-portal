@@ -2,7 +2,7 @@
 // Mesh garages are always auto-normalised; the database trigger enforces the same rule.
 import { corsHeaders, json, NAME_RE, getCaller } from "../_shared/garageAuth.ts";
 import { modelIdError } from "../_shared/garageRouting.ts";
-import { normaliseModelId } from "../_shared/modelIdentity.ts";
+import { normaliseModelId, CANONICAL_RE, PRIVATE_SLUG_RE } from "../_shared/modelIdentity.ts";
 import { syncModels } from "../_shared/syncModels.ts";
 
 Deno.serve(async (req) => {

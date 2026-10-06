@@ -62,7 +62,7 @@ const App = () => (
           </Route>
           <Route path="/models" element={<PublicOrAppLayout />}>
             <Route index element={<CatalogPage />} />
-            <Route path=":name" element={<ModelDetailPage />} />
+            <Route path="*" element={<ModelDetailPage />} />
           </Route>
           <Route path="/api" element={<SessionRedirect to="/dashboard/api"><ApiPage /></SessionRedirect>} />
           <Route path="/dashboard/developers" element={<Navigate to="/dashboard/api" replace />} />
