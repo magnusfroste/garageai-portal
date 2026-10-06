@@ -99,7 +99,7 @@ export interface SiteSettings {
 }
 
 export const defaultSiteSettings: SiteSettings = {
-  site_name: "AI Portal",
+  site_name: "GarageAI",
   tagline: "Open model access through an EU gateway",
   api_base_url: "",
   netbird_api_url: "",
@@ -162,16 +162,16 @@ export const defaultSiteSettings: SiteSettings = {
   footer_links: [],
 
   // SEO
-  seo_title: "AI Portal - Open model access",
+  seo_title: "GarageAI - Open model access",
   seo_description: "Access open models through an OpenAI-compatible API.",
   seo_keywords: "LLM, AI, proxy, private, secure, API",
-  og_title: "AI Portal - Open model access",
+  og_title: "GarageAI - Open model access",
   og_description: "Access open models through an OpenAI-compatible API.",
   og_image_url: "",
   jsonld_organization: JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "AI Portal",
+    "name": "GarageAI",
     "description": "Open model access"
   }, null, 2),
   faq_schema: [],

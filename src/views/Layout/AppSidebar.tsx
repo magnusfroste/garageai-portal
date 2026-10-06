@@ -29,7 +29,7 @@ export const AppSidebar = () => {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
   const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "AI Portal";
+  const siteName = settings?.site_name || "GarageAI";
   const logoUrl = settings?.logo_url;
   const { garages, isLoading: garagesLoading } = useMyGarages();
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { t } from "@/i18n";
 import { Plus, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +59,7 @@ export const KeyCreationDialog = ({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              You've used all your trial keys. Stripe payment integration coming soon!
+              {t("API key creation is currently unavailable.")}
             </AlertDescription>
           </Alert>
         )}
