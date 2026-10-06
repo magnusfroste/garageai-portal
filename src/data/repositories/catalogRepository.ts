@@ -22,7 +22,7 @@ export const catalogRepository = {
   async locations(): Promise<Map<string, GarageLocation>> {
     const { data, error } = await supabase.rpc("garage_public_locations");
     if (error) throw error;
-    return new Map((data ?? []).map((r) => [r.garage_name, { ...r, live_hours_per_week: r.live_hours_per_week == null ? null : Number(r.live_hours_per_week) } as GarageLocation]));
+    return new Map((data ?? []).map((r) => [r.garage_name, { ...r, live_hours_per_week: r.live_hours_per_week == null ? null : Number(r.live_hours_per_week), live_hours_total: r.live_hours_total == null ? null : Number(r.live_hours_total) } as GarageLocation]));
   },
 
   /** Latest tool-calling probe result per garage + model (public). */
