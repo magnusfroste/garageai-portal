@@ -17,6 +17,7 @@ import { GarageConnectCommand, ModelTestBadge, ToolsTestBadge, OneTimeWarning, r
 import { GarageHealthIndicators, GarageModelList, GarageTroubleshooting } from "./components/GarageHealth";
 import { useGarageModels } from "@/hooks/useGarageModels";
 import { t } from "@/i18n";
+import { GarageTermsBanner } from "./components/GarageTermsBanner";
 import { GaragePauseButton, LocationDisplaySetting, PausedBadge } from "./components/GarageOperatorControls";
 import { useQuery } from "@tanstack/react-query";
 import { adminService } from "@/models/services/adminService";
@@ -56,7 +57,7 @@ const MyGaragesPage = () => {
     setConfirmGarage(null);
     setBusy(`c:${g.name}`);
     try {
-      const c = await garageRepository.create({ name: g.name, create_setup_key: !g.netbird_peer_id });
+      const c = await garageRepository.create({ name: g.name, create_setup_key: !g.netbird_peer_id, terms_accepted: !!g.terms_accepted_at });
       setCreds({ c, runtime: g.runtime || "ollama", models: (byGarage.get(g.id) ?? []).filter((m) => m.offered && m.installed).map((m) => m.model) });
       invalidate();
     } catch (e) {
@@ -94,6 +95,7 @@ const MyGaragesPage = () => {
         </Card>
       ) : (
         <div className="grid gap-4">
+          <GarageTermsBanner garages={garages.filter((g) => !g.terms_accepted_at)} onAccepted={invalidate} />
           {garages.map((g) => (
             <Card key={g.id} className="glass-card">
               <CardContent className="pt-6 space-y-3">
