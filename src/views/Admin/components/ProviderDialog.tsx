@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/components/ui/use-toast";
 import { garageRepository, type ProviderPrices, type ProviderResult } from "@/data/repositories/garageRepository";
 import { t } from "@/i18n";
+import { TermsCheckbox } from "@/views/Garages/components/TermsCheckbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { COUNTRY_CODES, countryName, flagEmoji } from "@/models/services/location";
 
@@ -32,9 +33,10 @@ export const ProviderDialog = ({ open, onOpenChange, onCreated }: Props) => {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<"fetch" | "create" | null>(null);
+  const [termsOk, setTermsOk] = useState(false);
   const [result, setResult] = useState<ProviderResult | null>(null);
 
-  const reset = () => { setName(""); setDisplayName(""); setUrl(""); setApiKey(""); setAvailable([]); setPicked(new Set()); setPrices({}); setResult(null); };
+  const reset = () => { setName(""); setDisplayName(""); setUrl(""); setApiKey(""); setAvailable([]); setPicked(new Set()); setPrices({}); setResult(null); setTermsOk(false); };
   const close = (o: boolean) => { onOpenChange(o); if (!o) reset(); };
   const fail = (title: string, e: unknown) => toast({ title, description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
 
@@ -54,7 +56,7 @@ export const ProviderDialog = ({ open, onOpenChange, onCreated }: Props) => {
     try {
       const p: ProviderPrices = {};
       for (const [k] of PRICE_FIELDS) if (prices[k]?.trim()) p[k] = Number(prices[k]);
-      const res = await garageRepository.createProvider({ name, display_name: displayName, endpoint_url: url, api_key: apiKey || undefined, models: [...picked], prices: p, declared_country: country || undefined });
+      const res = await garageRepository.createProvider({ terms_accepted: termsOk, name, display_name: displayName, endpoint_url: url, api_key: apiKey || undefined, models: [...picked], prices: p, declared_country: country || undefined });
       setResult(res);
       onCreated();
     } catch (e) { fail(t("Failed to create provider"), e); } finally { setBusy(null); }
@@ -110,7 +112,8 @@ export const ProviderDialog = ({ open, onOpenChange, onCreated }: Props) => {
                   <Input inputMode="decimal" placeholder={def} value={prices[k] ?? ""} onChange={(e) => setPrices((p) => ({ ...p, [k]: e.target.value }))} /></div>
               ))}
             </div>
-            <Button className="w-full" onClick={create} disabled={busy !== null || !name || !displayName || !url || picked.size === 0}>
+            <TermsCheckbox id="pv-terms" variant="provider" checked={termsOk} onChange={setTermsOk} />
+            <Button className="w-full" onClick={create} disabled={busy !== null || !name || !displayName || !url || picked.size === 0 || !termsOk}>
               {busy === "create" ? t("Creating and testing...") : t("Create provider")}
             </Button>
           </div>

@@ -22,6 +22,7 @@ import { GarageHealthIndicators, GarageTroubleshooting } from "./components/Gara
 import { runtimeLabel, RUNTIMES_WITH_API_KEY } from "@/models/services/garageRuntime";
 import { CommandBlock, GarageConnectCommand, OneTimeWarning } from "./components/GarageShared";
 import { t } from "@/i18n";
+import { TermsCheckbox } from "./components/TermsCheckbox";
 import { demandModelId } from "@/models/services/demandModelService";
 
 const STEPS = ["Your machine", "Choose a model", "Prepare", "Name", "Live"];
@@ -52,6 +53,7 @@ const OfferGpuPage = () => {
   const [otherPort, setOtherPort] = useState<8000 | 8080>(8000);
   const [otherRuntimesOpen, setOtherRuntimesOpen] = useState(false);
   const [name, setName] = useState("");
+  const [termsOk, setTermsOk] = useState(false);
   const [creating, setCreating] = useState(false);
   const [confirmReuse, setConfirmReuse] = useState(false);
   const [creds, setCreds] = useState<GarageCredentials | null>(null);
@@ -97,7 +99,7 @@ const OfferGpuPage = () => {
     }
     setCreating(true);
     try {
-      setCreds(await garageRepository.create({ name, create_setup_key: true }));
+      setCreds(await garageRepository.create({ name, create_setup_key: true, terms_accepted: termsOk }));
     } catch (e) {
       toast({ title: t("Could not create the garage"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
@@ -287,9 +289,10 @@ const OfferGpuPage = () => {
                   <Input id="g-name" value={name} onChange={(e) => { setName(e.target.value.toLowerCase()); setConfirmReuse(false); }} disabled={creating} />
                   <p className="text-xs text-muted-foreground">{t("Lowercase letters, digits and hyphens (2–41 characters).")}</p>
                 </div>
+                <TermsCheckbox id="g-terms" checked={termsOk} onChange={setTermsOk} disabled={creating} />
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setStep(2)} disabled={creating}>{t("Back")}</Button>
-                  <Button onClick={create} disabled={creating || !name}>{creating ? t("Creating...") : confirmReuse ? t("Create new command") : t("Create garage")}</Button>
+                  <Button onClick={create} disabled={creating || !name || !termsOk}>{creating ? t("Creating...") : confirmReuse ? t("Create new command") : t("Create garage")}</Button>
                 </div>
               </>
             ) : (

@@ -1,0 +1,1 @@
+ALTER TABLE public.garages ADD COLUMN IF NOT EXISTS terms_accepted_at timestamptz NULL, ADD COLUMN IF NOT EXISTS terms_version text NULL;

@@ -184,6 +184,7 @@ export const GaragePanel = () => {
         name: garageName,
         ...(host.trim() ? { api_host: host.trim() } : {}),
         create_setup_key: setupKey,
+        terms_accepted: true,
       });
       setResult(res);
       setResultRuntime(rt);
@@ -306,6 +307,7 @@ export const GaragePanel = () => {
                     <span className="font-mono text-sm truncate">{g.name}</span>
                     {g.connection_type === "endpoint" && <ProviderBadge name={g.display_name || g.name} />}
                     {g.paused_at && <PausedBadge reason={g.paused_reason} />}
+                    <Badge variant="outline" className="text-[10px]" title={g.terms_version ?? undefined}>{g.terms_accepted_at ? `${t("Terms")} ✓ ${g.terms_accepted_at.slice(0, 7)}` : `${t("Terms")} —`}</Badge>
                     <GarageCountryCell garage={g} changedRecently={countryChanges.data?.has(g.id) ?? false} onSaved={invalidate} />
                     {g.runtime && (
                       <Badge variant="outline" className="text-[10px] shrink-0">
