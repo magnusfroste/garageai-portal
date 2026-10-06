@@ -1,3 +1,4 @@
+import { DemandModelsField } from "./DemandModelsField";
 import { PlatformFeeField } from "./PlatformFeeField";
 import { useState, useEffect } from "react";
 import { Settings, Save } from "lucide-react";
@@ -112,6 +113,8 @@ export const AdminSettingsPanel = () => {
         </div>
 
         <PlatformFeeField />
+
+        <DemandModelsField />
 
 
         <Button onClick={handleSave} disabled={saving} className="w-full md:w-auto">
