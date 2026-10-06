@@ -27,6 +27,7 @@ import { useGarageLocations } from "@/hooks/useGarageLocations";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const MyGaragesPage = () => {
+  const { data: isAdmin = false } = useQuery({ queryKey: ["is-admin"], queryFn: () => adminService.isAdmin() });
   const navigate = useNavigate();
   const { toast } = useToast();
   const { garages, isLoading, isError, latestTests, invalidate } = useMyGarages();
