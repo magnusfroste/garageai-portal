@@ -36,7 +36,8 @@ export const buildCatalog = (
 ): CatalogModel[] => {
   const statOf = new Map(stats.map((s) => [s.garage_name, s]));
   const groups = new Map<string, CuratedModel[]>();
-  for (const r of rows.filter((r) => r.enabled)) {
+  // Garage rows are 'unhealthy' when they have no LiteLLM deployment; never list those publicly.
+  for (const r of rows.filter((r) => r.enabled && !(r.garage && r.status === "unhealthy"))) {
     const k = baseModelName(r);
     groups.set(k, [...(groups.get(k) ?? []), r]);
   }

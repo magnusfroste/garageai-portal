@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
     const offered = body.offered;
     const { data: garage } = await admin.from("garages").select(GARAGE_SELECT).eq("name", name).maybeSingle();
     if (!garage || (!isAdmin && garage.operator_id !== userId)) return json({ error: "Garage not found" }, 404);
+    if (garage.connection_type === "endpoint" && !isAdmin) return json({ error: "Models on provider endpoints are offered by GarageAI admins." }, 403);
     if (offered && isEmbeddingModel(model)) return json({ error: "Embedding models are not supported yet" }, 400);
     const { data: row } = await admin.from("garage_models").select("installed").eq("garage_id", garage.id).eq("model", model).maybeSingle();
     if (!row) return json({ error: "Model not found on this garage" }, 404);
