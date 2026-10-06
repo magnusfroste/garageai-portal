@@ -326,6 +326,41 @@ export type Database = {
           },
         ]
       }
+      garage_models: {
+        Row: {
+          garage_id: string
+          installed: boolean
+          model: string
+          offered: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          garage_id: string
+          installed?: boolean
+          model: string
+          offered?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          garage_id?: string
+          installed?: boolean
+          model?: string
+          offered?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_models_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_request_stats_hourly: {
         Row: {
           completion_tokens: number
@@ -471,8 +506,10 @@ export type Database = {
           display_name: string | null
           endpoint_url: string | null
           id: string
+          last_gateway_check_at: string | null
           last_heartbeat_at: string | null
           last_registered_at: string | null
+          mesh_connected: boolean | null
           mesh_ip: string | null
           models: string[]
           name: string
@@ -482,6 +519,9 @@ export type Database = {
           pool_output_cost_per_million: number
           port: number | null
           runtime: string | null
+          runtime_error: string | null
+          runtime_models: string[]
+          runtime_ok: boolean | null
           status: string
           updated_at: string
         }
@@ -495,8 +535,10 @@ export type Database = {
           display_name?: string | null
           endpoint_url?: string | null
           id?: string
+          last_gateway_check_at?: string | null
           last_heartbeat_at?: string | null
           last_registered_at?: string | null
+          mesh_connected?: boolean | null
           mesh_ip?: string | null
           models?: string[]
           name: string
@@ -506,6 +548,9 @@ export type Database = {
           pool_output_cost_per_million?: number
           port?: number | null
           runtime?: string | null
+          runtime_error?: string | null
+          runtime_models?: string[]
+          runtime_ok?: boolean | null
           status?: string
           updated_at?: string
         }
@@ -519,8 +564,10 @@ export type Database = {
           display_name?: string | null
           endpoint_url?: string | null
           id?: string
+          last_gateway_check_at?: string | null
           last_heartbeat_at?: string | null
           last_registered_at?: string | null
+          mesh_connected?: boolean | null
           mesh_ip?: string | null
           models?: string[]
           name?: string
@@ -530,6 +577,9 @@ export type Database = {
           pool_output_cost_per_million?: number
           port?: number | null
           runtime?: string | null
+          runtime_error?: string | null
+          runtime_models?: string[]
+          runtime_ok?: boolean | null
           status?: string
           updated_at?: string
         }
