@@ -26,6 +26,7 @@ import GaragesListPage from "./views/Garages/GaragesListPage";
 import { PublicOrAppLayout } from "./views/Layout/PublicOrAppLayout";
 import { SessionRedirect } from "./views/Layout/SessionRedirect";
 import NotFound from "./pages/NotFound";
+import { RobotsNoindex } from "./components/RobotsNoindex";
 import { OnboardingPage } from "./views/Onboarding/OnboardingPage";
 
 import { LanguageBoundary } from "./views/Layout/LanguageBoundary";
@@ -37,6 +38,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <RobotsNoindex />
         <LanguageBoundary>
         <Routes>
           <Route path="/" element={<Index />} />
