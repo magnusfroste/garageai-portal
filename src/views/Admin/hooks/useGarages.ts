@@ -125,7 +125,7 @@ export const useGarages = () => {
     create_setup_key: boolean;
     terms_accepted?: boolean;
   }): Promise<CreateGarageResult> => {
-    const { data, error } = await supabase.functions.invoke("create-garage", { body });
+    const { data, error } = await supabase.functions.invoke("create-garage", { body: { ...body, source: "admin" } });
     if (error) throw new Error(error.message || "Failed to create garage");
     if (data?.error) throw new Error(data.error);
     queryClient.invalidateQueries({ queryKey: ["admin-garages"] });
