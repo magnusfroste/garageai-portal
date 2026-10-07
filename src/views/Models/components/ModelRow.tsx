@@ -18,19 +18,15 @@ const formatCost = (cost: number | null): string => {
   return `$${cost}`;
 };
 
-const StatusDot = ({ status }: { status: CuratedModel["status"] }) => {
-  const colors: Record<string, string> = {
-    healthy: "bg-emerald-500",
-    unhealthy: "bg-destructive",
-    unknown: "bg-blue-400",
-  };
-  return (
-    <span
-      className={`inline-block w-2 h-2 rounded-full shrink-0 ${colors[status]}`}
-      title={status === "healthy" ? "Online" : status === "unhealthy" ? "Offline" : "Unknown"}
-    />
-  );
+const tone: Record<CuratedModel["status"], StatusTone> = {
+  healthy: "success",
+  unhealthy: "danger",
+  unknown: "neutral",
 };
+
+const ModelStatusDot = ({ status }: { status: CuratedModel["status"] }) => (
+  <StatusDot tone={tone[status]} title={status === "healthy" ? "Online" : status === "unhealthy" ? "Offline" : "Unknown"} />
+);
 
 export const ModelRow = ({ model }: { model: CuratedModel }) => {
   const { gradeOf, poolSummary } = useModelGarageGrades();
