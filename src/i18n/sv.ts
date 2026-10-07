@@ -42,7 +42,7 @@ export const sv: Record<string, string> = {
   "Availability": "Tillgänglighet",
   "30 days": "30 dagar",
   "measured over {n} days": "mätt över {n} dagar",
-  "Your chats are saved to your account (delete anytime). The gateway and the garages do not store your prompts; requests are processed in the EU.": "Dina chattar sparas på ditt konto (radera när du vill). Gatewayen och garagen lagrar inte dina prompter; anrop behandlas inom EU.",
+  "Your chats are saved to your account (delete anytime). The gateway does not store your prompts, and garages must not store them under the operator terms. Requests are processed in the EU.": "Dina chattar sparas på ditt konto (radera när du vill). Gatewayen lagrar inte dina prompter, och garagen får inte lagra dem enligt operatörsvillkoren. Anrop behandlas inom EU.",
   "The Chat API key could not be loaded.": "API-nyckeln för chatten kunde inte läsas in.",
   "We couldn't create your Chat API key. Try again or create one under API keys.": "Vi kunde inte skapa din API-nyckel för chatten. Försök igen eller skapa en under API-nycklar.",
   "Check your inbox": "Kontrollera din inkorg",
