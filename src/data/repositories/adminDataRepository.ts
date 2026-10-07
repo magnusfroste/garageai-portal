@@ -53,7 +53,7 @@ export interface AdminUsageData {
   totalCost: number;
   totalTokens: number;
   totalRequests: number;
-  topModels: { model: string; cost: number; tokens: number; requests: number }[];
+  topModels: { model: string; runtime_models?: string[]; cost: number; tokens: number; requests: number }[];
   topUsers: { user_id: string; email: string; full_name: string | null; cost: number; requests: number }[];
 }
 

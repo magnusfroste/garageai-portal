@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { fetchRouteMap, publicModelName } from '../_shared/modelNames.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -160,7 +161,16 @@ serve(async (req: Request) => {
     let totalCost = 0;
     let totalTokens = 0;
     let totalRequests = 0;
-    const modelStats: Record<string, { cost: number; tokens: number; requests: number }> = {};
+    const modelStats: Record<string, { cost: number; tokens: number; requests: number; runtimes: Set<string> }> = {};
+    const routeMap = LITELLM_MASTER_KEY && LITELLM_BASE ? await fetchRouteMap(LITELLM_BASE, LITELLM_MASTER_KEY) : new Map<string, string>();
+    const publicNames = new Set(routeMap.values());
+    const statFor = (raw: string, group?: unknown) => {
+      const name = publicModelName(group, raw, routeMap, publicNames);
+      const key = name === 'unknown' ? raw || 'unknown' : name;
+      if (!modelStats[key]) modelStats[key] = { cost: 0, tokens: 0, requests: 0, runtimes: new Set() };
+      if (raw && raw !== key) modelStats[key].runtimes.add(raw);
+      return modelStats[key];
+    };
     const userStats: Record<string, { cost: number; requests: number }> = {};
 
     if (LITELLM_MASTER_KEY && LITELLM_BASE) {
@@ -182,18 +192,16 @@ serve(async (req: Request) => {
             const breakdown = r.breakdown?.models || r.models || [];
             if (Array.isArray(breakdown) && breakdown.length > 0) {
               for (const m of breakdown) {
-                const name = m.model || m.name || "unknown";
-                if (!modelStats[name]) modelStats[name] = { cost: 0, tokens: 0, requests: 0 };
-                modelStats[name].cost += Number(m.spend ?? m.metrics?.spend ?? 0);
-                modelStats[name].tokens += Number(m.total_tokens ?? m.metrics?.total_tokens ?? 0);
-                modelStats[name].requests += Number(m.api_requests ?? m.metrics?.api_requests ?? 0);
+                const st = statFor(m.model || m.name || "unknown", m.model_group);
+                st.cost += Number(m.spend ?? m.metrics?.spend ?? 0);
+                st.tokens += Number(m.total_tokens ?? m.metrics?.total_tokens ?? 0);
+                st.requests += Number(m.api_requests ?? m.metrics?.api_requests ?? 0);
               }
             } else if (r.model) {
-              const name = r.model;
-              if (!modelStats[name]) modelStats[name] = { cost: 0, tokens: 0, requests: 0 };
-              modelStats[name].cost += Number(r.spend ?? 0);
-              modelStats[name].tokens += Number(r.total_tokens ?? 0);
-              modelStats[name].requests += Number(r.api_requests ?? 0);
+              const st = statFor(r.model, r.model_group);
+              st.cost += Number(r.spend ?? 0);
+              st.tokens += Number(r.total_tokens ?? 0);
+              st.requests += Number(r.api_requests ?? 0);
             }
           }
         } else {
@@ -263,10 +271,10 @@ serve(async (req: Request) => {
         totalCost += cost;
         totalTokens += tokens;
         totalRequests += 1;
-        if (!modelStats[model]) modelStats[model] = { cost: 0, tokens: 0, requests: 0 };
-        modelStats[model].cost += cost;
-        modelStats[model].tokens += tokens;
-        modelStats[model].requests += 1;
+        const st = statFor(model);
+        st.cost += cost;
+        st.tokens += tokens;
+        st.requests += 1;
         if (!userStats[row.user_id]) userStats[row.user_id] = { cost: 0, requests: 0 };
         userStats[row.user_id].cost += cost;
         userStats[row.user_id].requests += 1;
@@ -298,7 +306,7 @@ serve(async (req: Request) => {
     const topModels = Object.entries(modelStats)
       .sort((a, b) => b[1].cost - a[1].cost)
       .slice(0, 15)
-      .map(([model, stats]) => ({ model, ...stats }));
+      .map(([model, { runtimes, ...stats }]) => ({ model, runtime_models: [...runtimes], ...stats }));
 
     return json({ totalCost, totalTokens, totalRequests, topModels, topUsers });
   }

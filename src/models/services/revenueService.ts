@@ -19,7 +19,7 @@ export const summarize = (rows: RevenueRow[], feePercent: number): RevenueSummar
     if (!g) { g = { garage: r.garage, displayName: r.displayName, isProvider: r.isProvider, ...zero(), payable: 0, models: [] }; map.set(r.garage, g); }
     g.requests += r.requests; g.failures += r.failures; g.promptTokens += r.promptTokens;
     g.completionTokens += r.completionTokens; g.revenue += r.revenue;
-    g.models.push({ model: r.model, requests: r.requests, failures: r.failures, promptTokens: r.promptTokens, completionTokens: r.completionTokens, revenue: r.revenue, payable: r.revenue * keep });
+    g.models.push({ model: r.model, runtimeModels: r.runtimeModels, requests: r.requests, failures: r.failures, promptTokens: r.promptTokens, completionTokens: r.completionTokens, revenue: r.revenue, payable: r.revenue * keep });
   }
   const garages = [...map.values()].map((g) => ({ ...g, payable: g.revenue * keep, models: g.models.sort((a, b) => b.revenue - a.revenue) }))
     .sort((a, b) => b.revenue - a.revenue);
@@ -35,16 +35,20 @@ const csvCell = (v: string | number) => {
   return /[",\n]/.test(s) || /^[=+\-@]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
+/** Runtime ids shown only when they differ from the public name. */
+export const runtimeLabel = (m: { model: string; runtimeModels: string[] }) =>
+  m.runtimeModels.filter((r) => r !== m.model && r !== `openai/${m.model}`).join(", ");
+
 export const toCsv = (s: RevenueSummary, from: Date, to: Date): string => {
-  const head = ["row_type", "garage", "display_name", "type", "model", "period_from", "period_to", "requests", "failures", "tokens_in", "tokens_out", "revenue_usd", "platform_fee_percent", "payable_usd"];
+  const head = ["row_type", "garage", "display_name", "type", "model", "runtime_model", "period_from", "period_to", "requests", "failures", "tokens_in", "tokens_out", "revenue_usd", "platform_fee_percent", "payable_usd"];
   const f = from.toISOString(), tt = to.toISOString();
   const lines = [head.join(",")];
   for (const g of s.garages) {
     const type = g.isProvider ? "provider" : "garage";
-    lines.push(["garage", g.garage, g.displayName ?? "", type, "", f, tt, g.requests, g.failures, g.promptTokens, g.completionTokens, g.revenue.toFixed(6), s.feePercent, g.payable.toFixed(6)].map(csvCell).join(","));
-    for (const m of g.models) lines.push(["model", g.garage, g.displayName ?? "", type, m.model, f, tt, m.requests, m.failures, m.promptTokens, m.completionTokens, m.revenue.toFixed(6), s.feePercent, m.payable.toFixed(6)].map(csvCell).join(","));
+    lines.push(["garage", g.garage, g.displayName ?? "", type, "", "", f, tt, g.requests, g.failures, g.promptTokens, g.completionTokens, g.revenue.toFixed(6), s.feePercent, g.payable.toFixed(6)].map(csvCell).join(","));
+    for (const m of g.models) lines.push(["model", g.garage, g.displayName ?? "", type, m.model, m.runtimeModels.join(" "), f, tt, m.requests, m.failures, m.promptTokens, m.completionTokens, m.revenue.toFixed(6), s.feePercent, m.payable.toFixed(6)].map(csvCell).join(","));
   }
   const tot = s.totals;
-  lines.push(["total", "", "", "", "", f, tt, tot.requests, tot.failures, tot.promptTokens, tot.completionTokens, tot.revenue.toFixed(6), s.feePercent, tot.payable.toFixed(6)].map(csvCell).join(","));
+  lines.push(["total", "", "", "", "", "", f, tt, tot.requests, tot.failures, tot.promptTokens, tot.completionTokens, tot.revenue.toFixed(6), s.feePercent, tot.payable.toFixed(6)].map(csvCell).join(","));
   return lines.join("\n");
 };
