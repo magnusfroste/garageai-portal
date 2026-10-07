@@ -89,6 +89,40 @@ async function fetchRecentLogs(base: string, litellmToken: string, masterKey: st
     .slice(0, limit);
 }
 
+/**
+ * Map an upstream id (litellm_params.model, e.g. "openai/<runtime id>") to the
+ * public route a buyer called. Prefers the pool route over garage/ routes.
+ * Buyers must never see upstream ids, so unknown ids become "unknown".
+ */
+async function fetchRouteMap(base: string, masterKey: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  try {
+    const res = await fetch(`${base}/model/info`, { headers: { Authorization: `Bearer ${masterKey}` } });
+    if (!res.ok) return map;
+    const data = await res.json();
+    for (const d of (data.data || []) as Array<{ model_name?: string; litellm_params?: { model?: string } }>) {
+      const up = d.litellm_params?.model;
+      const name = d.model_name;
+      if (!up || !name) continue;
+      const cur = map.get(up);
+      if (!cur || (cur.startsWith('garage/') && !name.startsWith('garage/'))) map.set(up, name);
+    }
+  } catch (e) {
+    console.warn('model/info failed:', e);
+  }
+  return map;
+}
+
+function publicModelName(group: unknown, upstream: unknown, routes: Map<string, string>, publicNames: Set<string>): string {
+  if (typeof group === 'string' && group) return group;
+  if (typeof upstream === 'string' && upstream) {
+    if (publicNames.has(upstream)) return upstream;
+    const mapped = routes.get(upstream);
+    if (mapped) return mapped;
+  }
+  return 'unknown';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -155,13 +189,19 @@ serve(async (req) => {
     const LITELLM_BASE = await getProxyBaseUrl(supabase);
 
     // Fetch key info, daily activity, and recent logs in parallel
-    const [keyInfoRes, dailyData, recentLogs] = await Promise.all([
+    const [keyInfoRes, dailyData, rawLogs, routeMap] = await Promise.all([
       fetch(`${LITELLM_BASE}/key/info?key=${keyIdentifier}`, {
         headers: { 'Authorization': `Bearer ${litellmMasterKey}` },
       }),
       fetchDailyActivity(LITELLM_BASE, keyIdentifier, litellmMasterKey),
       fetchRecentLogs(LITELLM_BASE, keyIdentifier, litellmMasterKey, 50),
+      fetchRouteMap(LITELLM_BASE, litellmMasterKey),
     ]);
+    const publicNames = new Set(routeMap.values());
+    const recentLogs = (rawLogs as Array<Record<string, unknown>>).map((log) => {
+      const name = publicModelName(log.model_group, log.model, routeMap, publicNames);
+      return { ...log, model: name, model_group: name };
+    });
 
     if (!keyInfoRes.ok) {
       if (keyInfoRes.status === 404) {
@@ -208,6 +248,7 @@ serve(async (req) => {
       metrics?: { spend?: number; total_tokens?: number; api_requests?: number };
       breakdown?: {
         models?: Record<string, { metrics?: { spend?: number; total_tokens?: number; api_requests?: number } }>;
+        model_groups?: Record<string, { metrics?: { spend?: number; total_tokens?: number; api_requests?: number } }>;
       };
     };
     const dailyBreakdown = Array.isArray(dailyData?.results)
@@ -217,8 +258,12 @@ serve(async (req) => {
             spend: r.metrics?.spend ?? 0,
             total_tokens: r.metrics?.total_tokens ?? 0,
             api_requests: r.metrics?.api_requests ?? 0,
-            models: Object.entries(r.breakdown?.models || {}).map(([model, v]) => ({
-              model,
+            models: Object.entries(
+              r.breakdown?.model_groups && Object.keys(r.breakdown.model_groups).length
+                ? r.breakdown.model_groups
+                : r.breakdown?.models || {},
+            ).map(([model, v]) => ({
+              model: publicModelName(null, model, routeMap, publicNames),
               spend: v.metrics?.spend ?? 0,
               total_tokens: v.metrics?.total_tokens ?? 0,
               api_requests: v.metrics?.api_requests ?? 0,

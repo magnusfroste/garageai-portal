@@ -50,7 +50,7 @@ export const useAccountData = (options?: UseAccountDataOptions) => {
 
       if (filteredLogs.length > 0) {
         for (const log of filteredLogs) {
-          const model = log.model || "unknown";
+          const model = log.model_group || log.model || "unknown";
           if (!modelMap[model]) modelMap[model] = { model, cost: 0, tokens: 0, requests: 0 };
           modelMap[model].cost += Number(log.spend || 0);
           modelMap[model].tokens += Number(log.total_tokens || 0);
