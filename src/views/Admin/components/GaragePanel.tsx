@@ -1,10 +1,9 @@
 import { EditGaragePrices } from "./EditGaragePrices";
 import { useState } from "react";
-import { Server, RefreshCw, Plus, Copy, Check, KeyRound, FlaskConical, Ban, Power } from "lucide-react";
+import { Server, RefreshCw, Plus, Copy, Check, Search } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,77 +12,29 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/components/ui/use-toast";
 import { GarageConnectCommand } from "@/views/Garages/components/GarageShared";
 import { useGarageModels } from "@/hooks/useGarageModels";
-import { GarageHealthIndicators, GarageModelList } from "@/views/Garages/components/GarageHealth";
 import { GARAGE_RUNTIME_OPTIONS, runtimeLabel } from "@/models/services/garageRuntime";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowUpDown } from "lucide-react";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
-import { GradeBadge } from "@/views/Garages/components/Reliability";
-import { ToolsTestBadge } from "@/views/Garages/components/GarageShared";
-import { useGarages, Garage, CreateGarageResult, GarageModelTest } from "../hooks/useGarages";
+import { useGarages, Garage, CreateGarageResult } from "../hooks/useGarages";
 
 import { t } from "@/i18n";
 import { Building2 } from "lucide-react";
-import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { ProviderDialog } from "./ProviderDialog";
-import { GarageCountryCell } from "./GarageCountryEditor";
-import { PausedBadge } from "@/views/Garages/components/GarageOperatorControls";
 import { DeleteGarageButton } from "@/views/Garages/components/DeleteGarageButton";
-import { ReliabilityAvailability } from "@/views/Garages/components/ReliabilityAvailability";
 import { useGarageLocations } from "@/hooks/useGarageLocations";
 import { useQuery } from "@tanstack/react-query";
 import { garageRepository } from "@/data/repositories/garageRepository";
+import { useGarageRevenue } from "@/hooks/useGarageRevenue";
+import { presentAdminGarage, matchesAdminGarage, sortAdminGarages, type AdminGarageFilter, type AdminGarageTypeFilter } from "@/models/services/adminGaragePresentation";
+import { GarageTable } from "./garages/GarageTable";
+import { GarageMobileList } from "./garages/GarageMobileList";
+import { GarageDetailSheet } from "./garages/GarageDetailSheet";
+import type { GarageActionHandlers, AdminGarageRow } from "./garages/types";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
-
-const relativeTime = (iso: string | null): string => {
-  if (!iso) return "—";
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-};
-
-const STATUS_CLASS: Record<string, string> = {
-  online: "bg-emerald-600 hover:bg-emerald-600 text-primary-foreground",
-  failed_test: "bg-destructive hover:bg-destructive text-destructive-foreground",
-  offline: "bg-muted text-muted-foreground hover:bg-muted",
-};
-
-const TestBadge = ({ model, test }: { model: string; test?: GarageModelTest }) => {
-  if (!test) {
-    return <Badge variant="outline" className="text-[10px] font-mono">{model} · untested</Badge>;
-  }
-  if (test.passed) {
-    const parts = [
-      test.tokens_per_second != null ? `${test.tokens_per_second} tok/s` : null,
-      test.ttft_ms != null ? `TTFT ${test.ttft_ms} ms` : null,
-    ].filter(Boolean);
-    return (
-      <Badge className="text-[10px] font-mono bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/20 border border-emerald-600/40">
-        ✓ {model}{parts.length ? ` · ${parts.join(" · ")}` : ""}
-      </Badge>
-    );
-  }
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Badge className="text-[10px] font-mono bg-destructive/20 text-destructive hover:bg-destructive/20 border border-destructive/40 cursor-help">
-          ✗ {model}
-        </Badge>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs text-xs">
-        {test.error || "failed"}{test.http_status ? ` (HTTP ${test.http_status})` : ""}
-      </TooltipContent>
-    </Tooltip>
-  );
-};
 
 const CopyButton = ({ value }: { value: string }) => {
   const [copied, setCopied] = useState(false);
@@ -147,11 +98,17 @@ export const GaragePanel = () => {
   const { reliability } = useGarageReliability();
   const { locations } = useGarageLocations();
   const countryChanges = useQuery({ queryKey: ["garage-country-changes", garages.map((g) => g.id).join(",")], enabled: garages.length > 0, queryFn: () => garageRepository.countryChangedRecently(garages.map((g) => g.id)) });
-  const [sortDir, setSortDir] = useState<"none" | "desc" | "asc">("none");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<AdminGarageFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<AdminGarageTypeFilter>("all");
+  const [selectedGarage, setSelectedGarage] = useState<Garage | null>(null);
+  const [priceGarage, setPriceGarage] = useState<Garage | null>(null);
+  const [deleteGarage, setDeleteGarage] = useState<Garage | null>(null);
   const [confirmGarage, setConfirmGarage] = useState<Garage | null>(null);
   const [toggling, setToggling] = useState(false);
   const [retesting, setRetesting] = useState<string | null>(null);
   const { toast } = useToast();
+  const revenue = useGarageRevenue("this_month");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
@@ -250,11 +207,33 @@ export const GaragePanel = () => {
     submit(garage.name, garage.api_host || "", setupKey, garage.runtime || "ollama");
   };
 
-  const sortedGarages = sortDir === "none" ? garages : [...garages].sort((a, b) => {
-    const sa = reliability.get(a.name)?.score ?? -1;
-    const sb = reliability.get(b.name)?.score ?? -1;
-    return sortDir === "desc" ? sb - sa : sa - sb;
-  });
+  const rows: AdminGarageRow[] = sortAdminGarages(garages.map((garage) => {
+    const models = byGarage.get(garage.id) ?? [];
+    return {
+      garage,
+      models,
+      view: presentAdminGarage(garage, models),
+      reliability: reliability.get(garage.name),
+      location: locations.get(garage.name),
+      revenue: revenue.summary.garages.find((item) => item.garage === garage.name),
+      operatorEmail: garage.operator_id ? operatorEmails.get(garage.operator_id) : undefined,
+      changedRecently: countryChanges.data?.has(garage.id) ?? false,
+      tests: latestTests,
+    };
+  })).filter((row) => matchesAdminGarage(row.garage, row.view, search, statusFilter, typeFilter));
+  const selectedRow = selectedGarage ? rows.find((row) => row.garage.id === selectedGarage.id) ?? (() => {
+    const garage = selectedGarage; const models = byGarage.get(garage.id) ?? [];
+    return { garage, models, view: presentAdminGarage(garage, models), reliability: reliability.get(garage.name), location: locations.get(garage.name), revenue: revenue.summary.garages.find((item) => item.garage === garage.name), operatorEmail: garage.operator_id ? operatorEmails.get(garage.operator_id) : undefined, changedRecently: countryChanges.data?.has(garage.id) ?? false, tests: latestTests };
+  })() : null;
+  const actions: GarageActionHandlers = {
+    onOpen: setSelectedGarage,
+    onEditPrices: setPriceGarage,
+    onRetest: (garage) => { void handleRetest(garage); },
+    onNewCredential: (garage) => garage.connection_type === "endpoint" ? (setNewKey(""), setKeyGarage(garage)) : handleNewToken(garage),
+    onToggleDisabled: setConfirmGarage,
+    onDelete: setDeleteGarage,
+    retesting,
+  };
 
   return (
     <TooltipProvider>
