@@ -59,8 +59,11 @@ Deno.serve(async (req) => {
       }
       apiHost = body.api_host;
     }
-    let operatorId: string | undefined = isAdmin ? undefined : user.id;
-    if (isAdmin && body.operator_id !== undefined && body.operator_id !== null && body.operator_id !== "") {
+    // Only Admin → Garages (source "admin", admin role) may create unowned rows or pick an owner.
+    // Every other caller — including admins using the operator wizard — owns the garage.
+    const adminPanel = isAdmin && body.source === "admin";
+    let operatorId: string | undefined = adminPanel ? undefined : user.id;
+    if (adminPanel && body.operator_id !== undefined && body.operator_id !== null && body.operator_id !== "") {
       if (typeof body.operator_id !== "string" || !UUID_RE.test(body.operator_id)) {
         return json({ error: "operator_id must be a uuid" }, 400);
       }
@@ -112,6 +115,10 @@ Deno.serve(async (req) => {
         .single();
       if (error) throw error;
       garage = data;
+    }
+
+    if (!adminPanel && garage.operator_id !== user.id) {
+      throw new Error("invariant: wizard-created garage must be owned by the caller");
     }
 
     if (!isAdmin && !(body.create_setup_key === false && garage.netbird_peer_id)) createSetupKey = true;
