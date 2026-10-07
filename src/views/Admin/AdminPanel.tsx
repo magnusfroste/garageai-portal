@@ -91,9 +91,9 @@ export const AdminPanel = () => {
               <Cpu className="w-4 h-4" />
               Models
             </TabsTrigger>
-            <TabsTrigger value="garages" className="flex items-center gap-1.5">
+            <TabsTrigger value="supply" className="flex items-center gap-1.5">
               <Server className="w-4 h-4" />
-              Garages
+              {t("Supply")}
             </TabsTrigger>
             <TabsTrigger value="revenue" className="flex items-center gap-1.5">
               <Wallet className="w-4 h-4" />
@@ -129,7 +129,7 @@ export const AdminPanel = () => {
             <ModelCurationPanel />
           </TabsContent>
 
-          <TabsContent value="garages">
+          <TabsContent value="supply">
             <GaragePanel />
           </TabsContent>
 
