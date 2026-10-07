@@ -18,6 +18,8 @@ export interface SpendLog {
   request_id: string;
   startTime: string;
   model: string;
+  /** Public route the buyer called (LiteLLM model group). */
+  model_group?: string;
   total_tokens: number;
   prompt_tokens: number;
   completion_tokens: number;
