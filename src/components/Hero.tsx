@@ -26,9 +26,7 @@ export const Hero = () => {
       <div className="absolute inset-0" style={{
         background: 'radial-gradient(ellipse at 50% 40%, hsla(160, 40%, 25%, 0.3), transparent 70%)'
       }} />
-      <div className="absolute inset-0" style={{
-        background: 'radial-gradient(ellipse at 80% 60%, hsla(263, 70%, 30%, 0.15), transparent 60%)'
-      }} />
+      <div className="hero-backdrop-secondary absolute inset-0" />
       
       <div className="container mx-auto px-4 relative z-10 pt-20">
         <div className="max-w-3xl mx-auto text-center space-y-8">

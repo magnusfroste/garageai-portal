@@ -60,6 +60,8 @@ All colors MUST be HSL.
     --gradient-primary: linear-gradient(135deg, hsl(193 95% 68%), hsl(181 78% 51%));
     --gradient-accent: linear-gradient(135deg, hsl(193 95% 68%), hsl(181 78% 51%));
     --gradient-subtle: linear-gradient(180deg, hsl(240 10% 3.9%), hsl(240 10% 5%));
+    --gradient-auth-backdrop: radial-gradient(circle at 30% 50%, hsl(var(--primary) / 0.15), transparent 50%);
+    --gradient-hero-secondary: radial-gradient(ellipse at 80% 60%, hsl(var(--primary) / 0.12), transparent 60%);
     
     --shadow-glow: 0 0 40px hsl(var(--primary) / 0.22);
     --shadow-card: 0 10px 30px -10px hsl(var(--primary) / 0.14);
@@ -95,6 +97,14 @@ All colors MUST be HSL.
 
   .glow {
     box-shadow: var(--shadow-glow);
+  }
+
+  .auth-backdrop {
+    background: var(--gradient-auth-backdrop);
+  }
+
+  .hero-backdrop-secondary {
+    background: var(--gradient-hero-secondary);
   }
 
   .catalogue-home {
