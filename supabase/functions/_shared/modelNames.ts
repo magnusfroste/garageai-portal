@@ -1,11 +1,11 @@
 // Public model names: buyers see the route they called (LiteLLM model group), never upstream ids.
 
-export /**
+/**
  * Map an upstream id (litellm_params.model, e.g. "openai/<runtime id>") to the
  * public route a buyer called. Prefers the pool route over garage/ routes.
  * Buyers must never see upstream ids, so unknown ids become "unknown".
  */
-async function fetchRouteMap(base: string, masterKey: string): Promise<Map<string, string>> {
+export async function fetchRouteMap(base: string, masterKey: string): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   try {
     const res = await fetch(`${base}/model/info`, { headers: { Authorization: `Bearer ${masterKey}` } });
