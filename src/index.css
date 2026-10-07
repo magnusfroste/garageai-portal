@@ -17,8 +17,8 @@ All colors MUST be HSL.
     --popover: 240 10% 5%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 263 70% 50%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 193 95% 68%;
+    --primary-foreground: 240 10% 3.9%;
 
     --secondary: 240 5% 15%;
     --secondary-foreground: 0 0% 98%;
@@ -29,21 +29,40 @@ All colors MUST be HSL.
     --accent: 193 95% 68%;
     --accent-foreground: 240 10% 3.9%;
 
+    --success: 151 72% 46%;
+    --success-foreground: 151 72% 82%;
+    --success-surface: 151 72% 46% / 0.14;
+    --success-border: 151 72% 46% / 0.34;
+
+    --warning: 42 96% 54%;
+    --warning-foreground: 44 96% 78%;
+    --warning-surface: 42 96% 54% / 0.14;
+    --warning-border: 42 96% 54% / 0.34;
+
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 93% 82%;
+    --danger-surface: 0 84% 60% / 0.14;
+    --danger-border: 0 84% 60% / 0.34;
+
+    --neutral-status: 240 5% 65%;
+    --neutral-status-surface: 240 5% 65% / 0.12;
+    --neutral-status-border: 240 5% 65% / 0.28;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 240 5% 20%;
     --input: 240 5% 20%;
-    --ring: 263 70% 50%;
+    --ring: 193 95% 68%;
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(263 70% 50%), hsl(280 80% 45%));
-    --gradient-accent: linear-gradient(135deg, hsl(263 70% 50%), hsl(193 95% 68%));
+    --gradient-primary: linear-gradient(135deg, hsl(193 95% 68%), hsl(181 78% 51%));
+    --gradient-accent: linear-gradient(135deg, hsl(193 95% 68%), hsl(181 78% 51%));
     --gradient-subtle: linear-gradient(180deg, hsl(240 10% 3.9%), hsl(240 10% 5%));
     
-    --shadow-glow: 0 0 40px hsla(263, 70%, 50%, 0.3);
-    --shadow-card: 0 10px 30px -10px hsla(263, 70%, 50%, 0.2);
+    --shadow-glow: 0 0 40px hsl(var(--primary) / 0.22);
+    --shadow-card: 0 10px 30px -10px hsl(var(--primary) / 0.14);
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -83,5 +102,9 @@ All colors MUST be HSL.
     --primary-foreground: var(--accent-foreground);
     --ring: var(--accent);
     --gradient-accent: linear-gradient(hsl(var(--accent)), hsl(var(--accent)));
+  }
+
+  .admin-meta {
+    @apply text-xs text-muted-foreground;
   }
 }

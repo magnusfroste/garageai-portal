@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,15 @@ import { garageRepository } from "@/data/repositories/garageRepository";
 import { t } from "@/i18n";
 
 /** Permanent deletion with typed-name confirmation. `operator` adds the uninstall hint. */
-export const DeleteGarageButton = ({ garage, operator = false, onDone }: { garage: { id: string; name: string }; operator?: boolean; onDone: () => void }) => {
-  const [open, setOpen] = useState(false);
+export const DeleteGarageButton = ({ garage, operator = false, onDone, open: controlledOpen, onOpenChange, hideTrigger = false }: { garage: { id: string; name: string }; operator?: boolean; onDone: () => void; open?: boolean; onOpenChange?: (open: boolean) => void; hideTrigger?: boolean }) => {
+  const [localOpen, setLocalOpen] = useState(false);
+  const open = controlledOpen ?? localOpen;
+  const setOpen = onOpenChange ?? setLocalOpen;
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
   const label = operator ? t("Remove garage") : t("Delete");
+  useEffect(() => { if (open) setTyped(""); }, [open]);
 
   const run = async () => {
     setBusy(true);
@@ -29,9 +32,9 @@ export const DeleteGarageButton = ({ garage, operator = false, onDone }: { garag
 
   return (
     <>
-      <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0 text-destructive" onClick={() => { setTyped(""); setOpen(true); }}>
+      {!hideTrigger && <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0 text-destructive" onClick={() => { setTyped(""); setOpen(true); }}>
         <Trash2 className="w-3.5 h-3.5 mr-1.5" />{label}
-      </Button>
+      </Button>}
       <AlertDialog open={open} onOpenChange={(o) => !busy && setOpen(o)}>
         <AlertDialogContent>
           <AlertDialogHeader>

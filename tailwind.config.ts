@@ -40,6 +40,29 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+          surface: "hsl(var(--success-surface))",
+          border: "hsl(var(--success-border))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+          surface: "hsl(var(--warning-surface))",
+          border: "hsl(var(--warning-border))",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--danger))",
+          foreground: "hsl(var(--danger-foreground))",
+          surface: "hsl(var(--danger-surface))",
+          border: "hsl(var(--danger-border))",
+        },
+        "neutral-status": {
+          DEFAULT: "hsl(var(--neutral-status))",
+          surface: "hsl(var(--neutral-status-surface))",
+          border: "hsl(var(--neutral-status-border))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
