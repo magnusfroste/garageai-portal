@@ -19,21 +19,21 @@ const relative = (iso: string | null) => {
 
 export const GarageTable = ({ rows, actions }: { rows: AdminGarageRow[]; actions: GarageActionHandlers }) => (
   <div className="hidden overflow-x-auto rounded-md border lg:block">
-    <Table className="table-fixed min-w-[1040px]">
+    <Table className="table-fixed min-w-[880px]">
       <TableHeader><TableRow>
-        <TableHead className="w-[16%]">{t("Status")}</TableHead>
+        <TableHead className="w-[17%]">{t("Status")}</TableHead>
         <TableHead className="w-[20%]">{t("Garage")}</TableHead>
         <TableHead className="w-[10%]">{t("Models")}</TableHead>
-        <TableHead className="w-[14%]">{t("Grade & availability")}</TableHead>
-        <TableHead className="w-[20%]">{t("Price in / out per 1M")}</TableHead>
-        <TableHead className="w-[14%]">{t("Last seen")}</TableHead>
+        <TableHead className="w-[15%]">{t("Grade & availability")}</TableHead>
+        <TableHead className="w-[19%]">{t("Price in / out per 1M")}</TableHead>
+        <TableHead className="w-[13%]">{t("Last seen")}</TableHead>
         <TableHead className="w-[6%]"><span className="sr-only">{t("Actions")}</span></TableHead>
       </TableRow></TableHeader>
       <TableBody>{rows.map((row) => (
         <TableRow key={row.garage.id} tabIndex={0} className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" onClick={() => actions.onOpen(row.garage)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") actions.onOpen(row.garage); }}>
           <TableCell><GarageStatusCell view={row.view} /></TableCell>
           <TableCell><GarageIdentityCell row={row} /></TableCell>
-          <TableCell className="tabular-nums"><span className="font-medium">{row.view.live}</span><span className="text-muted-foreground"> / {row.view.offered} {t("live")}</span></TableCell>
+          <TableCell className="tabular-nums"><span className="font-medium">{row.view.live}</span><span className="text-muted-foreground"> {t("of")} {row.view.offered} {t("live")}</span></TableCell>
           <TableCell><div className="flex items-center gap-2">{row.reliability ? <GradeBadge grade={row.reliability.grade} /> : "—"}<span className="text-xs tabular-nums text-muted-foreground">{row.location?.is_endpoint ? t("Always on") : row.location ? liveHoursText(row.location) : "—"}</span></div></TableCell>
           <TableCell><GaragePriceCell garage={row.garage} /></TableCell>
           <TableCell className="text-xs tabular-nums text-muted-foreground" title={row.view.lastSeen ? new Date(row.view.lastSeen).toLocaleString() : undefined}>{relative(row.view.lastSeen)}</TableCell>
