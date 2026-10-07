@@ -221,7 +221,7 @@ export const ChatPage = () => {
             <div className="w-full max-w-[760px] space-y-6">
               <ChatEmptyState onPick={(p) => composer.current?.fill(p)} />
               {composerEl}
-              <p className="text-center text-[11px] text-muted-foreground">{t("Chats are saved to your account · Delete anytime")}</p>
+              <p className="text-center text-[11px] text-muted-foreground">{t("Chats are saved to your account · Delete anytime")}<br />{t("Processed through GarageAI's EU gateway; prompts are not stored.")}</p>
             </div>
           </div>
         ) : (
@@ -241,7 +241,7 @@ export const ChatPage = () => {
             <div className="shrink-0 px-4 pb-4 pt-1">
               <div className="mx-auto w-full max-w-[760px]">
                 {composerEl}
-                <p className="mt-2 text-center text-[11px] text-muted-foreground">{t("Chats are saved to your account · Delete anytime")}</p>
+                <p className="mt-2 text-center text-[11px] text-muted-foreground">{t("Chats are saved to your account · Delete anytime")}<br />{t("Processed through GarageAI's EU gateway; prompts are not stored.")}</p>
               </div>
             </div>
           </>
