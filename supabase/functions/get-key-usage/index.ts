@@ -263,7 +263,9 @@ serve(async (req) => {
                 ? r.breakdown.model_groups
                 : r.breakdown?.models || {},
             ).map(([model, v]) => ({
-              model: publicModelName(null, model, routeMap, publicNames),
+              model: r.breakdown?.model_groups && Object.keys(r.breakdown.model_groups).length
+                ? model
+                : publicModelName(null, model, routeMap, publicNames),
               spend: v.metrics?.spend ?? 0,
               total_tokens: v.metrics?.total_tokens ?? 0,
               api_requests: v.metrics?.api_requests ?? 0,
