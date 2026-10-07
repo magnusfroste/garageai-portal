@@ -10,6 +10,13 @@ export interface PublicGarage {
 }
 export type GarageSort = "grade" | "availability" | "name";
 export const garageStatus = (p: GarageProfile) => p.paused ? "Paused" : p.online ? "Live" : "Offline";
+
+export type PublicGarageStatus = ReturnType<typeof garageStatus> | "Degraded";
+
+// Same semantic mapping as Admin → Supply: Live = success, Degraded = warning,
+// Paused = neutral, Offline = danger when the garage still offers models, else neutral.
+export const garageStatusTone = (status: PublicGarageStatus, hasOfferedModels: boolean): "success" | "warning" | "danger" | "neutral" =>
+  status === "Live" ? "success" : status === "Degraded" ? "warning" : status === "Paused" ? "neutral" : hasOfferedModels ? "danger" : "neutral";
 const rank = { A: 4, B: 3, C: 2, D: 1, Nytt: 0 };
 
 export const filterSortGarages = (garages: PublicGarage[], euOnly: boolean, sort: GarageSort) => {

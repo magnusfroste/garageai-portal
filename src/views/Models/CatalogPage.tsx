@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { StatusDot } from "@/components/ui/status-badge";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { useMemo } from "react";
 import { useEuOnly } from "@/hooks/useEuOnly";
@@ -47,10 +48,7 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
     to={`/models/${encodeURIComponent(m.name)}`}
     className="grid grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_70px_150px_80px_80px] items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-accent/30 transition-colors"
   >
-    <span
-      className={cn("w-2 h-2 rounded-full", m.available ? "bg-emerald-500" : "bg-muted-foreground/40")}
-      title={m.available ? t("Available") : t("Not available right now")}
-    />
+    <StatusDot tone={m.available ? "success" : "neutral"} title={m.available ? t("Available") : t("Not available right now")} />
     <div className="min-w-0">
       <div className="flex items-center gap-2 min-w-0">
         <span className="font-mono text-sm font-semibold truncate">{m.name}</span>

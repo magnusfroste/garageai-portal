@@ -14,3 +14,14 @@ export const StatusBadge = ({ label, tone, compact = false, className }: {
     {label}
   </Badge>
 );
+
+const dotClass: Record<StatusTone, string> = {
+  success: "bg-success",
+  warning: "bg-warning",
+  danger: "bg-danger",
+  neutral: "bg-neutral-status",
+};
+
+export const StatusDot = ({ tone, title, className }: { tone: StatusTone; title?: string; className?: string }) => (
+  <span aria-hidden="true" title={title} className={cn("inline-block h-2 w-2 shrink-0 rounded-full", dotClass[tone], className)} />
+);

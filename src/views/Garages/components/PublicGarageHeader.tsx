@@ -4,7 +4,8 @@ import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { locationLabel } from "@/models/services/location";
-import { garageStatus, type PublicGarage } from "@/models/services/publicGarageService";
+import { garageStatus, garageStatusTone, type PublicGarage } from "@/models/services/publicGarageService";
+import { StatusDot } from "@/components/ui/status-badge";
 import { LocationBadge } from "./LocationBadge";
 import { ProviderBadge } from "./ProviderBadge";
 import { ReliabilityAvailability } from "./ReliabilityAvailability";
@@ -26,7 +27,7 @@ export const PublicGarageHeader = ({ garage, heading = false }: { garage: Public
       </div>
       <div className="relative z-10 w-fit flex flex-wrap items-center gap-2">{heading && <LocationBadge location={location} />}<ProviderBadge name={location?.is_endpoint ? providerName ?? p.display_name : null} /></div>
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5"><span aria-hidden className={cn("h-2 w-2 rounded-full", status === "Live" ? "bg-primary" : status === "Paused" ? "bg-accent" : "bg-muted-foreground/40")} />{t(status)}</span>
+        <span className="inline-flex items-center gap-1.5"><StatusDot tone={garageStatusTone(status, garage.models.length > 0)} />{t(status)}</span>
         {p.runtime && <span>{runtimeLabel(p.runtime)}</span>}
       </div>
     </div>

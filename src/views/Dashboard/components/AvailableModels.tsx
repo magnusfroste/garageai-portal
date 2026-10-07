@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { CuratedModel } from "@/models/types/curatedModel.types";
+import { StatusDot, type StatusTone } from "@/components/ui/status-badge";
 import { buyerTierLabel } from "@/models/services/modelTier";
 import { useModelGarageGrades } from "@/hooks/useGarageReliability";
 import { ModelGarageGrade } from "@/views/Garages/components/Reliability";
@@ -24,19 +25,15 @@ const formatCost = (cost: number | null): string => {
   return `$${cost}`;
 };
 
-const StatusDot = ({ status }: { status: CuratedModel["status"] }) => {
-  const colors = {
-    healthy: "bg-emerald-500",
-    unhealthy: "bg-destructive",
-    unknown: "bg-blue-400",
-  };
-  return (
-    <span
-      className={`inline-block w-2 h-2 rounded-full shrink-0 ${colors[status]}`}
-      title={status === "healthy" ? "Online" : status === "unhealthy" ? "Offline" : "Unknown"}
-    />
-  );
+const tone: Record<CuratedModel["status"], StatusTone> = {
+  healthy: "success",
+  unhealthy: "danger",
+  unknown: "neutral",
 };
+
+const ModelStatusDot = ({ status }: { status: CuratedModel["status"] }) => (
+  <StatusDot tone={tone[status]} title={status === "healthy" ? "Online" : status === "unhealthy" ? "Offline" : "Unknown"} />
+);
 
 const ModelCard = ({ model }: { model: CuratedModel }) => {
   const { gradeOf, poolSummary } = useModelGarageGrades();
@@ -44,7 +41,7 @@ const ModelCard = ({ model }: { model: CuratedModel }) => {
   <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-card/50 p-3 transition-colors hover:bg-accent/30">
     <div className="flex-1 min-w-0 space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap">
-        <StatusDot status={model.status} />
+        <ModelStatusDot status={model.status} />
         <span className="font-mono text-sm font-medium text-foreground truncate">
           {model.model_name || model.id}
         </span>
