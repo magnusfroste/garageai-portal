@@ -27,7 +27,7 @@ export const ApiKeyOverviewPanel = () => {
       <div className="flex gap-4">
         <div className="rounded-lg border p-4 flex-1">
           <p className="text-sm text-muted-foreground">Active keys</p>
-          <p className="text-2xl font-bold text-success-foreground tabular-nums">{activeCount}</p>
+          <p className="text-2xl font-bold text-primary">{activeCount}</p>
         </div>
         <div className="rounded-lg border p-4 flex-1">
           <p className="text-sm text-muted-foreground">Revoked</p>
@@ -41,8 +41,8 @@ export const ApiKeyOverviewPanel = () => {
 
       <div>
         <h3 className="text-lg font-semibold mb-3">Tokens per user</h3>
-        <div className="overflow-x-auto rounded-md border">
-          <Table className="min-w-[560px] table-fixed">
+        <div className="rounded-md border">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>

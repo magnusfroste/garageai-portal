@@ -128,9 +128,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0" style={{
-        background: 'radial-gradient(circle at 30% 50%, hsla(263, 70%, 50%, 0.15), transparent 50%)'
-      }} />
+      <div className="auth-backdrop absolute inset-0" />
       
       <div className="w-full max-w-md relative z-10">
         <Link to="/" className="flex items-center justify-center gap-2 mb-8 group">

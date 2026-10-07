@@ -131,7 +131,7 @@ export const MonthlyUsageChart = ({ logs }: MonthlyUsageChartProps) => {
             <BarChart data={data} barSize={28}>
               <defs>
                 <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(263, 70%, 60%)" stopOpacity={1} />
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
                   <stop offset="100%" stopColor="hsl(193, 95%, 68%)" stopOpacity={0.7} />
                 </linearGradient>
               </defs>

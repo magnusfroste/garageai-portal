@@ -22,8 +22,8 @@ const newest = (...values: Array<string | null | undefined>) => {
 };
 
 export const presentAdminGarage = (garage: Garage, models: GarageModelRow[], now = Date.now()): AdminGaragePresentation => {
-  const offeredRows = models.filter((model) => model.offered && model.installed);
-  const live = offeredRows.filter((model) => model.status === "live").length;
+  const offeredRows = models.filter((model) => model.offered);
+  const live = offeredRows.filter((model) => model.installed && model.status === "live").length;
   const lastSeen = garage.connection_type === "endpoint"
     ? garage.last_gateway_check_at ?? null
     : newest(garage.last_heartbeat_at, garage.last_gateway_check_at);
@@ -32,8 +32,8 @@ export const presentAdminGarage = (garage: Garage, models: GarageModelRow[], now
 
   if (garage.disabled) return { status: "disabled", label: "Disabled", reason: "Disabled by admin", attention: false, severity: 4, offered: offeredRows.length, live, lastSeen };
   if (garage.paused_at) return { status: "paused", label: "Paused", reason: garage.paused_reason || null, attention: false, severity: 3, offered: offeredRows.length, live, lastSeen };
-  if (garage.mesh_connected === false) return { status: "offline", label: "Offline", reason: "Tunnel disconnected", attention: offeredRows.length > 0, severity: 0, offered: offeredRows.length, live: 0, lastSeen };
-  if (garage.runtime_ok === false) return { status: "offline", label: "Offline", reason: garage.runtime_error || "Runtime unavailable", attention: offeredRows.length > 0, severity: 0, offered: offeredRows.length, live: 0, lastSeen };
+  if (garage.mesh_connected === false) return { status: "offline", label: "Offline", reason: "Tunnel disconnected", attention: true, severity: 0, offered: offeredRows.length, live: 0, lastSeen };
+  if (garage.runtime_ok === false) return { status: "offline", label: "Offline", reason: garage.runtime_error || "Runtime unavailable", attention: true, severity: 0, offered: offeredRows.length, live: 0, lastSeen };
   if (garage.status === "offline") return { status: "offline", label: "Offline", reason: "Garage is offline", attention: offeredRows.length > 0, severity: 0, offered: offeredRows.length, live: 0, lastSeen };
   if (!garage.terms_accepted_at) return { status: "degraded", label: "Degraded", reason: "Operator terms missing", attention: true, severity: 1, offered: offeredRows.length, live, lastSeen };
   if (failedModels) return { status: "degraded", label: "Degraded", reason: "An offered model failed testing", attention: true, severity: 1, offered: offeredRows.length, live, lastSeen };

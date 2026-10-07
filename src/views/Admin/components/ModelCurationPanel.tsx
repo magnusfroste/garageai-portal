@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
@@ -12,9 +11,12 @@ import { CuratedModel } from "@/models/types/curatedModel.types";
 
 import { t } from "@/i18n";
 const StatusDot = ({ status }: { status: CuratedModel["status"] }) => {
-  const tones = { healthy: "success", unhealthy: "danger", unknown: "neutral" } as const;
-  const labels = { healthy: "Healthy", unhealthy: "Unhealthy", unknown: "Unknown" } as const;
-  return <StatusBadge compact tone={tones[status]} label={t(labels[status])} />;
+  const colors = {
+    healthy: "bg-emerald-500",
+    unhealthy: "bg-destructive",
+    unknown: "bg-blue-400",
+  };
+  return <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${colors[status]}`} />;
 };
 
 const formatCost = (cost: number | null): string => {
@@ -79,11 +81,11 @@ export const ModelCurationPanel = () => {
               : "No models match the search"}
           </p>
         ) : (
-          <div className="divide-y divide-border/50 rounded-md border px-3">
+          <div className="divide-y divide-border/50">
             {filtered.map((model) => (
               <div
                 key={model.id}
-                className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-start gap-3 py-3"
+                className="flex flex-wrap items-start gap-3 py-3 first:pt-0 last:pb-0"
               >
                 {model.garage_tier === "pool" && <TooltipProvider delayDuration={200}>
                   <Tooltip>
@@ -113,7 +115,7 @@ export const ModelCurationPanel = () => {
                   onCheckedChange={(enabled) => toggleModel({ id: model.id, enabled })}
                 />
                 <StatusDot status={model.status} />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 basis-40">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-sm truncate">{model.model_name || model.id}</span>
                     {!model.enabled && model.disabled_reason && (
