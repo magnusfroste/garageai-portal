@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const mark = (i: Indicator) => (i === "ok" ? "✓" : i === "fail" ? "✗" : "–");
 const tone = (i: Indicator) =>
-  i === "ok" ? "border-primary/50 text-primary" : i === "fail" ? "border-destructive/50 text-destructive" : "border-border text-muted-foreground";
+  i === "ok" ? "border-success-border bg-success-surface text-success-foreground" : i === "fail" ? "border-danger-border bg-danger-surface text-danger-foreground" : "border-neutral-status-border bg-neutral-status-surface text-neutral-status";
 
 export const GarageHealthIndicators = ({ garage, models }: { garage: GarageHealthInput; models: GarageModelRow[] }) => {
   const h = garageHealth(garage, models);
@@ -26,7 +26,7 @@ export const GarageHealthIndicators = ({ garage, models }: { garage: GarageHealt
           {t("Models {offered} offered / {live} live", { offered: h.offered, live: h.live })}
         </Badge>
       </div>
-      {h.reason && <p className="text-xs text-destructive">{t(h.reason.text, h.reason.params)}</p>}
+      {h.reason && <p className="text-xs text-danger-foreground">{t(h.reason.text, h.reason.params)}</p>}
       {garage.runtime_ok === false && garage.runtime_error && <p className="text-[11px] text-muted-foreground font-mono break-all">{garage.runtime_error}</p>}
     </div>
   );
@@ -83,7 +83,7 @@ export const GarageModelList = ({ garageName, models, pending, onToggle, onPause
             {onAlias && <ModelAliasEditor model={m} busy={busy} onSave={(c, p) => onAlias(garageName, m.model, c, p)} />}
             <span className="text-muted-foreground">{m.installed ? t("Installed") : t("Not installed")}</span>
             {embedding ? <span className="text-muted-foreground">{t("Embedding models are not supported yet")}</span>
-              : !m.offered && m.installed && m.status === "untested" ? <span className="text-primary">{t("New on your machine — offer it?")}</span>
+              : !m.offered && m.installed && m.status === "untested" ? <span className="text-warning-foreground">{t("New on your machine — offer it?")}</span>
               : <Badge variant="outline" className="text-[10px]">{busy ? t("Testing...") : t(STATUS_LABEL[m.status] ?? m.status)}</Badge>}
             {m.paused_at && <Badge variant="secondary" className="text-[10px] text-muted-foreground">{t("Paused")}</Badge>}
             {!readOnly && onPause && m.offered && (

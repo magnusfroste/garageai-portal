@@ -43,23 +43,23 @@ export const UserTable = ({ users, onEdit, isUpdating }: UserTableProps) => {
                   {user.full_name || "—"}
                 </TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>
+                <TableCell className="tabular-nums">
                   {user.litellm_budget ? (
                     <span className="font-medium">${user.litellm_budget.max_budget.toFixed(0)}</span>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell className="tabular-nums">
                   {user.litellm_budget ? (
                     <span className="text-muted-foreground">${user.litellm_budget.spend.toFixed(2)}</span>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell className="tabular-nums">
                   {remaining !== null ? (
-                    <span className={remaining <= 0 ? "text-destructive font-medium" : "text-green-600 font-medium"}>
+                    <span className={remaining <= 0 ? "text-danger-foreground font-medium" : "text-success-foreground font-medium"}>
                       ${remaining.toFixed(2)}
                     </span>
                   ) : (

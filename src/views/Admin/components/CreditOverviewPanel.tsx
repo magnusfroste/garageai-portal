@@ -55,8 +55,8 @@ export const CreditOverviewPanel = () => {
                     <div className="text-xs text-muted-foreground">{t.profiles?.email}</div>
                   </div>
                 </TableCell>
-                <TableCell className="font-medium">${Number(t.amount_usd).toFixed(2)}</TableCell>
-                <TableCell>${Number(t.credits_added).toFixed(2)}</TableCell>
+                <TableCell className="font-medium tabular-nums">${Number(t.amount_usd).toFixed(2)}</TableCell>
+                <TableCell className="tabular-nums text-success-foreground">${Number(t.credits_added).toFixed(2)}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {format(new Date(t.created_at), "yyyy-MM-dd HH:mm")}
                 </TableCell>

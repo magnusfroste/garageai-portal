@@ -27,7 +27,7 @@ export const ApiKeyOverviewPanel = () => {
       <div className="flex gap-4">
         <div className="rounded-lg border p-4 flex-1">
           <p className="text-sm text-muted-foreground">Active keys</p>
-          <p className="text-2xl font-bold text-primary">{activeCount}</p>
+          <p className="text-2xl font-bold text-success-foreground tabular-nums">{activeCount}</p>
         </div>
         <div className="rounded-lg border p-4 flex-1">
           <p className="text-sm text-muted-foreground">Revoked</p>

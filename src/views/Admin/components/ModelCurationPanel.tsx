@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
@@ -11,12 +12,9 @@ import { CuratedModel } from "@/models/types/curatedModel.types";
 
 import { t } from "@/i18n";
 const StatusDot = ({ status }: { status: CuratedModel["status"] }) => {
-  const colors = {
-    healthy: "bg-emerald-500",
-    unhealthy: "bg-destructive",
-    unknown: "bg-blue-400",
-  };
-  return <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${colors[status]}`} />;
+  const tones = { healthy: "success", unhealthy: "danger", unknown: "neutral" } as const;
+  const labels = { healthy: "Healthy", unhealthy: "Unhealthy", unknown: "Unknown" } as const;
+  return <StatusBadge compact tone={tones[status]} label={t(labels[status])} />;
 };
 
 const formatCost = (cost: number | null): string => {

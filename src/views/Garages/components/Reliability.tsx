@@ -11,11 +11,11 @@ import type {
 } from "@/models/types/reliability.types";
 
 const GRADE_CLASS: Record<ReliabilityGrade, string> = {
-  A: "bg-emerald-600 text-primary-foreground hover:bg-emerald-600",
-  B: "bg-lime-600 text-primary-foreground hover:bg-lime-600",
-  C: "bg-yellow-500 text-background hover:bg-yellow-500",
-  D: "bg-destructive text-destructive-foreground hover:bg-destructive",
-  Nytt: "bg-muted text-muted-foreground hover:bg-muted",
+  A: "border-success-border bg-success-surface text-success-foreground",
+  B: "border-success-border bg-success-surface text-success-foreground/80",
+  C: "border-warning-border bg-warning-surface text-warning-foreground",
+  D: "border-danger-border bg-danger-surface text-danger-foreground",
+  Nytt: "border-neutral-status-border bg-neutral-status-surface text-neutral-status",
 };
 
 export const GradeBadge = ({ grade, className, title }: { grade: ReliabilityGrade; className?: string; title?: string }) => (

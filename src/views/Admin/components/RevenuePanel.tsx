@@ -8,6 +8,7 @@ import { toCsv } from "@/models/services/revenueService";
 import type { RevenuePeriod } from "@/models/types/revenue.types";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { t } from "@/i18n";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const usd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
 const num = (n: number) => n.toLocaleString();
@@ -54,44 +55,27 @@ export const RevenuePanel = () => {
           : isError ? <p className="px-6 py-4 text-sm text-destructive">{t("Failed to load revenue.")} <Button variant="link" onClick={() => refetch()}>{t("Try again")}</Button></p>
           : garages.length === 0 ? <p className="px-6 py-4 text-sm text-muted-foreground">{t("No usage in this period — choose another period or check your garages.")}</p>
           : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-border/50 text-[11px] text-muted-foreground">
-              <tr className="text-left">
-                <th className="px-4 py-2">{t("Garage / provider")}</th>
-                <th className="px-3 py-2 text-right">{t("Requests")}</th>
-                <th className="px-3 py-2 text-right">{t("Failures")}</th>
-                <th className="px-3 py-2 text-right">{t("Tokens in")}</th>
-                <th className="px-3 py-2 text-right">{t("Tokens out")}</th>
-                <th className="px-3 py-2 text-right">{t("Revenue (USD)")}</th>
-                <th className="px-3 py-2 text-right">{t("Fee")}</th>
-                <th className="px-4 py-2 text-right">{t("Payable to operator")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50 tabular-nums">
+          <Table className="min-w-[820px]">
+            <TableHeader><TableRow>
+                <TableHead className="px-4">{t("Garage / provider")}</TableHead>
+                <TableHead className="text-right">{t("Requests")}</TableHead>
+                <TableHead className="text-right">{t("Failures")}</TableHead>
+                <TableHead className="text-right">{t("Tokens in")}</TableHead>
+                <TableHead className="text-right">{t("Tokens out")}</TableHead>
+                <TableHead className="text-right">{t("Revenue (USD)")}</TableHead>
+                <TableHead className="text-right">{t("Fee")}</TableHead>
+                <TableHead className="px-4 text-right">{t("Payable to operator")}</TableHead>
+            </TableRow></TableHeader>
+            <TableBody className="tabular-nums">
               {garages.map((g) => (
-                <tr key={g.garage}>
-                  <td className="px-4 py-2"><span className="font-mono">{g.garage}</span>{g.isProvider && <ProviderBadge name={g.displayName || g.garage} />}</td>
-                  <td className="px-3 py-2 text-right">{num(g.requests)}</td>
-                  <td className="px-3 py-2 text-right">{num(g.failures)}</td>
-                  <td className="px-3 py-2 text-right">{num(g.promptTokens)}</td>
-                  <td className="px-3 py-2 text-right">{num(g.completionTokens)}</td>
-                  <td className="px-3 py-2 text-right">{usd(g.revenue)}</td>
-                  <td className="px-3 py-2 text-right">{feePercent}%</td>
-                  <td className="px-4 py-2 text-right">{usd(g.payable)}</td>
-                </tr>
+                <TableRow key={g.garage}>
+                  <TableCell className="px-4"><span className="font-mono">{g.garage}</span>{g.isProvider && <ProviderBadge name={g.displayName || g.garage} />}</TableCell>
+                  <TableCell className="text-right">{num(g.requests)}</TableCell><TableCell className="text-right">{num(g.failures)}</TableCell><TableCell className="text-right">{num(g.promptTokens)}</TableCell><TableCell className="text-right">{num(g.completionTokens)}</TableCell><TableCell className="text-right">{usd(g.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(g.payable)}</TableCell>
+                </TableRow>
               ))}
-              <tr className="font-semibold">
-                <td className="px-4 py-2">{t("Total")}</td>
-                <td className="px-3 py-2 text-right">{num(totals.requests)}</td>
-                <td className="px-3 py-2 text-right">{num(totals.failures)}</td>
-                <td className="px-3 py-2 text-right">{num(totals.promptTokens)}</td>
-                <td className="px-3 py-2 text-right">{num(totals.completionTokens)}</td>
-                <td className="px-3 py-2 text-right">{usd(totals.revenue)}</td>
-                <td className="px-3 py-2 text-right">{feePercent}%</td>
-                <td className="px-4 py-2 text-right">{usd(totals.payable)}</td>
-              </tr>
-            </tbody>
-          </table>
+              <TableRow className="font-semibold"><TableCell className="px-4">{t("Total")}</TableCell><TableCell className="text-right">{num(totals.requests)}</TableCell><TableCell className="text-right">{num(totals.failures)}</TableCell><TableCell className="text-right">{num(totals.promptTokens)}</TableCell><TableCell className="text-right">{num(totals.completionTokens)}</TableCell><TableCell className="text-right">{usd(totals.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(totals.payable)}</TableCell></TableRow>
+            </TableBody>
+          </Table>
         )}
       </CardContent>
     </Card>
