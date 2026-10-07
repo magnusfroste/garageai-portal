@@ -149,9 +149,10 @@ serve(async (req: Request) => {
               headers: { 'Authorization': `Bearer ${LITELLM_MASTER_KEY}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ key: key.litellm_token, max_budget: null }),
             });
-            await resp.text().catch(() => "");
-            if (resp.ok) keys_cleared++; else keys_failed++;
-          } catch { keys_failed++; }
+            const respBody = await resp.text().catch(() => "");
+            if (resp.ok) keys_cleared++;
+            else { keys_failed++; console.error(`key/update failed for ${key.id}: ${resp.status} ${respBody.slice(0, 200)}`); }
+          } catch (e) { keys_failed++; console.error(`key/update error for ${key.id}:`, e); }
         }
       }
       return jsonResponse({ success: failed === 0 && keys_failed === 0, repaired, failed, keys_cleared, keys_failed });
