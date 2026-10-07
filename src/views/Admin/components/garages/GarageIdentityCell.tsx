@@ -10,7 +10,10 @@ export const GarageIdentityCell = ({ row }: { row: AdminGarageRow }) => {
   return (
     <div className="min-w-0 space-y-1">
       <div className="flex min-w-0 items-center gap-2">
-        <TypeIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label={t(provider ? "Provider" : "Garage")} />
+        <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+          <TypeIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          {t(provider ? "Provider" : "Garage")}
+        </span>
         <span className="truncate font-mono text-sm font-medium">{row.garage.name}</span>
       </div>
       <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
