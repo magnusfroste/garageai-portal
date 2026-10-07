@@ -47,7 +47,6 @@ async function createLiteLLMKey(
   litellmUserId: string,
   models?: string[],
   durationDays?: number,
-  maxBudget?: number,
   rpmLimit = 60,
 ): Promise<{
   key: string;
@@ -56,17 +55,17 @@ async function createLiteLLMKey(
 }> {
   console.log(`Calling LiteLLM API at ${base}/key/generate`);
 
+  // No per-key max_budget: the user's budget (starting + purchased credits)
+  // is the single cap, so topping up applies to every key immediately.
   const requestBody: {
     key_alias: string;
     user_id: string;
     duration?: string;
     models?: string[];
-    max_budget?: number;
     rpm_limit?: number;
   } = {
     key_alias: keyName,
     user_id: litellmUserId,
-    max_budget: maxBudget,
     rpm_limit: rpmLimit,
   };
 
