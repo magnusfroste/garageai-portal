@@ -1,5 +1,7 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
+  "Supply": "Utbud",
+  "Everything sold on the platform: garages and providers.": "Allt som säljs på plattformen: garage och leverantörer.",
   "Providers": "Leverantörer",
   "Search garages...": "Sök garage...",
   "No garages match these filters.": "Inga garage matchar filtren.",

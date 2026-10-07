@@ -242,7 +242,7 @@ export const GaragePanel = () => {
         <div>
           <CardTitle className="flex items-center gap-2">
             <Server className="w-5 h-5 text-primary" />
-            Garages
+            {t("Supply")}
           </CardTitle>
           <CardDescription>
             {t("{n} registered garages and providers", { n: garages.length })}

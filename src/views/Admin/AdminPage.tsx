@@ -23,7 +23,8 @@ export const AdminPage = () => {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const requestedTab = params.get("tab") || "users";
-  const tab = ["users", "garages", "models", "revenue", "settings"].includes(requestedTab) ? requestedTab : "users";
+  const canonicalTab = requestedTab === "garages" ? "supply" : requestedTab;
+  const tab = ["users", "supply", "models", "revenue", "settings"].includes(canonicalTab) ? canonicalTab : "users";
   const {
     users,
     isLoading,
@@ -73,8 +74,8 @@ export const AdminPage = () => {
       <div className="flex items-center gap-3">
         <Users className="w-8 h-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">{t(({ users: "Users", garages: "Garages", models: "Catalogue", revenue: "Revenue", settings: "Settings" } as Record<string,string>)[tab] || "Admin")}</h1>
-          <p className="text-muted-foreground text-sm">{t("Manage users, models, credits and settings")}</p>
+          <h1 className="text-3xl font-bold">{t(({ users: "Users", supply: "Supply", models: "Catalogue", revenue: "Revenue", settings: "Settings" } as Record<string,string>)[tab] || "Admin")}</h1>
+          <p className="text-muted-foreground text-sm">{t(tab === "supply" ? "Everything sold on the platform: garages and providers." : "Manage users, models, credits and settings")}</p>
         </div>
       </div>
 
@@ -97,7 +98,7 @@ export const AdminPage = () => {
           <ModelCurationPanel />
         </TabsContent>
 
-        <TabsContent value="garages" className="mt-6">
+        <TabsContent value="supply" className="mt-6">
           <GaragePanel />
         </TabsContent>
 

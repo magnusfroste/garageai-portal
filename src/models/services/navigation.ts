@@ -53,7 +53,7 @@ export const ADMIN: NavGroup = {
   label: "Admin",
   items: [
     { title: "Users", url: "/dashboard/admin", tab: "users", icon: Users },
-    { title: "Garages", url: "/dashboard/admin", tab: "garages", icon: Warehouse },
+    { title: "Supply", url: "/dashboard/admin", tab: "supply", icon: Warehouse },
     { title: "Catalogue", url: "/dashboard/admin", tab: "models", icon: Library },
     { title: "Revenue", url: "/dashboard/admin", tab: "revenue", icon: Wallet },
     { title: "Settings", url: "/dashboard/admin", tab: "settings", icon: Settings },
@@ -66,7 +66,7 @@ export const isItemActive = (i: NavItem, pathname: string, search: string) => {
   if (i.tab) {
     if (pathname !== i.url) return false;
     const tab = new URLSearchParams(search).get("tab") ?? "users";
-    return tab === i.tab;
+    return (tab === "garages" ? "supply" : tab) === i.tab;
   }
   if (i.url === "/dashboard") return pathname === "/dashboard";
   return pathname === i.url || pathname.startsWith(i.url + "/");
