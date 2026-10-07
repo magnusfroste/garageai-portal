@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import type { GarageModelRow } from "../../data/repositories/garageRepository";
-import type { Garage } from "../../views/Admin/hooks/useGarages";
+import type { GarageModelRow } from "@/data/repositories/garageRepository";
+import type { Garage } from "@/views/Admin/hooks/useGarages";
 import {
   matchesAdminGarage,
   presentAdminGarage,
   sortAdminGarages,
-} from "./adminGaragePresentation";
+} from "@/models/services/adminGaragePresentation";
 
 const NOW = Date.parse("2026-10-07T23:00:00Z");
 
