@@ -67,7 +67,7 @@ export const UsageStatsPanel = () => {
             <TableBody>
               {data?.topModels?.map((m) => (
                 <TableRow key={m.model}>
-                  <TableCell className="font-medium font-mono text-sm">{m.model}</TableCell>
+                  <TableCell className="font-medium font-mono text-sm">{m.model}{m.runtime_models?.map((r) => <div key={r} className="text-xs font-normal text-muted-foreground">runtime: {r}</div>)}</TableCell>
                   <TableCell>${m.cost.toFixed(4)}</TableCell>
                   <TableCell>{m.tokens.toLocaleString()}</TableCell>
                   <TableCell>{m.requests}</TableCell>

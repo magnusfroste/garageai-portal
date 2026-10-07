@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Download, Wallet } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGarageRevenue } from "@/hooks/useGarageRevenue";
-import { toCsv } from "@/models/services/revenueService";
+import { runtimeLabel, toCsv } from "@/models/services/revenueService";
 import type { RevenuePeriod } from "@/models/types/revenue.types";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { t } from "@/i18n";
@@ -68,10 +68,17 @@ export const RevenuePanel = () => {
             </TableRow></TableHeader>
             <TableBody className="tabular-nums">
               {garages.map((g) => (
-                <TableRow key={g.garage}>
+                <Fragment key={g.garage}>
+                <TableRow>
                   <TableCell className="px-4"><span className="font-mono">{g.garage}</span>{g.isProvider && <ProviderBadge name={g.displayName || g.garage} />}</TableCell>
                   <TableCell className="text-right">{num(g.requests)}</TableCell><TableCell className="text-right">{num(g.failures)}</TableCell><TableCell className="text-right">{num(g.promptTokens)}</TableCell><TableCell className="text-right">{num(g.completionTokens)}</TableCell><TableCell className="text-right">{usd(g.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(g.payable)}</TableCell>
                 </TableRow>
+                {g.models.map((m) => { const rt = runtimeLabel(m); return (
+                  <TableRow key={`${g.garage}::${m.model}`} className="text-muted-foreground">
+                    <TableCell className="px-4 pl-8"><span className="font-mono text-xs text-foreground">{m.model}</span>{rt && <div className="admin-meta">{t("runtime")}: {rt}</div>}</TableCell>
+                    <TableCell className="text-right">{num(m.requests)}</TableCell><TableCell className="text-right">{num(m.failures)}</TableCell><TableCell className="text-right">{num(m.promptTokens)}</TableCell><TableCell className="text-right">{num(m.completionTokens)}</TableCell><TableCell className="text-right">{usd(m.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(m.payable)}</TableCell>
+                  </TableRow>); })}
+                </Fragment>
               ))}
               <TableRow className="font-semibold"><TableCell className="px-4">{t("Total")}</TableCell><TableCell className="text-right">{num(totals.requests)}</TableCell><TableCell className="text-right">{num(totals.failures)}</TableCell><TableCell className="text-right">{num(totals.promptTokens)}</TableCell><TableCell className="text-right">{num(totals.completionTokens)}</TableCell><TableCell className="text-right">{usd(totals.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(totals.payable)}</TableCell></TableRow>
             </TableBody>
