@@ -19,17 +19,17 @@ interface UserTableProps {
 
 export const UserTable = ({ users, onEdit, isUpdating }: UserTableProps) => {
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="overflow-x-auto rounded-md border">
+      <Table className="min-w-[760px] table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Budget</TableHead>
-            <TableHead>Spend</TableHead>
-            <TableHead>Remaining</TableHead>
-            <TableHead>Registered</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="w-[18%]">Name</TableHead>
+            <TableHead className="w-[27%]">Email</TableHead>
+            <TableHead className="w-[11%]">Budget</TableHead>
+            <TableHead className="w-[11%]">Spend</TableHead>
+            <TableHead className="w-[12%]">Remaining</TableHead>
+            <TableHead className="w-[13%]">Registered</TableHead>
+            <TableHead className="w-[8%] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

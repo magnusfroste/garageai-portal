@@ -79,11 +79,11 @@ export const ModelCurationPanel = () => {
               : "No models match the search"}
           </p>
         ) : (
-          <div className="divide-y divide-border/50">
+          <div className="divide-y divide-border/50 rounded-md border px-3">
             {filtered.map((model) => (
               <div
                 key={model.id}
-                className="flex flex-wrap items-start gap-3 py-3 first:pt-0 last:pb-0"
+                className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-start gap-3 py-3"
               >
                 {model.garage_tier === "pool" && <TooltipProvider delayDuration={200}>
                   <Tooltip>
@@ -113,7 +113,7 @@ export const ModelCurationPanel = () => {
                   onCheckedChange={(enabled) => toggleModel({ id: model.id, enabled })}
                 />
                 <StatusDot status={model.status} />
-                <div className="min-w-0 flex-1 basis-40">
+                <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-sm truncate">{model.model_name || model.id}</span>
                     {!model.enabled && model.disabled_reason && (
