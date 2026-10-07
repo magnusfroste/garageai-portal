@@ -1,3 +1,4 @@
+import { PROMPT_FUNCTION_REGION, regionalFunctionUrl } from "@/data/edgeRegion";
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -76,9 +77,9 @@ export const useChatStream = (setMessagesFor: SetFor) => {
       if (o.apiKeyId) body.api_key_id = o.apiKeyId;
       if (o.systemPrompt) body.system_prompt = o.systemPrompt;
 
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-playground`, {
+      const resp = await fetch(regionalFunctionUrl("chat-playground"), {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}`, "x-region": PROMPT_FUNCTION_REGION },
         body: JSON.stringify(body),
         signal: controller.signal,
       });

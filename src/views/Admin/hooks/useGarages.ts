@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionRegion } from "@supabase/supabase-js";
 import { garageRepository } from "@/data/repositories/garageRepository";
 
 export interface Garage {
@@ -110,7 +111,7 @@ export const useGarages = () => {
   };
 
   const retestGarage = async (name: string) => {
-    const { data, error } = await supabase.functions.invoke("retest-garage", { body: { name } });
+    const { data, error } = await supabase.functions.invoke("retest-garage", { body: { name }, region: FunctionRegion.EuCentral1 });
     if (error) throw new Error(error.message || "Retest failed");
     if (data?.error) throw new Error(data.error);
     queryClient.invalidateQueries({ queryKey: ["admin-garages"] });

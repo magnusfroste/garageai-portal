@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionRegion } from "@supabase/supabase-js";
 import type { GarageCredentials } from "@/models/services/garageCommand";
 
 export interface GarageRow {
@@ -70,8 +71,10 @@ export interface GarageStatusResult {
   latest_tests: GarageTestRow[];
 }
 
+const PROMPT_FUNCTIONS = new Set(["retest-garage"]);
+
 const invoke = async <T>(fn: string, body: unknown): Promise<T> => {
-  const { data, error } = await supabase.functions.invoke(fn, { body });
+  const { data, error } = await supabase.functions.invoke(fn, { body, ...(PROMPT_FUNCTIONS.has(fn) ? { region: FunctionRegion.EuCentral1 } : {}) });
   if (data?.error) throw new Error(data.error);
   if (error) {
     // Try to surface the function's JSON error message
