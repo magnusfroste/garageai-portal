@@ -30,7 +30,7 @@ export const useRequestLogs = () => {
         all.push({
           request_id: log.request_id || crypto.randomUUID(),
           startTime: log.startTime || "",
-          model: log.model || "unknown",
+          model: log.model_group || log.model || "unknown",
           total_tokens: log.total_tokens || 0,
           prompt_tokens: log.prompt_tokens || 0,
           completion_tokens: log.completion_tokens || 0,
