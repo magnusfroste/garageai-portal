@@ -225,6 +225,13 @@
       "when": 1791297738766,
       "tag": "0031_garage_terms",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791417350791,
+      "tag": "0032_garage_revenue_public_model",
+      "breakpoints": true
     }
   ]
 }

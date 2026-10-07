@@ -907,6 +907,7 @@ export type Database = {
           model: string
           prompt_tokens: number
           requests: number
+          runtime_models: string[]
           spend_usd: number
         }[]
       }
