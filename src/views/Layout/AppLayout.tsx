@@ -6,11 +6,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLitellmUser } from "@/hooks/useLitellmUser";
 import { useProfile } from "@/hooks/useProfile";
 import { useUserBudget } from "@/hooks/useUserBudget";
-import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { AppSidebar } from "./AppSidebar";
 import { GlobalSearch } from "./GlobalSearch";
 import { HELP_URL } from "@/models/services/navigation";
-import { CreditCard, HelpCircle, LogOut, User, Wallet, Warehouse } from "lucide-react";
+import { CreditCard, HelpCircle, LogOut, User, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
 import { LanguageMenu } from "./LanguageMenu";
@@ -37,8 +36,6 @@ const SignedInLayout = () => {
   const navigate = useNavigate();
   const { profile } = useProfile();
   const { budget } = useUserBudget();
-  const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "GarageAI";
   useLitellmUser();
   useLanguagePreference(profile?.preferred_language);
 
@@ -57,14 +54,6 @@ const SignedInLayout = () => {
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-12 flex items-center gap-3 border-b border-border/50 px-4 sticky top-0 z-40 bg-background/80 backdrop-blur-sm">
             <SidebarTrigger />
-            <button onClick={() => navigate("/dashboard")} className="hidden md:flex items-center gap-2 shrink-0">
-              {settings?.logo_url ? (
-                <img src={settings.logo_url} alt={siteName} className="w-5 h-5 object-contain" />
-              ) : (
-                <Warehouse className="w-5 h-5 text-primary" />
-              )}
-              <span className="font-semibold text-sm">{siteName}</span>
-            </button>
             <div className="flex-1 flex justify-center min-w-0">
               <GlobalSearch />
             </div>
