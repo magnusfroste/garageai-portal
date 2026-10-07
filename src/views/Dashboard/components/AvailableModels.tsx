@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { CuratedModel } from "@/models/types/curatedModel.types";
+import { StatusDot, type StatusTone } from "@/components/ui/status-badge";
 import { buyerTierLabel } from "@/models/services/modelTier";
 import { useModelGarageGrades } from "@/hooks/useGarageReliability";
 import { ModelGarageGrade } from "@/views/Garages/components/Reliability";
