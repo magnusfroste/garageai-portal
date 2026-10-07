@@ -249,10 +249,6 @@ export const GaragePanel = () => {
           </CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setSortDir(sortDir === "desc" ? "asc" : sortDir === "asc" ? "none" : "desc")}>
-            <ArrowUpDown className="w-4 h-4 mr-2" />
-            {t("Grade")}{sortDir === "desc" ? " ↓" : sortDir === "asc" ? " ↑" : ""}
-          </Button>
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefetching ? "animate-spin" : ""}`} />
             {t("Refresh")}
@@ -267,92 +263,35 @@ export const GaragePanel = () => {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative w-full xl:max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Search garages...")} className="h-9 pl-9" />
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as AdminGarageFilter)}>
+              <TabsList className="h-auto max-w-full flex-wrap justify-start">
+                {(["all", "attention", "live", "paused", "disabled"] as const).map((value) => <TabsTrigger key={value} value={value} className="text-xs">{t(({ all: "All", attention: "Needs attention", live: "Live", paused: "Paused", disabled: "Disabled" } as const)[value])}</TabsTrigger>)}
+              </TabsList>
+            </Tabs>
+            <Tabs value={typeFilter} onValueChange={(value) => setTypeFilter(value as AdminGarageTypeFilter)}>
+              <TabsList><TabsTrigger value="all" className="text-xs">{t("All")}</TabsTrigger><TabsTrigger value="garage" className="text-xs">{t("Garages")}</TabsTrigger><TabsTrigger value="provider" className="text-xs">{t("Providers")}</TabsTrigger></TabsList>
+            </Tabs>
+          </div>
+        </div>
         {isLoading ? (
           <p className="text-sm text-muted-foreground py-4">{t("Loading garages...")}</p>
         ) : isError ? (
           <p className="text-sm text-destructive py-4">{t("Failed to load garages.")} <Button variant="link" onClick={() => refetch()}>{t("Try again")}</Button></p>
         ) : garages.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4">No garages yet — click "Add garage" to register one.</p>
-        ) : (
-          <div className="divide-y divide-border/50">
-            {sortedGarages.map((g) => (
-              <div key={g.id} className="flex flex-wrap items-start gap-3 py-3 first:pt-0 last:pb-0">
-                <a href={`/garages/${g.name}`} className="shrink-0 w-16" title={reliability.get(g.name)?.grade !== "Nytt" && reliability.get(g.name)?.score != null ? `Score ${reliability.get(g.name)?.score}` : "No score yet"}>
-                  {reliability.get(g.name) ? <GradeBadge grade={reliability.get(g.name)?.grade ?? "Nytt"} /> : <span className="text-[10px] text-muted-foreground">—</span>}
-                </a>
-                <div className="min-w-0 w-full sm:flex-1 sm:w-auto">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-sm truncate">{g.name}</span>
-                    {g.connection_type === "endpoint" && <ProviderBadge name={g.display_name || g.name} />}
-                    {g.paused_at && <PausedBadge reason={g.paused_reason} />}
-                    <Badge variant="outline" className="text-[10px]" title={g.terms_version ?? undefined}>{g.terms_accepted_at ? `${t("Terms")} ✓ ${g.terms_accepted_at.slice(0, 7)}` : `${t("Terms")} —`}</Badge>
-                    <GarageCountryCell garage={g} changedRecently={countryChanges.data?.has(g.id) ?? false} onSaved={invalidate} />
-                    {g.runtime && (
-                      <Badge variant="outline" className="text-[10px] shrink-0">
-                        {runtimeLabel(g.runtime)}
-                        {g.port ? `:${g.port}` : ""}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
-                    <span>Models: {g.models.length > 0 ? g.models.join(", ") : "—"}</span>
-                    {g.connection_type === "endpoint"
-                      ? <span>{t("Endpoint")}: {g.endpoint_url ? new URL(g.endpoint_url).host : "—"}</span>
-                      : g.mesh_ip && <span>Mesh: {g.mesh_ip}</span>}
-                    {g.api_host && <span>Host: {g.api_host}</span>}
-                    <span>Operator: {g.operator_id ? operatorEmails.get(g.operator_id) ?? "…" : "—"}</span>
-                    <span>Registered: {relativeTime(g.last_registered_at)}</span>
-                    {g.connection_type !== "endpoint" && <span>Heartbeat: {g.last_heartbeat_at ? relativeTime(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>}
-                  </div>
-                  <div className="mt-1.5 space-y-1.5">
-                    <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
-                    <ReliabilityAvailability reliability={reliability.get(g.name)} location={locations.get(g.name)} />
-                    <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onAlias={g.connection_type === "endpoint" ? setAlias : undefined} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
-                  </div>
-                  {g.models.length > 0 && (
-                    <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                      {g.models.map((m) => (
-                        <span key={m} className="inline-flex flex-wrap gap-1">
-                          <TestBadge model={m} test={latestTests.get(`${g.id}::${m}`)} />
-                          <ToolsTestBadge test={latestTests.get(`${g.id}::${m}`)} runtime={g.runtime} />
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <EditGaragePrices garage={g} onSaved={invalidate} />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs shrink-0"
-                  disabled={retesting === g.name || g.models.length === 0}
-                  onClick={() => handleRetest(g)}
-                >
-                  <FlaskConical className={`w-3.5 h-3.5 mr-1.5 ${retesting === g.name ? "animate-pulse" : ""}`} />
-                  {retesting === g.name ? "Testing..." : "Retest"}
-                </Button>
-                {g.connection_type === "endpoint" ? (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => { setNewKey(""); setKeyGarage(g); }}>
-                    <KeyRound className="w-3.5 h-3.5 mr-1.5" />
-                    {t("Update API key")}
-                  </Button>
-                ) : (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => handleNewToken(g)}>
-                    <KeyRound className="w-3.5 h-3.5 mr-1.5" />
-                    {t("New command")}
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => setConfirmGarage(g)}>
-                  {g.disabled ? <Power className="w-3.5 h-3.5 mr-1.5" /> : <Ban className="w-3.5 h-3.5 mr-1.5" />}
-                  {g.disabled ? "Enable" : "Disable"}
-                </Button>
-                <DeleteGarageButton garage={g} onDone={invalidate} />
-              </div>
-            ))}
-          </div>
-        )}
+        ) : rows.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">{t("No garages match these filters.")}</p> : <><GarageTable rows={rows} actions={actions} /><GarageMobileList rows={rows} actions={actions} /></>}
       </CardContent>
+
+      <GarageDetailSheet row={selectedRow} open={!!selectedGarage} onOpenChange={(open) => !open && setSelectedGarage(null)} pending={pending} onToggle={setOffered} onAlias={setAlias} onSaved={invalidate} />
+      {priceGarage && <EditGaragePrices garage={priceGarage} onSaved={invalidate} open onOpenChange={(open) => !open && setPriceGarage(null)} hideTrigger />}
+      {deleteGarage && <DeleteGarageButton garage={deleteGarage} onDone={invalidate} open onOpenChange={(open) => !open && setDeleteGarage(null)} hideTrigger />}
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="max-w-lg">
