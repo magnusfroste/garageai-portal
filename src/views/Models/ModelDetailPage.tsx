@@ -200,7 +200,7 @@ const ModelDetailPage = () => {
                   <td className="px-3 py-2"><div className="flex items-center gap-2"><MiniBar days={profileOf(o.garage)} /><span className="text-xs tabular-nums">{formatPct(o.availability30d)} · {measuredLabel(o.sampleDays)}</span></div></td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1.5 text-xs">
-                      <span className={cn("w-2 h-2 rounded-full", o.online ? "bg-emerald-500" : "bg-muted-foreground/40")} />
+                      <StatusDot tone={o.online ? "success" : "neutral"} />
                       {o.online ? "Online" : "Offline"}
                     </span>
                   </td>
