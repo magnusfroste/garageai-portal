@@ -19,17 +19,17 @@ interface UserTableProps {
 
 export const UserTable = ({ users, onEdit, isUpdating }: UserTableProps) => {
   return (
-    <div className="overflow-x-auto rounded-md border">
-      <Table className="min-w-[760px] table-fixed">
+    <div className="rounded-md border">
+      <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[18%]">Name</TableHead>
-            <TableHead className="w-[27%]">Email</TableHead>
-            <TableHead className="w-[11%]">Budget</TableHead>
-            <TableHead className="w-[11%]">Spend</TableHead>
-            <TableHead className="w-[12%]">Remaining</TableHead>
-            <TableHead className="w-[13%]">Registered</TableHead>
-            <TableHead className="w-[8%] text-right">Actions</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Budget</TableHead>
+            <TableHead>Spend</TableHead>
+            <TableHead>Remaining</TableHead>
+            <TableHead>Registered</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -43,23 +43,23 @@ export const UserTable = ({ users, onEdit, isUpdating }: UserTableProps) => {
                   {user.full_name || "—"}
                 </TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell className="tabular-nums">
+                <TableCell>
                   {user.litellm_budget ? (
                     <span className="font-medium">${user.litellm_budget.max_budget.toFixed(0)}</span>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
                   )}
                 </TableCell>
-                <TableCell className="tabular-nums">
+                <TableCell>
                   {user.litellm_budget ? (
                     <span className="text-muted-foreground">${user.litellm_budget.spend.toFixed(2)}</span>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
                   )}
                 </TableCell>
-                <TableCell className="tabular-nums">
+                <TableCell>
                   {remaining !== null ? (
-                    <span className={remaining <= 0 ? "text-danger-foreground font-medium" : "text-success-foreground font-medium"}>
+                    <span className={remaining <= 0 ? "text-destructive font-medium" : "text-green-600 font-medium"}>
                       ${remaining.toFixed(2)}
                     </span>
                   ) : (
