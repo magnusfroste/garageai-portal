@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { StatusDot } from "@/components/ui/status-badge";
 import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { useMemo } from "react";
 import { useEuOnly } from "@/hooks/useEuOnly";

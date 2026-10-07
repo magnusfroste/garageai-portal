@@ -1,4 +1,5 @@
 import { HowWeMeasure } from "@/views/Garages/components/HowWeMeasure";
+import { StatusDot } from "@/components/ui/status-badge";
 import { ProviderModelBadge } from "@/views/Models/components/ProviderModelBadge";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
