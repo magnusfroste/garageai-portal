@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { garageRepository, type ProviderPrices } from "@/data/repositories/garageRepository";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -14,6 +14,12 @@ export const EditGaragePrices = ({ garage, onSaved, open: controlledOpen, onOpen
   const [values, setValues] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (open) {
+      setValues(fields.map((field) => String(garage[field] ?? 0)));
+      setError("");
+    }
+  }, [open, garage]);
   return <>{!hideTrigger && <Button size="sm" variant="outline" onClick={() => { setValues(fields.map(f => String(garage[f] ?? 0))); setError(""); setOpen(true); }}>{t("Edit prices")}</Button>}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-md"><DialogHeader><DialogTitle>{t("Edit prices")} · {garage.name}</DialogTitle><DialogDescription>{t("USD per 1M tokens. New prices apply to future requests; statements retain recorded spend.")}</DialogDescription></DialogHeader>
       <form className="space-y-4" onSubmit={async e => { e.preventDefault(); setBusy(true); setError(""); try {

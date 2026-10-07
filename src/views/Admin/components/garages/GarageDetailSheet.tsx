@@ -1,4 +1,5 @@
 import { Building2, Clock3, Coins, HeartPulse, MapPin, Network, Server, UserRound } from "lucide-react";
+import type { ReactNode } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -10,10 +11,10 @@ import type { AdminGarageRow } from "./types";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { t } from "@/i18n";
 
-const Section = ({ icon: Icon, title, children }: { icon: typeof Server; title: string; children: React.ReactNode }) => (
+const Section = ({ icon: Icon, title, children }: { icon: typeof Server; title: string; children: ReactNode }) => (
   <section className="space-y-3"><h3 className="flex items-center gap-2 text-sm font-semibold"><Icon className="h-4 w-4 text-primary" />{title}</h3>{children}</section>
 );
-const Field = ({ label, value }: { label: string; value: React.ReactNode }) => <div className="min-w-0"><dt className="admin-meta">{label}</dt><dd className="mt-0.5 break-words text-sm">{value || "—"}</dd></div>;
+const Field = ({ label, value }: { label: string; value: ReactNode }) => <div className="min-w-0"><dt className="admin-meta">{label}</dt><dd className="mt-0.5 break-words text-sm">{value || "—"}</dd></div>;
 const date = (value?: string | null) => value ? new Date(value).toLocaleString() : "—";
 const usd = (value: number) => `$${value.toFixed(value < 1 ? 4 : 2)}`;
 

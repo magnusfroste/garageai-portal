@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ export const DeleteGarageButton = ({ garage, operator = false, onDone, open: con
   const [busy, setBusy] = useState(false);
   const { toast } = useToast();
   const label = operator ? t("Remove garage") : t("Delete");
+  useEffect(() => { if (open) setTyped(""); }, [open]);
 
   const run = async () => {
     setBusy(true);
