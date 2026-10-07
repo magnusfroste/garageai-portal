@@ -136,7 +136,25 @@ serve(async (req: Request) => {
       for (const profile of profiles || []) {
         try { await ensureLiteLLMUser(supabase, profile); repaired++; } catch { failed++; }
       }
-      return jsonResponse({ success: failed === 0, repaired, failed });
+      // Clear frozen per-key budgets so the user-level budget (starting + purchased) is the only cap
+      const LITELLM_MASTER_KEY = Deno.env.get('LITELLM_MASTER_KEY') || '';
+      const { data: activeKeys } = await supabase.from("api_keys").select("id, litellm_token").eq("is_active", true).is("revoked_at", null).not("litellm_token", "is", null);
+      let keys_cleared = 0, keys_failed = 0;
+      if (LITELLM_MASTER_KEY && activeKeys?.length) {
+        const proxyBase = await getProxyBaseUrl(supabase).catch(() => null);
+        if (proxyBase) for (const key of activeKeys) {
+          try {
+            const resp = await fetch(`${proxyBase}/key/update`, {
+              method: "POST",
+              headers: { 'Authorization': `Bearer ${LITELLM_MASTER_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key: key.litellm_token, max_budget: null }),
+            });
+            await resp.text().catch(() => "");
+            if (resp.ok) keys_cleared++; else keys_failed++;
+          } catch { keys_failed++; }
+        }
+      }
+      return jsonResponse({ success: failed === 0 && keys_failed === 0, repaired, failed, keys_cleared, keys_failed });
     }
 
     const { user_id, litellm_max_budget } = body as {

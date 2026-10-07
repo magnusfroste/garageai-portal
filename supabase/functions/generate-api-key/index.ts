@@ -47,7 +47,6 @@ async function createLiteLLMKey(
   litellmUserId: string,
   models?: string[],
   durationDays?: number,
-  maxBudget?: number,
   rpmLimit = 60,
 ): Promise<{
   key: string;
@@ -56,17 +55,17 @@ async function createLiteLLMKey(
 }> {
   console.log(`Calling LiteLLM API at ${base}/key/generate`);
 
+  // No per-key max_budget: the user's budget (starting + purchased credits)
+  // is the single cap, so topping up applies to every key immediately.
   const requestBody: {
     key_alias: string;
     user_id: string;
     duration?: string;
     models?: string[];
-    max_budget?: number;
     rpm_limit?: number;
   } = {
     key_alias: keyName,
     user_id: litellmUserId,
-    max_budget: maxBudget,
     rpm_limit: rpmLimit,
   };
 
@@ -161,7 +160,6 @@ serve(async (req: Request) => {
       const proxyBase = await getProxyBaseUrl(supabase);
       const ensured = await ensureLiteLLMUser(supabase, profile);
       const { data: rpmSetting } = await supabase.from('admin_settings').select('value').eq('key', 'key_rpm_limit').maybeSingle();
-      const totalBudget = Number(profile.starting_credit_usd || 0) + Number(profile.purchased_credits_usd || 0);
       const rpmLimit = Math.max(1, Number(rpmSetting?.value ?? 60));
       const liteLLMResponse = await createLiteLLMKey(
         proxyBase,
@@ -170,7 +168,6 @@ serve(async (req: Request) => {
         ensured.userId,
         body.models,
         undefined,
-        totalBudget,
         rpmLimit,
       );
       
