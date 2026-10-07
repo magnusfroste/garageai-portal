@@ -5,6 +5,7 @@ import { CuratedModel } from "@/models/types/curatedModel.types";
 import { buyerTierLabel } from "@/models/services/modelTier";
 import { useModelGarageGrades } from "@/hooks/useGarageReliability";
 import { ModelGarageGrade } from "@/views/Garages/components/Reliability";
+import { StatusDot, type StatusTone } from "@/components/ui/status-badge";
 
 const formatTokenCount = (tokens: number | null): string => {
   if (!tokens) return "—";
@@ -32,7 +33,7 @@ export const ModelRow = ({ model }: { model: CuratedModel }) => {
   const { gradeOf, poolSummary } = useModelGarageGrades();
   return (
   <div className="flex items-center gap-4 rounded-lg border border-border/50 bg-card/60 p-4 transition-colors hover:bg-accent/20">
-    <StatusDot status={model.status} />
+    <ModelStatusDot status={model.status} />
 
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 flex-wrap">

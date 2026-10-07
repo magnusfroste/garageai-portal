@@ -40,7 +40,7 @@ const ModelCard = ({ model }: { model: CuratedModel }) => {
   <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-card/50 p-3 transition-colors hover:bg-accent/30">
     <div className="flex-1 min-w-0 space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap">
-        <StatusDot status={model.status} />
+        <ModelStatusDot status={model.status} />
         <span className="font-mono text-sm font-medium text-foreground truncate">
           {model.model_name || model.id}
         </span>
