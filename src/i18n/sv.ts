@@ -377,6 +377,7 @@ export const sv: Record<string, string> = {
   "Garage": "Garage",
   "Provider": "Leverantör",
   "Revenue": "Intäkter",
+  "runtime": "körtid",
   "Per garage and provider. Platform fee: {p}%": "Per garage och leverantör. Plattformsavgift: {p} %",
   "Last 7 days": "Senaste 7 dagarna",
   "This month": "Denna månad",
