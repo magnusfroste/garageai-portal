@@ -7,12 +7,12 @@ import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { normaliseModelId } from "./modelIdentity.ts";
 
 /** "garage_id::runtime id" -> canonical model + provider-private flag. */
-export type ModelIdentity = Map<string, { canonical: string; private: boolean }>;
+export type ModelIdentity = Map<string, { canonical: string; private: boolean; context?: number | null }>;
 export async function modelIdentities(admin: SupabaseClient, garageIds: string[]): Promise<ModelIdentity> {
   const map: ModelIdentity = new Map();
   if (!garageIds.length) return map;
-  const { data } = await admin.from("garage_models").select("garage_id, model, canonical_model, private").in("garage_id", garageIds);
-  for (const r of (data || []) as Array<{ garage_id: string; model: string; canonical_model: string; private: boolean }>) map.set(`${r.garage_id}::${r.model}`, { canonical: r.canonical_model || normaliseModelId(r.model), private: !!r.private });
+  const { data } = await admin.from("garage_models").select("garage_id, model, canonical_model, private, context_length").in("garage_id", garageIds);
+  for (const r of (data || []) as Array<{ garage_id: string; model: string; canonical_model: string; private: boolean; context_length: number | null }>) map.set(`${r.garage_id}::${r.model}`, { canonical: r.canonical_model || normaliseModelId(r.model), private: !!r.private, context: r.context_length });
   return map;
 }
 export const identityOf = (ids: ModelIdentity, garageId: string, model: string) => ids.get(`${garageId}::${model}`) ?? { canonical: normaliseModelId(model), private: false };
@@ -65,13 +65,34 @@ export async function keyFingerprint(key: string | null | undefined) {
   return Array.from(h.slice(0, 4), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string | null; keyFp: string; input: number; output: number; garage: RoutingGarage; tier: string; }
+/** Output cap advertised to clients: never the whole window, so "max" requests cannot overflow it. */
+export const MAX_OUTPUT_CAP = 32768;
+export interface TokenLimits { maxInput: number; maxOutput: number }
+export const tokenLimits = (context: number | null | undefined): TokenLimits | null =>
+  context && context > 0 ? { maxInput: context, maxOutput: Math.min(MAX_OUTPUT_CAP, Math.floor(context / 4)) } : null;
+
+/** Reads context lengths from an OpenAI-compatible /v1/models (vLLM max_model_len, others context_length). */
+async function fetchRuntimeContexts(apiBase: string, key: string | null): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  try {
+    const res = await fetch(`${apiBase.replace(/\/$/, "")}/models`, { headers: key ? { Authorization: `Bearer ${key}` } : {}, signal: AbortSignal.timeout(5000) });
+    if (!res.ok) { await res.text().catch(() => ""); return out; }
+    const j = await res.json();
+    for (const m of (j?.data || []) as Array<Record<string, unknown>>) {
+      const n = Number(m.max_model_len ?? m.context_length ?? m.context_window ?? (m.meta as Record<string, unknown> | undefined)?.n_ctx_train);
+      if (typeof m.id === "string" && Number.isFinite(n) && n > 0) out.set(m.id, Math.floor(n));
+    }
+  } catch { /* unreachable runtime: keep known values */ }
+  return out;
+}
+
+interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string | null; keyFp: string; input: number; output: number; garage: RoutingGarage; tier: string; limits?: TokenLimits | null; }
 
 /**
  * The ONE builder for every garage deployment (sellable tiers and probes).
  * The key always comes from garage_runtime_secrets via `keys` (loaded with runtimeKeys) — never from a caller.
  */
-async function buildDeploymentSpec(g: RoutingGarage, keys: Map<string, string>, p: { id: string; route: string; model: string; tier: string; input: number; output: number }): Promise<DeploymentSpec | null> {
+async function buildDeploymentSpec(g: RoutingGarage, keys: Map<string, string>, p: { id: string; route: string; model: string; tier: string; input: number; output: number; limits?: TokenLimits | null }): Promise<DeploymentSpec | null> {
   const apiBase = apiBaseFor(g);
   if (!apiBase) return null;
   const apiKey = keys.get(g.id) ?? null;
@@ -84,7 +105,8 @@ async function addDeployment(base: string, masterKey: string, s: DeploymentSpec)
     body: JSON.stringify({
       model_name: s.route,
       litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey || NO_KEY, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6 },
-      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh", key_fingerprint: s.keyFp },
+      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh", key_fingerprint: s.keyFp,
+        ...(s.limits ? { max_input_tokens: s.limits.maxInput, max_output_tokens: s.limits.maxOutput, max_tokens: s.limits.maxInput } : {}) },
     }),
   });
   await res.text().catch(() => "");
@@ -138,6 +160,32 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   const base = await getProxyBaseUrl(admin);
   const keys = await runtimeKeys(admin, garages.map((g) => g.id));
 
+  const infoRes = await fetch(`${base}/model/info`, { headers: litellmHeaders(masterKey) });
+  if (!infoRes.ok) throw new Error(`LiteLLM /model/info failed (${infoRes.status})`);
+  const info = await infoRes.json();
+  type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number; max_input_tokens?: number | null; max_output_tokens?: number | null; max_tokens?: number | null } };
+  const deps = (info?.data || []) as Dep[];
+
+  // Context length per garage model: stored value → runtime /v1/models (reachable endpoint providers) → what LiteLLM already reports.
+  const learned: Array<{ garage_id: string; model: string; context_length: number }> = [];
+  for (const g of garages) {
+    const missing = (g.models || []).filter((m) => !identityOf(ids, g.id, m).context);
+    if (!missing.length) continue;
+    const apiBase = apiBaseFor(g);
+    const fromRuntime = g.connection_type === "endpoint" && apiBase ? await fetchRuntimeContexts(apiBase, keys.get(g.id) ?? null) : new Map<string, number>();
+    for (const m of missing) {
+      let ctx = fromRuntime.get(m);
+      if (!ctx) for (const d of deps) {
+        if (d.model_info?.garage === g.name && d.litellm_params?.model === `openai/${m}`) { const n = Number(d.model_info?.max_input_tokens); if (Number.isFinite(n) && n > 0) { ctx = n; break; } }
+      }
+      if (!ctx) continue;
+      const cur = ids.get(`${g.id}::${m}`);
+      if (cur) cur.context = ctx;
+      learned.push({ garage_id: g.id, model: m, context_length: ctx });
+    }
+  }
+  for (const l of learned) await admin.from("garage_models").update({ context_length: l.context_length }).eq("garage_id", l.garage_id).eq("model", l.model);
+
   const desired = new Map<string, DeploymentSpec>();
   for (const g of garages) {
     const apiBase = apiBaseFor(g);
@@ -151,7 +199,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
         const id = deploymentId(g.name, model, tier);
         if (!enabledTiers.has(id)) continue;
         const spec = await buildDeploymentSpec(g, keys, {
-          id, model, tier, route: tierRoute(g.name, ident.canonical, tier),
+          id, model, tier, route: tierRoute(g.name, ident.canonical, tier), limits: tokenLimits(ident.context),
           input: Number(tier === "dedicated" ? g.dedicated_input_cost_per_million : g.pool_input_cost_per_million),
           output: Number(tier === "dedicated" ? g.dedicated_output_cost_per_million : g.pool_output_cost_per_million),
         });
@@ -160,14 +208,10 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     }
   }
 
-  const infoRes = await fetch(`${base}/model/info`, { headers: litellmHeaders(masterKey) });
-  if (!infoRes.ok) throw new Error(`LiteLLM /model/info failed (${infoRes.status})`);
-  const info = await infoRes.json();
-  type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number } };
   const actual = new Map<string, Dep>();
   const removed: string[] = [];
   const now = Date.now();
-  for (const d of (info?.data || []) as Dep[]) {
+  for (const d of deps) {
     const id = d.model_info?.id;
     if (!id || !d.model_info?.garage) continue;
     if (d.model_info.garage_tier === "probe") {
@@ -183,7 +227,8 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     const cost = Number(d.model_info?.input_cost_per_token ?? d.litellm_params?.input_cost_per_token ?? NaN);
     const outputCost = Number(d.model_info?.output_cost_per_token ?? d.litellm_params?.output_cost_per_token ?? NaN);
     // Compare exactly what addDeployment writes; the key via its fingerprint (missing marker = stale, rewrite once).
-    const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== `openai/${want.model}` || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12);
+    const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== `openai/${want.model}` || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12
+      || (!!want.limits && (Number(d.model_info?.max_input_tokens) !== want.limits.maxInput || Number(d.model_info?.max_output_tokens) !== want.limits.maxOutput || Number(d.model_info?.max_tokens) !== want.limits.maxInput)));
     if (!want || drift) {
       if (await deleteDeployment(base, masterKey, id)) { removed.push(id); actual.delete(id); }
     }
