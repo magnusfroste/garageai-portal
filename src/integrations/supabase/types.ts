@@ -360,6 +360,7 @@ export type Database = {
         Row: {
           canonical_model: string
           canonical_source: string
+          context_length: number | null
           garage_id: string
           installed: boolean
           model: string
@@ -372,6 +373,7 @@ export type Database = {
         Insert: {
           canonical_model?: string
           canonical_source?: string
+          context_length?: number | null
           garage_id: string
           installed?: boolean
           model: string
@@ -384,6 +386,7 @@ export type Database = {
         Update: {
           canonical_model?: string
           canonical_source?: string
+          context_length?: number | null
           garage_id?: string
           installed?: boolean
           model?: string
