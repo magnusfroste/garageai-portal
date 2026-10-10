@@ -302,9 +302,9 @@ const OfferGpuPage = () => {
             ) : (
               <>
                 <OneTimeWarning />
-                <p className="text-sm">{t("Run this in a terminal on the machine:")}</p>
+                <p className="text-sm">{t("Run garageai connect with Bridge in a terminal on the machine:")}</p>
                 <GarageConnectCommand credentials={creds} runtime={runtime} initialOs={os === "linux" ? "linux" : "macos"} options={{ port, models: chosenModel ? [chosenModel] : [], runtimeApiKey }} />
-                <p className="text-xs text-muted-foreground">{t("The script asks for your sudo password and may ask to install jq. The setup key is single-use and valid for 3 days. A sleeping machine goes offline.")}</p>
+                <p className="text-xs text-muted-foreground">{t("The setup key is single-use and valid for 3 days. A sleeping machine goes offline.")}</p>
                 <div className="space-y-1.5"><p className="text-sm font-medium">{t("Progress")}</p><OnboardingProgress events={onboarding.data ?? []} /></div>
                 <Button onClick={() => { setLiveName(creds.garage.name); setStep(4); }}>
                   {t("I have copied and run the command")}

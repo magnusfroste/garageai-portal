@@ -25,6 +25,8 @@ import { DeleteGarageButton } from "./components/DeleteGarageButton";
 import { ReliabilityAvailability } from "./components/ReliabilityAvailability";
 import { LocationBadge } from "./components/LocationBadge";
 import { useGarageLocations } from "@/hooks/useGarageLocations";
+import { useLatestOnboardingEvents } from "@/hooks/useOnboardingEvents";
+import { connectionTool } from "@/models/services/onboardingTool";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const MyGaragesPage = () => {
@@ -38,6 +40,7 @@ const MyGaragesPage = () => {
   const [creds, setCreds] = useState<{ c: GarageCredentials; runtime: string; models: string[] } | null>(null);
   const { locations } = useGarageLocations();
   const { byGarage, setOffered, setPaused, pending } = useGarageModels(garages.map((g) => g.id));
+  const onboarding = useLatestOnboardingEvents(garages.filter((g) => g.connection_type !== "endpoint").map((g) => g.id));
 
   const retest = async (g: GarageRow) => {
     setBusy(`t:${g.name}`);
@@ -108,6 +111,7 @@ const MyGaragesPage = () => {
                    <span className="text-xs text-muted-foreground">{t("Last heartbeat:")} {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>
                 </div>
                 <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
+                {g.connection_type !== "endpoint" && <p className="text-xs text-muted-foreground">{t("Last connected with")} · {onboarding.isError ? t("Could not load connection tool.") : onboarding.isLoading ? t("Loading...") : connectionTool(onboarding.data?.get(g.id)?.script_version) ?? "—"}</p>}
                 {g.connection_type === "endpoint" && !isAdmin && <p className="text-xs text-muted-foreground">{t("Models on provider endpoints are offered by GarageAI admins.")}</p>}
                 <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onPause={setPaused} readOnly={g.connection_type === "endpoint" && !isAdmin} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
                 <div className="flex gap-1.5 flex-wrap">
@@ -151,7 +155,7 @@ const MyGaragesPage = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("New command")}</DialogTitle>
-            <DialogDescription>{t("Run the command on the machine {name}. Choose its operating system below.", { name: creds?.c.garage.name ?? "" })}</DialogDescription>
+            <DialogDescription>{t("Run garageai connect with Bridge on the machine {name}.", { name: creds?.c.garage.name ?? "" })}</DialogDescription>
           </DialogHeader>
           {creds && (
             <div className="space-y-4">

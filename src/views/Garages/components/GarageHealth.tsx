@@ -108,7 +108,7 @@ export const GarageTroubleshooting = () => {
   const [open, setOpen] = useState(false);
   const items: Array<{ title: string; body: string; code?: string }> = [
     { title: "Runtime only listens on localhost", body: "Ollama on macOS: set OLLAMA_HOST=0.0.0.0 and restart the app (or brew services restart ollama). Ollama on Linux: add OLLAMA_HOST=0.0.0.0 in a systemd override. LM Studio: enable \"Serve on Local Network\". vLLM, SGLang, llama.cpp: start with --host 0.0.0.0." },
-    { title: "Run the built-in check", body: "The script can diagnose the tunnel, runtime and port for you:", code: "bash garageai-connect.sh --doctor" },
+    { title: "Run the built-in check", body: "Bridge can diagnose the tunnel, runtime and port for you:", code: "garageai doctor" },
     { title: "Model too big for memory", body: "If the model does not fit in RAM/VRAM it loads slowly or fails. Choose a smaller model or quantization." },
     { title: "Token revoked", body: "If the garage was given a new command, the old token stops working. Use \"New command\" and run it again." },
     { title: "Sleeping Mac/PC goes offline", body: "A sleeping machine cannot answer. Disable sleep while you offer the GPU; the garage comes back automatically when it wakes." },
