@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import type { OnboardingStatus } from "@/models/types/onboarding.types";
 import { t } from "@/i18n";
+import { latestProfile } from "@/models/services/garageProfile";
+import { GarageProfileView } from "./GarageProfileView";
 
 const tone: Record<OnboardingStatus, StatusTone> = { started: "neutral", warning: "warning", failed: "danger", stopped: "warning", done: "success" };
 const ago = (iso: string) => {
@@ -20,8 +22,10 @@ export const GarageOnboardingSection = ({ garageId }: { garageId: string }) => {
   if (isLoading) return <p className="admin-meta">{t("Loading...")}</p>;
   const latest = events[0];
   if (!latest) return <p className="admin-meta">{t("No onboarding events reported.")}</p>;
+  const profile = latestProfile(events);
   return (
     <div className="space-y-3">
+      {profile && <GarageProfileView profile={profile} />}
       <div className="space-y-1 rounded-md border p-3">
         <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-sm">{latest.step}</span><StatusBadge tone={tone[latest.status]} label={latest.status} compact /><span className="admin-meta ml-auto" title={new Date(latest.created_at).toLocaleString()}>{ago(latest.created_at)}</span></div>
         {latest.message && <p className="whitespace-pre-wrap break-words text-xs text-muted-foreground">{latest.message}</p>}

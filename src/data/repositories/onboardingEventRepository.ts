@@ -13,7 +13,12 @@ export const onboardingEventRepository = {
     if (!garageIds.length) return map;
     const { data, error } = await supabase.from("onboarding_events").select("*").in("garage_id", garageIds).order("created_at", { ascending: false }).limit(garageIds.length * 30);
     if (error) throw error;
-    for (const e of (data ?? []) as OnboardingEvent[]) if (!map.has(e.garage_id)) map.set(e.garage_id, e);
+    // Latest event per garage; carries the newest reported profile when the latest event itself has none.
+    for (const e of (data ?? []) as OnboardingEvent[]) {
+      const cur = map.get(e.garage_id);
+      if (!cur) map.set(e.garage_id, { ...e });
+      else if (!cur.profile && e.profile) cur.profile = e.profile;
+    }
     return map;
   },
 };
