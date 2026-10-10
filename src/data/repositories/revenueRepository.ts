@@ -10,6 +10,7 @@ export const revenueRepository = {
       garage: r.garage_name, displayName: r.display_name, isProvider: r.connection_type === "endpoint", model: r.model, runtimeModels: (r.runtime_models ?? []).map((m) => `openai/${m}`),
       requests: Number(r.requests), failures: Number(r.failures), promptTokens: Number(r.prompt_tokens),
       completionTokens: Number(r.completion_tokens), revenue: Number(r.spend_usd),
+      cachedTokens: Number(r.cached_prompt_tokens ?? 0), inputRevenue: Number(r.input_spend_usd ?? 0), cachedRevenue: Number(r.cached_spend_usd ?? 0), outputRevenue: Number(r.output_spend_usd ?? 0),
     }));
   },
 };

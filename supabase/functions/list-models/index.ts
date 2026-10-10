@@ -19,6 +19,7 @@ interface LiteLLMModelInfo {
     max_output_tokens?: number;
     input_cost_per_token?: number;
     output_cost_per_token?: number;
+    cache_read_input_token_cost?: number | null;
     mode?: string;
   };
 }
@@ -92,6 +93,9 @@ serve(async (req: Request) => {
           : null,
         output_cost_per_million: info.output_cost_per_token
           ? Math.round(info.output_cost_per_token * 1_000_000 * 1000) / 1000
+          : null,
+        cache_read_cost_per_million: info.cache_read_input_token_cost != null
+          ? Math.round(info.cache_read_input_token_cost * 1e6 * 1e6) / 1e6
           : null,
         mode: info.mode || null,
         status: healthStatus || 'unknown',

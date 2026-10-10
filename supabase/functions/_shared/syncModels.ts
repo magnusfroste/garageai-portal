@@ -17,6 +17,7 @@ interface LiteLLMModelInfo {
     max_output_tokens?: number;
     input_cost_per_token?: number;
     output_cost_per_token?: number;
+    cache_read_input_token_cost?: number | null;
     mode?: string;
     garage?: string;
     garage_tier?: string;
@@ -180,6 +181,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
       max_output_tokens: info.max_output_tokens || null,
       input_cost_per_million: info.input_cost_per_token != null ? Math.round(info.input_cost_per_token * 1_000_000 * 1000) / 1000 : null,
       output_cost_per_million: info.output_cost_per_token != null ? Math.round(info.output_cost_per_token * 1_000_000 * 1000) / 1000 : null,
+      cache_read_cost_per_million: info.cache_read_input_token_cost != null ? Math.round(info.cache_read_input_token_cost * 1e6 * 1e6) / 1e6 : null,
       mode: info.mode || null,
       status: garage ? garageStatus(garage) : (prev?.status ?? "unknown"),
       enabled,

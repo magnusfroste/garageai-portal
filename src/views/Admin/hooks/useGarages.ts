@@ -22,6 +22,8 @@ export interface Garage {
   pool_output_cost_per_million?: number;
   dedicated_input_cost_per_million?: number;
   dedicated_output_cost_per_million?: number;
+  pool_cache_read_cost_per_million?: number | null;
+  dedicated_cache_read_cost_per_million?: number | null;
   connection_type?: string;
   endpoint_url?: string | null;
   display_name?: string | null;

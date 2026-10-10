@@ -9,6 +9,7 @@ export interface KeyUsageInfo {
   total_tokens: number;
   prompt_tokens: number;
   completion_tokens: number;
+  cached_tokens?: number;
   models: string[];
   expires: string;
   metadata: Record<string, unknown>;
@@ -23,6 +24,8 @@ export interface SpendLog {
   total_tokens: number;
   prompt_tokens: number;
   completion_tokens: number;
+  /** Prompt tokens served from cache (billed at the cache-read price). */
+  cached_tokens?: number;
   spend: number;
   status: string;
   api_key?: string;

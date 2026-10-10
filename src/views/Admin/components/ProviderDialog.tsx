@@ -18,6 +18,8 @@ const PRICE_FIELDS: Array<[keyof ProviderPrices, string, string]> = [
   ["dedicated_output_cost_per_million", "Dedicated output $/M", "1.20"],
   ["pool_input_cost_per_million", "Pool input $/M", "0.15"],
   ["pool_output_cost_per_million", "Pool output $/M", "0.60"],
+  ["dedicated_cache_read_cost_per_million", "Dedicated cache read $/M (default 25 % of input)", "0.075"],
+  ["pool_cache_read_cost_per_million", "Pool cache read $/M (default 25 % of input)", "0.0375"],
 ];
 
 interface Props { open: boolean; onOpenChange: (o: boolean) => void; onCreated: () => void }

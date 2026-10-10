@@ -19,6 +19,8 @@ interface KeyUsageResponse {
     total_tokens: number;
     prompt_tokens: number;
     completion_tokens: number;
+    /** Prompt tokens served from the runtime's prompt cache (billed at the cache-read price). */
+    cached_tokens: number;
     models: string[];
     expires: string;
     metadata: Record<string, unknown>;
@@ -37,6 +39,7 @@ interface KeyUsageResponse {
     date: string;
     spend: number;
     total_tokens: number;
+    cached_tokens: number;
     api_requests: number;
     models?: Array<{
       model: string;
@@ -167,7 +170,13 @@ serve(async (req) => {
     const publicNames = new Set(routeMap.values());
     const recentLogs = (rawLogs as Array<Record<string, unknown>>).map((log) => {
       const name = publicModelName(log.model_group, log.model, routeMap, publicNames);
-      return { ...log, model: name, model_group: name };
+      let meta = log.metadata as Record<string, unknown> | string | undefined;
+      if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch { meta = undefined; } }
+      const usage = (meta as Record<string, unknown> | undefined)?.usage_object as Record<string, unknown> | undefined;
+      const cached = Number((usage?.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens ?? usage?.cache_read_input_tokens ?? 0) || 0;
+      // metadata stays server-side: buyers only get the cached-token count.
+      const { metadata: _m, ...rest } = log;
+      return { ...rest, model: name, model_group: name, cached_tokens: cached };
     });
 
     if (!keyInfoRes.ok) {
@@ -177,7 +186,7 @@ serve(async (req) => {
             key_name: apiKeyData.name,
             key_alias: apiKeyData.name,
             spend: 0, max_budget: 0, budget_remaining: 0,
-            total_tokens: 0, prompt_tokens: 0, completion_tokens: 0,
+            total_tokens: 0, prompt_tokens: 0, completion_tokens: 0, cached_tokens: 0,
             models: [], expires: '', metadata: {},
           },
           spend_logs: [],
@@ -212,7 +221,7 @@ serve(async (req) => {
     // Build a compact daily breakdown for charts (incl. per-model split)
     type LitellmDayResult = {
       date: string;
-      metrics?: { spend?: number; total_tokens?: number; api_requests?: number };
+      metrics?: { spend?: number; total_tokens?: number; api_requests?: number; cache_read_input_tokens?: number };
       breakdown?: {
         models?: Record<string, { metrics?: { spend?: number; total_tokens?: number; api_requests?: number } }>;
         model_groups?: Record<string, { metrics?: { spend?: number; total_tokens?: number; api_requests?: number } }>;
@@ -224,6 +233,7 @@ serve(async (req) => {
             date: r.date,
             spend: r.metrics?.spend ?? 0,
             total_tokens: r.metrics?.total_tokens ?? 0,
+            cached_tokens: r.metrics?.cache_read_input_tokens ?? 0,
             api_requests: r.metrics?.api_requests ?? 0,
             models: Object.entries(
               r.breakdown?.model_groups && Object.keys(r.breakdown.model_groups).length
@@ -251,6 +261,7 @@ serve(async (req) => {
         total_tokens: totalTokens,
         prompt_tokens: promptTokens,
         completion_tokens: completionTokens,
+        cached_tokens: Number(aggMeta.total_cache_read_input_tokens ?? dailyBreakdown.reduce((n, d) => n + d.cached_tokens, 0)) || 0,
         models: keyInfo.models || [],
         expires: keyInfo.expires || '',
         metadata: keyInfo.metadata || {},

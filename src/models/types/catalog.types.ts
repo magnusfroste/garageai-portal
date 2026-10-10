@@ -17,6 +17,8 @@ export interface GarageDailyTokens {
 export interface Price {
   input: number | null;
   output: number | null;
+  /** Input cache read per 1M (OpenRouter style); null when unknown. */
+  cacheRead?: number | null;
 }
 
 /** One garage offering a model through its specific-garage tier. */

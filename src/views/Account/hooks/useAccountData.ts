@@ -54,6 +54,7 @@ export const useAccountData = (options?: UseAccountDataOptions) => {
           if (!modelMap[model]) modelMap[model] = { model, cost: 0, tokens: 0, requests: 0 };
           modelMap[model].cost += Number(log.spend || 0);
           modelMap[model].tokens += Number(log.total_tokens || 0);
+          modelMap[model].cachedTokens = (modelMap[model].cachedTokens ?? 0) + Number(log.cached_tokens || 0);
           modelMap[model].requests += 1;
           total += Number(log.spend || 0);
         }
