@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, Circle, Hand, Loader2, XCircle } from "lucide-react";
-import { buildProgress, type StepState } from "@/models/services/onboardingProgress";
+import { buildProgress, stepNumber, type StepState } from "@/models/services/onboardingProgress";
+import { actionableProblems, parseProfile } from "@/models/services/garageProfile";
+import { ProfileProblems } from "@/views/Admin/components/garages/GarageProfileView";
 import type { OnboardingEvent } from "@/models/types/onboarding.types";
 import { t } from "@/i18n";
 
@@ -18,7 +20,10 @@ export const OnboardingProgress = ({ events }: { events: OnboardingEvent[] }) =>
   if (!events.length) return (
     <div className="flex items-center gap-2 rounded-md border p-3 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{t("Waiting for the command to start on your machine…")}</div>
   );
-  const { steps, done } = buildProgress(events);
+  const { steps, done, latest } = buildProgress(events);
+  const problems = actionableProblems(parseProfile(latest?.profile));
+  const latestIdx = latest ? stepNumber(latest.step) : null;
+  const failedIdx = steps.find((s) => s.state === "failed" || s.state === "waiting")?.index ?? latestIdx;
   return (
     <div className="space-y-2 rounded-md border p-3">
       <ol className="space-y-2">
@@ -31,7 +36,9 @@ export const OnboardingProgress = ({ events }: { events: OnboardingEvent[] }) =>
                 {s.state === "waiting" && <span className="ml-2 text-xs text-warning">{t("waiting for you")}</span>}
               </p>
               {s.message && <p className="break-words text-xs text-muted-foreground whitespace-pre-wrap">{s.message}</p>}
-              {s.hint && <p className="mt-1 break-words rounded bg-muted/40 p-2 text-xs">{t(s.hint)}</p>}
+              {problems.length > 0 && s.index === failedIdx
+                ? <div className="mt-1"><ProfileProblems problems={problems} /></div>
+                : s.hint && <p className="mt-1 break-words rounded bg-muted/40 p-2 text-xs">{t(s.hint)}</p>}
             </div>
           </li>
         ))}
