@@ -12,6 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 const usd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
 const num = (n: number) => n.toLocaleString();
+type Parts = { promptTokens: number; cachedTokens: number; completionTokens: number; inputRevenue: number; cachedRevenue: number; outputRevenue: number };
+const Part = ({ tokens, amount }: { tokens: number; amount: number }) => <TableCell className="text-right"><div>{num(tokens)}</div><div className="text-xs text-muted-foreground">{usd(amount)}</div></TableCell>;
+const PartCells = ({ r }: { r: Parts }) => <><Part tokens={r.promptTokens - r.cachedTokens} amount={r.inputRevenue} /><Part tokens={r.cachedTokens} amount={r.cachedRevenue} /><Part tokens={r.completionTokens} amount={r.outputRevenue} /></>;
 
 export const RevenuePanel = () => {
   const [period, setPeriod] = useState<RevenuePeriod>("30d");
@@ -49,19 +52,20 @@ export const RevenuePanel = () => {
           </Button>
         </div>
       </CardHeader>
-      <p className="px-6 pb-3 text-xs text-muted-foreground">{t("Statements use recorded request spend, not today’s prices.")}</p>
+      <p className="px-6 pb-3 text-xs text-muted-foreground">{t("Statements use recorded request spend, not today’s prices.")} {t("Tokens and USD per part; cached input is billed at the cache-read price.")}</p>
       <CardContent className="overflow-x-auto px-0">
         {isLoading ? <p className="px-6 py-4 text-sm text-muted-foreground">{t("Loading...")}</p>
           : isError ? <p className="px-6 py-4 text-sm text-destructive">{t("Failed to load revenue.")} <Button variant="link" onClick={() => refetch()}>{t("Try again")}</Button></p>
           : garages.length === 0 ? <p className="px-6 py-4 text-sm text-muted-foreground">{t("No usage in this period — choose another period or check your garages.")}</p>
           : (
-          <Table className="min-w-[820px]">
+          <Table className="min-w-[960px]">
             <TableHeader><TableRow>
                 <TableHead className="px-4">{t("Garage / provider")}</TableHead>
                 <TableHead className="text-right">{t("Requests")}</TableHead>
                 <TableHead className="text-right">{t("Failures")}</TableHead>
-                <TableHead className="text-right">{t("Tokens in")}</TableHead>
-                <TableHead className="text-right">{t("Tokens out")}</TableHead>
+                <TableHead className="text-right">{t("Input")}</TableHead>
+                <TableHead className="text-right">{t("Cached input")}</TableHead>
+                <TableHead className="text-right">{t("Output")}</TableHead>
                 <TableHead className="text-right">{t("Revenue (USD)")}</TableHead>
                 <TableHead className="text-right">{t("Fee")}</TableHead>
                 <TableHead className="px-4 text-right">{t("Payable to operator")}</TableHead>
@@ -71,16 +75,16 @@ export const RevenuePanel = () => {
                 <Fragment key={g.garage}>
                 <TableRow>
                   <TableCell className="px-4"><span className="font-mono">{g.garage}</span>{g.isProvider && <ProviderBadge name={g.displayName || g.garage} />}</TableCell>
-                  <TableCell className="text-right">{num(g.requests)}</TableCell><TableCell className="text-right">{num(g.failures)}</TableCell><TableCell className="text-right">{num(g.promptTokens)}</TableCell><TableCell className="text-right">{num(g.completionTokens)}</TableCell><TableCell className="text-right">{usd(g.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(g.payable)}</TableCell>
+                  <TableCell className="text-right">{num(g.requests)}</TableCell><TableCell className="text-right">{num(g.failures)}</TableCell><PartCells r={g} /><TableCell className="text-right">{usd(g.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(g.payable)}</TableCell>
                 </TableRow>
                 {g.models.map((m) => { const rt = runtimeLabel(m); return (
                   <TableRow key={`${g.garage}::${m.model}`} className="text-muted-foreground">
                     <TableCell className="px-4 pl-8"><span className="font-mono text-xs text-foreground">{m.model}</span>{rt && <div className="admin-meta">{t("runtime")}: {rt}</div>}</TableCell>
-                    <TableCell className="text-right">{num(m.requests)}</TableCell><TableCell className="text-right">{num(m.failures)}</TableCell><TableCell className="text-right">{num(m.promptTokens)}</TableCell><TableCell className="text-right">{num(m.completionTokens)}</TableCell><TableCell className="text-right">{usd(m.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(m.payable)}</TableCell>
+                    <TableCell className="text-right">{num(m.requests)}</TableCell><TableCell className="text-right">{num(m.failures)}</TableCell><PartCells r={m} /><TableCell className="text-right">{usd(m.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(m.payable)}</TableCell>
                   </TableRow>); })}
                 </Fragment>
               ))}
-              <TableRow className="font-semibold"><TableCell className="px-4">{t("Total")}</TableCell><TableCell className="text-right">{num(totals.requests)}</TableCell><TableCell className="text-right">{num(totals.failures)}</TableCell><TableCell className="text-right">{num(totals.promptTokens)}</TableCell><TableCell className="text-right">{num(totals.completionTokens)}</TableCell><TableCell className="text-right">{usd(totals.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(totals.payable)}</TableCell></TableRow>
+              <TableRow className="font-semibold"><TableCell className="px-4">{t("Total")}</TableCell><TableCell className="text-right">{num(totals.requests)}</TableCell><TableCell className="text-right">{num(totals.failures)}</TableCell><PartCells r={totals} /><TableCell className="text-right">{usd(totals.revenue)}</TableCell><TableCell className="text-right">{feePercent}%</TableCell><TableCell className="px-4 text-right">{usd(totals.payable)}</TableCell></TableRow>
             </TableBody>
           </Table>
         )}
