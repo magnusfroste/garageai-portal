@@ -165,9 +165,21 @@ Deno.serve(async (req) => {
       setupKey = data?.key ?? null;
       if (setupKey && garage.netbird_peer_id) {
         // Operator is (re)installing; the pin is re-established at the next registration.
+        const oldPeer = garage.netbird_peer_id as string;
         const { error: pinErr } = await admin.from("garages").update({ netbird_peer_id: null }).eq("id", garage.id);
         if (pinErr) throw pinErr;
         garage = { ...garage, netbird_peer_id: null };
+        // Remove the stale peer so the mesh does not keep a dead duplicate next to the new one.
+        try {
+          const del = await fetch(`${netbirdApiUrl}/peers/${encodeURIComponent(oldPeer)}`, { method: "DELETE", headers: netbirdHeaders() });
+          const ok = del.ok || del.status === 404;
+          await admin.from("onboarding_events").insert({
+            garage_id: garage.id, step: "mesh", status: ok ? "done" : "warning",
+            message: ok ? "Old mesh peer removed" : `Old mesh peer could not be removed (status ${del.status})`,
+          });
+        } catch (e) {
+          console.error("[create-garage] old peer delete failed", { garage: name, error: e instanceof Error ? e.message : "unknown" });
+        }
       }
     }
 

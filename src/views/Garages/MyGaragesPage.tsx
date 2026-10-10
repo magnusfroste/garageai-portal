@@ -57,7 +57,7 @@ const MyGaragesPage = () => {
     setConfirmGarage(null);
     setBusy(`c:${g.name}`);
     try {
-      const c = await garageRepository.create({ name: g.name, create_setup_key: !g.netbird_peer_id, terms_accepted: !!g.terms_accepted_at });
+      const c = await garageRepository.create({ name: g.name, create_setup_key: !g.netbird_peer_id || g.mesh_connected !== true, terms_accepted: !!g.terms_accepted_at });
       setCreds({ c, runtime: g.runtime || "ollama", models: (byGarage.get(g.id) ?? []).filter((m) => m.offered && m.installed).map((m) => m.model) });
       invalidate();
     } catch (e) {
