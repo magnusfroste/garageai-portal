@@ -10,7 +10,7 @@ import { modelIdError, storeRuntimeKey, withProbeDeployments, type RoutingGarage
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
 const sanitize = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
 
-export interface GarageRegistrationPayload { name: string; runtime: string; port: number; models: string[]; runtime_api_key?: string; mesh_ip?: string; contexts: Record<string, number>; }
+export interface GarageRegistrationPayload { name: string; runtime: string; port: number; models: string[]; runtime_api_key?: string; mesh_ip?: string; contexts?: Record<string, number>; }
 export interface GarageRegistration { api_base: string; models: string[]; acceptance: AcceptanceResult[]; catalog_synced: boolean; }
 export interface GarageRecord { id: string; name: string; operator_id: string | null; api_host: string | null; netbird_peer_id: string | null; dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number; pool_input_cost_per_million: number; pool_output_cost_per_million: number; connection_type?: string | null; endpoint_url?: string | null; }
 

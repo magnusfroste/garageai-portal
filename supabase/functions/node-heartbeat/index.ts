@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     const current = new Set(payload.models);
     const added = payload.models.filter((model) => !previous.has(model));
     const removed = [...previous].filter((model) => !current.has(model));
-    const contextChanges = await changedContexts(admin, garage.id, payload.contexts);
+    const contextChanges = await changedContexts(admin, garage.id, payload.contexts ?? {});
     const contextChanged = Object.keys(contextChanges).some((m) => previous.has(m));
     const changed = added.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
 
