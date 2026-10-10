@@ -181,6 +181,8 @@ export const sv: Record<string, string> = {
   "New command": "Nytt kommando",
   "Create command": "Skapa kommando",
   "Bridge": "Bridge",
+  "Bridge can diagnose the tunnel, runtime and port for you:": "Bridge kan felsöka tunnel, runtime och port åt dig:",
+  "To fully clean up your machine, run garageai uninstall.": "Kör garageai uninstall för att städa upp din maskin helt.",
   "Script (legacy)": "Skript (äldre)",
   "The previous connect script. Use Bridge unless GarageAI asked you to use this.": "Det tidigare anslutningsskriptet. Använd Bridge om inte GarageAI har bett dig använda detta.",
   "Last connected with": "Senast ansluten med",

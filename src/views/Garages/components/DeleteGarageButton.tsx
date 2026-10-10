@@ -41,7 +41,7 @@ export const DeleteGarageButton = ({ garage, operator = false, onDone, open: con
             <AlertDialogTitle>{label}: {garage.name}</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <span className="block">{t("Removes the garage from the mesh and the catalogue. Usage history and earnings are kept.")}</span>
-              {operator && <span className="block">{t("To fully clean up your machine, run the connect script with --uninstall.")}</span>}
+              {operator && <span className="block">{t("To fully clean up your machine, run garageai uninstall.")}</span>}
               <span className="block">{t("Type the garage name to confirm.")}</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
