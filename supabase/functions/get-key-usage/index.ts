@@ -170,7 +170,13 @@ serve(async (req) => {
     const publicNames = new Set(routeMap.values());
     const recentLogs = (rawLogs as Array<Record<string, unknown>>).map((log) => {
       const name = publicModelName(log.model_group, log.model, routeMap, publicNames);
-      return { ...log, model: name, model_group: name };
+      let meta = log.metadata as Record<string, unknown> | string | undefined;
+      if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch { meta = undefined; } }
+      const usage = (meta as Record<string, unknown> | undefined)?.usage_object as Record<string, unknown> | undefined;
+      const cached = Number((usage?.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens ?? usage?.cache_read_input_tokens ?? 0) || 0;
+      // metadata stays server-side: buyers only get the cached-token count.
+      const { metadata: _m, ...rest } = log;
+      return { ...rest, model: name, model_group: name, cached_tokens: cached };
     });
 
     if (!keyInfoRes.ok) {

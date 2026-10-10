@@ -67,6 +67,7 @@ export const DashboardActivity = () => {
 
   const totalRequests = usageByModel.reduce((s, m) => s + m.requests, 0);
   const totalTokens = usageByModel.reduce((s, m) => s + m.tokens, 0);
+  const cachedTokens = usageByModel.reduce((s, m) => s + (m.cachedTokens ?? 0), 0);
 
   const spendData = usageByModel.map((m) => ({ name: m.model, value: m.cost }));
   const requestData = usageByModel
@@ -181,6 +182,7 @@ export const DashboardActivity = () => {
               formatLegend={formatTokens}
             />
           </div>
+          {cachedTokens > 0 && <p className="text-xs text-muted-foreground">{t("{c} of these were cached input tokens, billed at the lower cache-read price.", { c: formatTokens(cachedTokens) })}</p>}
         </>
       ) : <p className="text-sm text-muted-foreground">{t("No usage yet — create an API key and send your first request.")}</p>}
     </div>
