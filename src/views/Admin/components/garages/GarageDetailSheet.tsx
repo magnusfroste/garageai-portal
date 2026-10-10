@@ -1,4 +1,4 @@
-import { Building2, Clock3, Coins, HeartPulse, MapPin, Network, Server, UserRound } from "lucide-react";
+import { Building2, Rocket, Clock3, Coins, HeartPulse, MapPin, Network, Server, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { ToolsTestBadge } from "@/views/Garages/components/GarageShared";
 import { GarageCountryCell } from "../GarageCountryEditor";
 import { GarageStatusCell } from "./GarageStatusCell";
 import type { AdminGarageRow } from "./types";
+import { GarageOnboardingSection } from "./GarageOnboardingSection";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { t } from "@/i18n";
 
@@ -46,6 +47,7 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
             <dl className="grid grid-cols-2 gap-3"><Field label={t("Last gateway check")} value={date(garage.last_gateway_check_at)} /><Field label={t("Last heartbeat")} value={provider ? t("Not applicable") : date(garage.last_heartbeat_at)} /></dl>
           </Section>
           <Separator />
+          {!provider && <><Section icon={Rocket} title={t("Onboarding")}><GarageOnboardingSection garageId={garage.id} /></Section><Separator /></>}
           <Section icon={Server} title={t("Models")}>
             {row.models.length ? <GarageModelList garageName={garage.name} models={row.models} pending={pending} onToggle={onToggle} onAlias={provider ? onAlias : undefined} offline={garage.runtime_ok === false || garage.mesh_connected === false || garage.status === "offline" || garage.disabled} /> : <p className="text-sm text-muted-foreground">{t("No models reported.")}</p>}
             {row.models.map((model) => { const test = row.tests.get(`${garage.id}::${model.model}`); return test ? <div key={model.model} className="flex flex-wrap items-center gap-2 text-xs"><Badge variant={test.passed ? "success" : "danger"}>{test.passed ? t("Passed") : t("Failed")}</Badge><span className="font-mono">{model.canonical_model || model.model}</span>{test.tokens_per_second != null && <span className="tabular-nums text-muted-foreground">{test.tokens_per_second} tok/s</span>}{test.ttft_ms != null && <span className="tabular-nums text-muted-foreground">TTFT {test.ttft_ms} ms</span>}<ToolsTestBadge test={test} runtime={garage.runtime} /></div> : null; })}
