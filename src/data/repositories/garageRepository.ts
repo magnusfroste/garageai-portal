@@ -21,6 +21,8 @@ export interface GarageRow {
   pool_output_cost_per_million?: number;
   dedicated_input_cost_per_million?: number;
   dedicated_output_cost_per_million?: number;
+  pool_cache_read_cost_per_million?: number | null;
+  dedicated_cache_read_cost_per_million?: number | null;
   connection_type?: string | null;
   last_gateway_check_at?: string | null;
   mesh_connected?: boolean | null;
@@ -46,6 +48,9 @@ export interface GarageModelRow {
   canonical_model: string;
   canonical_source: "auto" | "admin";
   private: boolean;
+  /** Per-model cache-read override ($/M); null = garage price or default. */
+  pool_cache_read_cost_per_million?: number | null;
+  dedicated_cache_read_cost_per_million?: number | null;
 }
 
 export interface DemandModel { model: string; min_gb: number; note?: string; ids?: { ollama?: string; lmstudio?: string; hf?: string; [runtime: string]: string | undefined } }
@@ -95,14 +100,16 @@ const invoke = async <T>(fn: string, body: unknown): Promise<T> => {
 export interface ProviderPrices {
   dedicated_input_cost_per_million?: number; dedicated_output_cost_per_million?: number;
   pool_input_cost_per_million?: number; pool_output_cost_per_million?: number;
+  pool_cache_read_cost_per_million?: number | null; dedicated_cache_read_cost_per_million?: number | null;
 }
+export interface ModelCacheReadPrices { model: string; pool_cache_read_cost_per_million: number | null; dedicated_cache_read_cost_per_million: number | null }
 export interface ProviderResult {
   garage: { name: string; display_name: string; endpoint_url: string };
   acceptance: Array<{ model: string; passed: boolean; error?: string | null }>;
 }
 
 export const garageRepository = {
-  setPrices: (name: string, prices: ProviderPrices) => invoke<{ ok: boolean; routing_synced: boolean }>("set-garage-prices", { name, prices }),
+  setPrices: (name: string, prices: ProviderPrices, model_prices?: ModelCacheReadPrices[]) => invoke<{ ok: boolean; routing_synced: boolean }>("set-garage-prices", { name, prices, model_prices }),
   listProviderModels: (endpoint_url: string, api_key: string) =>
     invoke<{ endpoint_url: string; models: string[] }>("create-provider", { list_only: true, endpoint_url, api_key }),
 
@@ -116,7 +123,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, location_display, terms_accepted_at, terms_version")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, location_display, terms_accepted_at, terms_version")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
