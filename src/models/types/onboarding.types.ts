@@ -19,4 +19,5 @@ export interface OnboardingEvent {
   arch: string | null;
   gpu: string | null;
   memory_gb: string | null;
+  profile?: unknown;
 }

@@ -10,6 +10,7 @@ const SHORT = ["step", "script_version", "node_name", "runtime", "port", "os", "
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const KEEP = 200;
+const PROFILE_MAX_BYTES = 64 * 1024;
 
 async function sha256Hex(s: string): Promise<string> {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -33,8 +34,12 @@ Deno.serve(async (req) => {
     if (!body || typeof body !== "object") return reply(400, { error: "Invalid body" });
     const status = typeof body.status === "string" ? body.status.trim() : "";
     if (!STATUSES.has(status)) return reply(400, { error: "status must be one of started, warning, failed, stopped, done" });
-    const row: Record<string, string | null> = { garage_id: tok.garage_id, status, message: text(body.message, 500) };
+    const row: Record<string, unknown> = { garage_id: tok.garage_id, status, message: text(body.message, 500) };
     for (const k of SHORT) row[k] = text(body[k], 200);
+    const p = body.profile;
+    if (p && typeof p === "object" && !Array.isArray(p)) {
+      try { if (new TextEncoder().encode(JSON.stringify(p)).length <= PROFILE_MAX_BYTES) row.profile = p; } catch { /* drop */ }
+    }
     if (!row.step) return reply(400, { error: "step is required" });
 
     const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
