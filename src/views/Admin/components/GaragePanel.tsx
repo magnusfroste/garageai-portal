@@ -293,7 +293,7 @@ export const GaragePanel = () => {
       </CardContent>
 
       <GarageDetailSheet row={selectedRow} open={!!selectedGarage} onOpenChange={(open) => !open && setSelectedGarage(null)} pending={pending} onToggle={setOffered} onAlias={setAlias} onSaved={invalidate} />
-      {priceGarage && <EditGaragePrices garage={priceGarage} onSaved={invalidate} open onOpenChange={(open) => !open && setPriceGarage(null)} hideTrigger />}
+      {priceGarage && <EditGaragePrices garage={priceGarage} models={byGarage.get(priceGarage.id) ?? []} onSaved={invalidate} open onOpenChange={(open) => !open && setPriceGarage(null)} hideTrigger />}
       {deleteGarage && <DeleteGarageButton garage={deleteGarage} onDone={invalidate} open onOpenChange={(open) => !open && setDeleteGarage(null)} hideTrigger />}
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
