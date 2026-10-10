@@ -246,6 +246,13 @@
       "when": 1791591079007,
       "tag": "0034_onboarding_events",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791591929866,
+      "tag": "0035_cache_read_pricing",
+      "breakpoints": true
     }
   ]
 }

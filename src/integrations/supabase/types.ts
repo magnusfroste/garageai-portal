@@ -133,6 +133,7 @@ export type Database = {
       }
       curated_models: {
         Row: {
+          cache_read_cost_per_million: number | null
           created_at: string
           disabled_reason: string | null
           enabled: boolean
@@ -153,6 +154,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cache_read_cost_per_million?: number | null
           created_at?: string
           disabled_reason?: string | null
           enabled?: boolean
@@ -173,6 +175,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cache_read_cost_per_million?: number | null
           created_at?: string
           disabled_reason?: string | null
           enabled?: boolean
@@ -254,6 +257,8 @@ export type Database = {
       }
       garage_model_stats_hourly: {
         Row: {
+          cached_prompt_tokens: number
+          cached_spend_usd: number
           completion_tokens: number
           dedicated_completion_tokens: number
           dedicated_prompt_tokens: number
@@ -261,12 +266,16 @@ export type Database = {
           garage_id: string
           garage_name: string | null
           hour: string
+          input_spend_usd: number
           model: string
+          output_spend_usd: number
           prompt_tokens: number
           requests: number
           spend_usd: number
         }
         Insert: {
+          cached_prompt_tokens?: number
+          cached_spend_usd?: number
           completion_tokens?: number
           dedicated_completion_tokens?: number
           dedicated_prompt_tokens?: number
@@ -274,12 +283,16 @@ export type Database = {
           garage_id: string
           garage_name?: string | null
           hour: string
+          input_spend_usd?: number
           model: string
+          output_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
         }
         Update: {
+          cached_prompt_tokens?: number
+          cached_spend_usd?: number
           completion_tokens?: number
           dedicated_completion_tokens?: number
           dedicated_prompt_tokens?: number
@@ -287,7 +300,9 @@ export type Database = {
           garage_id?: string
           garage_name?: string | null
           hour?: string
+          input_spend_usd?: number
           model?: string
+          output_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
@@ -361,11 +376,13 @@ export type Database = {
           canonical_model: string
           canonical_source: string
           context_length: number | null
+          dedicated_cache_read_cost_per_million: number | null
           garage_id: string
           installed: boolean
           model: string
           offered: boolean
           paused_at: string | null
+          pool_cache_read_cost_per_million: number | null
           private: boolean
           status: string
           updated_at: string
@@ -374,11 +391,13 @@ export type Database = {
           canonical_model?: string
           canonical_source?: string
           context_length?: number | null
+          dedicated_cache_read_cost_per_million?: number | null
           garage_id: string
           installed?: boolean
           model: string
           offered?: boolean
           paused_at?: string | null
+          pool_cache_read_cost_per_million?: number | null
           private?: boolean
           status?: string
           updated_at?: string
@@ -387,11 +406,13 @@ export type Database = {
           canonical_model?: string
           canonical_source?: string
           context_length?: number | null
+          dedicated_cache_read_cost_per_million?: number | null
           garage_id?: string
           installed?: boolean
           model?: string
           offered?: boolean
           paused_at?: string | null
+          pool_cache_read_cost_per_million?: number | null
           private?: boolean
           status?: string
           updated_at?: string
@@ -569,6 +590,7 @@ export type Database = {
           country_override: string | null
           created_at: string
           declared_country: string | null
+          dedicated_cache_read_cost_per_million: number | null
           dedicated_input_cost_per_million: number
           dedicated_output_cost_per_million: number
           disabled: boolean
@@ -589,6 +611,7 @@ export type Database = {
           operator_id: string | null
           paused_at: string | null
           paused_reason: string | null
+          pool_cache_read_cost_per_million: number | null
           pool_input_cost_per_million: number
           pool_output_cost_per_million: number
           port: number | null
@@ -607,6 +630,7 @@ export type Database = {
           country_override?: string | null
           created_at?: string
           declared_country?: string | null
+          dedicated_cache_read_cost_per_million?: number | null
           dedicated_input_cost_per_million?: number
           dedicated_output_cost_per_million?: number
           disabled?: boolean
@@ -627,6 +651,7 @@ export type Database = {
           operator_id?: string | null
           paused_at?: string | null
           paused_reason?: string | null
+          pool_cache_read_cost_per_million?: number | null
           pool_input_cost_per_million?: number
           pool_output_cost_per_million?: number
           port?: number | null
@@ -645,6 +670,7 @@ export type Database = {
           country_override?: string | null
           created_at?: string
           declared_country?: string | null
+          dedicated_cache_read_cost_per_million?: number | null
           dedicated_input_cost_per_million?: number
           dedicated_output_cost_per_million?: number
           disabled?: boolean
@@ -665,6 +691,7 @@ export type Database = {
           operator_id?: string | null
           paused_at?: string | null
           paused_reason?: string | null
+          pool_cache_read_cost_per_million?: number | null
           pool_input_cost_per_million?: number
           pool_output_cost_per_million?: number
           port?: number | null
@@ -961,12 +988,16 @@ export type Database = {
       garage_revenue: {
         Args: { _from: string; _to: string }
         Returns: {
+          cached_prompt_tokens: number
+          cached_spend_usd: number
           completion_tokens: number
           connection_type: string
           display_name: string
           failures: number
           garage_name: string
+          input_spend_usd: number
           model: string
+          output_spend_usd: number
           prompt_tokens: number
           requests: number
           runtime_models: string[]
