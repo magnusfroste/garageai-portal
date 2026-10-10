@@ -260,7 +260,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     const cacheCost = Number(d.model_info?.cache_read_input_token_cost ?? d.litellm_params?.cache_read_input_token_cost ?? NaN);
     // Compare exactly what addDeployment writes; the key via its fingerprint (missing marker = stale, rewrite once).
     const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== `openai/${want.model}` || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12
-      || !Number.isFinite(cacheCost) || Math.abs(cacheCost - want.cacheRead / 1e6) > 1e-12 || Number(d.litellm_params?.cache_read_input_token_cost ?? NaN) !== Number(d.model_info?.cache_read_input_token_cost ?? NaN)
+      || !Number.isFinite(cacheCost) || Math.abs(cacheCost - want.cacheRead / 1e6) > 1e-12
       || (!!want.limits && (Number(d.model_info?.max_input_tokens) !== want.limits.maxInput || Number(d.model_info?.max_output_tokens) !== want.limits.maxOutput || Number(d.model_info?.max_tokens) !== want.limits.maxInput)));
     if (!want || drift) {
       if (await deleteDeployment(base, masterKey, id)) { removed.push(id); actual.delete(id); }
