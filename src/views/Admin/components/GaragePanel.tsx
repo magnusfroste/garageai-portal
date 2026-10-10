@@ -120,6 +120,7 @@ export const GaragePanel = () => {
   const [result, setResult] = useState<CreateGarageResult | null>(null);
   const [resultRuntime, setResultRuntime] = useState("ollama");
   const [resultModels, setResultModels] = useState<string[]>([]);
+  const [regenerating, setRegenerating] = useState(false);
 
   const resetForm = () => {
     setName("");
@@ -128,6 +129,7 @@ export const GaragePanel = () => {
     setCreateSetupKey(true);
     setResult(null);
     setResultModels([]);
+    setRegenerating(false);
   };
 
   const handleDialogChange = (open: boolean) => {
@@ -201,11 +203,10 @@ export const GaragePanel = () => {
     setName(garage.name);
     setRuntime(garage.runtime || "ollama");
     setApiHost(garage.api_host || "");
-    const setupKey = !garage.netbird_peer_id;
-    setCreateSetupKey(setupKey);
+    setCreateSetupKey(!garage.netbird_peer_id || garage.mesh_connected !== true);
     setResultModels((byGarage.get(garage.id) ?? []).filter((m) => m.offered && m.installed).map((m) => m.model));
+    setRegenerating(true);
     setDialogOpen(true);
-    submit(garage.name, garage.api_host || "", setupKey, garage.runtime || "ollama");
   };
 
   const onboardingLatest = useLatestOnboardingEvents(garages.filter((g) => !g.last_registered_at).map((g) => g.id));
@@ -299,11 +300,11 @@ export const GaragePanel = () => {
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{result ? "Garage credentials" : "Add garage"}</DialogTitle>
+            <DialogTitle>{result ? "Garage credentials" : regenerating ? t("New command") : "Add garage"}</DialogTitle>
             <DialogDescription>
               {result
                 ? `Credentials for ${result.garage.name}`
-                : "Register a new GPU node. You'll get a one-time token and connect command."}
+                : regenerating ? name : "Register a new GPU node. You'll get a one-time token and connect command."}
             </DialogDescription>
           </DialogHeader>
 
@@ -311,6 +312,7 @@ export const GaragePanel = () => {
             <ResultView result={result} runtime={resultRuntime} models={resultModels} onClose={() => handleDialogChange(false)} />
           ) : (
             <div className="space-y-4">
+              {!regenerating && <>
               <div className="space-y-1.5">
                 <Label htmlFor="garage-name">{t("Name")}</Label>
                 <Input
@@ -349,6 +351,7 @@ export const GaragePanel = () => {
                   disabled={submitting}
                 />
               </div>
+              </>}
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="garage-setup-key"
@@ -357,11 +360,11 @@ export const GaragePanel = () => {
                   disabled={submitting}
                 />
                 <Label htmlFor="garage-setup-key" className="text-sm font-normal">
-                  Create NetBird setup key
+                  {regenerating ? t("Create NetBird setup key (the machine must join the mesh again)") : "Create NetBird setup key"}
                 </Label>
               </div>
               <Button className="w-full" onClick={handleSubmit} disabled={submitting || !name}>
-                {submitting ? "Creating..." : "Create garage"}
+                {submitting ? "Creating..." : regenerating ? t("Create command") : "Create garage"}
               </Button>
             </div>
           )}

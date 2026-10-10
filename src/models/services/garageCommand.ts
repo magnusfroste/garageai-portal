@@ -13,6 +13,8 @@ export interface BuildCommandOptions {
   /** Models passed as --models (wizard choice, or the offered models on a rerun). */
   models?: string[];
   runtimeApiKey?: string;
+  /** GarageAI Bridge (single binary) instead of the connect script; same flags and variables. */
+  bridge?: boolean;
 }
 
 const shellQuote = (value: string) => `'${value.replace(/'/g, `'"'"'`)}'`;
@@ -34,6 +36,7 @@ export const buildGarageCommand = (
     `export ${env.map(([k, v]) => `${k}=${v}`).join(" ")}`,
   ];
   const run = opts.bridge ? "garageai connect" : opts.sudo ? "sudo --preserve-env=GARAGEAI_REGISTER_TOKEN,GARAGEAI_SETUP_KEY,GARAGEAI_RUNTIME_API_KEY bash garageai-connect.sh" : "bash garageai-connect.sh";
+  const parts = [run];
   if (!result.setup_key) parts.push("--skip-install");
   parts.push(`--runtime ${runtime}`, `--name ${result.garage.name}`);
   const models = (opts.models ?? []).filter(Boolean);

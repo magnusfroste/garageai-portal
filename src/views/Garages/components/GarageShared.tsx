@@ -47,13 +47,14 @@ export const OneTimeWarning = () => (
 export const GarageConnectCommand = ({ credentials, runtime, options = {}, initialOs = "macos" }: {
   credentials: GarageCredentials; runtime: string; options?: BuildCommandOptions; initialOs?: "macos" | "linux";
 }) => {
-  const [os, setOs] = useState(initialOs);
-  const command = buildGarageCommand(credentials, runtime, { ...options, sudo: os === "linux" });
+  const [os, setOs] = useState<"macos" | "linux" | "bridge">(initialOs);
+  const command = buildGarageCommand(credentials, runtime, { ...options, sudo: os === "linux", bridge: os === "bridge" });
   return <div className="min-w-0 space-y-2">
-    <Tabs value={os} onValueChange={(value) => setOs(value === "linux" ? "linux" : "macos")}>
-      <TabsList><TabsTrigger value="macos">macOS</TabsTrigger><TabsTrigger value="linux">Linux</TabsTrigger></TabsList>
+    <Tabs value={os} onValueChange={(value) => setOs(value === "linux" || value === "bridge" ? value : "macos")}>
+      <TabsList><TabsTrigger value="macos">macOS</TabsTrigger><TabsTrigger value="linux">Linux</TabsTrigger><TabsTrigger value="bridge">{t("Bridge (beta)")}</TabsTrigger></TabsList>
     </Tabs>
     <CommandBlock command={command} />
+    {os === "bridge" && <p className="text-xs text-muted-foreground">{t("Bridge asks for your password once (sudo) to join the mesh and install the heartbeat.")}</p>}
     {command.includes("<YOUR_KEY>") && <p className="text-xs text-muted-foreground">{t("Replace <YOUR_KEY> with your runtime's API key.")}</p>}
   </div>;
 };
