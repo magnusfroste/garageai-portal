@@ -137,6 +137,41 @@ const statusOf = (r: SpendRow): string => {
   return typeof s === "string" && s ? s : "success";
 };
 
+/** Cached prompt tokens of a spend-log row (LiteLLM usage_object, falling back to top-level fields). */
+export function cachedTokensOf(r: SpendRow): number {
+  const meta = (r as Record<string, unknown>).metadata as Record<string, unknown> | undefined;
+  const usage = meta?.usage_object as Record<string, unknown> | undefined;
+  const details = usage?.prompt_tokens_details as Record<string, unknown> | undefined;
+  const n = Number(details?.cached_tokens ?? usage?.cache_read_input_tokens ?? (r as Record<string, unknown>).cache_read_input_tokens ?? 0);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
+type Rates = { input: number; cached: number; output: number };
+/** Splits a row's billed spend into input / cached input / output in proportion to the deployment's per-token rates, so parts always sum to the billed amount. */
+export function splitSpend(spend: number, uncached: number, cached: number, output: number, rate?: Rates) {
+  const r = rate ?? { input: 1, cached: 1, output: 1 };
+  const parts = { input: uncached * r.input, cached: cached * r.cached, output: output * r.output };
+  const sum = parts.input + parts.cached + parts.output;
+  if (!(sum > 0) || !(spend > 0)) return { input: 0, cached: 0, output: 0 };
+  return { input: spend * parts.input / sum, cached: spend * parts.cached / sum, output: spend * parts.output / sum };
+}
+
+async function deploymentRates(base: string, masterKey: string): Promise<Map<string, Rates>> {
+  const out = new Map<string, Rates>();
+  try {
+    const res = await fetch(`${base}/model/info`, { headers: { Authorization: `Bearer ${masterKey}` }, signal: AbortSignal.timeout(5000) });
+    if (!res.ok) { await res.text().catch(() => ""); return out; }
+    const j = await res.json();
+    for (const d of (j?.data || []) as Array<{ litellm_params?: Record<string, unknown>; model_info?: Record<string, unknown> }>) {
+      const id = d.model_info?.id; if (typeof id !== "string") continue;
+      const pick = (k: string) => Number(d.model_info?.[k] ?? d.litellm_params?.[k] ?? 0) || 0;
+      const input = pick("input_cost_per_token");
+      out.set(id, { input, cached: Number(d.model_info?.cache_read_input_token_cost ?? d.litellm_params?.cache_read_input_token_cost ?? input) || 0, output: pick("output_cost_per_token") });
+    }
+  } catch { /* rates unknown: split by token counts */ }
+  return out;
+}
+
 export async function ingestUsageStats(admin: SupabaseClient) {
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
@@ -153,9 +188,10 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   if (toMs <= fromMs) return { fetched: 0, aggregated: {}, hours: 0, from: new Date(fromMs).toISOString(), to: new Date(toMs).toISOString() };
 
   const { rows, source } = await fetchSpendLogs(base, masterKey, new Date(fromMs), new Date(toMs));
+  const rates = await deploymentRates(base, masterKey);
 
   type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number };
-  type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number; dedicatedPrompt: number; dedicatedTokens: number };
+  type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number; dedicatedPrompt: number; dedicatedTokens: number; cached: number; inSpend: number; cachedSpend: number; outSpend: number };
   const mbuckets = new Map<string, MBucket>();
   const buckets = new Map<string, Bucket>();
   const perGarage: Record<string, number> = {};
@@ -186,9 +222,13 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const model = modelId.slice(sep + 2).replace(/__(dedicated|pool)$/, "") || String(r.model ?? "unknown");
     const mkey = `${gid}|${model}|${hour}`;
     let mb = mbuckets.get(mkey);
-    if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0, dedicatedPrompt: 0, dedicatedTokens: 0 }; mbuckets.set(mkey, mb); }
+    if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0, dedicatedPrompt: 0, dedicatedTokens: 0, cached: 0, inSpend: 0, cachedSpend: 0, outSpend: 0 }; mbuckets.set(mkey, mb); }
     mb.requests++; if (statusOf(r) !== "success") mb.failures++;
     mb.prompt += promptTokens; mb.tokens += completionTokens; mb.spend += spend;
+    const cached = Math.min(promptTokens, cachedTokensOf(r));
+    mb.cached += cached;
+    const split = splitSpend(spend, promptTokens - cached, cached, completionTokens, rates.get(modelId));
+    mb.inSpend += split.input; mb.cachedSpend += split.cached; mb.outSpend += split.output;
     if (modelId.endsWith("__dedicated")) { mb.dedicatedPrompt += promptTokens; mb.dedicatedTokens += completionTokens; }
     const end = parseTs(r.endTime);
     const first = parseTs(r.completionStartTime);
@@ -219,6 +259,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   const mUpserts = [...mbuckets.values()].map((b) => ({
     garage_id: b.garage_id, model: b.model, hour: new Date(b.hour).toISOString(), requests: b.requests, failures: b.failures,
     dedicated_prompt_tokens: b.dedicatedPrompt, dedicated_completion_tokens: b.dedicatedTokens, prompt_tokens: b.prompt, completion_tokens: b.tokens, spend_usd: Math.round(b.spend * 1e8) / 1e8,
+    cached_prompt_tokens: b.cached, input_spend_usd: Math.round(b.inSpend * 1e8) / 1e8, cached_spend_usd: Math.round(b.cachedSpend * 1e8) / 1e8, output_spend_usd: Math.round(b.outSpend * 1e8) / 1e8,
   }));
   if (mUpserts.length) {
     const { error } = await admin.from("garage_model_stats_hourly").upsert(mUpserts, { onConflict: "garage_id,model,hour" });
