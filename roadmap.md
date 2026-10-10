@@ -5,7 +5,9 @@
 - [x] Clarify operator earnings and add audited admin pricing
 - [x] Finish catalogue home, overview checklist, logs, reliability, credits and navigation
 - [x] Review all pages at desktop/mobile sizes and report screenshots (previous clarity round)
-- [ ] Publish the current frontend — waiting for an explicit publication request for this revision
+- [x] Publish the current frontend — explicit deployment requested in the Bridge-first revision
+- [ ] Make Bridge the default, retain collapsed legacy commands, and display the latest connection tool
+- [ ] Verify Bridge-first flows and publish this revision
 
 - [x] Complete v1.0 onboarding review fixes 1–9 and verify mobile, commands, and starter credit
 - [x] Request publication of the v1.0 onboarding review fixes to app.garageai.eu (deployment scheduled)

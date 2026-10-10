@@ -15,10 +15,10 @@ const ICON: Record<StepState, JSX.Element> = {
   waiting: <Hand className="h-4 w-4 text-warning" aria-hidden />,
 };
 
-/** Live per-step progress reported by the connect script. */
+/** Live per-step progress reported by Bridge or the legacy script. */
 export const OnboardingProgress = ({ events }: { events: OnboardingEvent[] }) => {
   if (!events.length) return (
-    <div className="flex items-center gap-2 rounded-md border p-3 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{t("Waiting for the command to start on your machine…")}</div>
+    <div className="flex items-center gap-2 rounded-md border p-3 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{t("Waiting for Bridge (garageai connect) to start on your machine…")}</div>
   );
   const { steps, done, latest } = buildProgress(events);
   const problems = actionableProblems(parseProfile(latest?.profile));

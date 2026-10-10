@@ -6,6 +6,7 @@ import type { OnboardingStatus } from "@/models/types/onboarding.types";
 import { t } from "@/i18n";
 import { latestProfile } from "@/models/services/garageProfile";
 import { GarageProfileView } from "./GarageProfileView";
+import { latestConnectionTool } from "@/models/services/onboardingTool";
 
 const tone: Record<OnboardingStatus, StatusTone> = { started: "neutral", warning: "warning", failed: "danger", stopped: "warning", done: "success" };
 const ago = (iso: string) => {
@@ -25,6 +26,7 @@ export const GarageOnboardingSection = ({ garageId }: { garageId: string }) => {
   const profile = latestProfile(events);
   return (
     <div className="space-y-3">
+      <p className="text-sm"><span className="text-muted-foreground">{t("Last connected with")} · </span>{latestConnectionTool(events) ?? "—"}</p>
       {profile && <GarageProfileView profile={profile} />}
       <div className="space-y-1 rounded-md border p-3">
         <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-sm">{latest.step}</span><StatusBadge tone={tone[latest.status]} label={latest.status} compact /><span className="admin-meta ml-auto" title={new Date(latest.created_at).toLocaleString()}>{ago(latest.created_at)}</span></div>
