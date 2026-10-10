@@ -239,6 +239,13 @@
       "when": 1791442853849,
       "tag": "0033_garage_model_context",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791591079007,
+      "tag": "0034_onboarding_events",
+      "breakpoints": true
     }
   ]
 }

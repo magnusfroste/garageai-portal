@@ -715,6 +715,65 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_events: {
+        Row: {
+          arch: string | null
+          created_at: string
+          garage_id: string
+          gpu: string | null
+          id: string
+          memory_gb: string | null
+          message: string | null
+          node_name: string | null
+          os: string | null
+          port: string | null
+          runtime: string | null
+          script_version: string | null
+          status: string
+          step: string
+        }
+        Insert: {
+          arch?: string | null
+          created_at?: string
+          garage_id: string
+          gpu?: string | null
+          id?: string
+          memory_gb?: string | null
+          message?: string | null
+          node_name?: string | null
+          os?: string | null
+          port?: string | null
+          runtime?: string | null
+          script_version?: string | null
+          status: string
+          step: string
+        }
+        Update: {
+          arch?: string | null
+          created_at?: string
+          garage_id?: string
+          gpu?: string | null
+          id?: string
+          memory_gb?: string | null
+          message?: string | null
+          node_name?: string | null
+          os?: string | null
+          port?: string | null
+          runtime?: string | null
+          script_version?: string | null
+          status?: string
+          step?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_events_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company: string | null

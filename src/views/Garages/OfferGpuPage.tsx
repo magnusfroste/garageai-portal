@@ -24,6 +24,8 @@ import { CommandBlock, GarageConnectCommand, OneTimeWarning } from "./components
 import { t } from "@/i18n";
 import { TermsCheckbox } from "./components/TermsCheckbox";
 import { demandModelId } from "@/models/services/demandModelService";
+import { useOnboardingEvents } from "@/hooks/useOnboardingEvents";
+import { OnboardingProgress } from "./components/OnboardingProgress";
 
 const STEPS = ["Your machine", "Choose a model", "Prepare", "Name", "Live"];
 
@@ -85,6 +87,8 @@ const OfferGpuPage = () => {
   const showHints = (!meshOk && status.elapsedMs >= 180_000) || (meshOk && runtimeWaitAt != null && Date.now() - runtimeWaitAt >= 120_000);
   const registered = !!data?.garage.last_registered_at;
   const anyPassed = !!data?.latest_tests.some((t) => t.passed);
+  const onboardingGarageId = creds?.garage.id ?? (data?.garage as { id?: string } | undefined)?.id ?? null;
+  const onboarding = useOnboardingEvents(onboardingGarageId, !registered || !anyPassed);
   const liveModels = useGarageModels(data?.garage.id ? [data.garage.id] : []);
 
   const create = async () => {
@@ -301,6 +305,7 @@ const OfferGpuPage = () => {
                 <p className="text-sm">{t("Run this in a terminal on the machine:")}</p>
                 <GarageConnectCommand credentials={creds} runtime={runtime} initialOs={os === "linux" ? "linux" : "macos"} options={{ port, models: chosenModel ? [chosenModel] : [], runtimeApiKey }} />
                 <p className="text-xs text-muted-foreground">{t("The script asks for your sudo password and may ask to install jq. The setup key is single-use and valid for 3 days. A sleeping machine goes offline.")}</p>
+                <div className="space-y-1.5"><p className="text-sm font-medium">{t("Progress")}</p><OnboardingProgress events={onboarding.data ?? []} /></div>
                 <Button onClick={() => { setLiveName(creds.garage.name); setStep(4); }}>
                   {t("I have copied and run the command")}
                 </Button>
@@ -314,6 +319,7 @@ const OfferGpuPage = () => {
         <Card className="glass-card">
           <CardHeader><CardTitle className="font-mono">{liveName}</CardTitle><CardDescription>{t("We check the status every 5 seconds.")}</CardDescription></CardHeader>
           <CardContent className="space-y-2">
+            <OnboardingProgress events={onboarding.data ?? []} />
             {data && <GarageHealthIndicators garage={{ ...data.garage, mesh_connected: data.garage.mesh_connected ?? data.mesh.connected }} models={liveModels.byGarage.get(data.garage.id) ?? []} />}
             <CheckItem state={meshOk ? "done" : "wait"} label={t("Machine connected to the network")} />
             <CheckItem state={registered ? "done" : meshOk ? "wait" : "todo"} label={t("Garage registered")}
