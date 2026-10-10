@@ -7,12 +7,19 @@ import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { normaliseModelId } from "./modelIdentity.ts";
 
 /** "garage_id::runtime id" -> canonical model + provider-private flag. */
-export type ModelIdentity = Map<string, { canonical: string; private: boolean; context?: number | null }>;
+export type ModelIdentity = Map<string, { canonical: string; private: boolean; context?: number | null; poolCacheRead?: number | null; dedicatedCacheRead?: number | null }>;
+/** Default cache-read price as a share of the row's input price, when neither the model nor the garage sets one. */
+export const CACHE_READ_DEFAULT_SHARE = 0.25;
+/** Cache-read $/M: model override → garage tier price → 25 % of input; always clamped to 0…input. */
+export const cacheReadPrice = (input: number, modelValue?: number | null, garageValue?: number | null) => {
+  const raw = modelValue ?? garageValue ?? input * CACHE_READ_DEFAULT_SHARE;
+  return Math.min(Math.max(0, Number(raw) || 0), input);
+};
 export async function modelIdentities(admin: SupabaseClient, garageIds: string[]): Promise<ModelIdentity> {
   const map: ModelIdentity = new Map();
   if (!garageIds.length) return map;
-  const { data } = await admin.from("garage_models").select("garage_id, model, canonical_model, private, context_length").in("garage_id", garageIds);
-  for (const r of (data || []) as Array<{ garage_id: string; model: string; canonical_model: string; private: boolean; context_length: number | null }>) map.set(`${r.garage_id}::${r.model}`, { canonical: r.canonical_model || normaliseModelId(r.model), private: !!r.private, context: r.context_length });
+  const { data } = await admin.from("garage_models").select("garage_id, model, canonical_model, private, context_length, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million").in("garage_id", garageIds);
+  for (const r of (data || []) as Array<{ garage_id: string; model: string; canonical_model: string; private: boolean; context_length: number | null; pool_cache_read_cost_per_million: number | null; dedicated_cache_read_cost_per_million: number | null }>) map.set(`${r.garage_id}::${r.model}`, { canonical: r.canonical_model || normaliseModelId(r.model), private: !!r.private, context: r.context_length, poolCacheRead: r.pool_cache_read_cost_per_million == null ? null : Number(r.pool_cache_read_cost_per_million), dedicatedCacheRead: r.dedicated_cache_read_cost_per_million == null ? null : Number(r.dedicated_cache_read_cost_per_million) });
   return map;
 }
 export const identityOf = (ids: ModelIdentity, garageId: string, model: string) => ids.get(`${garageId}::${model}`) ?? { canonical: normaliseModelId(model), private: false };
@@ -34,6 +41,7 @@ export interface RoutingGarage {
   connection_type?: string | null; endpoint_url?: string | null; paused_at?: string | null;
   dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number;
   pool_input_cost_per_million: number; pool_output_cost_per_million: number;
+  pool_cache_read_cost_per_million?: number | null; dedicated_cache_read_cost_per_million?: number | null;
 }
 
 export const apiBaseFor = (g: Pick<RoutingGarage, "api_host" | "mesh_ip" | "port" | "connection_type" | "endpoint_url">) =>
@@ -86,13 +94,13 @@ async function fetchRuntimeContexts(apiBase: string, key: string | null): Promis
   return out;
 }
 
-interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string | null; keyFp: string; input: number; output: number; garage: RoutingGarage; tier: string; limits?: TokenLimits | null; }
+interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string | null; keyFp: string; input: number; output: number; cacheRead: number; garage: RoutingGarage; tier: string; limits?: TokenLimits | null; }
 
 /**
  * The ONE builder for every garage deployment (sellable tiers and probes).
  * The key always comes from garage_runtime_secrets via `keys` (loaded with runtimeKeys) — never from a caller.
  */
-async function buildDeploymentSpec(g: RoutingGarage, keys: Map<string, string>, p: { id: string; route: string; model: string; tier: string; input: number; output: number; limits?: TokenLimits | null }): Promise<DeploymentSpec | null> {
+async function buildDeploymentSpec(g: RoutingGarage, keys: Map<string, string>, p: { id: string; route: string; model: string; tier: string; input: number; output: number; cacheRead: number; limits?: TokenLimits | null }): Promise<DeploymentSpec | null> {
   const apiBase = apiBaseFor(g);
   if (!apiBase) return null;
   const apiKey = keys.get(g.id) ?? null;
@@ -104,8 +112,8 @@ async function addDeployment(base: string, masterKey: string, s: DeploymentSpec)
     method: "POST", headers: litellmHeaders(masterKey),
     body: JSON.stringify({
       model_name: s.route,
-      litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey || NO_KEY, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6 },
-      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh", key_fingerprint: s.keyFp,
+      litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey || NO_KEY, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6, cache_read_input_token_cost: s.cacheRead / 1e6 },
+      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh", key_fingerprint: s.keyFp, cache_read_input_token_cost: s.cacheRead / 1e6,
         ...(s.limits ? { max_input_tokens: s.limits.maxInput, max_output_tokens: s.limits.maxOutput, max_tokens: s.limits.maxInput } : {}) },
     }),
   });
@@ -147,7 +155,7 @@ export function isModelSellable(g: RoutingGarage, model: string, test: { passed:
   return now - test.tested_at <= NO_HEARTBEAT_TEST_MAX_AGE_MS;
 }
 
-export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connection_type, endpoint_url, port, runtime, models, status, disabled, last_heartbeat_at, last_gateway_check_at, runtime_ok, mesh_connected, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million, paused_at";
+export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connection_type, endpoint_url, port, runtime, models, status, disabled, last_heartbeat_at, last_gateway_check_at, runtime_ok, mesh_connected, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, paused_at";
 
 /**
  * Makes LiteLLM garage deployments equal the desired set.
@@ -163,7 +171,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   const infoRes = await fetch(`${base}/model/info`, { headers: litellmHeaders(masterKey) });
   if (!infoRes.ok) throw new Error(`LiteLLM /model/info failed (${infoRes.status})`);
   const info = await infoRes.json();
-  type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number; max_input_tokens?: number | null; max_output_tokens?: number | null; max_tokens?: number | null } };
+  type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; max_input_tokens?: number | null; max_output_tokens?: number | null; max_tokens?: number | null } };
   const deps = (info?.data || []) as Dep[];
 
   // Context length per garage model: stored value → runtime /v1/models (reachable endpoint providers) → what LiteLLM already reports.
@@ -186,6 +194,26 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   }
   for (const l of learned) await admin.from("garage_models").update({ context_length: l.context_length }).eq("garage_id", l.garage_id).eq("model", l.model);
 
+  // Cache-read prices set directly in LiteLLM (no portal value at model or garage level) are adopted once as model overrides.
+  const depById = new Map(deps.filter((d) => d.model_info?.id).map((d) => [d.model_info!.id!, d]));
+  for (const g of garages) for (const model of g.models || []) {
+    const cur = ids.get(`${g.id}::${model}`);
+    if (!cur) continue;
+    for (const tier of ["dedicated", "pool"] as const) {
+      const key = tier === "dedicated" ? "dedicatedCacheRead" : "poolCacheRead";
+      const garageValue = tier === "dedicated" ? g.dedicated_cache_read_cost_per_million : g.pool_cache_read_cost_per_million;
+      if (cur[key] != null || garageValue != null) continue;
+      const d = depById.get(deploymentId(g.name, model, tier));
+      const raw = d?.model_info?.cache_read_input_token_cost ?? d?.litellm_params?.cache_read_input_token_cost;
+      if (raw == null || !Number.isFinite(Number(raw))) continue;
+      const input = Number(tier === "dedicated" ? g.dedicated_input_cost_per_million : g.pool_input_cost_per_million);
+      const perM = Math.round(Number(raw) * 1e6 * 1e9) / 1e9;
+      if (Math.abs(perM - input * CACHE_READ_DEFAULT_SHARE) < 1e-9) continue; // our own default, nothing to adopt
+      cur[key] = Math.min(Math.max(0, perM), input);
+      await admin.from("garage_models").update({ [`${tier}_cache_read_cost_per_million`]: cur[key] }).eq("garage_id", g.id).eq("model", model);
+    }
+  }
+
   const desired = new Map<string, DeploymentSpec>();
   for (const g of garages) {
     const apiBase = apiBaseFor(g);
@@ -202,6 +230,9 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
           id, model, tier, route: tierRoute(g.name, ident.canonical, tier), limits: tokenLimits(ident.context),
           input: Number(tier === "dedicated" ? g.dedicated_input_cost_per_million : g.pool_input_cost_per_million),
           output: Number(tier === "dedicated" ? g.dedicated_output_cost_per_million : g.pool_output_cost_per_million),
+          cacheRead: cacheReadPrice(Number(tier === "dedicated" ? g.dedicated_input_cost_per_million : g.pool_input_cost_per_million),
+            tier === "dedicated" ? ident.dedicatedCacheRead : ident.poolCacheRead,
+            tier === "dedicated" ? g.dedicated_cache_read_cost_per_million : g.pool_cache_read_cost_per_million),
         });
         if (spec) desired.set(id, spec);
       }
@@ -226,8 +257,10 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     const want = desired.get(id);
     const cost = Number(d.model_info?.input_cost_per_token ?? d.litellm_params?.input_cost_per_token ?? NaN);
     const outputCost = Number(d.model_info?.output_cost_per_token ?? d.litellm_params?.output_cost_per_token ?? NaN);
+    const cacheCost = Number(d.model_info?.cache_read_input_token_cost ?? d.litellm_params?.cache_read_input_token_cost ?? NaN);
     // Compare exactly what addDeployment writes; the key via its fingerprint (missing marker = stale, rewrite once).
     const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== `openai/${want.model}` || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12
+      || !Number.isFinite(cacheCost) || Math.abs(cacheCost - want.cacheRead / 1e6) > 1e-12 || Number(d.litellm_params?.cache_read_input_token_cost ?? NaN) !== Number(d.model_info?.cache_read_input_token_cost ?? NaN)
       || (!!want.limits && (Number(d.model_info?.max_input_tokens) !== want.limits.maxInput || Number(d.model_info?.max_output_tokens) !== want.limits.maxOutput || Number(d.model_info?.max_tokens) !== want.limits.maxInput)));
     if (!want || drift) {
       if (await deleteDeployment(base, masterKey, id)) { removed.push(id); actual.delete(id); }
@@ -260,7 +293,7 @@ export async function withProbeDeployments<T>(
       const nonce = crypto.randomUUID();
       const id = `${garage.name}__probe__${Date.now()}__${nonce.slice(0, 8)}`;
       const route = `probe/${nonce}`;
-      const spec = await buildDeploymentSpec(garage, keys, { id, route, model, tier: "probe", input: 0, output: 0 });
+      const spec = await buildDeploymentSpec(garage, keys, { id, route, model, tier: "probe", input: 0, output: 0, cacheRead: 0 });
       if (!spec) throw new Error("garage has no reachable address yet");
       await addDeployment(base, masterKey, spec);
       ids.push(id);
