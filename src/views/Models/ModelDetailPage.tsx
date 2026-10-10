@@ -155,7 +155,7 @@ const ModelDetailPage = () => {
             <CardDescription>{t("We pick the best available garage for you.")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-end gap-6 text-sm">
-            <div><div className="text-xs text-muted-foreground">{t("Price in / out per 1M")}</div>{formatPrice(m.poolPrice.input)} / {formatPrice(m.poolPrice.output)}</div>
+            <div><div className="text-xs text-muted-foreground">{t("Price in / out per 1M")}</div>{formatPrice(m.poolPrice.input)} / {formatPrice(m.poolPrice.output)}{m.poolPrice.cacheRead != null && <div className="text-xs text-muted-foreground">{t("Cache read")} {formatPrice(m.poolPrice.cacheRead)}</div>}</div>
             <div><div className="text-xs text-muted-foreground">{t("Combined availability ({period})", { period: measuredLabel(Math.max(0, ...offers.map((o) => o.sampleDays ?? 0))) })}</div>{formatPct(m.poolAvailability)}</div>
             <div><div className="text-xs text-muted-foreground">{t("Model ID")}</div><div className="flex items-center gap-2"><code className="font-mono text-xs">{m.poolId}</code><CopyButton text={m.poolId} /></div></div>
             <p className="basis-full text-[11px] text-muted-foreground">{t("Pool may route to any garage offering this model")}</p>
@@ -168,7 +168,7 @@ const ModelDetailPage = () => {
         <CardContent className="space-y-2">
           {offers.map((o) => <div key={o.garage} className="grid gap-2 border-b border-border/50 py-3 last:border-0 sm:grid-cols-[1fr_auto_1.5fr] sm:items-center">
             <div className="min-w-0">{o.providerName ? <Link to={`/garages/${encodeURIComponent(o.garage)}`}><ProviderBadge name={o.providerName} /></Link> : <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-sm text-primary hover:underline">{o.garage}</Link>}{o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}<LocationBadge location={o.location ?? undefined} /></div>
-            <div className="text-sm tabular-nums"><span className="text-xs text-muted-foreground">{t("Price in / out")}</span><br />{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</div>
+            <div className="text-sm tabular-nums"><span className="text-xs text-muted-foreground">{t("Price in / out")}</span><br />{formatPrice(o.price.input)} / {formatPrice(o.price.output)}{o.price.cacheRead != null && <><br /><span className="text-xs text-muted-foreground">{t("Cache read")} {formatPrice(o.price.cacheRead)}</span></>}</div>
             {o.modelId && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><code className="truncate font-mono text-xs">{o.modelId}</code><CopyButton text={o.modelId} /></div>}
           </div>)}
         </CardContent>
@@ -195,7 +195,7 @@ const ModelDetailPage = () => {
                     <LocationBadge location={o.location ?? undefined} />
                   </td>
                   <td className="px-3 py-2">{o.grade ? <GradeBadge grade={o.grade} /> : "—"}{!o.location?.is_endpoint && liveHoursText(o.location, true) && <div className="text-[10px] text-muted-foreground whitespace-nowrap">{liveHoursText(o.location, true)}</div>}</td>
-                  <td className="px-3 py-2 tabular-nums">{formatPrice(o.price.input)} / {formatPrice(o.price.output)}</td>
+                  <td className="px-3 py-2 tabular-nums">{formatPrice(o.price.input)} / {formatPrice(o.price.output)}{o.price.cacheRead != null && <div className="text-xs text-muted-foreground">{t("Cache read")} {formatPrice(o.price.cacheRead)}</div>}</td>
                   <td className="px-3 py-2 tabular-nums">{formatNumber(o.ttftMs, " ms")}</td>
                   <td className="px-3 py-2 tabular-nums">{o.tokensPerSecond == null ? "—" : String(o.tokensPerSecond)}</td>
                   <td className="px-3 py-2"><div className="flex items-center gap-2"><MiniBar days={profileOf(o.garage)} /><span className="text-xs tabular-nums">{formatPct(o.availability30d)} · {measuredLabel(o.sampleDays)}</span></div></td>

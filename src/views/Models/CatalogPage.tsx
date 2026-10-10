@@ -65,13 +65,13 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
       {m.offers.find((o) => o.providerName)?.providerName && <ProviderBadge name={m.offers.find((o) => o.providerName)?.providerName} />}
       <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground tabular-nums">
         <span>{t("Context")}: {formatContext(m.contextLength)}</span>
-        <span>{t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}</span>
+        <span>{t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)} {m.minPrice.cacheRead != null && <span className="text-muted-foreground">· {t("cache read")} {formatPrice(m.minPrice.cacheRead)}</span>}</span>
         <span>{t(m.offers.length === 1 ? "{n} garage" : "{n} garages", { n: m.offers.length })}</span>
       </div>
     </div>
     <span className="text-xs tabular-nums text-muted-foreground hidden sm:block">{formatContext(m.contextLength)}</span>
     <span className="text-xs tabular-nums hidden sm:block">
-      {t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)}
+      {t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)} {m.minPrice.cacheRead != null && <span className="text-muted-foreground">· {t("cache read")} {formatPrice(m.minPrice.cacheRead)}</span>}
     </span>
     <span className="text-xs text-muted-foreground hidden sm:block">{t(m.offers.length === 1 ? "{n} garage" : "{n} garages", { n: m.offers.length })}</span>
     <span className="justify-self-end">{m.bestGrade && <GradeBadge grade={m.bestGrade} />}</span>
@@ -99,7 +99,7 @@ export const CatalogPage = () => {
           <h1 className="text-2xl font-bold">{t("Models")}</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          {t("Open models running in garages. Prices per 1 million tokens (in / out).")}
+          {t("Open models running in garages. Prices per 1 million tokens (in / out). Cached input is billed at the lower cache-read price.")}
         </p>
       </div>
 

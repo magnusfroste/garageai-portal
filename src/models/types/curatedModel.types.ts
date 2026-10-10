@@ -8,6 +8,7 @@ export interface CuratedModel {
   max_output_tokens: number | null;
   input_cost_per_million: number | null;
   output_cost_per_million: number | null;
+  cache_read_cost_per_million?: number | null;
   mode: string | null;
   status: "healthy" | "unhealthy" | "unknown";
   enabled: boolean;

@@ -55,7 +55,7 @@ export const buildCatalog = (
       return {
         garage: g,
         modelId: ded ? ded.model_name || ded.id : null,
-        price: { input: any.input_cost_per_million, output: any.output_cost_per_million },
+        price: { input: any.input_cost_per_million, output: any.output_cost_per_million, cacheRead: any.cache_read_cost_per_million ?? null },
         grade: rel?.grade ?? null,
         score: rel?.score ?? null,
         sampleDays: rel?.windows["30d"]?.sample_days ?? null,
@@ -69,7 +69,7 @@ export const buildCatalog = (
         location: locations.get(g) ?? null,
       };
     });
-    const allPrices = list.map((r) => ({ i: r.input_cost_per_million, o: r.output_cost_per_million }));
+    const allPrices = list.map((r) => ({ i: r.input_cost_per_million, o: r.output_cost_per_million, c: r.cache_read_cost_per_million ?? null }));
     const avail = offers.map((o) => o.availability30d).filter((a): a is number => a != null);
     const ref = pool ?? list[0];
     out.push({
@@ -80,8 +80,8 @@ export const buildCatalog = (
       contextLength: maxOf(list.map((r) => r.max_input_tokens)),
       maxOutput: maxOf(list.map((r) => r.max_output_tokens)),
       huggingfaceUrl: list.find((r) => r.huggingface_url)?.huggingface_url ?? null,
-      poolPrice: pool ? { input: pool.input_cost_per_million, output: pool.output_cost_per_million } : null,
-      minPrice: { input: minOf(allPrices.map((p) => p.i)), output: minOf(allPrices.map((p) => p.o)) },
+      poolPrice: pool ? { input: pool.input_cost_per_million, output: pool.output_cost_per_million, cacheRead: pool.cache_read_cost_per_million ?? null } : null,
+      minPrice: { input: minOf(allPrices.map((p) => p.i)), output: minOf(allPrices.map((p) => p.o)), cacheRead: minOf(allPrices.map((p) => p.c)) },
       maxPrice: { input: maxOf(allPrices.map((p) => p.i)), output: maxOf(allPrices.map((p) => p.o)) },
       offers,
       bestGrade: bestGrade(offers.map((o) => o.grade).filter((g): g is ReliabilityGrade => !!g)),
@@ -182,7 +182,7 @@ export const formatContext = (n: number | null) => {
   return `${Math.round(n / 1000)}k`;
 };
 
-export const formatPrice = (v: number | null) => (v == null ? "—" : `$${v}`);
+export const formatPrice = (v: number | null | undefined) => (v == null ? "—" : `$${v}`);
 
 export const priceRange = (min: number | null, max: number | null) =>
   min == null ? "—" : min === max || max == null ? formatPrice(min) : `${formatPrice(min)}–${formatPrice(max)}`;
