@@ -1,0 +1,1 @@
+ALTER TABLE public.onboarding_events ADD COLUMN IF NOT EXISTS profile jsonb;

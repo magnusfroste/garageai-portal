@@ -754,6 +754,7 @@ export type Database = {
           node_name: string | null
           os: string | null
           port: string | null
+          profile: Json | null
           runtime: string | null
           script_version: string | null
           status: string
@@ -770,6 +771,7 @@ export type Database = {
           node_name?: string | null
           os?: string | null
           port?: string | null
+          profile?: Json | null
           runtime?: string | null
           script_version?: string | null
           status: string
@@ -786,6 +788,7 @@ export type Database = {
           node_name?: string | null
           os?: string | null
           port?: string | null
+          profile?: Json | null
           runtime?: string | null
           script_version?: string | null
           status?: string
