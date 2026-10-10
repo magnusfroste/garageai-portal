@@ -13,6 +13,8 @@ export interface BuildCommandOptions {
   /** Models passed as --models (wizard choice, or the offered models on a rerun). */
   models?: string[];
   runtimeApiKey?: string;
+  /** GarageAI Bridge (single binary) instead of the connect script; same flags and variables. */
+  bridge?: boolean;
 }
 
 const shellQuote = (value: string) => `'${value.replace(/'/g, `'"'"'`)}'`;
@@ -28,10 +30,12 @@ export const buildGarageCommand = (
   env.push(["GARAGEAI_REGISTER_TOKEN", shellQuote(result.register_token)]);
   if (opts.runtimeApiKey || ["vllm", "sglang", "paddock", "unsloth", "lemonade"].includes(runtime)) env.push(["GARAGEAI_RUNTIME_API_KEY", shellQuote(opts.runtimeApiKey || "<YOUR_KEY>")]);
   const lines = [
-    "curl -fsSLO https://raw.githubusercontent.com/magnusfroste/garageai/main/scripts/garageai-connect.sh",
+    opts.bridge
+      ? "curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh"
+      : "curl -fsSLO https://raw.githubusercontent.com/magnusfroste/garageai/main/scripts/garageai-connect.sh",
     `export ${env.map(([k, v]) => `${k}=${v}`).join(" ")}`,
   ];
-  const run = opts.sudo ? "sudo --preserve-env=GARAGEAI_REGISTER_TOKEN,GARAGEAI_SETUP_KEY,GARAGEAI_RUNTIME_API_KEY bash garageai-connect.sh" : "bash garageai-connect.sh";
+  const run = opts.bridge ? "garageai connect" : opts.sudo ? "sudo --preserve-env=GARAGEAI_REGISTER_TOKEN,GARAGEAI_SETUP_KEY,GARAGEAI_RUNTIME_API_KEY bash garageai-connect.sh" : "bash garageai-connect.sh";
   const parts = [run];
   if (!result.setup_key) parts.push("--skip-install");
   parts.push(`--runtime ${runtime}`, `--name ${result.garage.name}`);
