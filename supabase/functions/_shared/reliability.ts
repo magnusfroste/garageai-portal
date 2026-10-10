@@ -139,8 +139,9 @@ const statusOf = (r: SpendRow): string => {
 
 /** Cached prompt tokens of a spend-log row (LiteLLM usage_object, falling back to top-level fields). */
 export function cachedTokensOf(r: SpendRow): number {
-  const meta = (r as Record<string, unknown>).metadata as Record<string, unknown> | undefined;
-  const usage = meta?.usage_object as Record<string, unknown> | undefined;
+  let meta = r.metadata as Record<string, unknown> | string | undefined;
+  if (typeof meta === "string") { try { meta = JSON.parse(meta); } catch { meta = undefined; } }
+  const usage = (meta as Record<string, unknown> | undefined)?.usage_object as Record<string, unknown> | undefined;
   const details = usage?.prompt_tokens_details as Record<string, unknown> | undefined;
   const n = Number(details?.cached_tokens ?? usage?.cache_read_input_tokens ?? (r as Record<string, unknown>).cache_read_input_tokens ?? 0);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
