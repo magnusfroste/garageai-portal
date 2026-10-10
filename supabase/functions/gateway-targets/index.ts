@@ -13,12 +13,21 @@ Deno.serve(async (req) => {
     const { data: secrets } = await admin.from("garage_runtime_secrets").select("garage_id, runtime_api_key").in("garage_id", list.map((g) => g.id));
     const keys = new Map(((secrets || []) as Array<{ garage_id: string; runtime_api_key: string | null }>).map((s) => [s.garage_id, s.runtime_api_key]));
     const unregistered = list.filter((g) => g.connection_type !== "endpoint" && (!(g.api_host || g.mesh_ip) || !g.port)).map((g) => g.id);
-    const latest = new Map<string, { step: string; status: string; message: string | null; at: string }>();
+    const latest = new Map<string, { step: string; status: string; message: string | null; at: string; problems?: string[] }>();
     if (unregistered.length) {
-      const { data: events } = await admin.from("onboarding_events").select("garage_id, step, status, message, created_at")
+      const { data: events } = await admin.from("onboarding_events").select("garage_id, step, status, message, created_at, profile")
         .in("garage_id", unregistered).order("created_at", { ascending: false }).limit(unregistered.length * 50);
-      for (const e of (events || []) as Array<{ garage_id: string; step: string; status: string; message: string | null; created_at: string }>) {
+      const problemsSeen = new Set<string>();
+      for (const e of (events || []) as Array<{ garage_id: string; step: string; status: string; message: string | null; created_at: string; profile: unknown }>) {
         if (!latest.has(e.garage_id)) latest.set(e.garage_id, { step: e.step, status: e.status, message: e.message, at: e.created_at });
+        const p = e.profile as { problems?: unknown } | null;
+        if (!problemsSeen.has(e.garage_id) && p && typeof p === "object" && !Array.isArray(p)) {
+          problemsSeen.add(e.garage_id);
+          const codes = (Array.isArray(p.problems) ? p.problems : [])
+            .filter((x: any) => x && (x.severity === "error" || x.severity === "warning") && typeof x.code === "string")
+            .map((x: any) => x.code as string);
+          latest.get(e.garage_id)!.problems = codes;
+        }
       }
     }
     const targets = list.map((g) => {
