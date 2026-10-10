@@ -49,12 +49,12 @@ export const prepSteps = (os: GarageOs, runtime: GarageRuntime, port?: number, m
           ? [
               { text: t("Let Ollama listen on all network interfaces and serve several buyers at once:"), code: "launchctl setenv OLLAMA_HOST 0.0.0.0\nlaunchctl setenv OLLAMA_NUM_PARALLEL 4" },
               { text: t("Restart the Homebrew service:"), code: "brew services restart ollama" },
-              { text: t("Bridge will offer to make OLLAMA_HOST permanent on macOS.") },
+              { text: t("Ollama must listen on the network: in the Ollama app, turn on Settings → 'Expose Ollama to the network'; with Homebrew or a terminal, start it with OLLAMA_HOST=0.0.0.0:11434. Bridge checks this and tells you if it is missing.") },
             ]
           : [
               { text: t("Let Ollama listen on all network interfaces and serve several buyers at once:"), code: "launchctl setenv OLLAMA_HOST 0.0.0.0\nlaunchctl setenv OLLAMA_NUM_PARALLEL 4" },
               { text: t("Then restart the Ollama app (quit from the menu bar and open it again).") },
-              { text: t("Bridge will offer to make OLLAMA_HOST permanent on macOS.") },
+              { text: t("Ollama must listen on the network: in the Ollama app, turn on Settings → 'Expose Ollama to the network'; with Homebrew or a terminal, start it with OLLAMA_HOST=0.0.0.0:11434. Bridge checks this and tells you if it is missing.") },
             ]
         : [
             { text: t("Open Ollama's service settings:"), code: "sudo systemctl edit ollama" },
