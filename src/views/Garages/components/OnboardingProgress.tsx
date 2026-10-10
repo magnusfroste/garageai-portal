@@ -36,7 +36,7 @@ export const OnboardingProgress = ({ events }: { events: OnboardingEvent[] }) =>
           </li>
         ))}
       </ol>
-      {done && <p className="text-sm font-medium text-success">{t("Your garage is live")} · <Link to="/garages/mine" className="text-primary underline">{t("My garages")}</Link></p>}
+      {done && <p className="text-sm font-medium text-success">{t("Your garage is live")} · <Link to="/dashboard/garages" className="text-primary underline">{t("My garages")}</Link></p>}
     </div>
   );
 };
