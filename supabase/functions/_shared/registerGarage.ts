@@ -4,13 +4,13 @@ import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, type NetbirdPeer } fr
 import { runAndStoreAcceptanceTests, type AcceptanceResult } from "./acceptanceTest.ts";
 import { syncModels } from "./syncModels.ts";
 import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
-import { syncInventory } from "./garageModels.ts";
+import { syncInventory, storeContexts, CONTEXT_MIN, CONTEXT_MAX, CONTEXTS_MAX_ENTRIES } from "./garageModels.ts";
 import { modelIdError, storeRuntimeKey, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
 const sanitize = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
 
-export interface GarageRegistrationPayload { name: string; runtime: string; port: number; models: string[]; runtime_api_key?: string; mesh_ip?: string; }
+export interface GarageRegistrationPayload { name: string; runtime: string; port: number; models: string[]; runtime_api_key?: string; mesh_ip?: string; contexts: Record<string, number>; }
 export interface GarageRegistration { api_base: string; models: string[]; acceptance: AcceptanceResult[]; catalog_synced: boolean; }
 export interface GarageRecord { id: string; name: string; operator_id: string | null; api_host: string | null; netbird_peer_id: string | null; dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number; pool_input_cost_per_million: number; pool_output_cost_per_million: number; connection_type?: string | null; endpoint_url?: string | null; }
 
@@ -28,7 +28,32 @@ export function validateGaragePayload(body: Record<string, unknown>, allowEmptyM
     if (typeof body.runtime_api_key !== "string" || body.runtime_api_key.length > 512) throw new Error("runtime_api_key must be a string of at most 512 chars");
     runtimeApiKey = body.runtime_api_key;
   }
-  return { name: typeof body.name === "string" ? body.name : "", runtime, port, models: Array.from(new Set(models as string[])), runtime_api_key: runtimeApiKey, mesh_ip: typeof body.mesh_ip === "string" ? body.mesh_ip : undefined };
+  const uniqueModels = Array.from(new Set(models as string[]));
+  const contexts = parseContexts(body, uniqueModels);
+  return { name: typeof body.name === "string" ? body.name : "", runtime, port, models: uniqueModels, contexts, runtime_api_key: runtimeApiKey, mesh_ip: typeof body.mesh_ip === "string" ? body.mesh_ip : undefined };
+}
+
+const validContext = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= CONTEXT_MIN && v <= CONTEXT_MAX;
+
+/** Optional `contexts` map {model: tokens} plus legacy single `context_length` (applies to the first model). Unknown models ignored. */
+export function parseContexts(body: Record<string, unknown>, models: string[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  const known = new Set(models);
+  const legacy = body.context_length;
+  if (legacy !== undefined && legacy !== null && models[0]) {
+    if (!validContext(legacy)) throw new Error(`context_length must be an integer between ${CONTEXT_MIN} and ${CONTEXT_MAX}`);
+    out[models[0]] = legacy;
+  }
+  const raw = body.contexts;
+  if (raw === undefined || raw === null) return out;
+  if (typeof raw !== "object" || Array.isArray(raw)) throw new Error("contexts must be an object of {model: integer tokens}");
+  const entries = Object.entries(raw as Record<string, unknown>);
+  if (entries.length > CONTEXTS_MAX_ENTRIES) throw new Error(`contexts may have at most ${CONTEXTS_MAX_ENTRIES} entries`);
+  for (const [model, value] of entries) {
+    if (!validContext(value)) throw new Error(`contexts values must be integers between ${CONTEXT_MIN} and ${CONTEXT_MAX}`);
+    if (known.has(model)) out[model] = value;
+  }
+  return out;
 }
 
 export async function registerGarage(admin: SupabaseClient, garage: GarageRecord, payload: GarageRegistrationPayload, opts: { testOnly?: string[] } = {}): Promise<GarageRegistration> {
@@ -50,6 +75,7 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   await storeRuntimeKey(admin, garage.id, payload.runtime_api_key);
 
   const offered = await syncInventory(admin, garage.id, payload.models);
+  await storeContexts(admin, garage.id, payload.contexts ?? {});
   const testModels = (opts.testOnly ?? payload.models).filter((m) => offered.has(m));
   const routingGarage = { ...garage, api_host: garage.api_host, mesh_ip: peer.ip, port: payload.port, runtime: payload.runtime, models: payload.models, status: "pending", disabled: false, last_heartbeat_at: null, connection_type: garage.connection_type || "mesh", endpoint_url: garage.endpoint_url ?? null } as RoutingGarage;
   const acceptance = testModels.length

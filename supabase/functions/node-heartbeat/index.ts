@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { registerGarage, validateGaragePayload } from "../_shared/registerGarage.ts";
 import { syncModels } from "../_shared/syncModels.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
+import { changedContexts } from "../_shared/garageModels.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -30,7 +31,9 @@ Deno.serve(async (req) => {
     const current = new Set(payload.models);
     const added = payload.models.filter((model) => !previous.has(model));
     const removed = [...previous].filter((model) => !current.has(model));
-    const changed = added.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port;
+    const contextChanges = await changedContexts(admin, garage.id, payload.contexts);
+    const contextChanged = Object.keys(contextChanges).some((m) => previous.has(m));
+    const changed = added.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
 
     if (!changed) {
       if (garage.status === "offline") {
@@ -46,7 +49,7 @@ Deno.serve(async (req) => {
     }
 
     const result = await registerGarage(admin, garage, payload, { testOnly: added });
-    return json({ ok: true, changed: true, added, removed, acceptance: result.acceptance.map(toPublicResult) });
+    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     if (message.includes("connected to the mesh") || message.includes("connected to mesh")) return json({ error: message }, 409);

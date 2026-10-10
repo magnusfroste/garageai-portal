@@ -52,3 +52,26 @@ export async function pausedModels(admin: SupabaseClient, garageIds: string[]) {
   for (const r of (data || []) as Array<{ garage_id: string; model: string }>) set.add(`${r.garage_id}::${r.model}`);
   return set;
 }
+
+export const CONTEXT_MIN = 512;
+export const CONTEXT_MAX = 4_194_304;
+export const CONTEXTS_MAX_ENTRIES = 200;
+
+/** Models (of this garage) whose reported context differs from the stored one. Never treats "not reported" as a change. */
+export async function changedContexts(admin: SupabaseClient, garageId: string, contexts: Record<string, number>): Promise<Record<string, number>> {
+  const models = Object.keys(contexts);
+  if (!models.length) return {};
+  const { data } = await admin.from("garage_models").select("model, context_length").eq("garage_id", garageId).in("model", models);
+  const stored = new Map(((data || []) as Array<{ model: string; context_length: number | null }>).map((r) => [r.model, r.context_length]));
+  const out: Record<string, number> = {};
+  for (const [m, v] of Object.entries(contexts)) if (stored.get(m) !== v) out[m] = v;
+  return out;
+}
+
+/** Writes reported context windows to existing garage_models rows; unreported models keep their stored value. */
+export async function storeContexts(admin: SupabaseClient, garageId: string, contexts: Record<string, number>): Promise<void> {
+  const changed = await changedContexts(admin, garageId, contexts);
+  for (const [model, context_length] of Object.entries(changed)) {
+    await admin.from("garage_models").update({ context_length }).eq("garage_id", garageId).eq("model", model);
+  }
+}
