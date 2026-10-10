@@ -7,7 +7,7 @@ import { termsAccepted, termsFields } from "../_shared/garageTerms.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
 
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
-const PRICE_KEYS = ["dedicated_input_cost_per_million", "dedicated_output_cost_per_million", "pool_input_cost_per_million", "pool_output_cost_per_million"] as const;
+const PRICE_KEYS = ["dedicated_input_cost_per_million", "dedicated_output_cost_per_million", "pool_input_cost_per_million", "pool_output_cost_per_million", "pool_cache_read_cost_per_million", "dedicated_cache_read_cost_per_million"] as const;
 const GARAGE_HOSTS = ["llm.garageai.eu", "app.garageai.eu", "garageai.eu", "portal.liteit.se"];
 
 const bad = (msg: string) => json({ error: msg }, 400);
@@ -87,6 +87,10 @@ Deno.serve(async (req) => {
       const n = Number(p[k]);
       if (!Number.isFinite(n) || n < 0 || n > 1000) return bad(`${k} must be a number between 0 and 1000`);
       prices[k] = n;
+    }
+    for (const tier of ["pool", "dedicated"] as const) {
+      const c = prices[`${tier}_cache_read_cost_per_million`], i = prices[`${tier}_input_cost_per_million`];
+      if (c !== undefined && i !== undefined && c > i) return bad(`${tier}_cache_read_cost_per_million may not exceed the input price`);
     }
 
     const { data: existing } = await admin.from("garages").select("id, connection_type").eq("name", name).maybeSingle();
