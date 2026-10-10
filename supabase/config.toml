@@ -19,3 +19,6 @@ verify_jwt = false
 
 [functions.gateway-health-report]
 verify_jwt = false
+
+[functions.onboarding-report]
+verify_jwt = false
