@@ -33,6 +33,7 @@ import { GarageTable } from "./garages/GarageTable";
 import { GarageMobileList } from "./garages/GarageMobileList";
 import { GarageDetailSheet } from "./garages/GarageDetailSheet";
 import type { GarageActionHandlers, AdminGarageRow } from "./garages/types";
+import { useLatestOnboardingEvents } from "@/hooks/useOnboardingEvents";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 
@@ -207,6 +208,7 @@ export const GaragePanel = () => {
     submit(garage.name, garage.api_host || "", setupKey, garage.runtime || "ollama");
   };
 
+  const onboardingLatest = useLatestOnboardingEvents(garages.filter((g) => !g.last_registered_at).map((g) => g.id));
   const rows: AdminGarageRow[] = sortAdminGarages(garages.map((garage) => {
     const models = byGarage.get(garage.id) ?? [];
     return {
@@ -219,6 +221,7 @@ export const GaragePanel = () => {
       operatorEmail: garage.operator_id ? operatorEmails.get(garage.operator_id) : undefined,
       changedRecently: countryChanges.data?.has(garage.id) ?? false,
       tests: latestTests,
+      onboarding: onboardingLatest.data?.get(garage.id),
     };
   })).filter((row) => matchesAdminGarage(row.garage, row.view, search, statusFilter, typeFilter));
   const selectedRow = selectedGarage ? rows.find((row) => row.garage.id === selectedGarage.id) ?? (() => {

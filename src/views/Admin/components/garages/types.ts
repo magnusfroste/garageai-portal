@@ -3,6 +3,7 @@ import type { GarageRevenue } from "@/models/types/revenue.types";
 import type { AdminGaragePresentation } from "@/models/services/adminGaragePresentation";
 import type { GarageLocation } from "@/models/services/location";
 import type { GarageReliability } from "@/models/types/reliability.types";
+import type { OnboardingEvent } from "@/models/types/onboarding.types";
 import type { Garage, GarageModelTest } from "../../hooks/useGarages";
 
 export interface AdminGarageRow {
@@ -14,6 +15,7 @@ export interface AdminGarageRow {
   revenue?: GarageRevenue;
   operatorEmail?: string;
   changedRecently: boolean;
+  onboarding?: OnboardingEvent;
   tests: Map<string, GarageModelTest>;
 }
 
