@@ -22,3 +22,6 @@ verify_jwt = false
 
 [functions.onboarding-report]
 verify_jwt = false
+
+[functions.ops-summary]
+verify_jwt = false
