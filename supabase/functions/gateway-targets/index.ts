@@ -12,13 +12,23 @@ Deno.serve(async (req) => {
     const list = (garages || []) as Array<{ id: string; name: string; netbird_peer_id: string | null; api_host: string | null; mesh_ip: string | null; port: number | null; connection_type: string | null; endpoint_url: string | null }>;
     const { data: secrets } = await admin.from("garage_runtime_secrets").select("garage_id, runtime_api_key").in("garage_id", list.map((g) => g.id));
     const keys = new Map(((secrets || []) as Array<{ garage_id: string; runtime_api_key: string | null }>).map((s) => [s.garage_id, s.runtime_api_key]));
+    const unregistered = list.filter((g) => g.connection_type !== "endpoint" && (!(g.api_host || g.mesh_ip) || !g.port)).map((g) => g.id);
+    const latest = new Map<string, { step: string; status: string; message: string | null; at: string }>();
+    if (unregistered.length) {
+      const { data: events } = await admin.from("onboarding_events").select("garage_id, step, status, message, created_at")
+        .in("garage_id", unregistered).order("created_at", { ascending: false }).limit(unregistered.length * 50);
+      for (const e of (events || []) as Array<{ garage_id: string; step: string; status: string; message: string | null; created_at: string }>) {
+        if (!latest.has(e.garage_id)) latest.set(e.garage_id, { step: e.step, status: e.status, message: e.message, at: e.created_at });
+      }
+    }
     const targets = list.map((g) => {
       if (g.connection_type === "endpoint") {
         let host: string | null = null;
         try { host = g.endpoint_url ? new URL(g.endpoint_url).hostname : null; } catch { host = null; }
         return { garage: g.name, peer_id: null, host, port: 443, endpoint: true, url: g.endpoint_url, runtime_api_key: keys.get(g.id) ?? null };
       }
-      return { garage: g.name, peer_id: g.netbird_peer_id, host: g.api_host || g.mesh_ip, port: g.port, runtime_api_key: keys.get(g.id) ?? null };
+      const onboarding = latest.get(g.id);
+      return { garage: g.name, peer_id: g.netbird_peer_id, host: g.api_host || g.mesh_ip, port: g.port, runtime_api_key: keys.get(g.id) ?? null, ...(onboarding ? { onboarding } : {}) };
     });
     return gatewayJson({ targets });
   } catch (e) {
