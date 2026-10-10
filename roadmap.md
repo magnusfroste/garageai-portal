@@ -8,7 +8,7 @@
 - [x] Publish the current frontend — explicit deployment requested in the Bridge-first revision
 - [x] Make Bridge the default, retain collapsed legacy commands, and display the latest connection tool
 - [x] Verify shared Bridge-first controls at desktop/mobile sizes and connection rules (10 tests)
-- [ ] Publish this revision
+- [x] Request publication of this revision to app.garageai.eu (deployment scheduled)
 
 - [x] Complete v1.0 onboarding review fixes 1–9 and verify mobile, commands, and starter credit
 - [x] Request publication of the v1.0 onboarding review fixes to app.garageai.eu (deployment scheduled)
