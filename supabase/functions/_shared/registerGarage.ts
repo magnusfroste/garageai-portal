@@ -41,18 +41,15 @@ export function parseContexts(body: Record<string, unknown>, models: string[]): 
   const known = new Set(models);
   const legacy = body.context_length;
   if (legacy !== undefined && legacy !== null && models[0]) {
-    if (!validContext(legacy)) throw new Error(`context_length must be an integer between ${CONTEXT_MIN} and ${CONTEXT_MAX}`);
-    out[models[0]] = legacy;
+    if (validContext(legacy)) out[models[0]] = legacy;
   }
   const raw = body.contexts;
   if (raw === undefined || raw === null) return out;
-  if (typeof raw !== "object" || Array.isArray(raw)) throw new Error("contexts must be an object of {model: integer tokens}");
+  // Invalid input is dropped, never fatal: a bad context map must not break registration or heartbeats.
+  if (typeof raw !== "object" || Array.isArray(raw)) return out;
   const entries = Object.entries(raw as Record<string, unknown>);
-  if (entries.length > CONTEXTS_MAX_ENTRIES) throw new Error(`contexts may have at most ${CONTEXTS_MAX_ENTRIES} entries`);
-  for (const [model, value] of entries) {
-    if (!validContext(value)) throw new Error(`contexts values must be integers between ${CONTEXT_MIN} and ${CONTEXT_MAX}`);
-    if (known.has(model)) out[model] = value;
-  }
+  if (entries.length > CONTEXTS_MAX_ENTRIES) return out;
+  for (const [model, value] of entries) if (known.has(model) && validContext(value)) out[model] = value;
   return out;
 }
 
