@@ -190,7 +190,7 @@ export const sv: Record<string, string> = {
   "Run garageai connect with Bridge on the machine {name}.": "Kör garageai connect med Bridge på maskinen {name}.",
   "Run garageai connect with Bridge in a terminal on the machine:": "Kör garageai connect med Bridge i en terminal på maskinen:",
   "The setup key is single-use and valid for 3 days. A sleeping machine goes offline.": "Installationsnyckeln kan användas en gång och gäller i 3 dagar. En sovande maskin går offline.",
-  "Bridge will offer to make OLLAMA_HOST permanent on macOS.": "Bridge erbjuder att göra OLLAMA_HOST permanent på macOS.",
+  "Ollama must listen on the network: in the Ollama app, turn on Settings → 'Expose Ollama to the network'; with Homebrew or a terminal, start it with OLLAMA_HOST=0.0.0.0:11434. Bridge checks this and tells you if it is missing.": "Ollama måste lyssna på nätet: i Ollama-appen slår du på Settings → 'Expose Ollama to the network'; med Homebrew eller i en terminal startar du den med OLLAMA_HOST=0.0.0.0:11434. Bridge kontrollerar detta och säger till om det saknas.",
   "Waiting for Bridge (garageai connect) to start on your machine…": "Väntar på att Bridge (garageai connect) startar på din dator…",
   "Bridge asks for your password once (sudo) to join the mesh and install the heartbeat.": "Bridge frågar efter ditt lösenord en gång (sudo) för att ansluta till nätet och installera heartbeat.",
   "Create NetBird setup key (the machine must join the mesh again)": "Skapa NetBird-installationsnyckel (maskinen måste ansluta till nätet igen)",
