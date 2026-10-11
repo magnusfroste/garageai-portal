@@ -211,6 +211,8 @@ export async function runAndStoreAcceptanceTests(
     const key = { garage_id: garage.id, model: r.model };
     if (r.passed) {
       await admin.from("garage_model_failures").upsert({ ...key, consecutive_failures: 0, updated_at: new Date().toISOString() });
+    } else if (r.inconclusive) {
+      // Gateway unreachable (connection error or 502/503/504): not a garage failure.
     } else if (r.http_status === 401 || r.http_status === 403) {
       r.inconclusive = true;
       console.warn("[acceptance] auth error from runtime (check runtime key) — not delisting", { garage: garage.name, model: r.model, status: r.http_status });
