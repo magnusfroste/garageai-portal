@@ -94,6 +94,13 @@ export const median = (xs: number[]) => {
 
 export const parseMachineId = (v: unknown) => typeof v === "string" && v.trim() && v.length <= 128 ? v.trim() : null;
 
+/** Trust on first use: a garage with no machine_id adopts the reporting machine; an existing one never changes. */
+export const claimMachineId = (existing: string | null, incoming: string | null): { machine_id?: string; last_machine_id?: string } => {
+  if (!incoming) return {};
+  if (!existing) return { machine_id: incoming, last_machine_id: incoming };
+  return { last_machine_id: incoming };
+};
+
 export const WEB_ENTRY_WINDOW_MS = 60 * 60 * 1000;
 /** "web" when the approving operator saw /connect within the hour before approval, otherwise "terminal". */
 export function entryFor(connectPageSeenAt: string | null | undefined, approvedAt: number): "web" | "terminal" {

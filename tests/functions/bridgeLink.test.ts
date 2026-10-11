@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { USER_CODE_RE, decidePoll, machineConflict, makeUserCode, normaliseUserCode, parseStartBody, type LinkRow } from "../../supabase/functions/_shared/bridgeLink";
+import { USER_CODE_RE, claimMachineId, decidePoll, machineConflict, makeUserCode, normaliseUserCode, parseStartBody, type LinkRow } from "../../supabase/functions/_shared/bridgeLink";
 import { decideSetupKey, ownershipError } from "../../supabase/functions/_shared/garageCredentialRules";
 
 test("user codes are ABCD-EFGH without I, O, 0 or 1", () => {
