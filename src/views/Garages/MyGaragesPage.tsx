@@ -78,7 +78,7 @@ const MyGaragesPage = () => {
           <h1 className="text-2xl font-bold flex items-center gap-2"><Server className="w-6 h-6 text-primary" />{t("My garages")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t("Your connected GPU machines and their models.")}</p>
         </div>
-        <Button onClick={() => navigate("/dashboard/offer-gpu")}><Plus className="w-4 h-4 mr-2" />{t("Add garage")}</Button>
+        <Button onClick={() => navigate("/connect")}><Plus className="w-4 h-4 mr-2" />{t("Add garage")}</Button>
       </div>
 
       {isLoading ? (
@@ -94,7 +94,7 @@ const MyGaragesPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate("/dashboard/offer-gpu")}>{t("Offer your GPU")}</Button>
+            <Button onClick={() => navigate("/connect")}>{t("Offer your GPU")}</Button>
           </CardContent>
         </Card>
       ) : (

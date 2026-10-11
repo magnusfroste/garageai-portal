@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Circle, Loader2, PartyPopper, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useOnboardingEvents } from "@/hooks/useOnboardingEvents";
+import { onboardingEventRepository } from "@/data/repositories/onboardingEventRepository";
+import { useState } from "react";
 import { garageRepository } from "@/data/repositories/garageRepository";
 import { bridgeProgress, type BridgeStepState } from "@/models/services/connectService";
 import { t } from "@/i18n";
@@ -17,14 +18,19 @@ const ICON: Record<BridgeStepState, JSX.Element> = {
 
 /** Live Bridge onboarding for a just-approved garage (3 s poll until live). */
 export const BridgeLiveProgress = ({ garageId }: { garageId: string }) => {
-  const events = useOnboardingEvents(garageId);
+  const [stop, setStop] = useState(false);
+  const events = useQuery({
+    queryKey: ["bridge-live-events", garageId],
+    queryFn: () => onboardingEventRepository.forGarage(garageId),
+    refetchInterval: stop ? false : 3000,
+  });
   const { steps, live, failed } = bridgeProgress(events.data ?? []);
+  if (live && steps[5].state === "done" && !stop) setStop(true);
   const tests = useQuery({
     queryKey: ["bridge-live-tests", garageId],
     enabled: live,
     queryFn: () => garageRepository.latestTests([garageId]),
   });
-  useQuery({ queryKey: ["bridge-live-poll", garageId], queryFn: () => events.refetch().then(() => 1), refetchInterval: live ? false : 3000 });
   const passed = [...(tests.data?.values() ?? [])].filter((x) => x.passed);
 
   return (

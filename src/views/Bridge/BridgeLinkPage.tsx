@@ -13,6 +13,7 @@ import { TermsCheckbox } from "@/views/Garages/components/TermsCheckbox";
 import { BridgeLinkError } from "@/data/repositories/bridgeLinkRepository";
 import { GARAGE_NAME_RE, isUserCode, normaliseUserCode, replacesOtherMachine } from "@/models/services/bridgeLinkService";
 import { useBridgeLink } from "./hooks/useBridgeLink";
+import { BridgeLiveProgress } from "./components/BridgeLiveProgress";
 import { t } from "@/i18n";
 
 const ERRORS: Record<string, string> = {
@@ -44,6 +45,7 @@ const BridgeLinkPage = () => {
   const [terms, setTerms] = useState(false);
   const [replace, setReplace] = useState(false);
   const [done, setDone] = useState<"approved" | "denied" | null>(null);
+  const [garageId, setGarageId] = useState<string | null>(null);
   const link = lookup.data;
 
   useEffect(() => { if (link?.suggested_name) setNewName(link.suggested_name); }, [link?.suggested_name]);
@@ -60,7 +62,7 @@ const BridgeLinkPage = () => {
   const mins = link ? Math.max(0, Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000)) : 0;
 
   const submitCode = (e: React.FormEvent) => { e.preventDefault(); setParams({ code: normaliseUserCode(input) }); };
-  const onApprove = () => approve.mutate({ userCode: code, garageName: name, termsAccepted: needsTerms ? terms : false, replaceMachine: replace }, { onSuccess: () => setDone("approved") });
+  const onApprove = () => approve.mutate({ userCode: code, garageName: name, termsAccepted: needsTerms ? terms : false, replaceMachine: replace }, { onSuccess: (r) => { setGarageId(r.garage.id); setDone("approved"); } });
   const onDeny = () => deny.mutate(undefined, { onSuccess: () => setDone("denied") });
 
   return (
@@ -71,7 +73,7 @@ const BridgeLinkPage = () => {
       </div>
 
       {done === "approved" ? (
-        <Card><CardContent className="flex items-start gap-3 p-6"><CheckCircle2 className="mt-0.5 h-5 w-5 text-success-foreground" /><p>{t("Approved. Go back to your terminal: Bridge continues on its own.")}</p></CardContent></Card>
+        <Card><CardContent className="space-y-4 p-6"><p className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-foreground" />{t("Approved. Go back to your terminal: Bridge continues on its own.")}</p>{garageId && <BridgeLiveProgress garageId={garageId} />}</CardContent></Card>
       ) : done === "denied" ? (
         <Card><CardContent className="flex items-start gap-3 p-6"><XCircle className="mt-0.5 h-5 w-5 text-muted-foreground" /><p>{t("Denied. The machine was not linked.")}</p></CardContent></Card>
       ) : (

@@ -33,7 +33,7 @@ class OnboardingService {
     if (intent) {
       await profileService.completeOnboarding(intent);
       this.clearStoredIntent();
-      return intent === "operator" ? "/dashboard/offer-gpu" : "/dashboard";
+      return intent === "operator" ? "/connect" : "/dashboard";
     }
 
     return profile?.onboarding_done ? "/dashboard" : "/onboarding";

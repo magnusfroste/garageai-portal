@@ -27,6 +27,7 @@ import { PublicOrAppLayout } from "./views/Layout/PublicOrAppLayout";
 import { SessionRedirect } from "./views/Layout/SessionRedirect";
 import NotFound from "./pages/NotFound";
 import BridgeLinkPage from "./views/Bridge/BridgeLinkPage";
+import ConnectPage from "./views/Bridge/ConnectPage";
 import { RobotsNoindex } from "./components/RobotsNoindex";
 import { OnboardingPage } from "./views/Onboarding/OnboardingPage";
 
@@ -62,6 +63,9 @@ const App = () => (
           <Route path="/garages" element={<PublicOrAppLayout />}>
             <Route index element={<GaragesListPage />} />
             <Route path=":name" element={<GarageProfilePage />} />
+          </Route>
+          <Route path="/connect" element={<PublicOrAppLayout />}>
+            <Route index element={<ConnectPage />} />
           </Route>
           <Route path="/bridge" element={<PublicOrAppLayout />}>
             <Route path="link" element={<BridgeLinkPage />} />

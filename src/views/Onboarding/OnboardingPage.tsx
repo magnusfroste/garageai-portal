@@ -16,7 +16,7 @@ export const OnboardingPage = () => {
     setSaving(true);
     try {
       await profileService.completeOnboarding(intent);
-      navigate(intent === "operator" ? "/dashboard/offer-gpu" : "/dashboard", { replace: true });
+      navigate(intent === "operator" ? "/connect" : "/dashboard", { replace: true });
     } catch {
       toast.error(t("Could not save your choice. Please try again."));
       setSaving(false);
