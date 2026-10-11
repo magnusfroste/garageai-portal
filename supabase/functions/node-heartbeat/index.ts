@@ -3,6 +3,7 @@ import { registerGarage, validateGaragePayload } from "../_shared/registerGarage
 import { syncModels } from "../_shared/syncModels.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts } from "../_shared/garageModels.ts";
+import { parseAgent } from "../_shared/agentReport.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -26,7 +27,9 @@ Deno.serve(async (req) => {
     let payload;
     try { payload = validateGaragePayload(body, true); } catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid body" }, 400); }
     const now = new Date().toISOString();
-    await admin.from("garages").update({ last_heartbeat_at: now }).eq("id", garage.id);
+    const parsedAgent = parseAgent(body.agent);
+    if (parsedAgent.error) console.warn("[node-heartbeat] ignored agent", garage.name, parsedAgent.error);
+    await admin.from("garages").update({ last_heartbeat_at: now, ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
     const previous = new Set<string>((garage.models || []) as string[]);
     const current = new Set(payload.models);
     const added = payload.models.filter((model) => !previous.has(model));

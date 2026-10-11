@@ -4,6 +4,8 @@ import { FunctionRegion } from "@supabase/supabase-js";
 import { garageRepository } from "@/data/repositories/garageRepository";
 
 export interface Garage {
+  agent?: import("@/models/services/agentReport").AgentReport | null;
+  agent_at?: string | null;
   id: string;
   name: string;
   operator_id: string | null;

@@ -11,6 +11,7 @@ import type { AdminGarageRow } from "./types";
 import { GarageOnboardingSection } from "./GarageOnboardingSection";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { t } from "@/i18n";
+import { BridgeAgentSection } from "@/views/Garages/components/BridgeAgentSection";
 
 const Section = ({ icon: Icon, title, children }: { icon: typeof Server; title: string; children: ReactNode }) => (
   <section className="space-y-3"><h3 className="flex items-center gap-2 text-sm font-semibold"><Icon className="h-4 w-4 text-primary" />{title}</h3>{children}</section>
@@ -46,6 +47,7 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
             <GarageHealthIndicators garage={garage} models={row.models} />
             <dl className="grid grid-cols-2 gap-3"><Field label={t("Last gateway check")} value={date(garage.last_gateway_check_at)} /><Field label={t("Last heartbeat")} value={provider ? t("Not applicable") : date(garage.last_heartbeat_at)} /></dl>
           </Section>
+          {garage.agent && <><Separator /><BridgeAgentSection agent={garage.agent} at={garage.agent_at ?? null} /></>}
           <Separator />
           {!provider && <><Section icon={Rocket} title={t("Onboarding")}><GarageOnboardingSection garageId={garage.id} /></Section><Separator /></>}
           <Section icon={Server} title={t("Models")}>

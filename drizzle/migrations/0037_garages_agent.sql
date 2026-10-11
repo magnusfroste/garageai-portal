@@ -1,0 +1,2 @@
+ALTER TABLE public.garages ADD COLUMN IF NOT EXISTS agent jsonb, ADD COLUMN IF NOT EXISTS agent_at timestamptz;
+COMMENT ON COLUMN public.garages.agent IS 'Validated Bridge self-report from node-heartbeat (tool, version, os, arch, problems); service role writes only.';

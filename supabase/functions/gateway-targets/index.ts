@@ -7,11 +7,17 @@ Deno.serve(async (req) => {
   try {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: garages, error } = await admin.from("garages")
-      .select("id, name, netbird_peer_id, api_host, mesh_ip, port, connection_type, endpoint_url").eq("disabled", false).order("name");
+      .select("id, name, netbird_peer_id, api_host, mesh_ip, port, connection_type, endpoint_url, last_heartbeat_at, agent, agent_at").eq("disabled", false).order("name");
     if (error) throw error;
-    const list = (garages || []) as Array<{ id: string; name: string; netbird_peer_id: string | null; api_host: string | null; mesh_ip: string | null; port: number | null; connection_type: string | null; endpoint_url: string | null }>;
+    const list = (garages || []) as Array<{ id: string; name: string; netbird_peer_id: string | null; api_host: string | null; mesh_ip: string | null; port: number | null; connection_type: string | null; endpoint_url: string | null; last_heartbeat_at: string | null; agent: unknown; agent_at: string | null }>;
     const { data: secrets } = await admin.from("garage_runtime_secrets").select("garage_id, runtime_api_key").in("garage_id", list.map((g) => g.id));
     const keys = new Map(((secrets || []) as Array<{ garage_id: string; runtime_api_key: string | null }>).map((s) => [s.garage_id, s.runtime_api_key]));
+    const { data: ctxRows } = await admin.from("garage_models").select("garage_id, model, context_length").in("garage_id", list.map((g) => g.id)).not("context_length", "is", null);
+    const contexts = new Map<string, Record<string, number>>();
+    for (const r of (ctxRows || []) as Array<{ garage_id: string; model: string; context_length: number }>) {
+      const m = contexts.get(r.garage_id) ?? {}; m[r.model] = r.context_length; contexts.set(r.garage_id, m);
+    }
+    const extra = (g: typeof list[number]) => ({ last_heartbeat_at: g.last_heartbeat_at, agent: g.agent ?? null, agent_at: g.agent_at, contexts: contexts.get(g.id) ?? {} });
     const unregistered = list.filter((g) => g.connection_type !== "endpoint" && (!(g.api_host || g.mesh_ip) || !g.port)).map((g) => g.id);
     const latest = new Map<string, { step: string; status: string; message: string | null; at: string; problems?: string[] }>();
     if (unregistered.length) {
@@ -34,10 +40,10 @@ Deno.serve(async (req) => {
       if (g.connection_type === "endpoint") {
         let host: string | null = null;
         try { host = g.endpoint_url ? new URL(g.endpoint_url).hostname : null; } catch { host = null; }
-        return { garage: g.name, peer_id: null, host, port: 443, endpoint: true, url: g.endpoint_url, runtime_api_key: keys.get(g.id) ?? null };
+        return { garage: g.name, peer_id: null, host, port: 443, endpoint: true, url: g.endpoint_url, runtime_api_key: keys.get(g.id) ?? null, ...extra(g) };
       }
       const onboarding = latest.get(g.id);
-      return { garage: g.name, peer_id: g.netbird_peer_id, host: g.api_host || g.mesh_ip, port: g.port, runtime_api_key: keys.get(g.id) ?? null, ...(onboarding ? { onboarding } : {}) };
+      return { garage: g.name, peer_id: g.netbird_peer_id, host: g.api_host || g.mesh_ip, port: g.port, runtime_api_key: keys.get(g.id) ?? null, ...extra(g), ...(onboarding ? { onboarding } : {}) };
     });
     return gatewayJson({ targets });
   } catch (e) {
