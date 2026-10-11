@@ -9,6 +9,7 @@ import { adminRepository } from "@/data/repositories/adminRepository";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { useToolSupport } from "@/hooks/useToolSupport";
 import { apiModelName } from "@/models/services/modelDedup";
+import { pickChatModel } from "@/models/services/chatModelChoice";
 import type { ModelInfo } from "@/models/types/model.types";
 import { t } from "@/i18n";
 import { ChatMessageList } from "./components/ChatMessageList";
