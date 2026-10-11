@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { registerGarage, validateGaragePayload } from "../_shared/registerGarage.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
+import { parseMachineId } from "../_shared/bridgeLink.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,6 +51,13 @@ Deno.serve(async (req) => {
 
     let payload;
     try { payload = validateGaragePayload(body); } catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid body" }, 400); }
+    const machineId = parseMachineId(body.machine_id);
+    if (machineId) {
+      await admin.from("garages").update({ last_machine_id: machineId, ...(garage.machine_id ? {} : { machine_id: machineId }) }).eq("id", garage.id);
+      if (garage.machine_id && garage.machine_id !== machineId) {
+        await admin.from("onboarding_events").insert({ garage_id: garage.id, step: "register", status: "warning", machine_id: machineId, message: "This garage reports from another machine than the one it was linked to" });
+      }
+    }
     const result = await registerGarage(admin, garage, payload);
     console.log("[register-node] registered", { garage: garage.name, models: result.models.length, catalog_synced: result.catalog_synced });
     return json({ ok: true, garage: garage.name, api_base: result.api_base, models: result.models, catalog_synced: result.catalog_synced, acceptance: result.acceptance.map(toPublicResult) });
