@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { GarageDailyTokens, GaragePublicStat } from "@/models/types/catalog.types";
 import type { GarageToolSupport } from "@/models/services/toolSupportService";
 import type { GarageLocation } from "@/models/services/location";
+import { isProbeModel } from "@/models/services/probeFilter";
 
 /** Public, aggregate-only data used by the model catalogue (readable by visitors). */
 export const catalogRepository = {
@@ -29,20 +30,20 @@ export const catalogRepository = {
   async offeredModels(): Promise<{ garage_name: string; model: string; private: boolean }[]> {
     const { data, error } = await supabase.rpc("garage_public_models");
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []).filter((r) => !isProbeModel(r));
   },
 
   async privateModels(): Promise<Set<string>> {
     const { data, error } = await supabase.rpc("garage_public_models");
     if (error) throw error;
-    return new Set((data ?? []).filter((r) => r.private).map((r) => `${r.garage_name}::${r.model}`));
+    return new Set((data ?? []).filter((r) => r.private && !isProbeModel(r)).map((r) => `${r.garage_name}::${r.model}`));
   },
 
   /** Latest tool-calling probe result per garage + model (public). */
   async toolSupport(): Promise<GarageToolSupport[]> {
     const { data, error } = await supabase.rpc("garage_tool_support");
     if (error) throw error;
-    return (data ?? []) as GarageToolSupport[];
+    return ((data ?? []) as GarageToolSupport[]).filter((r) => !isProbeModel(r));
   },
 
   async dailyTokens(names: string[]): Promise<GarageDailyTokens[]> {

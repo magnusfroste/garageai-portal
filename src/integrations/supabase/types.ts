@@ -686,6 +686,7 @@ export type Database = {
           created_at: string | null
           garage_id: string
           id: string
+          relink: boolean
           revoked_at: string | null
           token_hash: string
         }
@@ -693,6 +694,7 @@ export type Database = {
           created_at?: string | null
           garage_id: string
           id?: string
+          relink?: boolean
           revoked_at?: string | null
           token_hash: string
         }
@@ -700,6 +702,7 @@ export type Database = {
           created_at?: string | null
           garage_id?: string
           id?: string
+          relink?: boolean
           revoked_at?: string | null
           token_hash?: string
         }

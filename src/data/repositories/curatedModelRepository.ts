@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CuratedModel } from "@/models/types/curatedModel.types";
+import { isProbeModel } from "@/models/services/probeFilter";
 
 export class CuratedModelRepository {
   async fetchAll(): Promise<CuratedModel[]> {
@@ -10,7 +11,7 @@ export class CuratedModelRepository {
       .order("id");
 
     if (error) throw error;
-    return (data || []) as unknown as CuratedModel[];
+    return ((data || []) as unknown as CuratedModel[]).filter((m) => !isProbeModel(m));
   }
 
   async fetchEnabled(): Promise<CuratedModel[]> {
@@ -21,7 +22,7 @@ export class CuratedModelRepository {
       .order("id");
 
     if (error) throw error;
-    return (data || []) as unknown as CuratedModel[];
+    return ((data || []) as unknown as CuratedModel[]).filter((m) => !isProbeModel(m));
   }
 
   async toggleEnabled(id: string, enabled: boolean): Promise<void> {
