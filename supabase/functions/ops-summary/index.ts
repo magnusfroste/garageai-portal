@@ -88,11 +88,11 @@ const LIVE_STEPS = new Set(["5/6  Register with GarageAI", "register"]);
 async function onboardingFunnel(admin: SupabaseClient) {
   const since = new Date(Date.now() - 30 * 24 * H).toISOString();
   const [{ data: links }, { data: events }, { data: garages }] = await Promise.all([
-    admin.from("bridge_links").select("status, created_at, expires_at, approved_at, picked_up_at, garage_id").gte("created_at", since),
+    admin.from("bridge_links").select("status, created_at, expires_at, approved_at, picked_up_at, garage_id, entry").gte("created_at", since),
     admin.from("onboarding_events").select("garage_id, step, status, created_at, profile, script_version").gte("created_at", since).order("created_at", { ascending: true }).limit(10000),
     admin.from("garages").select("id, name"),
   ]);
-  const L = (links || []) as Array<{ status: string; created_at: string; expires_at: string; approved_at: string | null; picked_up_at: string | null; garage_id: string | null }>;
+  const L = (links || []) as Array<{ status: string; created_at: string; expires_at: string; approved_at: string | null; picked_up_at: string | null; garage_id: string | null; entry: string | null }>;
   const secs = (a: string, b: string) => (new Date(b).getTime() - new Date(a).getTime()) / 1000;
   const approvedEver = L.filter((l) => l.approved_at);
   const med = (xs: number[]) => { const m = median(xs); return m == null ? null : Math.round(m); };
@@ -103,14 +103,15 @@ async function onboardingFunnel(admin: SupabaseClient) {
     denied: L.filter((l) => l.status === "denied").length,
     expired: L.filter((l) => l.status === "expired" || ((l.status === "pending" || l.status === "approved") && l.expires_at < new Date().toISOString())).length,
     median_seconds_to_approval: med(approvedEver.map((l) => secs(l.created_at, l.approved_at!))),
+    by_entry: { web: L.filter((l) => l.entry === "web").length, terminal: L.filter((l) => l.entry === "terminal").length },
     median_seconds_to_pickup: med(L.filter((l) => l.approved_at && l.picked_up_at).map((l) => secs(l.approved_at!, l.picked_up_at!))),
   };
   const names = new Map(((garages || []) as Array<{ id: string; name: string }>).map((g) => [g.id, g.name]));
-  type S = { garage: string; first_event_at: string; live_at: string | null; minutes_to_live: number | null; events: number; failed_steps: string[]; problems: string[]; tool: string | null; bridge_version: string | null };
+  type S = { garage: string; first_event_at: string; live_at: string | null; minutes_to_live: number | null; events: number; failed_steps: string[]; problems: string[]; tool: string | null; bridge_version: string | null; entry: string | null };
   const by = new Map<string, S & { _f: Set<string>; _p: Set<string> }>();
   for (const e of (events || []) as Array<{ garage_id: string; step: string; status: string; created_at: string; profile: any; script_version: string | null }>) {
     let s = by.get(e.garage_id);
-    if (!s) { s = { garage: names.get(e.garage_id) ?? e.garage_id, first_event_at: e.created_at, live_at: null, minutes_to_live: null, events: 0, failed_steps: [], problems: [], tool: null, bridge_version: null, _f: new Set(), _p: new Set() }; by.set(e.garage_id, s); }
+    if (!s) { s = { garage: names.get(e.garage_id) ?? e.garage_id, first_event_at: e.created_at, live_at: null, minutes_to_live: null, events: 0, failed_steps: [], problems: [], tool: null, bridge_version: null, entry: null, _f: new Set(), _p: new Set() }; by.set(e.garage_id, s); }
     s.events++;
     if (!s.live_at && e.status === "done" && LIVE_STEPS.has(e.step)) { s.live_at = e.created_at; s.minutes_to_live = Math.round(secs(s.first_event_at, e.created_at) / 6) / 10; }
     if (e.status === "failed") s._f.add(e.step);
@@ -121,6 +122,9 @@ async function onboardingFunnel(admin: SupabaseClient) {
       if (typeof p.script_version === "string") s.bridge_version = p.script_version;
     }
   }
+  const latestEntry = new Map<string, string | null>();
+  for (const l of [...L].sort((a, b) => a.created_at.localeCompare(b.created_at))) if (l.garage_id) latestEntry.set(l.garage_id, l.entry);
+  for (const [gid, s] of by) s.entry = latestEntry.get(gid) ?? null;
   const sessions = [...by.values()].map(({ _f, _p, ...s }) => ({ ...s, failed_steps: [..._f], problems: [..._p] })).sort((a, b) => b.first_event_at.localeCompare(a.first_event_at));
   return { links: linkStats, sessions };
 }

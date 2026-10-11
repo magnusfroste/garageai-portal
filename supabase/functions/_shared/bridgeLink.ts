@@ -93,3 +93,11 @@ export const median = (xs: number[]) => {
 };
 
 export const parseMachineId = (v: unknown) => typeof v === "string" && v.trim() && v.length <= 128 ? v.trim() : null;
+
+export const WEB_ENTRY_WINDOW_MS = 60 * 60 * 1000;
+/** "web" when the approving operator saw /connect within the hour before approval, otherwise "terminal". */
+export function entryFor(connectPageSeenAt: string | null | undefined, approvedAt: number): "web" | "terminal" {
+  if (!connectPageSeenAt) return "terminal";
+  const seen = new Date(connectPageSeenAt).getTime();
+  return seen <= approvedAt && approvedAt - seen <= WEB_ENTRY_WINDOW_MS ? "web" : "terminal";
+}
