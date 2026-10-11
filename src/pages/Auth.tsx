@@ -98,7 +98,7 @@ const Auth = () => {
     try {
       if (intent) onboardingService.storeIntent(intent);
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: authReturnService.query(location.search) ? `${window.location.origin}/auth` : window.location.origin,
       });
       if (result.error) {
         toast.error(t("Could not sign in with Google. Please try again."));
