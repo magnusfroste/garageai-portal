@@ -14,4 +14,6 @@ export interface BridgeLinkRequest {
   requested_ip_country: string | null;
   created_at: string;
   expires_at: string;
+  /** Operator already has the maximum number of garages; a new one cannot be approved. */
+  garage_limit_reached?: boolean;
 }

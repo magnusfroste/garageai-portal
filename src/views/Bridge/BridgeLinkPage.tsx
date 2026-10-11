@@ -15,6 +15,7 @@ import { GARAGE_NAME_RE, isUserCode, normaliseUserCode, replacesOtherMachine } f
 import { useBridgeLink } from "./hooks/useBridgeLink";
 import { BridgeLiveProgress } from "./components/BridgeLiveProgress";
 import { t } from "@/i18n";
+import { garageLimitMessage, limitMessage } from "@/models/services/credentialErrors";
 
 const ERRORS: Record<string, string> = {
   not_found: "This code was not found. Check it in your terminal.",
@@ -24,7 +25,7 @@ const ERRORS: Record<string, string> = {
 };
 const errorText = (e: unknown) => {
   const code = e instanceof BridgeLinkError ? e.code : e instanceof Error ? e.message : "";
-  return t(ERRORS[code] ?? (code || "Something went wrong."));
+  return limitMessage(code) ?? t(ERRORS[code] ?? (code || "Something went wrong."));
 };
 
 const Fact = ({ label, value }: { label: string; value: string | null | undefined }) => (
@@ -57,8 +58,9 @@ const BridgeLinkPage = () => {
   const chosen = choice === "new" ? null : meshGarages.find((g) => g.id === choice) ?? null;
   const conflict = replacesOtherMachine(chosen?.machine_id, link?.machine_id);
   const name = chosen ? chosen.name : newName.trim().toLowerCase();
+  const limitBlocksNew = !chosen && link?.garage_limit_reached === true;
   const needsTerms = !chosen || !chosen.terms_accepted_at;
-  const canApprove = !!link && GARAGE_NAME_RE.test(name) && (!needsTerms || terms) && (!conflict || replace) && !approve.isPending;
+  const canApprove = !!link && !limitBlocksNew && GARAGE_NAME_RE.test(name) && (!needsTerms || terms) && (!conflict || replace) && !approve.isPending;
   const mins = link ? Math.max(0, Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000)) : 0;
 
   const submitCode = (e: React.FormEvent) => { e.preventDefault(); setParams({ code: normaliseUserCode(input) }); };
@@ -125,6 +127,7 @@ const BridgeLinkPage = () => {
                       {newName && !GARAGE_NAME_RE.test(newName) && <p className="text-xs text-danger-foreground">{t("Use 2–41 lowercase letters, digits or dashes.")}</p>}
                     </div>
                   )}
+                  {limitBlocksNew && <p className="flex items-start gap-2 rounded border border-warning-border bg-warning-surface p-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-foreground" />{garageLimitMessage()}</p>}
                   {needsTerms && <TermsCheckbox id="link-terms" checked={terms} onChange={setTerms} />}
                   {conflict && (
                     <div className="space-y-2 rounded border border-warning-border bg-warning-surface p-3">

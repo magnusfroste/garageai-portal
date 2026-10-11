@@ -2,7 +2,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { NAME_RE, entryFor, machineConflict, normaliseUserCode } from "../_shared/bridgeLink.ts";
 import { termsAccepted } from "../_shared/garageTerms.ts";
-import { CredentialError, issueGarageCredentials, loadGarageByName } from "../_shared/garageCredentials.ts";
+import { CredentialError, countOwnedGarages, issueGarageCredentials, loadGarageByName } from "../_shared/garageCredentials.ts";
+import { garageLimitReached } from "../_shared/garageCredentialRules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,7 +41,12 @@ Deno.serve(async (req) => {
       await admin.from("bridge_links").update({ status: "expired", credentials: null }).eq("id", link.id);
       return json({ error: "expired" }, 410);
     }
-    if (action === "lookup") { const { id: _id, ...shown } = link; return json({ link: shown }); }
+    if (action === "lookup") {
+      const { id: _id, ...shown } = link;
+      const { data: adm } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      const garage_limit_reached = garageLimitReached(await countOwnedGarages(admin, user.id), adm === true);
+      return json({ link: { ...shown, garage_limit_reached } });
+    }
 
     if (action === "deny") {
       await admin.from("bridge_links").update({ status: "denied" }).eq("id", link.id).eq("status", "pending");
@@ -61,7 +67,7 @@ Deno.serve(async (req) => {
 
     const issued = await issueGarageCredentials(admin, {
       userId: user.id, isAdmin, name, adminPanel: false, operatorId: user.id,
-      setupKeyRequested: !existing?.netbird_peer_id || conflict === "replace", acceptTerms: accepted,
+      setupKeyRequested: !existing?.netbird_peer_id || conflict === "replace", acceptTerms: accepted, machineId: link.machine_id,
     });
 
     const { data: prof } = await admin.from("profiles").select("connect_page_seen_at").eq("id", user.id).maybeSingle();

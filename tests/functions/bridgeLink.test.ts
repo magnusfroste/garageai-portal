@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { USER_CODE_RE, claimMachineId, decidePoll, machineConflict, makeUserCode, normaliseUserCode, parseStartBody, type LinkRow } from "../../supabase/functions/_shared/bridgeLink";
-import { decideSetupKey, ownershipError } from "../../supabase/functions/_shared/garageCredentialRules";
+import { decideSetupKey, garageLimitReached, isSameMachineRelink, ownershipError } from "../../supabase/functions/_shared/garageCredentialRules";
 
 test("user codes are ABCD-EFGH without I, O, 0 or 1", () => {
   for (let i = 0; i < 500; i++) {
@@ -53,8 +53,9 @@ test("create-garage rules unchanged: operators always get a setup key unless the
 test("create-garage rules unchanged: ownership, 5-garage limit and 10 per day", () => {
   expect(ownershipError({ operator_id: "other" }, "me", false, 0, 0)?.status).toBe(409);
   expect(ownershipError({ operator_id: "me", disabled: true }, "me", false, 0, 0)?.status).toBe(403);
-  expect(ownershipError(null, "me", false, 5, 0)?.error).toBe("You can have at most 5 garages");
-  expect(ownershipError({ operator_id: "me" }, "me", false, 0, 10)?.status).toBe(429);
+  expect(ownershipError(null, "me", false, 5, 0)?.error).toBe("garage_limit");
+  expect(ownershipError({ operator_id: "me" }, "me", false, 0, 19)).toBeNull();
+  expect(ownershipError({ operator_id: "me" }, "me", false, 0, 20)?.error).toBe("too_many_connects");
   expect(ownershipError({ operator_id: "other" }, "me", true, 9, 99)).toBeNull();
 });
 
@@ -69,4 +70,17 @@ test("claimMachineId: an existing machine_id is never replaced", () => {
 test("claimMachineId: no machine_id in the body changes nothing", () => {
   expect(claimMachineId(null, null)).toEqual({});
   expect(claimMachineId("mac-a", null)).toEqual({});
+});
+
+test("token limit: same garage + same machine re-linking never counts or blocks", () => {
+  expect(isSameMachineRelink({ operator_id: "me", machine_id: "mac-a" }, "mac-a")).toBe(true);
+  expect(isSameMachineRelink({ operator_id: "me", machine_id: "mac-a" }, "mac-b")).toBe(false);
+  expect(isSameMachineRelink({ operator_id: "me", machine_id: null }, "mac-a")).toBe(false);
+  expect(isSameMachineRelink(null, "mac-a")).toBe(false);
+  expect(ownershipError({ operator_id: "me", machine_id: "mac-a" }, "me", false, 0, 50, true)).toBeNull();
+});
+test("garage limit: 5 garages blocks a new one for operators, not admins", () => {
+  expect(garageLimitReached(4, false)).toBe(false);
+  expect(garageLimitReached(5, false)).toBe(true);
+  expect(garageLimitReached(5, true)).toBe(false);
 });
