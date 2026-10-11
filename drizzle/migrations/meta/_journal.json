@@ -267,6 +267,13 @@
       "when": 1791715283878,
       "tag": "0037_garages_agent",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791737897152,
+      "tag": "0038_bridge_links_machine_id",
+      "breakpoints": true
     }
   ]
 }

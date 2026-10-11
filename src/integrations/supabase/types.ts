@@ -74,6 +74,95 @@ export type Database = {
         }
         Relationships: []
       }
+      bridge_links: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          arch: string | null
+          bridge_version: string | null
+          created_at: string
+          credentials: Json | null
+          device_code_hash: string
+          expires_at: string
+          garage_id: string | null
+          gpu: string | null
+          hostname: string | null
+          id: string
+          last_poll_at: string | null
+          machine_id: string | null
+          memory_gb: number | null
+          models: Json
+          os: string | null
+          picked_up_at: string | null
+          requested_ip_country: string | null
+          requested_ip_hash: string | null
+          runtime: string | null
+          status: string
+          suggested_name: string | null
+          user_code: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          arch?: string | null
+          bridge_version?: string | null
+          created_at?: string
+          credentials?: Json | null
+          device_code_hash: string
+          expires_at?: string
+          garage_id?: string | null
+          gpu?: string | null
+          hostname?: string | null
+          id?: string
+          last_poll_at?: string | null
+          machine_id?: string | null
+          memory_gb?: number | null
+          models?: Json
+          os?: string | null
+          picked_up_at?: string | null
+          requested_ip_country?: string | null
+          requested_ip_hash?: string | null
+          runtime?: string | null
+          status?: string
+          suggested_name?: string | null
+          user_code: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          arch?: string | null
+          bridge_version?: string | null
+          created_at?: string
+          credentials?: Json | null
+          device_code_hash?: string
+          expires_at?: string
+          garage_id?: string | null
+          gpu?: string | null
+          hostname?: string | null
+          id?: string
+          last_poll_at?: string | null
+          machine_id?: string | null
+          memory_gb?: number | null
+          models?: Json
+          os?: string | null
+          picked_up_at?: string | null
+          requested_ip_country?: string | null
+          requested_ip_hash?: string | null
+          runtime?: string | null
+          status?: string
+          suggested_name?: string | null
+          user_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bridge_links_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -601,8 +690,11 @@ export type Database = {
           id: string
           last_gateway_check_at: string | null
           last_heartbeat_at: string | null
+          last_machine_id: string | null
           last_registered_at: string | null
           location_display: string
+          machine_hostname: string | null
+          machine_id: string | null
           measured_country: string | null
           measured_country_at: string | null
           mesh_connected: boolean | null
@@ -643,8 +735,11 @@ export type Database = {
           id?: string
           last_gateway_check_at?: string | null
           last_heartbeat_at?: string | null
+          last_machine_id?: string | null
           last_registered_at?: string | null
           location_display?: string
+          machine_hostname?: string | null
+          machine_id?: string | null
           measured_country?: string | null
           measured_country_at?: string | null
           mesh_connected?: boolean | null
@@ -685,8 +780,11 @@ export type Database = {
           id?: string
           last_gateway_check_at?: string | null
           last_heartbeat_at?: string | null
+          last_machine_id?: string | null
           last_registered_at?: string | null
           location_display?: string
+          machine_hostname?: string | null
+          machine_id?: string | null
           measured_country?: string | null
           measured_country_at?: string | null
           mesh_connected?: boolean | null
@@ -755,6 +853,7 @@ export type Database = {
           garage_id: string
           gpu: string | null
           id: string
+          machine_id: string | null
           memory_gb: string | null
           message: string | null
           node_name: string | null
@@ -772,6 +871,7 @@ export type Database = {
           garage_id: string
           gpu?: string | null
           id?: string
+          machine_id?: string | null
           memory_gb?: string | null
           message?: string | null
           node_name?: string | null
@@ -789,6 +889,7 @@ export type Database = {
           garage_id?: string
           gpu?: string | null
           id?: string
+          machine_id?: string | null
           memory_gb?: string | null
           message?: string | null
           node_name?: string | null
