@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 import { median } from "../_shared/bridgeLink.ts";
+import { autoDeploymentId, parseAutoSettings } from "../_shared/autoRoute.ts";
 
 const H = 3600_000;
 const BUDGET_MS = 1500;
@@ -129,6 +130,26 @@ async function onboardingFunnel(admin: SupabaseClient) {
   return { links: linkStats, sessions };
 }
 
+async function autoSummary(admin: SupabaseClient, base: string | null, key: string) {
+  const [{ data: set }, { data: entries }] = await Promise.all([
+    admin.from("admin_settings").select("value").eq("key", "auto_settings").maybeSingle(),
+    admin.from("auto_route").select("position, curated_model_id, enabled").order("position"),
+  ]);
+  const list = (entries || []) as Array<{ position: number; curated_model_id: string; enabled: boolean }>;
+  const { data: cm } = list.length ? await admin.from("curated_models").select("id, garage, status").in("id", list.map((e) => e.curated_model_id)) : { data: [] };
+  const rows = new Map(((cm || []) as Array<{ id: string; garage: string | null; status: string }>).map((r) => [r.id, r]));
+  let routed: Set<string> | null = null;
+  if (base) try {
+    const res = await fetch(`${base}/model/info`, { headers: { Authorization: `Bearer ${key}` }, signal: withSignal() });
+    if (res.ok) routed = new Set(((await res.json()).data || []).map((d: { model_info?: { id?: string } }) => d.model_info?.id).filter(Boolean));
+  } catch { routed = null; }
+  return {
+    public_name: parseAutoSettings((set as { value?: unknown } | null)?.value).public_name,
+    entries: list.map((e) => ({ position: e.position, curated_model_id: e.curated_model_id, garage: rows.get(e.curated_model_id)?.garage ?? null, healthy: rows.get(e.curated_model_id)?.status === "healthy", in_routing: routed ? routed.has(autoDeploymentId(e.curated_model_id)) : null })),
+    requests_24h_by_entry: null,
+  };
+}
+
 async function adminActivity(admin: SupabaseClient) {
   const { data } = await admin.from("garage_price_history").select("effective_from, garage_name, changed_by").not("changed_by", "is", null).order("effective_from", { ascending: false }).limit(20);
   return ((data || []) as Array<{ effective_from: string; garage_name: string | null }>).map((r) => ({ at: r.effective_from, action: "price changed", target: r.garage_name }));
@@ -143,7 +164,7 @@ Deno.serve(async (req) => {
     const now = Date.now(), d1 = new Date(now - 24 * H).toISOString(), d7 = new Date(now - 7 * 24 * H).toISOString();
     const base = await timed(getProxyBaseUrl(admin), null as string | null);
 
-    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel] = await Promise.all([
+    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel, auto] = await Promise.all([
       admin.from("profiles").select("id, created_at, litellm_user_id, starting_credit_usd, purchased_credits_usd"),
       admin.from("api_keys").select("user_id, key_value, litellm_token"),
       admin.from("chat_conversations").select("user_id, updated_at").gte("updated_at", d7),
@@ -151,7 +172,7 @@ Deno.serve(async (req) => {
       base ? timed(keySpend(base, master, 1), null) : Promise.resolve(null),
       base ? timed(keySpend(base, master, 7), null) : Promise.resolve(null),
       timed(pendingCheckouts(), null),
-      operators(admin), onboarding(admin), adminActivity(admin), timed(onboardingFunnel(admin), null),
+      operators(admin), onboarding(admin), adminActivity(admin), timed(onboardingFunnel(admin), null), timed(autoSummary(admin, base, master), null),
     ]);
     const profiles = (profilesRes.data || []) as Array<{ id: string; created_at: string; litellm_user_id: string | null; starting_credit_usd: number; purchased_credits_usd: number }>;
     const keyOwner = new Map<string, string>();
@@ -193,6 +214,7 @@ Deno.serve(async (req) => {
       onboarding: onb,
       onboarding_funnel: funnel,
       admin_activity: activity,
+      auto,
     });
   } catch (e) {
     console.error("[ops-summary] error", e instanceof Error ? e.message : "unknown");
