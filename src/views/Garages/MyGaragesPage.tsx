@@ -1,3 +1,4 @@
+import { BridgeAgentSection } from "./components/BridgeAgentSection";
 import { GarageEarnings } from "./components/GarageEarnings";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -112,6 +113,7 @@ const MyGaragesPage = () => {
                 </div>
                 <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
                 {g.connection_type !== "endpoint" && <p className="text-xs text-muted-foreground">{t("Last connected with")} · {onboarding.isError ? t("Could not load connection tool.") : onboarding.isLoading ? t("Loading...") : connectionTool(onboarding.data?.get(g.id)?.script_version) ?? "—"}</p>}
+                {g.agent && <BridgeAgentSection agent={g.agent} at={g.agent_at ?? null} />}
                 {g.connection_type === "endpoint" && !isAdmin && <p className="text-xs text-muted-foreground">{t("Models on provider endpoints are offered by GarageAI admins.")}</p>}
                 <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onPause={setPaused} readOnly={g.connection_type === "endpoint" && !isAdmin} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
                 <div className="flex gap-1.5 flex-wrap">
