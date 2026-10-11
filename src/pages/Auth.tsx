@@ -43,6 +43,8 @@ const Auth = () => {
       : t("Welcome");
 
   const routeSession = async (session: { user: Parameters<typeof onboardingService.routeAfterLogin>[0] }) => {
+    const next = new URLSearchParams(location.search).get("next");
+    if (next && next.startsWith("/") && !next.startsWith("//")) { navigate(next, { replace: true }); return; }
     navigate(await onboardingService.routeAfterLogin(session.user), { replace: true });
   };
 

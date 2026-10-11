@@ -5,6 +5,9 @@ import type { GarageCredentials } from "@/models/services/garageCommand";
 export interface GarageRow {
   agent?: import("@/models/services/agentReport").AgentReport | null;
   agent_at?: string | null;
+  machine_id?: string | null;
+  machine_hostname?: string | null;
+  last_machine_id?: string | null;
   id: string;
   name: string;
   operator_id: string | null;
@@ -125,7 +128,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, location_display, terms_accepted_at, terms_version, agent, agent_at")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, location_display, terms_accepted_at, terms_version, agent, agent_at, machine_id, machine_hostname, last_machine_id")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
