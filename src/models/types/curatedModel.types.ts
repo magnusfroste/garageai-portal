@@ -13,6 +13,8 @@ export interface CuratedModel {
   status: "healthy" | "unhealthy" | "unknown";
   enabled: boolean;
   is_default: boolean;
+  /** Only set on the garageai/auto row: true when every routed entry supports tools. */
+  supports_tools?: boolean | null;
   garage: string | null;
   garage_tier: string | null;
   huggingface_url: string | null;
