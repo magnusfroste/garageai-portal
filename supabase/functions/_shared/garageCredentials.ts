@@ -2,7 +2,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { termsFields } from "./garageTerms.ts";
 import { getNetbirdApiUrl, netbirdHeaders, getGaragesGroupId, ensureGarageGroup } from "./netbirdConfig.ts";
-import { decideSetupKey, ownershipError } from "./garageCredentialRules.ts";
+import { MAX_GARAGES_PER_OPERATOR, decideSetupKey, isSameMachineRelink, ownershipError } from "./garageCredentialRules.ts";
 
 export class CredentialError extends Error { constructor(public status: number, message: string) { super(message); } }
 
@@ -16,6 +16,8 @@ export interface IssueOptions {
   /** Raw create_setup_key from the caller (undefined = default). */
   setupKeyRequested: unknown;
   acceptTerms: boolean;
+  /** Machine asking for credentials (Bridge link); same machine re-linking its garage is not rate-limited. */
+  machineId?: string | null;
 }
 
 export interface IssuedCredentials { garage: Record<string, any>; register_token: string; setup_key: string | null; register_url: string; management_url: string; reused: boolean }
@@ -29,25 +31,28 @@ export async function loadGarageByName(admin: SupabaseClient, name: string) {
   return data as Record<string, any> | null;
 }
 
+export async function countOwnedGarages(admin: SupabaseClient, userId: string): Promise<number> {
+  const { count, error } = await admin.from("garages").select("id", { count: "exact", head: true }).eq("operator_id", userId);
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function issueGarageCredentials(admin: SupabaseClient, o: IssueOptions): Promise<IssuedCredentials> {
   const existing = await loadGarageByName(admin, o.name);
+  const relink = isSameMachineRelink(existing as any, o.machineId);
 
   if (!o.isAdmin) {
     let owned = 0;
-    if (!existing) {
-      const { count, error } = await admin.from("garages").select("id", { count: "exact", head: true }).eq("operator_id", o.userId);
-      if (error) throw error;
-      owned = count ?? 0;
-    }
+    if (!existing) owned = await countOwnedGarages(admin, o.userId);
     let calls = 0;
-    if (!(existing && existing.operator_id !== o.userId) && !existing?.disabled && owned < 5) {
+    if (!relink && !(existing && existing.operator_id !== o.userId) && !existing?.disabled && owned < MAX_GARAGES_PER_OPERATOR) {
       const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
       const { count, error } = await admin.from("garage_tokens").select("id, garages!inner(operator_id)", { count: "exact", head: true })
-        .eq("garages.operator_id", o.userId).gte("created_at", since);
+        .eq("garages.operator_id", o.userId).eq("relink", false).gte("created_at", since);
       if (error) throw error;
       calls = count ?? 0;
     }
-    const err = ownershipError(existing as any, o.userId, false, owned, calls);
+    const err = ownershipError(existing as any, o.userId, false, owned, calls, relink);
     if (err) throw new CredentialError(err.status, err.error);
   }
 
