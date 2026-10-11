@@ -26,7 +26,7 @@ describe("pickChatModel", () => {
   });
 
   it("prefers the first healthy pool model over a healthy garage model", () => {
-    expect(pickChatModel(models, null, null)?.id).toBe("c" === "c" ? "d" === "d" ? "d" : "d" : "d");
+    expect(pickChatModel(models, null, null)?.id).toBe("d");
   });
 
   it("falls back to first healthy, then first", () => {

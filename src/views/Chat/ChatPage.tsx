@@ -79,15 +79,16 @@ export const ChatPage = () => {
     if (next !== selectedKeyId) setSelectedKeyId(next);
   }, [apiKeys, isAdmin, selectedKeyId, prefs.lastKey]);
 
-  // Model: ?model= → last used → default → first healthy.
+  // Model: ?model= (kept even if unhealthy) → last used if healthy → default if
+  // healthy → first healthy pool model → first healthy → first.
   useEffect(() => {
     if (!modelInfos.length || (selectedModel && modelInfos.some((m) => m.id === selectedModel))) return;
-    const find = (id?: string | null) => (id ? modelInfos.find((m) => m.id === id) : undefined);
-    const pick = find(requestedModel) ?? find(prefs.lastModel)
-      ?? modelInfos.find((m) => (m as ModelInfo & { is_default?: boolean }).is_default)
-      ?? modelInfos.find((m) => m.status === "healthy") ?? modelInfos[0];
-    setSelectedModel(pick.id);
+    const pick = pickChatModel(modelInfos, requestedModel, prefs.lastModel);
+    if (pick) setSelectedModel(pick.id);
   }, [modelInfos, selectedModel, requestedModel, prefs.lastModel]);
+
+  const selectedModelInfo = modelInfos.find((m) => m.id === selectedModel);
+  const selectedOffline = !!selectedModelInfo && selectedModelInfo.status !== "healthy";
 
   const chooseModel = (id: string) => { setSelectedModel(id); prefs.rememberModel(id); };
   const chooseKey = (id: string) => { setSelectedKeyId(id); prefs.rememberKey(id); };
