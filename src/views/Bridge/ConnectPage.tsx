@@ -1,0 +1,74 @@
+import { useEffect, useState } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import { Check, ChevronDown, Copy, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useSession } from "@/hooks/useSession";
+import { connectRepository } from "@/data/repositories/connectRepository";
+import { BRIDGE_ONE_LINE, detectOs, type ConnectOs } from "@/models/services/connectService";
+import { t } from "@/i18n";
+
+const LEGACY_URL = "/dashboard/offer-gpu";
+
+const OneLine = ({ onCopied }: { onCopied: () => void }) => {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => { await navigator.clipboard.writeText(BRIDGE_ONE_LINE); setCopied(true); onCopied(); setTimeout(() => setCopied(false), 2000); };
+  return (
+    <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-3">
+      <code className="min-w-0 flex-1 break-all font-mono text-sm">{BRIDGE_ONE_LINE}</code>
+      <Button size="sm" variant="secondary" onClick={copy} aria-label={t("Copy")}>{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}</Button>
+    </div>
+  );
+};
+
+const ConnectPage = () => {
+  const { session, loading } = useSession();
+  const location = useLocation();
+  const [os, setOs] = useState<ConnectOs>(() => detectOs(navigator.userAgent));
+  const [waiting, setWaiting] = useState(false);
+
+  useEffect(() => { if (session) void connectRepository.markSeen(); }, [session]);
+
+  if (loading) return null;
+  if (!session) return <Navigate to={`/auth?next=${encodeURIComponent(location.pathname)}`} replace />;
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-8">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold">{t("Connect this computer")}</h1>
+        <p className="text-sm text-muted-foreground">{t("Run this in a terminal on the computer with the GPU. It installs GarageAI Bridge, and you approve the computer here in the browser. Nothing secret is in the command.")}</p>
+      </div>
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <Tabs value={os} onValueChange={(v) => setOs(v as ConnectOs)}>
+            <TabsList><TabsTrigger value="macos">macOS</TabsTrigger><TabsTrigger value="linux">Linux</TabsTrigger><TabsTrigger value="windows">Windows</TabsTrigger></TabsList>
+            <TabsContent value="macos" className="mt-3"><OneLine onCopied={() => setWaiting(true)} /></TabsContent>
+            <TabsContent value="linux" className="mt-3"><OneLine onCopied={() => setWaiting(true)} /></TabsContent>
+            <TabsContent value="windows" className="mt-3">
+              <p className="text-sm">{t("Coming soon: use the legacy script for now.")} <Link to={LEGACY_URL} className="text-primary underline underline-offset-2">{t("Windows instructions")}</Link></p>
+            </TabsContent>
+          </Tabs>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+            <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp…) with a model loaded.")}</li>
+          </ul>
+          {waiting && (
+            <div className="space-y-1 rounded-md border p-3 text-sm">
+              <p className="flex items-center gap-2 font-medium"><Loader2 className="h-4 w-4 animate-spin text-primary" />{t("Waiting for your computer…")}</p>
+              <p className="text-muted-foreground">{t("When the terminal opens your browser, approve the computer there.")}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <Collapsible>
+        <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ChevronDown className="h-4 w-4" />{t("Advanced: connect with a command (legacy script)")}</CollapsibleTrigger>
+        <CollapsibleContent className="pt-2 text-sm">
+          <Link to={LEGACY_URL} className="text-primary underline underline-offset-2">{t("Open the step-by-step wizard")}</Link>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+};
+
+export default ConnectPage;

@@ -274,6 +274,13 @@
       "when": 1791737897152,
       "tag": "0038_bridge_links_machine_id",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791738464546,
+      "tag": "0039_bridge_link_entry",
+      "breakpoints": true
     }
   ]
 }

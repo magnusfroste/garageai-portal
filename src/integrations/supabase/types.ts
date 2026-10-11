@@ -83,6 +83,7 @@ export type Database = {
           created_at: string
           credentials: Json | null
           device_code_hash: string
+          entry: string | null
           expires_at: string
           garage_id: string | null
           gpu: string | null
@@ -109,6 +110,7 @@ export type Database = {
           created_at?: string
           credentials?: Json | null
           device_code_hash: string
+          entry?: string | null
           expires_at?: string
           garage_id?: string | null
           gpu?: string | null
@@ -135,6 +137,7 @@ export type Database = {
           created_at?: string
           credentials?: Json | null
           device_code_hash?: string
+          entry?: string | null
           expires_at?: string
           garage_id?: string | null
           gpu?: string | null
@@ -914,6 +917,7 @@ export type Database = {
       profiles: {
         Row: {
           company: string | null
+          connect_page_seen_at: string | null
           created_at: string
           email: string
           full_name: string | null
@@ -928,6 +932,7 @@ export type Database = {
         }
         Insert: {
           company?: string | null
+          connect_page_seen_at?: string | null
           created_at?: string
           email: string
           full_name?: string | null
@@ -942,6 +947,7 @@ export type Database = {
         }
         Update: {
           company?: string | null
+          connect_page_seen_at?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
@@ -1129,6 +1135,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_connect_page_seen: { Args: never; Returns: undefined }
       normalise_model_id: { Args: { _id: string }; Returns: string }
       operator_garage_activity: {
         Args: never

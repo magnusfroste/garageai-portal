@@ -1,6 +1,6 @@
 // Bridge device-link approval by a signed-in operator. Actions: lookup (show the machine), approve, deny.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { NAME_RE, machineConflict, normaliseUserCode } from "../_shared/bridgeLink.ts";
+import { NAME_RE, entryFor, machineConflict, normaliseUserCode } from "../_shared/bridgeLink.ts";
 import { termsAccepted } from "../_shared/garageTerms.ts";
 import { CredentialError, issueGarageCredentials, loadGarageByName } from "../_shared/garageCredentials.ts";
 
@@ -64,8 +64,11 @@ Deno.serve(async (req) => {
       setupKeyRequested: !existing?.netbird_peer_id || conflict === "replace", acceptTerms: accepted,
     });
 
+    const { data: prof } = await admin.from("profiles").select("connect_page_seen_at").eq("id", user.id).maybeSingle();
+    const approvedNow = Date.now();
     const { data: updated } = await admin.from("bridge_links").update({
-      status: "approved", garage_id: issued.garage.id, approved_by: user.id, approved_at: new Date().toISOString(),
+      entry: entryFor(prof?.connect_page_seen_at, approvedNow),
+      status: "approved", garage_id: issued.garage.id, approved_by: user.id, approved_at: new Date(approvedNow).toISOString(),
       credentials: { register_token: issued.register_token, setup_key: issued.setup_key, register_url: issued.register_url, management_url: issued.management_url },
     }).eq("id", link.id).eq("status", "pending").select("id");
     if (!updated?.length) return json({ error: "not_pending" }, 409);
