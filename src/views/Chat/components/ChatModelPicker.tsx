@@ -48,7 +48,7 @@ export const ChatModelPicker = ({ models, selected, onSelect, disabled }: Props)
     >
       <Check className={cn("h-3.5 w-3.5 shrink-0", m.id === selected ? "opacity-100" : "opacity-0")} />
       <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", m.status === "healthy" ? "bg-primary" : m.status === "unhealthy" ? "bg-destructive" : "bg-muted-foreground")} />
-      <span className="min-w-0 flex-1 truncate font-mono text-xs">{label(m)}</span>
+      <span className="min-w-0 flex-1 truncate font-mono text-xs" title={m.garage_tier === "auto" ? t("Always answers: the best available model from a curated list (fails over automatically)") : undefined}>{label(m)}</span>
       {m.garage_tier === "dedicated" ? (
         <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
           {flag(m.garage) && <span aria-hidden>{flag(m.garage)}</span>}{m.garage}{gradeOf(m.garage) && <GradeBadge grade={gradeOf(m.garage)!} />}

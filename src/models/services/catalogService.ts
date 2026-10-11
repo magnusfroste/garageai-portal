@@ -90,7 +90,8 @@ export const buildCatalog = (
       poolAvailability: avail.length ? 1 - avail.reduce((p, a) => p * (1 - a), 1) : null,
       tokens7d: offers.reduce((s, o) => s + o.tokens7d, 0),
       tokensPerSecond: maxOf(offers.map((o) => o.tokensPerSecond)),
-      supportsTools: tools.some((t) => t.supports_tools && t.model === name && garages.includes(t.garage_name)),
+      auto: list.some((r) => r.garage_tier === "auto"),
+      supportsTools: list.some((r) => r.garage_tier === "auto") ? list.some((r) => r.supports_tools === true) : tools.some((t) => t.supports_tools && t.model === name && garages.includes(t.garage_name)),
       privateModel,
     });
   }
@@ -161,7 +162,7 @@ export const applyFilters = (models: CatalogModel[], f: CatalogFilters): Catalog
       (b.bestGrade ? GRADE_RANK[b.bestGrade] : -1) - (a.bestGrade ? GRADE_RANK[a.bestGrade] : -1) ||
       Math.max(-1, ...b.offers.map((o) => o.score ?? -1)) - Math.max(-1, ...a.offers.map((o) => o.score ?? -1)),
   };
-  return res.sort((a, b) => cmp[f.sort](a, b) || a.name.localeCompare(b.name));
+  return res.sort((a, b) => Number(!!b.auto) - Number(!!a.auto) || cmp[f.sort](a, b) || a.name.localeCompare(b.name));
 };
 
 /** Sum of completion tokens per day for the last 30 days (zeros filled). */

@@ -1,4 +1,5 @@
 import { RevenuePanel } from "./components/RevenuePanel";
+import { AutoRoutePanel } from "./components/AutoRoutePanel";
 import { t } from "@/i18n";
 import { useState } from "react";
 import { Shield, Users } from "lucide-react";
@@ -24,7 +25,7 @@ export const AdminPage = () => {
   const [params, setParams] = useSearchParams();
   const requestedTab = params.get("tab") || "users";
   const canonicalTab = requestedTab === "garages" ? "supply" : requestedTab;
-  const tab = ["users", "supply", "models", "revenue", "settings"].includes(canonicalTab) ? canonicalTab : "users";
+  const tab = ["users", "supply", "models", "auto", "revenue", "settings"].includes(canonicalTab) ? canonicalTab : "users";
   const {
     users,
     isLoading,
@@ -74,7 +75,7 @@ export const AdminPage = () => {
       <div className="flex items-center gap-3">
         <Users className="w-8 h-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">{t(({ users: "Users", supply: "Supply", models: "Catalogue", revenue: "Revenue", settings: "Settings" } as Record<string,string>)[tab] || "Admin")}</h1>
+          <h1 className="text-3xl font-bold">{t(({ users: "Users", supply: "Supply", models: "Catalogue", auto: "Auto", revenue: "Revenue", settings: "Settings" } as Record<string,string>)[tab] || "Admin")}</h1>
           <p className="text-muted-foreground text-sm">{t(tab === "supply" ? "Everything sold on the platform: garages and providers." : "Manage users, models, credits and settings")}</p>
         </div>
       </div>
@@ -102,6 +103,7 @@ export const AdminPage = () => {
           <GaragePanel />
         </TabsContent>
 
+        <TabsContent value="auto" className="mt-6"><AutoRoutePanel /></TabsContent>
         <TabsContent value="revenue" className="mt-6"><RevenuePanel /></TabsContent>
         <TabsContent value="settings" className="mt-6 space-y-6">
           <AdminSettingsPanel />

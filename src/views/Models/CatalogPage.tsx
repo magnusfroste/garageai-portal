@@ -56,7 +56,7 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
         {m.supportsTools && <ToolsBadge />}
       </div>
       <div className="text-xs text-muted-foreground truncate">
-        {m.provider}{m.mode ? ` · ${m.mode}` : ""}{!m.available ? ` · ${t("Not available right now")}` : ""}
+        {m.auto ? t("Always answers: the best available model from a curated list (fails over automatically)") : <>{m.provider}{m.mode ? ` · ${m.mode}` : ""}</>}{!m.available ? ` · ${t("Not available right now")}` : ""}
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         {[...new Map(m.offers.filter((o) => o.location?.country && o.location.location_display !== "hidden").map((o) => [`${o.location!.location_display}:${o.location!.country}`, o])).values()].slice(0, 3).map((o) => <LocationBadge key={o.garage} location={o.location!} compact={m.offers.length > 1} />)}

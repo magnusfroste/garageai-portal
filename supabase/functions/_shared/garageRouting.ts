@@ -5,6 +5,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { normaliseModelId } from "./modelIdentity.ts";
+import { AUTO_TIER, parseAutoSettings, planAutoDeployments, type AutoEntry, type AutoPlanItem, type AutoSettings, type BaseDeployment } from "./autoRoute.ts";
 
 /** "garage_id::runtime id" -> canonical model + provider-private flag. */
 export type ModelIdentity = Map<string, { canonical: string; private: boolean; context?: number | null; poolCacheRead?: number | null; dedicatedCacheRead?: number | null }>;
@@ -94,13 +95,13 @@ async function fetchRuntimeContexts(apiBase: string, key: string | null): Promis
   return out;
 }
 
-interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string | null; keyFp: string; input: number; output: number; cacheRead: number; garage: RoutingGarage; tier: string; limits?: TokenLimits | null; }
+interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string | null; keyFp: string; input: number; output: number; cacheRead: number; garage: RoutingGarage; tier: string; limits?: TokenLimits | null; order?: number; }
 
 /**
  * The ONE builder for every garage deployment (sellable tiers and probes).
  * The key always comes from garage_runtime_secrets via `keys` (loaded with runtimeKeys) — never from a caller.
  */
-async function buildDeploymentSpec(g: RoutingGarage, keys: Map<string, string>, p: { id: string; route: string; model: string; tier: string; input: number; output: number; cacheRead: number; limits?: TokenLimits | null }): Promise<DeploymentSpec | null> {
+async function buildDeploymentSpec(g: RoutingGarage, keys: Map<string, string>, p: { id: string; route: string; model: string; tier: string; input: number; output: number; cacheRead: number; limits?: TokenLimits | null; order?: number }): Promise<DeploymentSpec | null> {
   const apiBase = apiBaseFor(g);
   if (!apiBase) return null;
   const apiKey = keys.get(g.id) ?? null;
@@ -114,6 +115,7 @@ async function addDeployment(base: string, masterKey: string, s: DeploymentSpec)
       model_name: s.route,
       litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey || NO_KEY, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6, cache_read_input_token_cost: s.cacheRead / 1e6 },
       model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh", key_fingerprint: s.keyFp, cache_read_input_token_cost: s.cacheRead / 1e6,
+        ...(s.order != null ? { order: s.order } : {}),
         ...(s.limits ? { max_input_tokens: s.limits.maxInput, max_output_tokens: s.limits.maxOutput, max_tokens: s.limits.maxInput } : {}) },
     }),
   });
@@ -171,7 +173,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   const infoRes = await fetch(`${base}/model/info`, { headers: litellmHeaders(masterKey) });
   if (!infoRes.ok) throw new Error(`LiteLLM /model/info failed (${infoRes.status})`);
   const info = await infoRes.json();
-  type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; max_input_tokens?: number | null; max_output_tokens?: number | null; max_tokens?: number | null } };
+  type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; max_input_tokens?: number | null; max_output_tokens?: number | null; max_tokens?: number | null; order?: number | null } };
   const deps = (info?.data || []) as Dep[];
 
   // Context length per garage model: stored value → runtime /v1/models (reachable endpoint providers) → what LiteLLM already reports.
@@ -239,6 +241,12 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     }
   }
 
+  const auto = await loadAutoPlan(admin, garages, desired);
+  for (const item of auto.plan) {
+    const b = desired.get(item.base.id)!;
+    desired.set(item.id, { ...b, id: item.id, route: auto.settings.public_name, tier: AUTO_TIER, input: item.input, output: item.output, cacheRead: item.cacheRead, order: item.order });
+  }
+
   const actual = new Map<string, Dep>();
   const removed: string[] = [];
   const now = Date.now();
@@ -261,6 +269,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     // Compare exactly what addDeployment writes; the key via its fingerprint (missing marker = stale, rewrite once).
     const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== `openai/${want.model}` || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12
       || !Number.isFinite(cacheCost) || Math.abs(cacheCost - want.cacheRead / 1e6) > 1e-12
+      || (want.order != null && Number(d.model_info?.order) !== want.order)
       || (!!want.limits && (Number(d.model_info?.max_input_tokens) !== want.limits.maxInput || Number(d.model_info?.max_output_tokens) !== want.limits.maxOutput || Number(d.model_info?.max_tokens) !== want.limits.maxInput)));
     if (!want || drift) {
       if (await deleteDeployment(base, masterKey, id)) { removed.push(id); actual.delete(id); }
@@ -273,7 +282,32 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     catch (e) { console.error("[routing] add failed", e instanceof Error ? e.message : "unknown"); }
   }
   if (added.length || removed.length) console.log("[routing] reconciled", { added, removed });
-  return { added, removed, routes: new Map([...desired].map(([id, d]) => [id, d.route])) };
+  return { added, removed, routes: new Map([...desired].filter(([, d]) => d.tier !== AUTO_TIER).map(([id, d]) => [id, d.route])), auto };
+}
+
+/** Reads the auto list + settings and plans auto deployments on top of the normal desired set. */
+async function loadAutoPlan(admin: SupabaseClient, garages: RoutingGarage[], desired: Map<string, DeploymentSpec>): Promise<{ settings: AutoSettings; plan: AutoPlanItem[]; anyEntryHealthy: boolean }> {
+  const [{ data: setRow }, { data: entryRows }] = await Promise.all([
+    admin.from("admin_settings").select("value").eq("key", "auto_settings").maybeSingle(),
+    admin.from("auto_route").select("position, curated_model_id, enabled"),
+  ]);
+  const settings = parseAutoSettings((setRow as { value?: unknown } | null)?.value);
+  const entries = (entryRows || []) as AutoEntry[];
+  if (!entries.length) return { settings, plan: [], anyEntryHealthy: false };
+  const { data: cm } = await admin.from("curated_models").select("id, status").in("id", entries.map((e) => e.curated_model_id));
+  const status = new Map(((cm || []) as Array<{ id: string; status: string }>).map((r) => [r.id, r.status]));
+  const { data: toolRows } = await admin.from("garage_model_tests").select("garage_id, model, supports_tools, tested_at")
+    .in("garage_id", garages.map((g) => g.id)).not("supports_tools", "is", null).order("tested_at", { ascending: false }).limit(2000);
+  const tools = new Map<string, boolean>();
+  for (const t of (toolRows || []) as Array<{ garage_id: string; model: string; supports_tools: boolean }>) { const k = `${t.garage_id}::${t.model}`; if (!tools.has(k)) tools.set(k, t.supports_tools); }
+  const routed = new Map<string, BaseDeployment>();
+  for (const e of entries) {
+    const d = desired.get(e.curated_model_id);
+    if (!d) continue;
+    routed.set(e.curated_model_id, { id: d.id, garage: d.garage.name, inputPerM: d.input, outputPerM: d.output, cacheReadPerM: d.cacheRead, maxInput: d.limits?.maxInput ?? null, supportsTools: tools.get(`${d.garage.id}::${d.model}`) ?? null });
+  }
+  const anyEntryHealthy = entries.some((e) => e.enabled && status.get(e.curated_model_id) === "healthy");
+  return { settings, plan: planAutoDeployments(settings, entries, routed, status), anyEntryHealthy };
 }
 
 /** Runs `fn` with temporary unguessable deployments (one per model) and removes them afterwards. */
