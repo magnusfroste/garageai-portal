@@ -723,4 +723,7 @@ export const sv: Record<string, string> = {
   "Listens on": "Lyssnar på",
   "Mesh-reachable": "Nåbar via mesh",
   "No runtimes found on the machine.": "Inga runtimes hittades på maskinen.",
+  "reported": "rapporterade",
+  "min ago": "min sedan",
+  "No problems reported": "Inga problem rapporterade",
 };
