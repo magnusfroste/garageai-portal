@@ -1,4 +1,5 @@
 import { offeredByGarage } from "./garageModels.ts";
+import { garageOfDeploymentId } from "./autoRoute.ts";
 // Garage reliability: status samples, LiteLLM usage ingestion and hourly probes.
 // Never stores prompts, responses or API keys — only per-garage aggregates.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -200,8 +201,9 @@ export async function ingestUsageStats(admin: SupabaseClient) {
 
   for (const r of rows) {
     const modelId = typeof r.model_id === "string" ? r.model_id : "";
-    const sep = modelId.indexOf("__");
-    const garage = sep > 0 ? modelId.slice(0, sep) : "";
+    // Auto deployments ("auto__<garage>__<model>__<tier>") credit the entry's own garage at the auto price.
+    const parsed = garageOfDeploymentId(modelId);
+    const garage = parsed?.garage ?? "";
     const gid = garage ? garageIds.get(garage) : undefined;
     if (!gid) { nonGarage++; continue; }
     const tags = tagsOf(r);
@@ -220,7 +222,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const promptTokens = Number(r.prompt_tokens ?? 0) || 0;
     const spend = Number(r.spend ?? 0) || 0;
     b.prompt += promptTokens; b.spend += spend;
-    const model = modelId.slice(sep + 2).replace(/__(dedicated|pool)$/, "") || String(r.model ?? "unknown");
+    const model = parsed?.model || String(r.model ?? "unknown");
     const mkey = `${gid}|${model}|${hour}`;
     let mb = mbuckets.get(mkey);
     if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0, dedicatedPrompt: 0, dedicatedTokens: 0, cached: 0, inSpend: 0, cachedSpend: 0, outSpend: 0 }; mbuckets.set(mkey, mb); }

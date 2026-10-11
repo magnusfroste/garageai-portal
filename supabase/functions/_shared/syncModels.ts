@@ -5,6 +5,7 @@ import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { getNetbirdApiUrl, netbirdHeaders } from "./netbirdConfig.ts";
 import { offeredByGarage, pausedModels } from "./garageModels.ts";
 import { updateMeasuredCountries } from "./garageLocation.ts";
+import { AUTO_CATALOG_ID, AUTO_TIER, autoCatalogRow } from "./autoRoute.ts";
 import { GARAGE_SELECT, modelIdentities, identityOf, gatewayHealthy, deploymentId, isModelSellable, latestTests, reconcileGarageRouting, type RoutingGarage } from "./garageRouting.ts";
 
 interface LiteLLMModelInfo {
@@ -141,7 +142,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
       for (const runtime of opts.testResults.results.keys()) testCanon.set(identityOf(idents, (tg as { id: string }).id, runtime).canonical, runtime);
     }
   }
-  const rows = rawModels.map((m) => {
+  const rows = rawModels.filter((m) => m.model_info?.garage_tier !== AUTO_TIER).map((m) => {
     const info = m.model_info || {};
     const litellmModel = m.litellm_params?.model || m.model_name;
     const garage = typeof info.garage === "string" && info.garage ? info.garage : null;
@@ -219,7 +220,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   if (upsertError) throw new Error(`Failed to save models: ${upsertError.message}`);
 
   const liveIds = new Set(rows.map((r) => r.id));
-  const staleIds = ((existing || []) as Row[]).map((r) => r.id).filter((id) => !liveIds.has(id) && !/__(dedicated|pool)$/.test(id));
+  const staleIds = ((existing || []) as Row[]).map((r) => r.id).filter((id) => !liveIds.has(id) && id !== AUTO_CATALOG_ID && !/__(dedicated|pool)$/.test(id));
   let deleted = 0;
   if (staleIds.length > 0) {
     const { error, count } = await admin.from("curated_models").delete({ count: "exact" }).in("id", staleIds);
@@ -241,7 +242,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
       const gn = nameById.get(r.garage_id);
       if (gn) for (const t of ["dedicated", "pool"] as const) keep.add(deploymentId(gn, r.model, t));
     }
-    const orphans = ((existing || []) as Row[]).filter((r) => !liveIds.has(r.id) && /__(dedicated|pool)$/.test(r.id));
+    const orphans = ((existing || []) as Row[]).filter((r) => !liveIds.has(r.id) && r.id !== AUTO_CATALOG_ID && /__(dedicated|pool)$/.test(r.id));
     const gone = orphans.filter((r) => !keep.has(r.id)).map((r) => r.id);
     const idle = orphans.filter((r) => keep.has(r.id)).map((r) => r.id);
     if (gone.length) {
@@ -275,7 +276,12 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
     const id = deploymentId(g.name, model, tier);
     if (!((tierRows || []) as Array<{ id: string }>).some((r) => r.id === id) && sellable.has(`${g.name}::${model}`)) enabledTiers.add(id);
   }
-  const { routes } = await reconcileGarageRouting(admin, routingGarages, sellable, enabledTiers);
+  const { routes, auto } = await reconcileGarageRouting(admin, routingGarages, sellable, enabledTiers);
+  // The auto catalogue row follows what is actually routed; is_default and the HF link stay as the admin set them.
+  {
+    const { error } = await admin.from("curated_models").upsert(autoCatalogRow(auto.settings, auto.plan, auto.anyEntryHealthy, now), { onConflict: "id" });
+    if (error) console.warn("[auto] catalogue row failed:", error.message);
+  }
   // Keep curated names in step with the (canonical) routes right away, e.g. after an alias change.
   for (const r of rows) {
     const route = routes.get(r.id);
