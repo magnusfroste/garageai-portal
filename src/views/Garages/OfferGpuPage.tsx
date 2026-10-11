@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { limitMessage } from "@/models/services/credentialErrors";
 import { useToast } from "@/components/ui/use-toast";
 import { useMyGarages } from "@/hooks/useMyGarages";
 import { useGarageStatusPolling } from "@/hooks/useGarageStatusPolling";
@@ -105,7 +106,7 @@ const OfferGpuPage = () => {
     try {
       setCreds(await garageRepository.create({ name, create_setup_key: true, terms_accepted: termsOk }));
     } catch (e) {
-      toast({ title: t("Could not create the garage"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
+      toast({ title: t("Could not create the garage"), description: e instanceof Error ? (limitMessage(e.message) ?? e.message) : t("Unknown error"), variant: "destructive" });
     } finally {
       setCreating(false);
     }
