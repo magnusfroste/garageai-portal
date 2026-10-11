@@ -125,7 +125,7 @@ const BridgeLinkPage = () => {
                   )}
                   {needsTerms && <TermsCheckbox id="link-terms" checked={terms} onChange={setTerms} />}
                   {conflict && (
-                    <div className="space-y-2 rounded border border-warning/50 bg-warning/10 p-3">
+                    <div className="space-y-2 rounded border border-warning-border bg-warning-surface p-3">
                       <p className="flex items-start gap-2 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-foreground" />{t("This garage was connected from another machine ({host}). Connecting this one replaces it.").replace("{host}", chosen?.machine_hostname || t("unknown"))}</p>
                       <div className="flex items-center gap-2"><Checkbox id="replace" checked={replace} onCheckedChange={(c) => setReplace(c === true)} /><Label htmlFor="replace">{t("Replace the other machine")}</Label></div>
                     </div>

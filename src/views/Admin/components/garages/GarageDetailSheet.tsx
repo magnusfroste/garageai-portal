@@ -12,6 +12,7 @@ import { GarageOnboardingSection } from "./GarageOnboardingSection";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { t } from "@/i18n";
 import { BridgeAgentSection } from "@/views/Garages/components/BridgeAgentSection";
+import { machineMismatch, shortMachineId } from "@/models/services/bridgeLinkService";
 
 const Section = ({ icon: Icon, title, children }: { icon: typeof Server; title: string; children: ReactNode }) => (
   <section className="space-y-3"><h3 className="flex items-center gap-2 text-sm font-semibold"><Icon className="h-4 w-4 text-primary" />{title}</h3>{children}</section>
@@ -56,7 +57,8 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
           </Section>
           <Separator />
           <Section icon={Network} title={t("Connection")}>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3"><Field label={t("Type")} value={t(provider ? "Provider endpoint" : "Mesh garage")} /><Field label={t(provider ? "Endpoint host" : "Mesh IP")} value={provider ? (garage.endpoint_url ? new URL(garage.endpoint_url).host : "—") : garage.mesh_ip} /><Field label={t("API host override")} value={garage.api_host} /><Field label={t("Runtime")} value={garage.runtime ? runtimeLabel(garage.runtime) : "—"} /><Field label={t("Port")} value={garage.port} /><Field label={t("Registered")} value={date(garage.last_registered_at)} /></dl>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3"><Field label={t("Type")} value={t(provider ? "Provider endpoint" : "Mesh garage")} /><Field label={t(provider ? "Endpoint host" : "Mesh IP")} value={provider ? (garage.endpoint_url ? new URL(garage.endpoint_url).host : "—") : garage.mesh_ip} /><Field label={t("API host override")} value={garage.api_host} /><Field label={t("Runtime")} value={garage.runtime ? runtimeLabel(garage.runtime) : "—"} /><Field label={t("Port")} value={garage.port} /><Field label={t("Registered")} value={date(garage.last_registered_at)} />{!provider && <Field label={t("Machine")} value={garage.machine_id ? <span>{garage.machine_hostname || "—"} <span className="font-mono text-muted-foreground">{shortMachineId(garage.machine_id)}</span></span> : null} />}</dl>
+            {!provider && machineMismatch(garage) && <p className="rounded border border-warning-border bg-warning-surface p-2 text-xs text-warning-foreground">{t("Heartbeats come from another machine ({id}) than the one this garage was linked to.").replace("{id}", shortMachineId(garage.last_machine_id) ?? "")}</p>}
           </Section>
           <Separator />
           <Section icon={UserRound} title={t("Owner & terms")}><dl className="grid grid-cols-2 gap-3"><Field label={t("Operator")} value={row.operatorEmail || t("No owner")} /><Field label={t("Terms")} value={garage.terms_accepted_at ? `${garage.terms_version || "—"} · ${date(garage.terms_accepted_at)}` : t("Missing")} /></dl></Section>
