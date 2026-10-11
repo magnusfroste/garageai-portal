@@ -6,6 +6,7 @@ import { getNetbirdApiUrl, netbirdHeaders } from "./netbirdConfig.ts";
 import { offeredByGarage, pausedModels } from "./garageModels.ts";
 import { updateMeasuredCountries } from "./garageLocation.ts";
 import { AUTO_CATALOG_ID, AUTO_TIER, autoCatalogRow } from "./autoRoute.ts";
+import { isProbeDeployment, isProbeName } from "./probeDeployments.ts";
 import { GARAGE_SELECT, modelIdentities, identityOf, gatewayHealthy, deploymentId, isModelSellable, latestTests, reconcileGarageRouting, type RoutingGarage } from "./garageRouting.ts";
 
 interface LiteLLMModelInfo {
@@ -72,7 +73,8 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const modelsRes = await fetch(`${base}/model/info`, { headers: authHeaders });
   if (!modelsRes.ok) throw new Error(`LiteLLM /model/info failed with status ${modelsRes.status}`);
   const data = await modelsRes.json();
-  const rawModels: LiteLLMModelInfo[] = data.data || [];
+  // Probe deployments (acceptance tests) never become catalogue rows.
+  const rawModels: LiteLLMModelInfo[] = ((data.data || []) as LiteLLMModelInfo[]).filter((m) => !isProbeDeployment(m));
   const now = new Date().toISOString();
 
   const { data: existing } = await admin
@@ -216,6 +218,8 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
     if (error) console.warn(`Failed to mark stale garage ${garage} offline:`, error.message);
   }
 
+  const probeRows = ((existing || []) as Row[]).filter((r) => isProbeName(r.id) || isProbeName(r.model_name)).map((r) => r.id);
+  if (probeRows.length) await admin.from("curated_models").delete().in("id", probeRows);
   const { error: upsertError } = await admin.from("curated_models").upsert(rows, { onConflict: "id" });
   if (upsertError) throw new Error(`Failed to save models: ${upsertError.message}`);
 

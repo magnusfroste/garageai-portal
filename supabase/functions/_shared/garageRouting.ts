@@ -1,4 +1,5 @@
 // Garage routing: LiteLLM deployments must exist ONLY for sellable garage models.
+import { isProbeDeployment, isStaleProbe } from "./probeDeployments.ts";
 // Desired state = garages table + latest acceptance/probe tests + curated_models admin choices.
 // reconcileGarageRouting compares it with LiteLLM /model/info and adds/removes deployments idempotently.
 // Tests never use sellable routes: they run through short-lived, unguessable "probe" deployments.
@@ -28,7 +29,6 @@ export const identityOf = (ids: ModelIdentity, garageId: string, model: string) 
 export const HEARTBEAT_STALE_MS = 15 * 60 * 1000;
 /** Garages without a heartbeat need a passed test this recent to count as healthy. */
 export const NO_HEARTBEAT_TEST_MAX_AGE_MS = 2 * 60 * 60 * 1000;
-const PROBE_DEPLOYMENT_MAX_AGE_MS = 10 * 60 * 1000;
 
 export const sanitizeModel = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
 export const deploymentId = (garage: string, model: string, tier: "dedicated" | "pool") => `${garage}__${sanitizeModel(model)}__${tier}`;
@@ -253,9 +253,9 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   for (const d of deps) {
     const id = d.model_info?.id;
     if (!id || !d.model_info?.garage) continue;
-    if (d.model_info.garage_tier === "probe") {
-      const ts = Number(id.split("__")[2]);
-      if (!Number.isFinite(ts) || now - ts > PROBE_DEPLOYMENT_MAX_AGE_MS) if (await deleteDeployment(base, masterKey, id)) removed.push(id);
+    if (isProbeDeployment(d)) {
+      // Covers tests killed before their finally block ran.
+      if (isStaleProbe(id, now)) if (await deleteDeployment(base, masterKey, id)) removed.push(id);
       continue;
     }
     actual.set(id, d);
