@@ -25,3 +25,9 @@ verify_jwt = false
 
 [functions.ops-summary]
 verify_jwt = false
+
+[functions.bridge-link-start]
+verify_jwt = false
+
+[functions.bridge-link-poll]
+verify_jwt = false

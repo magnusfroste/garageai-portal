@@ -3,6 +3,7 @@
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
+import { median } from "../_shared/bridgeLink.ts";
 
 const H = 3600_000;
 const BUDGET_MS = 1500;
@@ -83,6 +84,47 @@ async function onboarding(admin: SupabaseClient) {
   return { count: list.length, garages: list.map((g) => ({ garage: g.name, created_at: g.created_at, last_step: latest.get(g.id)?.step ?? null, last_status: latest.get(g.id)?.status ?? null })) };
 }
 
+const LIVE_STEPS = new Set(["5/6  Register with GarageAI", "register"]);
+async function onboardingFunnel(admin: SupabaseClient) {
+  const since = new Date(Date.now() - 30 * 24 * H).toISOString();
+  const [{ data: links }, { data: events }, { data: garages }] = await Promise.all([
+    admin.from("bridge_links").select("status, created_at, expires_at, approved_at, picked_up_at, garage_id").gte("created_at", since),
+    admin.from("onboarding_events").select("garage_id, step, status, created_at, profile, script_version").gte("created_at", since).order("created_at", { ascending: true }).limit(10000),
+    admin.from("garages").select("id, name"),
+  ]);
+  const L = (links || []) as Array<{ status: string; created_at: string; expires_at: string; approved_at: string | null; picked_up_at: string | null; garage_id: string | null }>;
+  const secs = (a: string, b: string) => (new Date(b).getTime() - new Date(a).getTime()) / 1000;
+  const approvedEver = L.filter((l) => l.approved_at);
+  const med = (xs: number[]) => { const m = median(xs); return m == null ? null : Math.round(m); };
+  const linkStats = {
+    started: L.length,
+    approved: approvedEver.length,
+    picked_up: L.filter((l) => l.status === "picked_up").length,
+    denied: L.filter((l) => l.status === "denied").length,
+    expired: L.filter((l) => l.status === "expired" || ((l.status === "pending" || l.status === "approved") && l.expires_at < new Date().toISOString())).length,
+    median_seconds_to_approval: med(approvedEver.map((l) => secs(l.created_at, l.approved_at!))),
+    median_seconds_to_pickup: med(L.filter((l) => l.approved_at && l.picked_up_at).map((l) => secs(l.approved_at!, l.picked_up_at!))),
+  };
+  const names = new Map(((garages || []) as Array<{ id: string; name: string }>).map((g) => [g.id, g.name]));
+  type S = { garage: string; first_event_at: string; live_at: string | null; minutes_to_live: number | null; events: number; failed_steps: string[]; problems: string[]; tool: string | null; bridge_version: string | null };
+  const by = new Map<string, S & { _f: Set<string>; _p: Set<string> }>();
+  for (const e of (events || []) as Array<{ garage_id: string; step: string; status: string; created_at: string; profile: any; script_version: string | null }>) {
+    let s = by.get(e.garage_id);
+    if (!s) { s = { garage: names.get(e.garage_id) ?? e.garage_id, first_event_at: e.created_at, live_at: null, minutes_to_live: null, events: 0, failed_steps: [], problems: [], tool: null, bridge_version: null, _f: new Set(), _p: new Set() }; by.set(e.garage_id, s); }
+    s.events++;
+    if (!s.live_at && e.status === "done" && LIVE_STEPS.has(e.step)) { s.live_at = e.created_at; s.minutes_to_live = Math.round(secs(s.first_event_at, e.created_at) / 6) / 10; }
+    if (e.status === "failed") s._f.add(e.step);
+    const p = e.profile && typeof e.profile === "object" && !Array.isArray(e.profile) ? e.profile : null;
+    if (p) {
+      for (const x of Array.isArray(p.problems) ? p.problems : []) if (x && typeof x.code === "string") s._p.add(x.code);
+      if (typeof p.tool === "string") s.tool = p.tool;
+      if (typeof p.script_version === "string") s.bridge_version = p.script_version;
+    }
+  }
+  const sessions = [...by.values()].map(({ _f, _p, ...s }) => ({ ...s, failed_steps: [..._f], problems: [..._p] })).sort((a, b) => b.first_event_at.localeCompare(a.first_event_at));
+  return { links: linkStats, sessions };
+}
+
 async function adminActivity(admin: SupabaseClient) {
   const { data } = await admin.from("garage_price_history").select("effective_from, garage_name, changed_by").not("changed_by", "is", null).order("effective_from", { ascending: false }).limit(20);
   return ((data || []) as Array<{ effective_from: string; garage_name: string | null }>).map((r) => ({ at: r.effective_from, action: "price changed", target: r.garage_name }));
@@ -97,7 +139,7 @@ Deno.serve(async (req) => {
     const now = Date.now(), d1 = new Date(now - 24 * H).toISOString(), d7 = new Date(now - 7 * 24 * H).toISOString();
     const base = await timed(getProxyBaseUrl(admin), null as string | null);
 
-    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity] = await Promise.all([
+    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel] = await Promise.all([
       admin.from("profiles").select("id, created_at, litellm_user_id, starting_credit_usd, purchased_credits_usd"),
       admin.from("api_keys").select("user_id, key_value, litellm_token"),
       admin.from("chat_conversations").select("user_id, updated_at").gte("updated_at", d7),
@@ -105,7 +147,7 @@ Deno.serve(async (req) => {
       base ? timed(keySpend(base, master, 1), null) : Promise.resolve(null),
       base ? timed(keySpend(base, master, 7), null) : Promise.resolve(null),
       timed(pendingCheckouts(), null),
-      operators(admin), onboarding(admin), adminActivity(admin),
+      operators(admin), onboarding(admin), adminActivity(admin), timed(onboardingFunnel(admin), null),
     ]);
     const profiles = (profilesRes.data || []) as Array<{ id: string; created_at: string; litellm_user_id: string | null; starting_credit_usd: number; purchased_credits_usd: number }>;
     const keyOwner = new Map<string, string>();
@@ -145,6 +187,7 @@ Deno.serve(async (req) => {
       stripe: { last_webhook_at: null, last_topup_at: tx[0]?.created_at ?? null, failed_webhooks_24h: null, pending_checkouts: pending },
       operators: ops,
       onboarding: onb,
+      onboarding_funnel: funnel,
       admin_activity: activity,
     });
   } catch (e) {

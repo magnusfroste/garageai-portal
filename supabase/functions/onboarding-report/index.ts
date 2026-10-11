@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
     if (!STATUSES.has(status)) return reply(400, { error: "status must be one of started, warning, failed, stopped, done" });
     const row: Record<string, unknown> = { garage_id: tok.garage_id, status, message: text(body.message, 500) };
     for (const k of SHORT) row[k] = text(body[k], 200);
+    if (typeof body.machine_id === "string" && body.machine_id.trim() && body.machine_id.length <= 128) row.machine_id = body.machine_id.trim();
     const p = body.profile;
     if (p && typeof p === "object" && !Array.isArray(p)) {
       try { if (new TextEncoder().encode(JSON.stringify(p)).length <= PROFILE_MAX_BYTES) row.profile = p; } catch { /* drop */ }

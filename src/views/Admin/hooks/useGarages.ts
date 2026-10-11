@@ -6,6 +6,9 @@ import { garageRepository } from "@/data/repositories/garageRepository";
 export interface Garage {
   agent?: import("@/models/services/agentReport").AgentReport | null;
   agent_at?: string | null;
+  machine_id?: string | null;
+  machine_hostname?: string | null;
+  last_machine_id?: string | null;
   id: string;
   name: string;
   operator_id: string | null;
