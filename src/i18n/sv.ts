@@ -342,6 +342,7 @@ export const sv: Record<string, string> = {
   "Chat history": "Chatthistorik",
   "No conversations yet": "Inga konversationer än",
   "Toggle chat history": "Visa/dölj chatthistorik",
+  "This model's garage is offline right now": "Den här modellens garage är offline just nu",
   "Choose model": "Välj modell",
   "Search models…": "Sök modeller…",
   "No models found": "Inga modeller hittades",
