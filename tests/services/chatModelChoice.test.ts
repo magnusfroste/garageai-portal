@@ -17,11 +17,11 @@ describe("pickChatModel", () => {
 
   it("uses last used only when healthy", () => {
     expect(pickChatModel(models, null, "c")?.id).toBe("c");
-    expect(pickChatModel(models, null, "a")?.id).toBe("c"); // a offline → falls through
+    expect(pickChatModel(models, null, "a")?.id).toBe("d"); // a offline → falls through to healthy pool
   });
 
   it("uses the default only when healthy", () => {
-    expect(pickChatModel(models, null, null)?.id).toBe("c"); // b is default but offline
+    expect(pickChatModel(models, null, null)?.id).toBe("d"); // b is default but offline
     expect(pickChatModel([m("x", { is_default: true }), m("y")], null, null)?.id).toBe("x");
   });
 
