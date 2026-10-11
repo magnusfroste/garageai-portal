@@ -1,6 +1,6 @@
 import { describe, expect, test, afterAll } from "bun:test";
 import { createServer, type Server } from "node:http";
-import { runAcceptanceTest } from "../../supabase/functions/_shared/acceptanceTest";
+import { runAcceptanceTest } from "../../supabase/functions/_shared/acceptanceTest.ts";
 
 // A retest that fails because the gateway itself is down must be inconclusive,
 // never a failed test: connection errors and 502/503/504 from the gateway.
