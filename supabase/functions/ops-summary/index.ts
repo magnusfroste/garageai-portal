@@ -88,11 +88,11 @@ const LIVE_STEPS = new Set(["5/6  Register with GarageAI", "register"]);
 async function onboardingFunnel(admin: SupabaseClient) {
   const since = new Date(Date.now() - 30 * 24 * H).toISOString();
   const [{ data: links }, { data: events }, { data: garages }] = await Promise.all([
-    admin.from("bridge_links").select("status, created_at, approved_at, picked_up_at, garage_id").gte("created_at", since),
+    admin.from("bridge_links").select("status, created_at, expires_at, approved_at, picked_up_at, garage_id").gte("created_at", since),
     admin.from("onboarding_events").select("garage_id, step, status, created_at, profile, script_version").gte("created_at", since).order("created_at", { ascending: true }).limit(10000),
     admin.from("garages").select("id, name"),
   ]);
-  const L = (links || []) as Array<{ status: string; created_at: string; approved_at: string | null; picked_up_at: string | null; garage_id: string | null }>;
+  const L = (links || []) as Array<{ status: string; created_at: string; expires_at: string; approved_at: string | null; picked_up_at: string | null; garage_id: string | null }>;
   const secs = (a: string, b: string) => (new Date(b).getTime() - new Date(a).getTime()) / 1000;
   const approvedEver = L.filter((l) => l.approved_at);
   const med = (xs: number[]) => { const m = median(xs); return m == null ? null : Math.round(m); };
@@ -101,7 +101,7 @@ async function onboardingFunnel(admin: SupabaseClient) {
     approved: approvedEver.length,
     picked_up: L.filter((l) => l.status === "picked_up").length,
     denied: L.filter((l) => l.status === "denied").length,
-    expired: L.filter((l) => l.status === "expired").length,
+    expired: L.filter((l) => l.status === "expired" || ((l.status === "pending" || l.status === "approved") && l.expires_at < new Date().toISOString())).length,
     median_seconds_to_approval: med(approvedEver.map((l) => secs(l.created_at, l.approved_at!))),
     median_seconds_to_pickup: med(L.filter((l) => l.approved_at && l.picked_up_at).map((l) => secs(l.approved_at!, l.picked_up_at!))),
   };
