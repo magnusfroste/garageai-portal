@@ -212,6 +212,9 @@ export const ChatPage = () => {
             </Button>
           )}
           <ChatModelPicker models={modelInfos} selected={selectedModel} onSelect={chooseModel} disabled={isStreaming} />
+          {selectedOffline && (
+            <span className="hidden text-xs text-muted-foreground sm:inline">{t("This model's garage is offline right now")}</span>
+          )}
           <div className="ml-auto">
             <ChatKeyPicker keys={apiKeys} selected={selectedKeyId} onSelect={chooseKey} onCreated={refetchKeys} isAdmin={!!isAdmin} disabled={isStreaming} />
           </div>
