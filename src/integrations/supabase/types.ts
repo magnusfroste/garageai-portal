@@ -74,6 +74,41 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_route: {
+        Row: {
+          created_at: string
+          curated_model_id: string
+          enabled: boolean
+          id: string
+          note: string | null
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          curated_model_id: string
+          enabled?: boolean
+          id?: string
+          note?: string | null
+          position: number
+        }
+        Update: {
+          created_at?: string
+          curated_model_id?: string
+          enabled?: boolean
+          id?: string
+          note?: string | null
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_route_curated_model_id_fkey"
+            columns: ["curated_model_id"]
+            isOneToOne: true
+            referencedRelation: "curated_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bridge_links: {
         Row: {
           approved_at: string | null
@@ -243,6 +278,7 @@ export type Database = {
           output_cost_per_million: number | null
           provider: string
           status: string
+          supports_tools: boolean | null
           updated_at: string
         }
         Insert: {
@@ -264,6 +300,7 @@ export type Database = {
           output_cost_per_million?: number | null
           provider?: string
           status?: string
+          supports_tools?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -285,6 +322,7 @@ export type Database = {
           output_cost_per_million?: number | null
           provider?: string
           status?: string
+          supports_tools?: boolean | null
           updated_at?: string
         }
         Relationships: []

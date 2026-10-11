@@ -281,6 +281,13 @@
       "when": 1791738464546,
       "tag": "0039_bridge_link_entry",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1791746129634,
+      "tag": "0040_auto_route",
+      "breakpoints": true
     }
   ]
 }
