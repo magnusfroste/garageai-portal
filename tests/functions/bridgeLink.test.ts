@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { USER_CODE_RE, decidePoll, machineConflict, makeUserCode, normaliseUserCode, parseStartBody, type LinkRow } from "../../supabase/functions/_shared/bridgeLink";
+import { USER_CODE_RE, claimMachineId, decidePoll, machineConflict, makeUserCode, normaliseUserCode, parseStartBody, type LinkRow } from "../../supabase/functions/_shared/bridgeLink";
 import { decideSetupKey, ownershipError } from "../../supabase/functions/_shared/garageCredentialRules";
 
 test("user codes are ABCD-EFGH without I, O, 0 or 1", () => {
@@ -56,4 +56,17 @@ test("create-garage rules unchanged: ownership, 5-garage limit and 10 per day", 
   expect(ownershipError(null, "me", false, 5, 0)?.error).toBe("You can have at most 5 garages");
   expect(ownershipError({ operator_id: "me" }, "me", false, 0, 10)?.status).toBe(429);
   expect(ownershipError({ operator_id: "other" }, "me", true, 9, 99)).toBeNull();
+});
+
+test("claimMachineId: first use adopts the reporting machine", () => {
+  expect(claimMachineId(null, "mac-1")).toEqual({ machine_id: "mac-1", last_machine_id: "mac-1" });
+});
+
+test("claimMachineId: an existing machine_id is never replaced", () => {
+  expect(claimMachineId("mac-a", "mac-b")).toEqual({ last_machine_id: "mac-b" });
+});
+
+test("claimMachineId: no machine_id in the body changes nothing", () => {
+  expect(claimMachineId(null, null)).toEqual({});
+  expect(claimMachineId("mac-a", null)).toEqual({});
 });
