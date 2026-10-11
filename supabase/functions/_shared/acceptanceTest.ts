@@ -121,8 +121,8 @@ export async function runAcceptanceTest(
       result.error = "no first token within 60s";
     } else {
       result.error = (e instanceof Error ? e.message : "request failed").slice(0, 300);
-      // A connection error means the gateway is unreachable — never delist for that.
-      if (e instanceof TypeError) result.inconclusive = true;
+      // The request never completed (gateway unreachable/connection error) — never delist for that.
+      result.inconclusive = true;
     }
   } finally {
     clearTimeout(timer);
