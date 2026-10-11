@@ -68,6 +68,8 @@ export async function runAcceptanceTest(
     if (res.status !== 200 || !res.body) {
       const text = await res.text().catch(() => "");
       result.error = (text || `HTTP ${res.status}`).slice(0, 300);
+      // 502/503/504 mean the gateway itself is down — never delist for that.
+      if (res.status === 502 || res.status === 503 || res.status === 504) result.inconclusive = true;
       return result;
     }
 
@@ -115,9 +117,13 @@ export async function runAcceptanceTest(
     // Any streamed tokens = pass; slowness only affects the grade.
   } catch (e) {
     if (content || reasoning) result.passed = true;
-    else result.error = controller.signal.aborted
-      ? "no first token within 60s"
-      : (e instanceof Error ? e.message : "request failed").slice(0, 300);
+    else if (controller.signal.aborted) {
+      result.error = "no first token within 60s";
+    } else {
+      result.error = (e instanceof Error ? e.message : "request failed").slice(0, 300);
+      // A connection error means the gateway is unreachable — never delist for that.
+      if (e instanceof TypeError) result.inconclusive = true;
+    }
   } finally {
     clearTimeout(timer);
     result.duration_ms = Date.now() - start;
