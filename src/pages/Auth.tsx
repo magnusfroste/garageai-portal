@@ -15,6 +15,7 @@ import { onboardingService } from "@/models/services/onboardingService";
 import { lovable } from "@/integrations/lovable/index";
 
 import { t } from "@/i18n";
+import { authReturnService } from "@/models/services/authReturnService";
 const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email too long"),
   password: z.string().min(8, "Password must be at least 8 characters").max(100, "Password too long"),
@@ -43,10 +44,12 @@ const Auth = () => {
       : t("Welcome");
 
   const routeSession = async (session: { user: Parameters<typeof onboardingService.routeAfterLogin>[0] }) => {
-    const next = new URLSearchParams(location.search).get("next");
-    if (next && next.startsWith("/") && !next.startsWith("//")) { navigate(next, { replace: true }); return; }
+    const next = authReturnService.take(location.search);
+    if (next) { navigate(next, { replace: true }); return; }
     navigate(await onboardingService.routeAfterLogin(session.user), { replace: true });
   };
+
+  useEffect(() => { authReturnService.remember(location.search); }, [location.search]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -71,7 +74,7 @@ const Auth = () => {
         password: validated.password,
         options: {
           data: { full_name: validated.fullName || "", signup_intent: intent },
-          emailRedirectTo: `${window.location.origin}/auth`,
+          emailRedirectTo: `${window.location.origin}/auth${authReturnService.query(location.search)}`,
         },
       });
       if (error) {
