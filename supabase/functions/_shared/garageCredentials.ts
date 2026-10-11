@@ -81,7 +81,7 @@ export async function issueGarageCredentials(admin: SupabaseClient, o: IssueOpti
   const registerToken = "grg_" + toHex(crypto.getRandomValues(new Uint8Array(32)));
   const { error: revErr } = await admin.from("garage_tokens").update({ revoked_at: new Date().toISOString() }).eq("garage_id", garage.id).is("revoked_at", null);
   if (revErr) throw revErr;
-  const { error: insErr } = await admin.from("garage_tokens").insert({ garage_id: garage.id, token_hash: await sha256Hex(registerToken) });
+  const { error: insErr } = await admin.from("garage_tokens").insert({ garage_id: garage.id, token_hash: await sha256Hex(registerToken), relink });
   if (insErr) throw insErr;
 
   const netbirdApiUrl = await getNetbirdApiUrl(admin);
