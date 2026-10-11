@@ -76,21 +76,6 @@ Deno.serve(async (req) => {
       management_url: issued.management_url,
     });
   } catch (e) {
-          console.error("[create-garage] old peer delete failed", { garage: name, error: e instanceof Error ? e.message : "unknown" });
-        }
-      }
-    }
-
-    console.log("[create-garage] garage ready", { garage: name, reused: !!existing, setup_key_created: !!setupKey });
-
-    return json({
-      garage,
-      register_token: registerToken,
-      setup_key: setupKey,
-      register_url: `${SUPABASE_URL}/functions/v1/register-node`,
-      management_url: netbirdApiUrl.replace(/\/api$/, ""),
-    });
-  } catch (e) {
     if (e instanceof CredentialError) return json({ error: e.message }, e.status);
     console.error("[create-garage] error:", e instanceof Error ? e.message : "unknown");
     return json({ error: e instanceof Error ? e.message : "Internal error" }, 500);
