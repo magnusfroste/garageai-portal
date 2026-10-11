@@ -585,6 +585,8 @@ export type Database = {
       }
       garages: {
         Row: {
+          agent: Json | null
+          agent_at: string | null
           api_host: string | null
           connection_type: string
           country_override: string | null
@@ -625,6 +627,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          agent?: Json | null
+          agent_at?: string | null
           api_host?: string | null
           connection_type?: string
           country_override?: string | null
@@ -665,6 +669,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          agent?: Json | null
+          agent_at?: string | null
           api_host?: string | null
           connection_type?: string
           country_override?: string | null
