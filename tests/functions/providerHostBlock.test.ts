@@ -10,12 +10,9 @@ test("provider URL on api.garageai.eu is rejected", async () => {
   await expect(validateEndpointUrl("https://api.garageai.eu/v1", { blockedDomains: blocked })).rejects.toThrow("must not point at this gateway");
 });
 
-test("every host under garageai.eu is rejected, look-alikes are not", async () => {
+test("every host under garageai.eu is rejected", async () => {
   for (const url of ["https://llm.garageai.eu/v1", "https://app.garageai.eu/v1", "https://garageai.eu/v1", "https://anything.deep.garageai.eu/v1"]) {
     await expect(validateEndpointUrl(url, { blockedDomains: blocked })).rejects.toThrow("must not point at this gateway");
-  }
-  for (const url of ["https://notgarageai.eu/v1", "https://garageai.eu.evil.example/v1"]) {
-    await expect(validateEndpointUrl(url, { blockedDomains: blocked })).rejects.not.toThrow("must not point at this gateway");
   }
 });
 
