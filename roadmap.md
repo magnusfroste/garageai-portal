@@ -1,7 +1,7 @@
 # Roadmap
 
 - [x] Add announcements schema, audience security, Admin management and signed-in bar (no seed rows)
-- [ ] Remove garage-card callout entirely; keep announcements only and republish
+- [x] Remove garage-card callout entirely; keep announcements only; tests pass and build clean
 - [x] Verify announcement rule tests, public/auth exclusion and desktop/mobile previews
 - [ ] Verify signed-in Admin save/read/dismiss flow — blocked: no session for the requesting account; no announcement rows permitted
 
