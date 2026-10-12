@@ -4,6 +4,8 @@ import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, type NetbirdPeer } fr
 import { resolveGaragePeer } from "./tunnel.ts";
 import { runAndStoreAcceptanceTests, type AcceptanceResult } from "./acceptanceTest.ts";
 import { syncModels } from "./syncModels.ts";
+import { suggestPrice } from "./poolPricing.ts";
+import { normaliseModelId } from "./modelIdentity.ts";
 import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
 import { syncInventory, storeContexts, CONTEXT_MIN, CONTEXT_MAX, CONTEXTS_MAX_ENTRIES } from "./garageModels.ts";
 import { modelIdError, storeRuntimeKey, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
@@ -89,7 +91,8 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   for (const result of (latest || []) as Array<{ model: string; passed: boolean }>) if (!latestByModel.has(result.model)) latestByModel.set(result.model, result.passed);
   for (const result of acceptance) if (!result.inconclusive) latestByModel.set(result.model, result.passed);
   const anyPassed = payload.models.some((model) => latestByModel.get(model) === true);
-  const { error } = await admin.from("garages").update({ runtime: payload.runtime, port: payload.port, models: payload.models, ...(isEndpoint ? {} : { mesh_ip: peer.ip, netbird_peer_id: peer.id }), status: anyPassed ? "online" : payload.models.length ? "failed_test" : "pending", last_registered_at: new Date().toISOString() }).eq("id", garage.id);
+  const prefill = await prefillPrices(admin, garage, payload.models);
+  const { error } = await admin.from("garages").update({ ...prefill, runtime: payload.runtime, port: payload.port, models: payload.models, ...(isEndpoint ? {} : { mesh_ip: peer.ip, netbird_peer_id: peer.id }), status: anyPassed ? "online" : payload.models.length ? "failed_test" : "pending", last_registered_at: new Date().toISOString() }).eq("id", garage.id);
   if (error) throw error;
 
   let catalogSynced = true;
@@ -100,4 +103,23 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
     console.error("[registerGarage] catalogue sync failed", error instanceof Error ? error.message : "unknown");
   }
   return { api_base: apiBase, models: payload.models, acceptance, catalog_synced: catalogSynced };
+}
+/** A garage that has never been priced (all four prices 0) gets the market price of its first model, for both tiers. */
+export async function prefillPrices(admin: SupabaseClient, garage: GarageRecord, models: string[]): Promise<Record<string, number>> {
+  const unpriced = [garage.pool_input_cost_per_million, garage.pool_output_cost_per_million, garage.dedicated_input_cost_per_million, garage.dedicated_output_cost_per_million].every((v) => !Number(v));
+  if (!unpriced || !models.length || garage.connection_type === "endpoint") return {};
+  try {
+    const canonical = normaliseModelId(models[0]);
+    const [{ data: market }, { data: ours }] = await Promise.all([
+      admin.from("market_prices").select("input_per_m, output_per_m").eq("model_id", canonical).maybeSingle(),
+      admin.from("curated_models").select("garage, input_cost_per_million, output_cost_per_million").eq("model_name", canonical).eq("garage_tier", "pool"),
+    ]);
+    const others = ((ours || []) as Array<{ garage: string | null; input_cost_per_million: number | null; output_cost_per_million: number | null }>)
+      .filter((r) => r.garage !== garage.name).map((r) => ({ input: Number(r.input_cost_per_million), output: Number(r.output_cost_per_million) }));
+    const p = suggestPrice(canonical, market as { input_per_m: number; output_per_m: number } | null, others);
+    return { pool_input_cost_per_million: p.input, pool_output_cost_per_million: p.output, dedicated_input_cost_per_million: p.input, dedicated_output_cost_per_million: p.output };
+  } catch (e) {
+    console.error("[registerGarage] price prefill failed", e instanceof Error ? e.message : "unknown");
+    return {};
+  }
 }
