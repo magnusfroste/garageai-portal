@@ -1,8 +1,8 @@
 # Roadmap
 
 - [x] Add announcements schema, audience security, Admin management and signed-in bar (no seed rows)
-- [x] Add NetBird-only Bridge tunnel note, Swedish translations and rule tests
-- [x] Verify rule tests, public/auth exclusion and desktop/mobile previews; request publication
+- [x] Remove garage-card callout entirely; keep announcements only; tests pass and build clean
+- [x] Verify announcement rule tests, public/auth exclusion and desktop/mobile previews
 - [ ] Verify signed-in Admin save/read/dismiss flow — blocked: no session for the requesting account; no announcement rows permitted
 
 - [x] Align public garage cards/profile headers with catalogue, verify anonymous data and desktop/mobile interactions
