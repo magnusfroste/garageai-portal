@@ -5,6 +5,12 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 let cached: { url: string; expires: number } | null = null;
 const TTL_MS = 60_000;
 
+// Public buyer API hosts block admin routes by design; never use them for internal calls.
+const PUBLIC_GATEWAY_HOSTS = new Set(["api.garageai.eu"]);
+export function isPublicGatewayHost(url: string): boolean {
+  try { return PUBLIC_GATEWAY_HOSTS.has(new URL(url).hostname.toLowerCase()); } catch { return false; }
+}
+
 export async function getProxyBaseUrl(client?: SupabaseClient): Promise<string> {
   const now = Date.now();
   if (cached && cached.expires > now) return cached.url;
@@ -27,8 +33,9 @@ export async function getProxyBaseUrl(client?: SupabaseClient): Promise<string> 
       // the public API host (api_base_url, shown to buyers) blocks admin routes with 403.
       const internal = (settings?.internal_api_base_url as string | undefined)?.trim();
       const configured = (settings?.api_base_url as string | undefined)?.trim();
-      if (internal) url = internal.replace(/\/+$/, "");
-      else if (!envFallback && configured) url = configured.replace(/\/+$/, "");
+      if (internal && !isPublicGatewayHost(internal)) url = internal.replace(/\/+$/, "");
+      else if (internal) console.error("[proxyConfig] internal_api_base_url points at the public API host (blocks admin routes); ignoring it");
+      if (!url && configured && !isPublicGatewayHost(configured)) url = configured.replace(/\/+$/, "");
     }
   } catch (e) {
     console.warn("[proxyConfig] Failed to read admin_settings, using env fallback:", e);
