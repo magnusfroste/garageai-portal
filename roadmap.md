@@ -1,6 +1,8 @@
 # Roadmap
 
-- [ ] Remove portal legacy scripts, retain Bridge linking and advanced token renewal, update Swedish translations, verify and publish
+- [x] Remove portal legacy scripts, retain Bridge linking and advanced token renewal; Swedish updated, 90 tests pass, build clean
+- [ ] Verify signed-in Bridge-only controls — blocked: requesting user's email has no app account/session
+- [x] Request publication of the Bridge-only portal
 
 - [x] Add announcements schema, audience security, Admin management and signed-in bar (no seed rows)
 - [x] Remove garage-card callout entirely; keep announcements only; tests pass and build clean
