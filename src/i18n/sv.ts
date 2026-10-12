@@ -1,6 +1,13 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
   "Announcements": "Meddelanden",
+  "Title": "Titel",
+  "Preview": "Förhandsvisning",
+  "Warning": "Varning",
+  "Read more": "Läs mer",
+  "Buyers": "Köpare",
+  "Operators": "Operatörer",
+  "Copy command": "Kopiera kommando",
   "Create announcement": "Skapa meddelande",
   "Edit announcement": "Redigera meddelande",
   "No announcements yet.": "Inga meddelanden ännu.",

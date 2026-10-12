@@ -15,7 +15,10 @@ export function validateAnnouncement(d: AnnouncementDraft): string | null {
   return null;
 }
 export const announcementService = {
-  list: announcementRepository.list,
+  async list(): Promise<Announcement[]> {
+    const rows = await announcementRepository.list();
+    return rows.map(row => ({ ...row, audience: row.audience as Announcement['audience'], level: row.level as Announcement['level'] }));
+  },
   async save(d: AnnouncementDraft, id?: string) {
     const error = validateAnnouncement(d);
     if (error) throw new Error(error);

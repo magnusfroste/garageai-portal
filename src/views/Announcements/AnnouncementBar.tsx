@@ -20,11 +20,13 @@ function SignedInBar({ userId }: { userId: string }) {
   const { garages, isLoading, isError } = useMyGarages();
   const a = currentAnnouncement(data ?? [], garages.length > 0);
   const [dismissed, setDismissed] = useState(false);
+  const [checkedId, setCheckedId] = useState<string | null>(null);
   useEffect(() => {
     try { setDismissed(a ? JSON.parse(localStorage.getItem(dismissalKey(a.id)) || '{}')[userId] === true : false); }
     catch { setDismissed(false); }
+    setCheckedId(a?.id ?? null);
   }, [a?.id, userId]);
-  if (!a || dismissed || isLoading || isError) return null;
+  if (!a || checkedId !== a.id || dismissed || isLoading || isError) return null;
   return <AnnouncementContent announcement={a} onDismiss={() => {
     try {
       let stored: Record<string, boolean> = {};

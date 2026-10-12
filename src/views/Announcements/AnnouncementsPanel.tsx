@@ -28,7 +28,7 @@ export function AnnouncementsPanel() {
   const validation = validateAnnouncement(draft);
   const set = <K extends keyof AnnouncementDraft>(key: K, value: AnnouncementDraft[K]) => setDraft(d => ({ ...d, [key]: value }));
   const edit = (a?: Announcement) => { setEditing(a ?? null); setDraft(a ?? empty()); setFailure(null); setOpen(true); };
-  const fail = (e: unknown) => { const message = e instanceof Error ? e.message : String(e); setFailure(message); toast.error(t('Could not save announcement.'), { description: message }); };
+  const fail = (e: unknown) => { const message = e instanceof Error ? e.message : typeof e === 'object' && e !== null && 'message' in e ? String(e.message) : String(e); setFailure(message); toast.error(t('Could not save announcement.'), { description: message }); };
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validation) return;
