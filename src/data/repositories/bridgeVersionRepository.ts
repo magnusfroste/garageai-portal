@@ -6,6 +6,15 @@ export const bridgeVersionRepository = {
     if (error) throw error;
     return data?.value;
   },
+  async readUpdate() {
+    const { data, error } = await supabase.from("admin_settings").select("value").eq("key", "bridge_update").maybeSingle();
+    if (error) throw error;
+    return data?.value;
+  },
+  async setUpdate(patch: { stable?: string; mode?: "manual" | "auto" }) {
+    const { error } = await supabase.rpc("set_bridge_update", { p_stable: patch.stable ?? null, p_mode: patch.mode ?? null });
+    if (error) throw error;
+  },
   async pin(pinned: string | null) {
     const { error } = await supabase.rpc("set_bridge_pin", { p_pinned: pinned });
     if (error) throw error;

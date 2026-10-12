@@ -1,5 +1,17 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
+  "Bridge updates": "Bridge-uppdateringar",
+  "Stable version": "Stabil version",
+  "Make {version} stable": "Gör {version} stabil",
+  "Mode": "Läge",
+  "Automatic": "Automatiskt",
+  "Manual": "Manuellt",
+  "A new release becomes stable after {hours} hours, once one of our garages already runs it.": "En ny version blir stabil efter {hours} timmar, när något av våra garage redan kör den.",
+  "Garages stay on the stable version until you make another one stable.": "Garagen stannar på den stabila versionen tills du gör en annan stabil.",
+  "Bridge update setting saved.": "Bridge-uppdateringsinställningen sparades.",
+  "update failed: {error}": "uppdateringen misslyckades: {error}",
+  "auto-update off": "automatisk uppdatering av",
+  "{version} → updating to {target}": "{version} → uppdateras till {target}",
   "Market price (OpenRouter)": "Marknadspris (OpenRouter)",
   "GarageAI average": "GarageAI-snitt",
   "Default for this size": "Standard för den här storleken",

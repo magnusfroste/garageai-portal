@@ -4,6 +4,7 @@ import { syncModels } from "../_shared/syncModels.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
+import { heartbeatBridgeFields, parseBridgeUpdate } from "../_shared/bridgeUpdate.ts";
 import { parseMachineId, claimMachineId } from "../_shared/bridgeLink.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type" };
@@ -28,6 +29,8 @@ Deno.serve(async (req) => {
     let payload;
     try { payload = validateGaragePayload(body, true); } catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid body" }, 400); }
     const now = new Date().toISOString();
+    const { data: updateRow } = await admin.from("admin_settings").select("value").eq("key", "bridge_update").maybeSingle();
+    const bridge = heartbeatBridgeFields(parseBridgeUpdate((updateRow as { value?: unknown } | null)?.value));
     const parsedAgent = parseAgent(body.agent);
     if (parsedAgent.error) console.warn("[node-heartbeat] ignored agent", garage.name, parsedAgent.error);
     const machineId = parseMachineId(body.machine_id); // a set machine_id never changes here; claim on first use only
@@ -51,11 +54,11 @@ Deno.serve(async (req) => {
           await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
         }
       }
-      return json({ ok: true, changed: false });
+      return json({ ok: true, changed: false, ...bridge });
     }
 
     const result = await registerGarage(admin, garage, payload, { testOnly: added });
-    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult) });
+    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), ...bridge });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     if (message.includes("connected to the mesh") || message.includes("connected to mesh")) return json({ error: message }, 409);

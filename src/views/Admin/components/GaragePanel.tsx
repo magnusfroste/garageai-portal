@@ -78,7 +78,7 @@ const ResultView = ({ result, onClose }: { result: CreateGarageResult; onClose: 
 
 export const GaragePanel = () => {
   const navigate = useNavigate();
-  const { latest: bridgeLatest } = useBridgeVersion();
+  const { latest: bridgeLatest, stable: bridgeStable } = useBridgeVersion();
   const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled, invalidate } = useGarages();
   const { byGarage, setOffered, setAlias, pending } = useGarageModels(garages.map((g) => g.id));
   const [providerOpen, setProviderOpen] = useState(false);
@@ -184,7 +184,7 @@ export const GaragePanel = () => {
     return {
       garage,
       models,
-      view: { ...presentAdminGarage(garage, models), ...presentAdminBridge(garage, bridgeLatest) },
+      view: { ...presentAdminGarage(garage, models), ...presentAdminBridge(garage, bridgeLatest, bridgeStable) },
       reliability: reliability.get(garage.name),
       location: locations.get(garage.name),
       revenue: revenue.summary.garages.find((item) => item.garage === garage.name),
@@ -196,7 +196,7 @@ export const GaragePanel = () => {
   })).filter((row) => matchesAdminGarage(row.garage, row.view, search, statusFilter, typeFilter));
   const selectedRow = selectedGarage ? rows.find((row) => row.garage.id === selectedGarage.id) ?? (() => {
     const garage = selectedGarage; const models = byGarage.get(garage.id) ?? [];
-    return { garage, models, view: { ...presentAdminGarage(garage, models), ...presentAdminBridge(garage, bridgeLatest) }, reliability: reliability.get(garage.name), location: locations.get(garage.name), revenue: revenue.summary.garages.find((item) => item.garage === garage.name), operatorEmail: garage.operator_id ? operatorEmails.get(garage.operator_id) : undefined, changedRecently: countryChanges.data?.has(garage.id) ?? false, tests: latestTests };
+    return { garage, models, view: { ...presentAdminGarage(garage, models), ...presentAdminBridge(garage, bridgeLatest, bridgeStable) }, reliability: reliability.get(garage.name), location: locations.get(garage.name), revenue: revenue.summary.garages.find((item) => item.garage === garage.name), operatorEmail: garage.operator_id ? operatorEmails.get(garage.operator_id) : undefined, changedRecently: countryChanges.data?.has(garage.id) ?? false, tests: latestTests };
   })() : null;
   const actions: GarageActionHandlers = {
     onOpen: setSelectedGarage,

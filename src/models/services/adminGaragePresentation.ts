@@ -1,6 +1,6 @@
 import type { GarageModelRow } from "@/data/repositories/garageRepository";
 import type { Garage } from "@/views/Admin/hooks/useGarages";
-import { bridgeStatus, parseBridgeLatest, type BridgeLatest } from "./bridgeVersionService";
+import { bridgeStatus, bridgeUpdateState, parseBridgeLatest, type BridgeLatest, type BridgeUpdateState } from "./bridgeVersionService";
 
 export type AdminGarageStatus = "disabled" | "paused" | "offline" | "degraded" | "live";
 export type AdminGarageFilter = "all" | "attention" | "live" | "paused" | "disabled" | "outdated";
@@ -17,6 +17,7 @@ export interface AdminGaragePresentation {
   lastSeen: string | null;
   bridgeVersion?: string | null;
   bridgeOutdated?: boolean;
+  bridgeUpdate?: BridgeUpdateState;
 }
 
 const newest = (...values: Array<string | null | undefined>) => {
@@ -44,9 +45,9 @@ export const presentAdminGarage = (garage: Garage, models: GarageModelRow[], now
   return { status: "live", label: "Live", reason: null, attention: false, severity: 2, offered: offeredRows.length, live, lastSeen };
 };
 
-export const presentAdminBridge = (garage: Garage, latest: BridgeLatest = parseBridgeLatest(null)) => {
-  const bridge = bridgeStatus(garage.agent?.version, latest);
-  return { bridgeVersion: bridge.version, bridgeOutdated: bridge.outdated };
+export const presentAdminBridge = (garage: Garage, latest: BridgeLatest = parseBridgeLatest(null), stable: string | null = null) => {
+  const bridge = bridgeStatus(garage.agent?.version, latest, stable);
+  return { bridgeVersion: bridge.version, bridgeOutdated: bridge.outdated, bridgeUpdate: bridgeUpdateState(garage.agent, stable) };
 };
 
 export const matchesAdminGarage = (garage: Garage, view: AdminGaragePresentation, search: string, status: AdminGarageFilter, type: AdminGarageTypeFilter) => {

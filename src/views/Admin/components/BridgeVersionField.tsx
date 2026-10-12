@@ -1,30 +1,36 @@
-import { useEffect, useState } from "react";
 import { useBridgeVersion } from "@/hooks/useBridgeVersion";
-import { bridgeVersion, effectiveBridgeVersion } from "@/models/services/bridgeVersionService";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { t } from "@/i18n";
 
+/** Admin → Settings: the portal decides which Bridge version garages run (stable), never GitHub directly. */
 export const BridgeVersionField = () => {
-  const { latest, isLoading, error, pin } = useBridgeVersion();
-  const [value, setValue] = useState("");
-  useEffect(() => { setValue(latest.pinned ?? ""); }, [latest.pinned]);
-  const invalid = !!value.trim() && !bridgeVersion(value.trim());
+  const { latest, isLoading, error, update, setUpdate } = useBridgeVersion();
+  const release = latest.version;
+  const save = (patch: { stable?: string; mode?: "manual" | "auto" }) =>
+    setUpdate.mutate(patch, { onSuccess: () => toast.success(t("Bridge update setting saved.")), onError: (e) => toast.error(e.message) });
   return <section className="space-y-3 border-t border-border pt-4">
-    <h3 className="font-semibold">{t("Bridge versions")}</h3>
+    <h3 className="font-semibold">{t("Bridge updates")}</h3>
     <dl className="grid grid-cols-2 gap-2 text-sm">
-      <dt className="text-muted-foreground">{t("Latest release")}</dt><dd>{isLoading ? t("Loading...") : latest.version ?? "—"}</dd>
-      <dt className="text-muted-foreground">{t("Active version")}</dt><dd>{effectiveBridgeVersion(latest) ?? "—"}{latest.pinned ? ` · ${t("Pinned")}` : ""}</dd>
+      <dt className="text-muted-foreground">{t("Stable version")}</dt><dd className="font-mono">{update.stable ?? "—"}</dd>
+      <dt className="text-muted-foreground">{t("Latest release")}</dt><dd className="font-mono">{isLoading ? t("Loading...") : release ?? "—"}</dd>
       <dt className="text-muted-foreground">{t("Last checked")}</dt><dd>{latest.checked_at ? new Date(latest.checked_at).toLocaleString() : "—"}</dd>
     </dl>
-    <Label htmlFor="bridge-pin">{t("Pinned Bridge version")}</Label>
-    <div className="flex items-center gap-2"><Input id="bridge-pin" placeholder="v0.4.5" value={value} onChange={(e) => setValue(e.target.value)} className="max-w-xs" />
-      <Button variant="outline" disabled={invalid || pin.isPending || isLoading} onClick={() => pin.mutate(value.trim() ? bridgeVersion(value.trim()) : null, { onSuccess: () => toast.success(t("Bridge version saved.")), onError: (e) => toast.error(e.message) })}><Save className="mr-2 h-4 w-4" />{t("Save")}</Button>
+    {release && release !== update.stable && (
+      <Button variant="outline" disabled={setUpdate.isPending} onClick={() => save({ stable: release })}>{t("Make {version} stable", { version: release })}</Button>
+    )}
+    <div className="space-y-1.5">
+      <Label className="text-xs">{t("Mode")}</Label>
+      <RadioGroup value={update.mode} onValueChange={(m) => save({ mode: m as "manual" | "auto" })} className="flex gap-4">
+        <div className="flex items-center gap-1.5"><RadioGroupItem value="auto" id="bridge-mode-auto" /><Label htmlFor="bridge-mode-auto" className="text-xs">{t("Automatic")}</Label></div>
+        <div className="flex items-center gap-1.5"><RadioGroupItem value="manual" id="bridge-mode-manual" /><Label htmlFor="bridge-mode-manual" className="text-xs">{t("Manual")}</Label></div>
+      </RadioGroup>
+      <p className="text-xs text-muted-foreground">{update.mode === "auto"
+        ? t("A new release becomes stable after {hours} hours, once one of our garages already runs it.", { hours: update.auto_after_hours })
+        : t("Garages stay on the stable version until you make another one stable.")}</p>
     </div>
-    <p className="text-xs text-muted-foreground">{t("Empty follows the latest release. A pinned version overrides it.")}</p>
-    {(invalid || error || pin.error) && <p role="alert" className="text-sm text-danger-foreground">{invalid ? t("Enter a version such as v0.4.5.") : (pin.error ?? error)?.message}</p>}
+    {(error || setUpdate.error) && <p role="alert" className="text-sm text-danger-foreground">{(setUpdate.error ?? error)?.message}</p>}
   </section>;
 };

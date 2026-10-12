@@ -5,9 +5,9 @@ import { BRIDGE_UPDATE_COMMAND, bridgeStatus, type BridgeLatest } from "@/models
 import { t } from "@/i18n";
 import { toast } from "sonner";
 
-export const BridgeUpdateNotice = ({ version, latest }: { version: unknown; latest: BridgeLatest }) => {
+export const BridgeUpdateNotice = ({ version, latest, stable = null }: { version: unknown; latest: BridgeLatest; stable?: string | null }) => {
   const [copied, setCopied] = useState(false);
-  const status = bridgeStatus(version, latest);
+  const status = bridgeStatus(version, latest, stable);
   if (!status.outdated) return null;
   return <div className="space-y-2 border-t border-border pt-3">
     <p className="text-sm font-medium">{t("Bridge {version} · {latest} available", { version: status.version ?? "", latest: status.latest ?? "" })}</p>
