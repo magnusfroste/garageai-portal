@@ -10,7 +10,7 @@ function fakeAdmin(updates: Array<{ table: string; patch: Record<string, unknown
     let isSettings = false;
     const result = () => ({ data: isSettings ? { value: SETTINGS } : table === "admin_settings" ? null : [], error: null });
     const q: Record<string, unknown> = {};
-    for (const m of ["select", "eq", "is", "in", "order", "limit", "neq", "not", "gte", "lte", "or", "upsert", "delete", "insert"]) {
+    for (const m of ["select", "eq", "is", "in", "order", "limit", "neq", "not", "gte", "lte", "or", "upsert", "delete", "insert", "match", "filter", "range"]) {
       q[m] = (...args: unknown[]) => { if (m === "eq" && args[0] === "key" && args[1] === "site_settings") isSettings = true; return q; };
     }
     q.update = (patch: Record<string, unknown>) => { updates.push({ table, patch }); return q; };
