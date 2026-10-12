@@ -18,6 +18,8 @@ export interface IssueOptions {
   acceptTerms: boolean;
   /** Machine asking for credentials (Bridge link); same machine re-linking its garage is not rate-limited. */
   machineId?: string | null;
+  /** Bridge tunnel: never create a NetBird setup key or touch the old peer. */
+  noNetbird?: boolean;
 }
 
 export interface IssuedCredentials { garage: Record<string, any>; register_token: string; setup_key: string | null; register_url: string; management_url: string; reused: boolean }
@@ -76,7 +78,7 @@ export async function issueGarageCredentials(admin: SupabaseClient, o: IssueOpti
 
   if (!o.adminPanel && garage.operator_id !== o.userId) throw new Error("invariant: wizard-created garage must be owned by the caller");
 
-  const createSetupKey = decideSetupKey(o.setupKeyRequested, o.isAdmin, !!garage.netbird_peer_id);
+  const createSetupKey = !o.noNetbird && decideSetupKey(o.setupKeyRequested, o.isAdmin, !!garage.netbird_peer_id);
 
   const registerToken = "grg_" + toHex(crypto.getRandomValues(new Uint8Array(32)));
   const { error: revErr } = await admin.from("garage_tokens").update({ revoked_at: new Date().toISOString() }).eq("garage_id", garage.id).is("revoked_at", null);

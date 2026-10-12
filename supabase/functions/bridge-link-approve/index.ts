@@ -1,6 +1,6 @@
 // Bridge device-link approval by a signed-in operator. Actions: lookup (show the machine), approve, deny.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { NAME_RE, entryFor, machineConflict, normaliseUserCode } from "../_shared/bridgeLink.ts";
+import { NAME_RE, entryFor, linkWantsSetupKey, machineConflict, normaliseUserCode } from "../_shared/bridgeLink.ts";
 import { termsAccepted } from "../_shared/garageTerms.ts";
 import { CredentialError, countOwnedGarages, issueGarageCredentials, loadGarageByName } from "../_shared/garageCredentials.ts";
 import { garageLimitReached } from "../_shared/garageCredentialRules.ts";
@@ -11,7 +11,7 @@ const corsHeaders = {
 };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const PUBLIC_FIELDS = "id, user_code, status, machine_id, hostname, os, arch, bridge_version, gpu, memory_gb, runtime, models, suggested_name, requested_ip_country, created_at, expires_at";
+const PUBLIC_FIELDS = "id, user_code, status, machine_id, hostname, os, arch, bridge_version, gpu, memory_gb, runtime, models, suggested_name, requested_ip_country, transport, created_at, expires_at";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -67,7 +67,8 @@ Deno.serve(async (req) => {
 
     const issued = await issueGarageCredentials(admin, {
       userId: user.id, isAdmin, name, adminPanel: false, operatorId: user.id,
-      setupKeyRequested: !existing?.netbird_peer_id || conflict === "replace", acceptTerms: accepted, machineId: link.machine_id,
+      setupKeyRequested: linkWantsSetupKey(link.transport, !!existing?.netbird_peer_id, conflict), acceptTerms: accepted, machineId: link.machine_id,
+      noNetbird: link.transport === "tunnel",
     });
 
     const { data: prof } = await admin.from("profiles").select("connect_page_seen_at").eq("id", user.id).maybeSingle();
