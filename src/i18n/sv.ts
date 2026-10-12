@@ -802,6 +802,7 @@ export const sv: Record<string, string> = {
   "No tool support: agents may break when auto falls back to it": "Inget verktygsstöd: agenter kan gå sönder när auto faller tillbaka på den",
   "Context under 128k": "Kontext under 128k",
   "Grade below A: put it after the reliable ones": "Betyg under A: lägg den efter de pålitliga",
+  "This model is already in the list": "Modellen finns redan i listan",
   "Always answers: the best available model from a curated list (fails over automatically)": "Svarar alltid: bästa tillgängliga modell från en kurerad lista (byter automatiskt vid fel)",
   "You have connected many times today. Wait a while, or contact us at {support}": "Du har anslutit många gånger i dag. Vänta en stund, eller kontakta oss på {support}",
   "You have {n} garages. Remove one under My garages, or connect this machine as one of them": "Du har {n} garage. Ta bort ett under Mina garage, eller anslut den här datorn som ett av dem",

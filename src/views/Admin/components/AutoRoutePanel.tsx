@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAutoRoute } from "@/hooks/useAutoRoute";
 import { useToolSupport } from "@/hooks/useToolSupport";
 import { useModelGarageGrades } from "@/hooks/useGarageReliability";
-import { addableModels, autoPriceError, autoSummary, buildAutoEntries, swapPositions } from "@/models/services/autoRouteService";
+import { toast } from "@/hooks/use-toast";
+import { addableModels, autoErrorMessage, nextAutoPosition, autoPriceError, autoSummary, buildAutoEntries, swapPositions } from "@/models/services/autoRouteService";
 import { formatContext } from "@/models/services/catalogService";
 import type { AutoSettings, AutoWarning } from "@/models/types/autoRoute.types";
 
@@ -34,11 +35,14 @@ export const AutoRoutePanel = () => {
   const addable = addableModels(a.models, a.entries);
   const first = views.find((v) => !v.missing);
   const priceErr = form ? autoPriceError(form) : null;
+  const errMsg = a.error ? autoErrorMessage(a.error) : null;
+  useEffect(() => { if (errMsg) toast({ variant: "destructive", title: t("Could not save"), description: errMsg }); }, [a.error, errMsg]);
 
   if (a.isLoading || !form) return <p className="text-sm text-muted-foreground">{t("Loading...")}</p>;
 
   return (
     <div className="space-y-6">
+      {errMsg && <p role="alert" className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">{t("Could not save")}: {errMsg}</p>}
       <Card>
         <CardHeader>
           <CardTitle className="font-mono">{form.public_name}</CardTitle>
@@ -99,7 +103,7 @@ export const AutoRoutePanel = () => {
               <SelectTrigger className="w-full sm:w-96"><SelectValue placeholder={t("Add a model")} /></SelectTrigger>
               <SelectContent>{addable.map((m) => <SelectItem key={m.id} value={m.id}>{m.model_name || m.id} · {m.garage} · {m.garage_tier}</SelectItem>)}</SelectContent>
             </Select>
-            <Button disabled={!pick || a.busy} onClick={() => { a.add(pick, Math.max(0, ...a.entries.map((e) => e.position)) + 1); setPick(""); }}>{t("Add")}</Button>
+            <Button disabled={!pick || a.busy} onClick={() => { a.add(pick, nextAutoPosition(a.entries)); setPick(""); }}>{t("Add")}</Button>
           </div>
         </CardContent>
       </Card>

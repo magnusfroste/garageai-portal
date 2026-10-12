@@ -76,3 +76,13 @@ export const addableModels = (models: CuratedModel[], entries: AutoRouteEntry[])
   const used = new Set(entries.map((e) => e.curated_model_id));
   return models.filter((m) => m.enabled && !!m.garage && !used.has(m.id) && !isAutoModel(m));
 };
+
+/** Next free position at the end of the list (always ≥ 1). */
+export const nextAutoPosition = (entries: Array<{ position: number }>) => Math.max(0, ...entries.map((e) => e.position)) + 1;
+
+/** Readable message from a failed save (database or network error). */
+export const autoErrorMessage = (e: unknown): string => {
+  const o = e && typeof e === "object" ? e as { message?: unknown; details?: unknown } : null;
+  const m = typeof o?.message === "string" && o.message ? o.message : e instanceof Error ? e.message : String(e ?? "Unknown error");
+  return /duplicate key/.test(m) ? "This model is already in the list" : m;
+};
