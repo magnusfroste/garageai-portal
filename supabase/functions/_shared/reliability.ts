@@ -1,3 +1,4 @@
+import { isTunnel, tunnelStatus } from "./tunnel.ts";
 import { offeredByGarage } from "./garageModels.ts";
 import { garageOfDeploymentId } from "./autoRoute.ts";
 // Garage reliability: status samples, LiteLLM usage ingestion and hourly probes.
@@ -44,7 +45,7 @@ async function healthyModelsByGarage(admin: SupabaseClient) {
 /** One sample per non-disabled garage, using the same online rules as the catalogue sync. */
 export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResult) {
   const { data: garages, error } = await admin.from("garages")
-    .select("id, name, status, disabled, models, netbird_peer_id, last_heartbeat_at, connection_type, paused_at").eq("disabled", false);
+    .select("id, name, status, disabled, models, netbird_peer_id, last_heartbeat_at, connection_type, paused_at, transport, last_gateway_check_at, runtime_ok, mesh_connected").eq("disabled", false);
   if (error) throw new Error(`garages read failed: ${error.message}`);
   const now = Date.now();
   const healthy = await healthyModelsByGarage(admin);
@@ -59,6 +60,11 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
     let reason: string | null = null;
     if ((g as { connection_type?: string }).connection_type === "endpoint") {
       // No tunnel: health comes only from recent passing tests (hasModels below).
+    } else if (isTunnel(g as { transport?: string })) {
+      // Never offline because NetBird lacks it: gateway hub handshake / heartbeat only; no data = skip.
+      const st = tunnelStatus(g as Parameters<typeof tunnelStatus>[0], now);
+      if (st === "unknown") { skipped++; continue; }
+      if (st === "unhealthy") reason = g.last_heartbeat_at && now - Date.parse(g.last_heartbeat_at) > HEARTBEAT_STALE_MS ? "no_heartbeat" : "mesh_disconnected";
     } else if (g.last_heartbeat_at) {
       if (now - Date.parse(g.last_heartbeat_at) > HEARTBEAT_STALE_MS) reason = "no_heartbeat";
     } else {

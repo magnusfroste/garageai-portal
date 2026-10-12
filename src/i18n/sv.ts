@@ -756,6 +756,8 @@ export const sv: Record<string, string> = {
   "Approve": "Godkänn",
   "Deny": "Neka",
   "Machine": "Maskin",
+  "Transport": "Transport",
+  "Bridge tunnel": "Bridge-tunnel",
   "Heartbeats come from another machine ({id}) than the one this garage was linked to.": "Hjärtslagen kommer från en annan maskin ({id}) än den garaget länkades till.",
   "Connect this computer": "Anslut den här datorn",
   "Run this in a terminal on the computer with the GPU. It installs GarageAI Bridge, and you approve the computer here in the browser. Nothing secret is in the command.": "Kör detta i en terminal på datorn med GPU:n. Det installerar GarageAI Bridge, och du godkänner datorn här i webbläsaren. Kommandot innehåller inget hemligt.",

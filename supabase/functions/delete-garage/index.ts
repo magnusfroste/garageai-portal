@@ -88,6 +88,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Free the Bridge tunnel identity first; the hub drops the peer once the garage leaves gateway-targets.
+    await admin.from("garages").update({ transport: "netbird", tunnel_public_key: null, tunnel_ip: null, tunnel_assigned_at: null }).eq("id", garageId);
+
     // 3. Credentials.
     const rows_deleted: Record<string, number> = {};
     const del = async (table: string, col: string, val: string) => {

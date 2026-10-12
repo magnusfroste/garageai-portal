@@ -9,6 +9,8 @@ export interface Garage {
   machine_id?: string | null;
   machine_hostname?: string | null;
   last_machine_id?: string | null;
+  transport?: string | null;
+  tunnel_ip?: string | null;
   id: string;
   name: string;
   operator_id: string | null;

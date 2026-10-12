@@ -11,6 +11,7 @@ import type { AdminGarageRow } from "./types";
 import { GarageOnboardingSection } from "./GarageOnboardingSection";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { t } from "@/i18n";
+import { transportLabel } from "@/models/services/transport";
 import { BridgeAgentSection } from "@/views/Garages/components/BridgeAgentSection";
 import { machineMismatch, shortMachineId } from "@/models/services/bridgeLinkService";
 
@@ -57,7 +58,7 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
           </Section>
           <Separator />
           <Section icon={Network} title={t("Connection")}>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3"><Field label={t("Type")} value={t(provider ? "Provider endpoint" : "Mesh garage")} /><Field label={t(provider ? "Endpoint host" : "Mesh IP")} value={provider ? (garage.endpoint_url ? new URL(garage.endpoint_url).host : "—") : garage.mesh_ip} /><Field label={t("API host override")} value={garage.api_host} /><Field label={t("Runtime")} value={garage.runtime ? runtimeLabel(garage.runtime) : "—"} /><Field label={t("Port")} value={garage.port} /><Field label={t("Registered")} value={date(garage.last_registered_at)} />{!provider && <Field label={t("Machine")} value={garage.machine_id ? <span>{garage.machine_hostname || "—"} <span className="font-mono text-muted-foreground">{shortMachineId(garage.machine_id)}</span></span> : null} />}</dl>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3"><Field label={t("Type")} value={t(provider ? "Provider endpoint" : "Mesh garage")} /><Field label={t(provider ? "Endpoint host" : "Mesh IP")} value={provider ? (garage.endpoint_url ? new URL(garage.endpoint_url).host : "—") : garage.mesh_ip} />{!provider && <Field label={t("Transport")} value={transportLabel(garage)} />}<Field label={t("API host override")} value={garage.api_host} /><Field label={t("Runtime")} value={garage.runtime ? runtimeLabel(garage.runtime) : "—"} /><Field label={t("Port")} value={garage.port} /><Field label={t("Registered")} value={date(garage.last_registered_at)} />{!provider && <Field label={t("Machine")} value={garage.machine_id ? <span>{garage.machine_hostname || "—"} <span className="font-mono text-muted-foreground">{shortMachineId(garage.machine_id)}</span></span> : null} />}</dl>
             {!provider && machineMismatch(garage) && <p className="rounded border border-warning-border bg-warning-surface p-2 text-xs text-warning-foreground">{t("Heartbeats come from another machine ({id}) than the one this garage was linked to.").replace("{id}", shortMachineId(garage.last_machine_id) ?? "")}</p>}
           </Section>
           <Separator />
