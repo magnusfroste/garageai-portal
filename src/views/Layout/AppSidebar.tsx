@@ -1,5 +1,5 @@
-import { ChevronDown, Warehouse } from "lucide-react";
-import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { ChevronDown } from "lucide-react";
+import { GarageAIMark } from "@/components/GarageAIMark";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { adminRepository } from "@/data/repositories/adminRepository";
@@ -28,9 +28,6 @@ export const AppSidebar = () => {
   const { pathname, search } = useLocation();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
-  const { settings } = useSiteSettings();
-  const siteName = settings?.site_name || "GarageAI";
-  const logoUrl = settings?.logo_url;
   const { garages, isLoading: garagesLoading } = useMyGarages();
 
   const { data: isAdmin } = useQuery({
@@ -85,12 +82,8 @@ export const AppSidebar = () => {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2">
-          {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="w-6 h-6 shrink-0 object-contain" />
-          ) : (
-            <Warehouse className="w-6 h-6 text-primary shrink-0" />
-          )}
-          {!collapsed && <span className="text-lg font-bold gradient-text">{siteName}</span>}
+          <GarageAIMark />
+          {!collapsed && <span className="text-lg font-bold gradient-text">GarageAI</span>}
         </button>
       </SidebarHeader>
 

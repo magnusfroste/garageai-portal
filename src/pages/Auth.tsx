@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Warehouse } from "lucide-react";
+import { GarageAIMark } from "@/components/GarageAIMark";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -32,7 +32,6 @@ const Auth = () => {
   const [checkInbox, setCheckInbox] = useState(false);
   const { settings } = useSiteSettings();
   const siteName = settings?.site_name || "GarageAI";
-  const logoUrl = settings?.logo_url;
   const intent = onboardingService.readUrlIntent(location.search);
   const params = new URLSearchParams(location.search);
   const initialTab = params.get("mode") === "signup" || !!intent ? "signup" : "signin";
@@ -137,12 +136,8 @@ const Auth = () => {
       
       <div className="w-full max-w-md relative z-10">
         <Link to="/" className="flex items-center justify-center gap-2 mb-8 group">
-          {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="h-8 group-hover:scale-110 transition-transform" />
-          ) : (
-            <Warehouse className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
-          )}
-          <span className="text-2xl font-bold gradient-text">{siteName}</span>
+          <GarageAIMark />
+          <span className="text-2xl font-bold gradient-text">GarageAI</span>
         </Link>
 
         <Card className="glass-card border-border/50">
