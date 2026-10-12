@@ -302,6 +302,13 @@
       "when": 1791766635956,
       "tag": "0042_bridge_tunnel",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1791790234214,
+      "tag": "0043_announcements",
+      "breakpoints": true
     }
   ]
 }

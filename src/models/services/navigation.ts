@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, MessageSquare, Key, ScrollText, CreditCard, Cpu, Server, Warehouse,
-  Terminal, Users, Library, Settings, Wallet, Route, type LucideIcon,
+  Terminal, Users, Library, Settings, Wallet, Route, Megaphone, type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
@@ -57,6 +57,7 @@ export const ADMIN: NavGroup = {
     { title: "Catalogue", url: "/dashboard/admin", tab: "models", icon: Library },
     { title: "Auto", url: "/dashboard/admin", tab: "auto", icon: Route },
     { title: "Revenue", url: "/dashboard/admin", tab: "revenue", icon: Wallet },
+    { title: "Announcements", url: "/dashboard/admin", tab: "announcements", icon: Megaphone },
     { title: "Settings", url: "/dashboard/admin", tab: "settings", icon: Settings },
   ],
 };

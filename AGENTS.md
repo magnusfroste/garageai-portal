@@ -1,12 +1,12 @@
 # Project architecture
 
-- Public garage cards and profile headers compose only through the shared public garage service and header, using existing aggregate RPCs and canonical model identities, never runtime ids.
+- Public garage cards/headers use shared public service/header, aggregate RPCs and canonical identities, never runtime ids.
 - Flow stays repositories → services/models → hooks → views, so data and UI stay independent.
 - Derive admin garage status, attention, filtering and sorting in the shared presentation service, so all admin views agree.
 - Keep deployment-specific branding in `admin_settings.site_settings`; component defaults are white-label fallbacks.
 - Keep signup intent as profile metadata, never an authorization role; roles stay in `user_roles`.
 - Route initial node registration and changed heartbeats through the shared garage registration service, so cleanup and catalogue sync stay consistent.
-- Keep runtime metadata in one frontend service, port allowlisting in one shared edge-function constant, connect commands in the shared Bridge-first selector and the latest onboarding tool in one service; resolve demand model IDs by runtime to avoid unmatched install filters.
+- Centralize runtime metadata, allowed ports, Bridge-first commands and onboarding tool; resolve demand IDs by runtime to match install filters.
 - Compute garage reliability grades only in the `garage_reliability` database function, fed by the five-minute cron, so every view agrees.
 - Define portal navigation groups only in `src/models/services/navigation.ts`; public-readable pages use `PublicOrAppLayout`, so visitors and users share routes.
 - Build the buyer catalogue (one entry per base model, garages as providers) only in `catalogService.buildCatalog` from public data (curated_models + public garage RPCs), so list and model pages agree.
@@ -26,5 +26,7 @@
 - Plan garageai/auto deployments only in `_shared/autoRoute.ts` on top of the normal desired set inside reconcileGarageRouting; auto ids are `auto__<curated id>`, so usage ingest credits the entry's own garage.
 
 ## Where logic lives
+
+- Announcements use repository → service → hook → views; RLS enforces audience/window/admin access and the signed-in shell owns the bar, preventing public exposure.
 
 - The portal decides what should hold: people's decisions and business terms (models for sale, prices, the garageai/auto list, garages, owners, terms, earnings, accounts, onboarding). The gateway (LiteLLM) carries it out within seconds: routing, failover, cooldown, context checks, health. Never build a fast reaction (failover, retries, timeouts, blocking) as a portal function on a schedule. Never make a routing or health decision from gateway data gathered while the gateway itself is unreachable: treat it as inconclusive. Routing, pricing and health code needs tests. Full rationale: https://github.com/magnusfroste/garageai/blob/main/docs/architecture.md (syncModels moves into a separate control plane when there is more than one gateway or region).
