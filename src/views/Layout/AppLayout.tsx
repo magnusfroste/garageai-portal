@@ -13,6 +13,7 @@ import { CreditCard, HelpCircle, LogOut, User, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
 import { LanguageMenu } from "./LanguageMenu";
+import { AnnouncementBar } from "@/views/Announcements/AnnouncementBar";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import {
   DropdownMenu,
@@ -98,6 +99,7 @@ const SignedInLayout = () => {
               </DropdownMenu>
             </div>
           </header>
+          <AnnouncementBar />
           <main className="flex-1 overflow-auto">
             <Outlet />
           </main>
