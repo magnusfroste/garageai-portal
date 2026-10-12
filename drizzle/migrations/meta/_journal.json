@@ -330,6 +330,13 @@
       "when": 1791834243705,
       "tag": "0046_bridge_version_settings_access",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1791844661948,
+      "tag": "0047_market_prices",
+      "breakpoints": true
     }
   ]
 }

@@ -72,6 +72,7 @@ const CatalogRow = ({ m }: { m: CatalogModel }) => (
     <span className="text-xs tabular-nums text-muted-foreground hidden sm:block">{formatContext(m.contextLength)}</span>
     <span className="text-xs tabular-nums hidden sm:block">
       {t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)} {m.minPrice.cacheRead != null && <span className="text-muted-foreground">· {t("cache read")} {formatPrice(m.minPrice.cacheRead)}</span>}
+      {m.pool && m.pool.members.length > 1 && <span className="block text-[11px] text-muted-foreground">{t("expected")} {formatPrice(m.pool.expected.input)} / {formatPrice(m.pool.expected.output)} · {t("cap")} {formatPrice(m.pool.cap.input)} / {formatPrice(m.pool.cap.output)}</span>}
     </span>
     <span className="text-xs text-muted-foreground hidden sm:block">{t(m.offers.length === 1 ? "{n} garage" : "{n} garages", { n: m.offers.length })}</span>
     <span className="justify-self-end">{m.bestGrade && <GradeBadge grade={m.bestGrade} />}</span>

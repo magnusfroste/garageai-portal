@@ -1,3 +1,4 @@
+import { PoolPricing } from "./components/PoolPricing";
 import { HowWeMeasure } from "@/views/Garages/components/HowWeMeasure";
 import { StatusDot } from "@/components/ui/status-badge";
 import { ProviderModelBadge } from "@/views/Models/components/ProviderModelBadge";
@@ -155,10 +156,10 @@ const ModelDetailPage = () => {
             <CardDescription>{t("We pick the best available garage for you.")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-end gap-6 text-sm">
-            <div><div className="text-xs text-muted-foreground">{t("Price in / out per 1M")}</div>{formatPrice(m.poolPrice.input)} / {formatPrice(m.poolPrice.output)}{m.poolPrice.cacheRead != null && <div className="text-xs text-muted-foreground">{t("Cache read")} {formatPrice(m.poolPrice.cacheRead)}</div>}</div>
+            {!m.pool && <div><div className="text-xs text-muted-foreground">{t("Price in / out per 1M")}</div>{formatPrice(m.poolPrice.input)} / {formatPrice(m.poolPrice.output)}{m.poolPrice.cacheRead != null && <div className="text-xs text-muted-foreground">{t("Cache read")} {formatPrice(m.poolPrice.cacheRead)}</div>}</div>}
             <div><div className="text-xs text-muted-foreground">{t("Combined availability ({period})", { period: measuredLabel(Math.max(0, ...offers.map((o) => o.sampleDays ?? 0))) })}</div>{formatPct(m.poolAvailability)}</div>
             <div><div className="text-xs text-muted-foreground">{t("Model ID")}</div><div className="flex items-center gap-2"><code className="font-mono text-xs">{m.poolId}</code><CopyButton text={m.poolId} /></div></div>
-            <p className="basis-full text-[11px] text-muted-foreground">{t("Pool may route to any garage offering this model")}</p>
+            {m.pool ? <PoolPricing pool={m.pool} /> : <p className="basis-full text-[11px] text-muted-foreground">{t("Pool may route to any garage offering this model")}</p>}
           </CardContent>
         </Card>
       )}

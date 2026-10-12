@@ -1,4 +1,6 @@
 // Garage routing: LiteLLM deployments must exist ONLY for sellable garage models.
+import { assignPoolWeights } from "./poolPricing.ts";
+import { deploymentBody } from "./deploymentBody.ts";
 import { isProbeDeployment, isStaleProbe } from "./probeDeployments.ts";
 // Desired state = garages table + latest acceptance/probe tests + curated_models admin choices.
 // reconcileGarageRouting compares it with LiteLLM /model/info and adds/removes deployments idempotently.
@@ -95,7 +97,7 @@ async function fetchRuntimeContexts(apiBase: string, key: string | null): Promis
   return out;
 }
 
-interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string | null; keyFp: string; input: number; output: number; cacheRead: number; garage: RoutingGarage; tier: string; limits?: TokenLimits | null; order?: number; }
+interface DeploymentSpec { id: string; route: string; model: string; apiBase: string; apiKey: string | null; keyFp: string; input: number; output: number; cacheRead: number; garage: RoutingGarage; tier: string; limits?: TokenLimits | null; order?: number; weight?: number; }
 
 /**
  * The ONE builder for every garage deployment (sellable tiers and probes).
@@ -111,13 +113,7 @@ async function buildDeploymentSpec(g: RoutingGarage, keys: Map<string, string>, 
 async function addDeployment(base: string, masterKey: string, s: DeploymentSpec) {
   const res = await fetch(`${base}/model/new`, {
     method: "POST", headers: litellmHeaders(masterKey),
-    body: JSON.stringify({
-      model_name: s.route,
-      litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey || NO_KEY, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6, cache_read_input_token_cost: s.cacheRead / 1e6 },
-      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh", key_fingerprint: s.keyFp, cache_read_input_token_cost: s.cacheRead / 1e6,
-        ...(s.order != null ? { order: s.order } : {}),
-        ...(s.limits ? { max_input_tokens: s.limits.maxInput, max_output_tokens: s.limits.maxOutput, max_tokens: s.limits.maxInput } : {}) },
-    }),
+    body: JSON.stringify(deploymentBody(s)),
   });
   await res.text().catch(() => "");
   if (!res.ok) throw new Error(`model/new ${s.id} failed (${res.status})`);
@@ -173,7 +169,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   const infoRes = await fetch(`${base}/model/info`, { headers: litellmHeaders(masterKey) });
   if (!infoRes.ok) throw new Error(`LiteLLM /model/info failed (${infoRes.status})`);
   const info = await infoRes.json();
-  type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; max_input_tokens?: number | null; max_output_tokens?: number | null; max_tokens?: number | null; order?: number | null } };
+  type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; weight?: number | null }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; max_input_tokens?: number | null; max_output_tokens?: number | null; max_tokens?: number | null; order?: number | null } };
   const deps = (info?.data || []) as Dep[];
 
   // Context length per garage model: stored value → runtime /v1/models (reachable endpoint providers) → what LiteLLM already reports.
@@ -241,6 +237,9 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     }
   }
 
+  // Whole-pool recompute every sync: desired holds only routed (healthy, unpaused) members at current prices.
+  assignPoolWeights(desired.values());
+
   const auto = await loadAutoPlan(admin, garages, desired);
   for (const item of auto.plan) {
     const b = desired.get(item.base.id)!;
@@ -270,6 +269,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== `openai/${want.model}` || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12
       || !Number.isFinite(cacheCost) || Math.abs(cacheCost - want.cacheRead / 1e6) > 1e-12
       || (want.order != null && Number(d.model_info?.order) !== want.order)
+      || (want.tier === "pool" && want.weight != null && Number(d.litellm_params?.weight) !== want.weight)
       || (!!want.limits && (Number(d.model_info?.max_input_tokens) !== want.limits.maxInput || Number(d.model_info?.max_output_tokens) !== want.limits.maxOutput || Number(d.model_info?.max_tokens) !== want.limits.maxInput)));
     if (!want || drift) {
       if (await deleteDeployment(base, masterKey, id)) { removed.push(id); actual.delete(id); }
