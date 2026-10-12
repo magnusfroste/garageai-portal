@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { bridgeInstallCommand, bridgeProgress, detectOs } from "../../../src/models/services/connectService";
+import { bridgeInstallCommand, bridgeNetbirdCommand, bridgeProgress, detectOs } from "../../../src/models/services/connectService";
 import { entryFor } from "../../../supabase/functions/_shared/bridgeLink";
 import type { OnboardingEvent } from "../../../src/models/types/onboarding.types";
 
