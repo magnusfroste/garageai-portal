@@ -48,17 +48,17 @@ const ConnectPage = () => {
               <p className="text-sm">{t("Windows: coming soon")}</p>
             </TabsContent>
           </Tabs>
-          <p className="text-sm text-muted-foreground">{t("Bridge connects this computer to GarageAI through its own encrypted tunnel. Nothing to configure on your network, and your model runtime can stay on localhost.")}</p>
+          {os !== "windows" && <p className="text-sm text-muted-foreground">{t("Bridge connects this computer to GarageAI through its own encrypted tunnel. Nothing to configure on your network, and your model runtime can stay on localhost.")}</p>}
           {os !== "windows" && <Collapsible>
             <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ChevronDown className="h-4 w-4" />{t("Network blocks UDP? Use NetBird instead")}</CollapsibleTrigger>
             <CollapsibleContent className="pt-2">
               <OneLine command={bridgeNetbirdCommand()} onCopied={() => setWaiting(true)} />
             </CollapsibleContent>
           </Collapsible>}
-          <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+          {os !== "windows" && <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp…) with a model loaded.")}</li>
-          </ul>
-          {waiting && (
+          </ul>}
+          {waiting && os !== "windows" && (
             <div className="space-y-1 rounded-md border p-3 text-sm">
               <p className="flex items-center gap-2 font-medium"><Loader2 className="h-4 w-4 animate-spin text-primary" />{t("Waiting for your computer…")}</p>
               <p className="text-muted-foreground">{t("When the terminal opens your browser, approve the computer there.")}</p>
