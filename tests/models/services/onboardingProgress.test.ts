@@ -16,10 +16,10 @@ describe("onboarding progress", () => {
     expect(steps[2].state).toBe("running");
     expect(steps[3].state).toBe("pending");
   });
-  test("failed step 3 shows runtime hint", () => {
+  test("failed runtime step retains its failure state and reported error", () => {
     const { steps } = buildProgress([ev("0/6 Checks", "started"), ev("3/6 Inference runtime", "failed", "no answer")]);
     expect(steps[3].state).toBe("failed");
-    expect(steps[3].hint).toContain("0.0.0.0");
+    expect(steps[3].message).toBe("no answer");
   });
   test("stopped means waiting for you", () => { expect(buildProgress([ev("2/6 Join the mesh", "stopped")]).steps[2].state).toBe("waiting"); });
   test("admin badge only for unregistered garages", () => {

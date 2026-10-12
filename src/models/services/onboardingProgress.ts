@@ -14,9 +14,9 @@ export const stepLabel = (step: string) => step.replace(/^\s*\d+\s*\/\s*\d+\s*/,
 
 const HINTS: Record<number, string> = {
   1: "NetBird could not be installed; install it from netbird.io and run the command again.",
-  2: "The setup key may be used or expired: click New command and run the new one.",
-  3: "No OpenAI-compatible runtime answered on the port. Start it bound to 0.0.0.0, e.g. vLLM: vllm serve <model> --host 0.0.0.0 --port 8000 · Ollama: OLLAMA_HOST=0.0.0.0 ollama serve · LM Studio: enable 'Serve on local network'. Then run the command again.",
-  4: "The runtime only listens on 127.0.0.1; restart it bound to 0.0.0.0.",
+  2: "Run garageai connect again and approve this computer in your browser.",
+  3: "Start your model runtime with a model loaded, then run garageai connect again. Bridge can reach it on localhost.",
+  4: "Bridge can diagnose the tunnel, runtime and port for you:",
 };
 export const stepHint = (n: number): string | null => HINTS[n] ?? null;
 

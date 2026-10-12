@@ -1,13 +1,9 @@
 import { toolSupportHint } from "@/models/services/toolSupportService";
 import { useState } from "react";
-import { Copy, Check, ChevronDown } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { GarageTestRow } from "@/data/repositories/garageRepository";
-import { buildGarageCommand, type GarageCredentials, type BuildCommandOptions } from "@/models/services/garageCommand";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
 import { t } from "@/i18n";
 export const CopyButton = ({ value }: { value: string }) => {
   const [copied, setCopied] = useState(false);
@@ -38,35 +34,6 @@ export const CommandBlock = ({ command }: { command: string }) => (
     </div>
   </div>
 );
-
-export const OneTimeWarning = () => (
-  <div className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
-    {t("Copy the command now – it is only shown once. The token and key cannot be shown again.")}
-  </div>
-);
-
-export const GarageConnectCommand = ({ credentials, runtime, options = {}, initialOs = "macos" }: {
-  credentials: GarageCredentials; runtime: string; options?: BuildCommandOptions; initialOs?: "macos" | "linux";
-}) => {
-  const [os, setOs] = useState<"macos" | "linux" | "bridge">("bridge");
-  const [legacyOpen, setLegacyOpen] = useState(false);
-  const command = buildGarageCommand(credentials, runtime, { ...options, sudo: os === "linux", bridge: os === "bridge" });
-  return <div className="min-w-0 space-y-2">
-    <Tabs value={os} onValueChange={(value) => setOs(value === "linux" || value === "bridge" ? value : "macos")}>
-      <TabsList><TabsTrigger value="bridge">{t("Bridge")}</TabsTrigger></TabsList>
-      <Collapsible open={legacyOpen} onOpenChange={(open) => { setLegacyOpen(open); setOs(open ? initialOs : "bridge"); }} className="mt-2 space-y-2">
-        <CollapsibleTrigger asChild><Button variant="link" size="sm" className="h-7 px-0 text-muted-foreground">{t("Script (legacy)")}<ChevronDown className={`ml-1 h-3.5 w-3.5 transition-transform ${legacyOpen ? "rotate-180" : ""}`} /></Button></CollapsibleTrigger>
-        <CollapsibleContent className="space-y-2">
-          <p className="text-xs text-muted-foreground">{t("The previous connect script. Use Bridge unless GarageAI asked you to use this.")}</p>
-          <TabsList><TabsTrigger value="macos">macOS</TabsTrigger><TabsTrigger value="linux">Linux</TabsTrigger></TabsList>
-        </CollapsibleContent>
-      </Collapsible>
-    </Tabs>
-    <CommandBlock command={command} />
-    {os === "bridge" && <p className="text-xs text-muted-foreground">{t("Bridge asks for your password once (sudo) to join the mesh and install the heartbeat.")}</p>}
-    {command.includes("<YOUR_KEY>") && <p className="text-xs text-muted-foreground">{t("Replace <YOUR_KEY> with your runtime's API key.")}</p>}
-  </div>;
-};
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending",

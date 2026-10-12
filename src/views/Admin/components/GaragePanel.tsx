@@ -6,13 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
+import { tokenRenewalRequest } from "@/models/services/garageCommand";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { GarageConnectCommand } from "@/views/Garages/components/GarageShared";
+
 import { useGarageModels } from "@/hooks/useGarageModels";
-import { GARAGE_RUNTIME_OPTIONS, runtimeLabel } from "@/models/services/garageRuntime";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -67,30 +66,16 @@ const SecretRow = ({ label, value }: { label: string; value: string }) => (
 
 
 
-interface ResultViewProps {
-  result: CreateGarageResult;
-  runtime: string;
-  models?: string[];
-  onClose: () => void;
-}
-
-const ResultView = ({ result, runtime, models, onClose }: ResultViewProps) => {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
-        {t("Copy the command now – it is only shown once. The token and key cannot be shown again.")}
-      </div>
-      <SecretRow label="Register token" value={result.register_token} />
-      {result.setup_key && <SecretRow label="NetBird setup key" value={result.setup_key} />}
-      <GarageConnectCommand credentials={result} runtime={runtime} options={{ models }} />
-      <Button className="w-full" onClick={onClose}>
-        {t("Done – I have copied it")}
-      </Button>
-    </div>
-  );
-};
+const ResultView = ({ result, onClose }: { result: CreateGarageResult; onClose: () => void }) => (
+  <div className="space-y-4">
+    <p className="text-sm text-muted-foreground">{t("Copy the token now – it is only shown once.")}</p>
+    <SecretRow label={t("Register token")} value={result.register_token} />
+    <Button className="w-full" onClick={onClose}>{t("Done – I have copied it")}</Button>
+  </div>
+);
 
 export const GaragePanel = () => {
+  const navigate = useNavigate();
   const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled, invalidate } = useGarages();
   const { byGarage, setOffered, setAlias, pending } = useGarageModels(garages.map((g) => g.id));
   const [providerOpen, setProviderOpen] = useState(false);
@@ -113,45 +98,30 @@ export const GaragePanel = () => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
-  const [runtime, setRuntime] = useState<string>("ollama");
-  const [apiHost, setApiHost] = useState("");
-  const [createSetupKey, setCreateSetupKey] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreateGarageResult | null>(null);
-  const [resultRuntime, setResultRuntime] = useState("ollama");
-  const [resultModels, setResultModels] = useState<string[]>([]);
-  const [regenerating, setRegenerating] = useState(false);
 
   const resetForm = () => {
     setName("");
-    setRuntime("ollama");
-    setApiHost("");
-    setCreateSetupKey(true);
     setResult(null);
-    setResultModels([]);
-    setRegenerating(false);
   };
 
   const handleDialogChange = (open: boolean) => {
     setDialogOpen(open);
-    if (!open) resetForm(); // clears token/setup key from state
+    if (!open) resetForm(); // clears the token from state
   };
 
-  const submit = async (garageName: string, host: string, setupKey: boolean, rt: string) => {
+  const submit = async (garageName: string) => {
     setSubmitting(true);
     try {
       const res = await createGarage({
-        name: garageName,
-        ...(host.trim() ? { api_host: host.trim() } : {}),
-        create_setup_key: setupKey,
-        terms_accepted: true,
+        ...tokenRenewalRequest(garageName),
       });
       setResult(res);
-      setResultRuntime(rt);
     } catch (e) {
       toast({
-        title: "Failed to create garage",
-        description: e instanceof Error ? e.message : "Unknown error",
+        title: t("Could not create token"),
+        description: e instanceof Error ? e.message : t("Unknown error"),
         variant: "destructive",
       });
     } finally {
@@ -168,7 +138,7 @@ export const GaragePanel = () => {
       });
       return;
     }
-    submit(name, apiHost, createSetupKey, runtime);
+    submit(name);
   };
 
   const handleRetest = async (garage: Garage) => {
@@ -178,7 +148,7 @@ export const GaragePanel = () => {
       const passed = res.acceptance.filter((a) => a.passed).length;
       toast({ title: `Retest finished: ${passed}/${res.acceptance.length} passed`, description: `Status: ${res.status}` });
     } catch (e) {
-      toast({ title: "Retest failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
+      toast({ title: "Retest failed", description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
       setRetesting(null);
     }
@@ -192,7 +162,7 @@ export const GaragePanel = () => {
       await setGarageDisabled(g.name, !g.disabled);
       toast({ title: g.disabled ? `${g.name} enabled` : `${g.name} disabled` });
     } catch (e) {
-      toast({ title: "Action failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
+      toast({ title: "Action failed", description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
       setToggling(false);
       setConfirmGarage(null);
@@ -201,11 +171,6 @@ export const GaragePanel = () => {
 
   const handleNewToken = (garage: Garage) => {
     setName(garage.name);
-    setRuntime(garage.runtime || "ollama");
-    setApiHost(garage.api_host || "");
-    setCreateSetupKey(!garage.netbird_peer_id || garage.mesh_connected !== true);
-    setResultModels((byGarage.get(garage.id) ?? []).filter((m) => m.offered && m.installed).map((m) => m.model));
-    setRegenerating(true);
     setDialogOpen(true);
   };
 
@@ -261,7 +226,7 @@ export const GaragePanel = () => {
             <Building2 className="w-4 h-4 mr-2" />
             {t("Add provider")}
           </Button>
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Button size="sm" onClick={() => navigate("/connect")}>
             <Plus className="w-4 h-4 mr-2" />
             {t("Add garage")}
           </Button>
@@ -300,71 +265,18 @@ export const GaragePanel = () => {
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{result ? "Garage credentials" : regenerating ? t("New command") : "Add garage"}</DialogTitle>
-            <DialogDescription>
-              {result
-                ? `Credentials for ${result.garage.name}`
-                : regenerating ? name : "Register a new GPU node. You'll get a one-time token and connect command."}
-            </DialogDescription>
+            <DialogTitle>{t("New token (advanced)")}</DialogTitle>
+            <DialogDescription>{name}</DialogDescription>
           </DialogHeader>
 
           {result ? (
-            <ResultView result={result} runtime={resultRuntime} models={resultModels} onClose={() => handleDialogChange(false)} />
+            <ResultView result={result} onClose={() => handleDialogChange(false)} />
           ) : (
             <div className="space-y-4">
-              {!regenerating && <>
-              <div className="space-y-1.5">
-                <Label htmlFor="garage-name">{t("Name")}</Label>
-                <Input
-                  id="garage-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="my-gpu-box"
-                  disabled={submitting}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Lowercase letters, digits and dashes (2–41 chars).
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("Runtime")}</Label>
-                <Select value={runtime} onValueChange={setRuntime} disabled={submitting}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GARAGE_RUNTIME_OPTIONS.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
-                        {runtimeLabel(r.value)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="garage-host">API host override (optional)</Label>
-                <Input
-                  id="garage-host"
-                  value={apiHost}
-                  onChange={(e) => setApiHost(e.target.value)}
-                  placeholder="Only for nodes that route to another host, e.g. 192.168.100.1"
-                  disabled={submitting}
-                />
-              </div>
-              </>}
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="garage-setup-key"
-                  checked={createSetupKey}
-                  onCheckedChange={(c) => setCreateSetupKey(c === true)}
-                  disabled={submitting}
-                />
-                <Label htmlFor="garage-setup-key" className="text-sm font-normal">
-                  {regenerating ? t("Create NetBird setup key (the machine must join the mesh again)") : "Create NetBird setup key"}
-                </Label>
-              </div>
+              
+                             <p className="text-sm text-muted-foreground">{t("Issue a fresh register token for automation. To connect a computer, use browser linking.")}</p>
               <Button className="w-full" onClick={handleSubmit} disabled={submitting || !name}>
-                {submitting ? "Creating..." : regenerating ? t("Create command") : "Create garage"}
+                {submitting ? t("Creating...") : t("Create token")}
               </Button>
             </div>
           )}

@@ -6,7 +6,7 @@
 - Keep deployment-specific branding in `admin_settings.site_settings`; component defaults are white-label fallbacks.
 - Keep signup intent as profile metadata, never an authorization role; roles stay in `user_roles`.
 - Route initial node registration and changed heartbeats through the shared garage registration service, so cleanup and catalogue sync stay consistent.
-- Centralize runtime metadata, allowed ports, Bridge-first commands and onboarding tool; resolve demand IDs by runtime to match install filters.
+- Centralize runtime metadata, allowed ports and onboarding tool; resolve demand IDs by runtime to match install filters.
 - Compute garage reliability grades only in the `garage_reliability` database function, fed by the five-minute cron, so every view agrees.
 - Define portal navigation groups only in `src/models/services/navigation.ts`; public-readable pages use `PublicOrAppLayout`, so visitors and users share routes.
 - Build the buyer catalogue (one entry per base model, garages as providers) only in `catalogService.buildCatalog` from public data (curated_models + public garage RPCs), so list and model pages agree.
@@ -16,7 +16,7 @@
 - Reconcile LiteLLM deployments from database status and tests on every sync; only sellable models get routes, acceptance probes use temporary private routes.
 - Grant purchased credits through one idempotent shared claim path; total budget = starting credit + purchased credits.
 - Read signup starter credit from the public default-budget setting, never translated branding; signup profiles use it with zero fallback.
-- Generate setup commands as download / `export` secrets / run lines (zsh and bash safe); with sudo use `--preserve-env`, never secrets in flags.
+- Share the browser-link connection view across current and former wizard URLs; advanced token renewal requests no setup key, so portal connection stays independent of legacy scripts.
 - Treat gateway health reports (L1 tunnel, L2 /v1/models) as the primary routing signal where present; heartbeats carry inventory only, and only `garage_models.offered` models route.
 - Audit garage price changes with an atomic database trigger, then reconcile both token prices; statements always sum recorded request spend to keep historical rates.
 - Read operator earnings through an ownership-scoped aggregate RPC; estimates stay separate from invoice totals to prevent current-price repricing.
