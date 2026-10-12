@@ -12,49 +12,69 @@ import { garageRepository, type GarageRow } from "@/data/repositories/garageRepo
 import type { LocationDisplay } from "@/models/services/location";
 import { t } from "@/i18n";
 
-/** Operator Pause/Resume for the whole garage. */
-export const GaragePauseButton = ({ garage, onDone }: { garage: Pick<GarageRow, "name" | "paused_at">; onDone: () => void }) => {
+type PausableGarage = Pick<GarageRow, "name" | "paused_at">;
+
+const useSetPaused = (onDone: () => void) => {
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
-  const run = async (paused: boolean) => {
+  const run = async (name: string, paused: boolean, reason?: string) => {
     setBusy(true);
     try {
-      const r = await garageRepository.setPaused(garage.name, paused, { reason: reason || undefined });
+      const r = await garageRepository.setPaused(name, paused, { reason: reason || undefined });
       toast({ title: paused ? t("Garage paused") : t("Garage resumed"), description: r.routing_synced ? undefined : t("Routing will catch up on the next sync.") });
-      setOpen(false); setReason(""); onDone();
+      onDone();
+      return true;
     } catch (e) {
       toast({ title: t("Could not change the garage"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
+      return false;
     } finally { setBusy(false); }
   };
+  return { busy, run };
+};
+
+/** Pause (with optional reason) or resume immediately when already paused. Admins pause on the operator's behalf. */
+export const GaragePauseDialog = ({ garage, admin = false, onClose, onDone }: { garage: PausableGarage | null; admin?: boolean; onClose: () => void; onDone: () => void }) => {
+  const { busy, run } = useSetPaused(onDone);
+  const [reason, setReason] = useState("");
+  const resuming = !!garage?.paused_at;
+  return (
+    <AlertDialog open={!!garage} onOpenChange={(o) => { if (!o) { setReason(""); onClose(); } }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t(resuming ? "Resume {name}?" : "Pause {name}?", { name: garage?.name ?? "" })}</AlertDialogTitle>
+          <AlertDialogDescription>{resuming ? t("Buyers are routed to it again after the next sync.") : admin ? t("Buyers stop being routed here and the gateway stops checking it. The operator sees that an admin paused it and can resume.") : t("Buyers stop being routed to this garage right away. Paused time does not count against your reliability. Resume any time — no new command needed.")}</AlertDialogDescription>
+        </AlertDialogHeader>
+        {!resuming && <div className="space-y-1.5">
+          <Label htmlFor="pause-reason" className="text-xs">{t("Reason (optional)")}</Label>
+          <Input id="pause-reason" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} placeholder={admin ? t("e.g. provider endpoint down") : t("e.g. using the GPU myself tonight")} />
+        </div>}
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>{t("Cancel")}</AlertDialogCancel>
+          <AlertDialogAction disabled={busy} onClick={async (e) => { e.preventDefault(); if (garage && await run(garage.name, !resuming, reason)) { setReason(""); onClose(); } }}>{busy ? t("Working...") : t(resuming ? "Resume" : "Pause")}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
+/** Pause/Resume button for the whole garage (operators on My garages, admins on the detail sheet). */
+export const GaragePauseButton = ({ garage, admin = false, onDone }: { garage: PausableGarage; admin?: boolean; onDone: () => void }) => {
+  const { busy, run } = useSetPaused(onDone);
+  const [open, setOpen] = useState(false);
   if (garage.paused_at) return (
-    <Button size="sm" variant="outline" disabled={busy} onClick={() => run(false)}><Play className="w-3.5 h-3.5 mr-1.5" />{busy ? t("Working...") : t("Resume")}</Button>
+    <Button size="sm" variant="outline" disabled={busy} onClick={() => run(garage.name, false)}><Play className="w-3.5 h-3.5 mr-1.5" />{busy ? t("Working...") : t("Resume")}</Button>
   );
   return (
     <>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => setOpen(true)}><Pause className="w-3.5 h-3.5 mr-1.5" />{t("Pause")}</Button>
-      <AlertDialog open={open} onOpenChange={setOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("Pause {name}?", { name: garage.name })}</AlertDialogTitle>
-            <AlertDialogDescription>{t("Buyers stop being routed to this garage right away. Paused time does not count against your reliability. Resume any time — no new command needed.")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-1.5">
-            <Label htmlFor="pause-reason" className="text-xs">{t("Reason (optional)")}</Label>
-            <Input id="pause-reason" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} placeholder={t("e.g. using the GPU myself tonight")} />
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction disabled={busy} onClick={(e) => { e.preventDefault(); void run(true); }}>{busy ? t("Working...") : t("Pause")}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}><Pause className="w-3.5 h-3.5 mr-1.5" />{t("Pause")}</Button>
+      <GaragePauseDialog garage={open ? garage : null} admin={admin} onClose={() => setOpen(false)} onDone={onDone} />
     </>
   );
 };
 
-export const PausedBadge = ({ reason }: { reason?: string | null }) => (
+export const PausedBadge = ({ reason, byAdmin }: { reason?: string | null; byAdmin?: boolean }) => byAdmin ? (
+  <Badge variant="secondary" className="text-[10px]">{reason ? t("Paused by admin: {reason}", { reason }) : t("Paused by admin")}</Badge>
+) : (
   <Badge variant="secondary" className="text-[10px] text-muted-foreground" title={reason ?? undefined}>{t("Paused")}</Badge>
 );
 
