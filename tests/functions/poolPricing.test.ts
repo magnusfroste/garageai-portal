@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { assignPoolWeights, poolWeights, suggestPrice, sizeDefault, summarisePool, parseOpenRouterModels } from "../../supabase/functions/_shared/poolPricing";
-import { deploymentBody } from "../../supabase/functions/_shared/garageRouting";
+import { deploymentBody } from "../../supabase/functions/_shared/deploymentBody";
 
 test("equal prices give equal weights", () => {
   expect(poolWeights([0.3, 0.3, 0.3])).toEqual([1000, 1000, 1000]);
