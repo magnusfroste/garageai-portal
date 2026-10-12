@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { USER_CODE_RE, claimMachineId, decidePoll, machineConflict, makeUserCode, normaliseUserCode, parseStartBody, type LinkRow } from "../../supabase/functions/_shared/bridgeLink";
+import { USER_CODE_RE, linkWantsSetupKey, claimMachineId, decidePoll, machineConflict, makeUserCode, normaliseUserCode, parseStartBody, type LinkRow } from "../../supabase/functions/_shared/bridgeLink";
 import { decideSetupKey, garageLimitReached, isSameMachineRelink, ownershipError } from "../../supabase/functions/_shared/garageCredentialRules";
 
 test("user codes are ABCD-EFGH without I, O, 0 or 1", () => {
@@ -83,4 +83,18 @@ test("garage limit: 5 garages blocks a new one for operators, not admins", () =>
   expect(garageLimitReached(4, false)).toBe(false);
   expect(garageLimitReached(5, false)).toBe(true);
   expect(garageLimitReached(5, true)).toBe(false);
+});
+
+test("start: transport defaults to netbird, accepts tunnel, rejects others", () => {
+  expect(parseStartBody({}).fields?.transport).toBe("netbird");
+  expect(parseStartBody({ transport: "tunnel" }).fields?.transport).toBe("tunnel");
+  expect(parseStartBody({ transport: "wg" }).error).toBeTruthy();
+});
+test("approve: tunnel links never get a setup key, netbird links keep today's rule", () => {
+  expect(linkWantsSetupKey("tunnel", false, "ok")).toBe(false);
+  expect(linkWantsSetupKey("tunnel", true, "replace")).toBe(false);
+  expect(linkWantsSetupKey("netbird", false, "ok")).toBe(true);
+  expect(linkWantsSetupKey("netbird", true, "ok")).toBe(false);
+  expect(linkWantsSetupKey("netbird", true, "replace")).toBe(true);
+  expect(linkWantsSetupKey(null, false, "ok")).toBe(true);
 });

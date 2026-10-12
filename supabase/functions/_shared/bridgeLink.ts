@@ -31,6 +31,7 @@ export const sanitizeName = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]+/
 export interface StartFields {
   machine_id: string | null; hostname: string | null; os: string | null; arch: string | null; bridge_version: string | null;
   gpu: string | null; runtime: string | null; suggested_name: string | null; memory_gb: number | null; models: string[];
+  transport: "netbird" | "tunnel";
 }
 
 const STRING_FIELDS = ["machine_id", "hostname", "os", "arch", "bridge_version", "gpu", "runtime", "suggested_name"] as const;
@@ -55,6 +56,9 @@ export function parseStartBody(body: unknown): { fields?: StartFields; error?: s
   if (b.models === undefined || b.models === null) f.models = [];
   else if (!Array.isArray(b.models) || b.models.length > 50 || b.models.some((m) => typeof m !== "string" || m.length > 200)) return { error: "models must be at most 50 strings of at most 200 characters" };
   else f.models = b.models;
+  if (b.transport === undefined || b.transport === null || b.transport === "") f.transport = "netbird";
+  else if (b.transport !== "netbird" && b.transport !== "tunnel") return { error: "transport must be tunnel or netbird" };
+  else f.transport = b.transport;
   return { fields: f as unknown as StartFields };
 }
 
@@ -108,3 +112,7 @@ export function entryFor(connectPageSeenAt: string | null | undefined, approvedA
   const seen = new Date(connectPageSeenAt).getTime();
   return seen <= approvedAt && approvedAt - seen <= WEB_ENTRY_WINDOW_MS ? "web" : "terminal";
 }
+
+/** Setup key on link approval: never for Bridge tunnel links; otherwise when the garage has no peer or the machine is replaced. */
+export const linkWantsSetupKey = (transport: string | null | undefined, hasPeer: boolean, conflict: "ok" | "replace" | "mismatch") =>
+  transport === "tunnel" ? false : !hasPeer || conflict === "replace";

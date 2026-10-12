@@ -1,0 +1,1 @@
+ALTER TABLE public.bridge_links ADD COLUMN transport text NOT NULL DEFAULT 'netbird' CHECK (transport IN ('netbird','tunnel'));
