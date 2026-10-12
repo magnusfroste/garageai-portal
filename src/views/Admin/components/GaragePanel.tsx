@@ -8,12 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { tokenRenewalRequest } from "@/models/services/garageCommand";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 
 import { useGarageModels } from "@/hooks/useGarageModels";
-import { GARAGE_RUNTIME_OPTIONS, runtimeLabel } from "@/models/services/garageRuntime";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -100,37 +98,30 @@ export const GaragePanel = () => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
-  const [runtime, setRuntime] = useState<string>("ollama");
-  const [apiHost, setApiHost] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreateGarageResult | null>(null);
-  const [regenerating, setRegenerating] = useState(false);
 
   const resetForm = () => {
     setName("");
-    setRuntime("ollama");
-    setApiHost("");
     setResult(null);
-    setRegenerating(false);
   };
 
   const handleDialogChange = (open: boolean) => {
     setDialogOpen(open);
-    if (!open) resetForm(); // clears token/setup key from state
+    if (!open) resetForm(); // clears the token from state
   };
 
-  const submit = async (garageName: string, host: string) => {
+  const submit = async (garageName: string) => {
     setSubmitting(true);
     try {
       const res = await createGarage({
         ...tokenRenewalRequest(garageName),
-        ...(host.trim() ? { api_host: host.trim() } : {}),
       });
       setResult(res);
     } catch (e) {
       toast({
-        title: "Failed to create garage",
-        description: e instanceof Error ? e.message : "Unknown error",
+        title: t("Could not create token"),
+        description: e instanceof Error ? e.message : t("Unknown error"),
         variant: "destructive",
       });
     } finally {
@@ -147,7 +138,7 @@ export const GaragePanel = () => {
       });
       return;
     }
-    submit(name, apiHost);
+    submit(name);
   };
 
   const handleRetest = async (garage: Garage) => {
@@ -157,7 +148,7 @@ export const GaragePanel = () => {
       const passed = res.acceptance.filter((a) => a.passed).length;
       toast({ title: `Retest finished: ${passed}/${res.acceptance.length} passed`, description: `Status: ${res.status}` });
     } catch (e) {
-      toast({ title: "Retest failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
+      toast({ title: "Retest failed", description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
       setRetesting(null);
     }
@@ -171,7 +162,7 @@ export const GaragePanel = () => {
       await setGarageDisabled(g.name, !g.disabled);
       toast({ title: g.disabled ? `${g.name} enabled` : `${g.name} disabled` });
     } catch (e) {
-      toast({ title: "Action failed", description: e instanceof Error ? e.message : "Unknown error", variant: "destructive" });
+      toast({ title: "Action failed", description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
       setToggling(false);
       setConfirmGarage(null);
@@ -180,9 +171,6 @@ export const GaragePanel = () => {
 
   const handleNewToken = (garage: Garage) => {
     setName(garage.name);
-    setRuntime(garage.runtime || "ollama");
-    setApiHost(garage.api_host || "");
-    setRegenerating(true);
     setDialogOpen(true);
   };
 
@@ -277,61 +265,18 @@ export const GaragePanel = () => {
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{result ? "Garage credentials" : regenerating ? t("New token (advanced)") : "Add garage"}</DialogTitle>
-            <DialogDescription>
-              {result
-                ? `Credentials for ${result.garage.name}`
-                : regenerating ? name : "Register a new GPU node. You'll get a one-time token and connect command."}
-            </DialogDescription>
+            <DialogTitle>{t("New token (advanced)")}</DialogTitle>
+            <DialogDescription>{name}</DialogDescription>
           </DialogHeader>
 
           {result ? (
             <ResultView result={result} onClose={() => handleDialogChange(false)} />
           ) : (
             <div className="space-y-4">
-              {!regenerating && <>
-              <div className="space-y-1.5">
-                <Label htmlFor="garage-name">{t("Name")}</Label>
-                <Input
-                  id="garage-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="my-gpu-box"
-                  disabled={submitting}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Lowercase letters, digits and dashes (2–41 chars).
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("Runtime")}</Label>
-                <Select value={runtime} onValueChange={setRuntime} disabled={submitting}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GARAGE_RUNTIME_OPTIONS.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
-                        {runtimeLabel(r.value)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="garage-host">API host override (optional)</Label>
-                <Input
-                  id="garage-host"
-                  value={apiHost}
-                  onChange={(e) => setApiHost(e.target.value)}
-                  placeholder="Only for nodes that route to another host, e.g. 192.168.100.1"
-                  disabled={submitting}
-                />
-              </div>
-              </>}
+              
                              <p className="text-sm text-muted-foreground">{t("Issue a fresh register token for automation. To connect a computer, use browser linking.")}</p>
               <Button className="w-full" onClick={handleSubmit} disabled={submitting || !name}>
-                {submitting ? "Creating..." : regenerating ? t("Create token") : "Create garage"}
+                {submitting ? t("Creating...") : t("Create token")}
               </Button>
             </div>
           )}
