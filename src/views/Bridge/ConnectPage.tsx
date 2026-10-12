@@ -29,6 +29,8 @@ const ConnectPage = () => {
   const location = useLocation();
   const [os, setOs] = useState<ConnectOs>(() => detectOs(navigator.userAgent));
   const [waiting, setWaiting] = useState(false);
+  const [tunnel, setTunnel] = useState<boolean>(() => connectRepository.readTunnelChoice());
+  const chooseTunnel = (value: boolean) => { setTunnel(value); connectRepository.rememberTunnelChoice(value); };
 
   useEffect(() => { if (session) void connectRepository.markSeen(); }, [session]);
 
@@ -43,10 +45,14 @@ const ConnectPage = () => {
       </div>
       <Card>
         <CardContent className="space-y-4 p-4">
+          <label className="flex items-center gap-3 rounded-md border bg-muted/20 p-3 text-sm">
+            <Switch checked={tunnel} onCheckedChange={chooseTunnel} />
+            <span>{t("Bridge tunnel (new): no NetBird app, and the runtime can stay on localhost")}</span>
+          </label>
           <Tabs value={os} onValueChange={(v) => setOs(v as ConnectOs)}>
             <TabsList><TabsTrigger value="macos">macOS</TabsTrigger><TabsTrigger value="linux">Linux</TabsTrigger><TabsTrigger value="windows">Windows</TabsTrigger></TabsList>
-            <TabsContent value="macos" className="mt-3"><OneLine onCopied={() => setWaiting(true)} /></TabsContent>
-            <TabsContent value="linux" className="mt-3"><OneLine onCopied={() => setWaiting(true)} /></TabsContent>
+            <TabsContent value="macos" className="mt-3"><OneLine command={bridgeInstallCommand(tunnel)} onCopied={() => setWaiting(true)} /></TabsContent>
+            <TabsContent value="linux" className="mt-3"><OneLine command={bridgeInstallCommand(tunnel)} onCopied={() => setWaiting(true)} /></TabsContent>
             <TabsContent value="windows" className="mt-3">
               <p className="text-sm">{t("Coming soon: use the legacy script for now.")} <Link to={LEGACY_URL} className="text-primary underline underline-offset-2">{t("Windows instructions")}</Link></p>
             </TabsContent>
