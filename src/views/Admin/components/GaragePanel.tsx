@@ -6,11 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useNavigate } from "react-router-dom";
+import { tokenRenewalRequest } from "@/models/services/garageCommand";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { GarageConnectCommand } from "@/views/Garages/components/GarageShared";
+
 import { useGarageModels } from "@/hooks/useGarageModels";
 import { GARAGE_RUNTIME_OPTIONS, runtimeLabel } from "@/models/services/garageRuntime";
 import {
@@ -67,30 +68,16 @@ const SecretRow = ({ label, value }: { label: string; value: string }) => (
 
 
 
-interface ResultViewProps {
-  result: CreateGarageResult;
-  runtime: string;
-  models?: string[];
-  onClose: () => void;
-}
-
-const ResultView = ({ result, runtime, models, onClose }: ResultViewProps) => {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
-        {t("Copy the command now – it is only shown once. The token and key cannot be shown again.")}
-      </div>
-      <SecretRow label="Register token" value={result.register_token} />
-      {result.setup_key && <SecretRow label="NetBird setup key" value={result.setup_key} />}
-      <GarageConnectCommand credentials={result} runtime={runtime} options={{ models }} />
-      <Button className="w-full" onClick={onClose}>
-        {t("Done – I have copied it")}
-      </Button>
-    </div>
-  );
-};
+const ResultView = ({ result, onClose }: { result: CreateGarageResult; onClose: () => void }) => (
+  <div className="space-y-4">
+    <p className="text-sm text-muted-foreground">{t("Copy the token now – it is only shown once.")}</p>
+    <SecretRow label={t("Register token")} value={result.register_token} />
+    <Button className="w-full" onClick={onClose}>{t("Done – I have copied it")}</Button>
+  </div>
+);
 
 export const GaragePanel = () => {
+  const navigate = useNavigate();
   const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled, invalidate } = useGarages();
   const { byGarage, setOffered, setAlias, pending } = useGarageModels(garages.map((g) => g.id));
   const [providerOpen, setProviderOpen] = useState(false);
@@ -115,20 +102,15 @@ export const GaragePanel = () => {
   const [name, setName] = useState("");
   const [runtime, setRuntime] = useState<string>("ollama");
   const [apiHost, setApiHost] = useState("");
-  const [createSetupKey, setCreateSetupKey] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreateGarageResult | null>(null);
-  const [resultRuntime, setResultRuntime] = useState("ollama");
-  const [resultModels, setResultModels] = useState<string[]>([]);
   const [regenerating, setRegenerating] = useState(false);
 
   const resetForm = () => {
     setName("");
     setRuntime("ollama");
     setApiHost("");
-    setCreateSetupKey(true);
     setResult(null);
-    setResultModels([]);
     setRegenerating(false);
   };
 
@@ -137,17 +119,14 @@ export const GaragePanel = () => {
     if (!open) resetForm(); // clears token/setup key from state
   };
 
-  const submit = async (garageName: string, host: string, setupKey: boolean, rt: string) => {
+  const submit = async (garageName: string, host: string) => {
     setSubmitting(true);
     try {
       const res = await createGarage({
-        name: garageName,
+        ...tokenRenewalRequest(garageName),
         ...(host.trim() ? { api_host: host.trim() } : {}),
-        create_setup_key: setupKey,
-        terms_accepted: true,
       });
       setResult(res);
-      setResultRuntime(rt);
     } catch (e) {
       toast({
         title: "Failed to create garage",
@@ -168,7 +147,7 @@ export const GaragePanel = () => {
       });
       return;
     }
-    submit(name, apiHost, createSetupKey, runtime);
+    submit(name, apiHost);
   };
 
   const handleRetest = async (garage: Garage) => {
@@ -203,8 +182,6 @@ export const GaragePanel = () => {
     setName(garage.name);
     setRuntime(garage.runtime || "ollama");
     setApiHost(garage.api_host || "");
-    setCreateSetupKey(!garage.netbird_peer_id || garage.mesh_connected !== true);
-    setResultModels((byGarage.get(garage.id) ?? []).filter((m) => m.offered && m.installed).map((m) => m.model));
     setRegenerating(true);
     setDialogOpen(true);
   };
@@ -261,7 +238,7 @@ export const GaragePanel = () => {
             <Building2 className="w-4 h-4 mr-2" />
             {t("Add provider")}
           </Button>
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Button size="sm" onClick={() => navigate("/connect")}>
             <Plus className="w-4 h-4 mr-2" />
             {t("Add garage")}
           </Button>
@@ -300,7 +277,7 @@ export const GaragePanel = () => {
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{result ? "Garage credentials" : regenerating ? t("New command") : "Add garage"}</DialogTitle>
+            <DialogTitle>{result ? "Garage credentials" : regenerating ? t("New token (advanced)") : "Add garage"}</DialogTitle>
             <DialogDescription>
               {result
                 ? `Credentials for ${result.garage.name}`
@@ -309,7 +286,7 @@ export const GaragePanel = () => {
           </DialogHeader>
 
           {result ? (
-            <ResultView result={result} runtime={resultRuntime} models={resultModels} onClose={() => handleDialogChange(false)} />
+            <ResultView result={result} onClose={() => handleDialogChange(false)} />
           ) : (
             <div className="space-y-4">
               {!regenerating && <>
@@ -352,19 +329,9 @@ export const GaragePanel = () => {
                 />
               </div>
               </>}
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="garage-setup-key"
-                  checked={createSetupKey}
-                  onCheckedChange={(c) => setCreateSetupKey(c === true)}
-                  disabled={submitting}
-                />
-                <Label htmlFor="garage-setup-key" className="text-sm font-normal">
-                  {regenerating ? t("Create NetBird setup key (the machine must join the mesh again)") : "Create NetBird setup key"}
-                </Label>
-              </div>
+                             <p className="text-sm text-muted-foreground">{t("Issue a fresh register token for automation. To connect a computer, use browser linking.")}</p>
               <Button className="w-full" onClick={handleSubmit} disabled={submitting || !name}>
-                {submitting ? "Creating..." : regenerating ? t("Create command") : "Create garage"}
+                {submitting ? "Creating..." : regenerating ? t("Create token") : "Create garage"}
               </Button>
             </div>
           )}

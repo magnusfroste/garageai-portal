@@ -17,7 +17,7 @@ export const GarageActionsMenu = ({ garage, actions }: { garage: Garage; actions
       <DropdownMenuItem disabled={actions.retesting === garage.name || garage.models.length === 0} onSelect={() => actions.onRetest(garage)}>
         <FlaskConical className="mr-2 h-4 w-4" />{t(actions.retesting === garage.name ? "Testing..." : "Retest")}
       </DropdownMenuItem>
-      <DropdownMenuItem onSelect={() => actions.onNewCredential(garage)}><KeyRound className="mr-2 h-4 w-4" />{t(garage.connection_type === "endpoint" ? "Update API key" : "New command")}</DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => actions.onNewCredential(garage)}><KeyRound className="mr-2 h-4 w-4" />{t(garage.connection_type === "endpoint" ? "Update API key" : "New token (advanced)")}</DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem onSelect={() => actions.onToggleDisabled(garage)}>
         {garage.disabled ? <Power className="mr-2 h-4 w-4" /> : <Ban className="mr-2 h-4 w-4" />}{t(garage.disabled ? "Enable" : "Disable")}
