@@ -3,19 +3,17 @@ import { transportLabel } from "@/models/services/transport";
 import { GarageEarnings } from "./components/GarageEarnings";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Server, Plus, FlaskConical, KeyRound } from "lucide-react";
+import { Server, Plus, FlaskConical } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useMyGarages } from "@/hooks/useMyGarages";
 import { garageRepository, GarageRow } from "@/data/repositories/garageRepository";
-import { GarageCredentials } from "@/models/services/garageCommand";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { useGarageReliability } from "@/hooks/useGarageReliability";
 import { GarageReliabilityPanel } from "./components/GarageReliabilityPanel";
-import { GarageConnectCommand, ModelTestBadge, ToolsTestBadge, OneTimeWarning, relativeTimeSv } from "./components/GarageShared";
+import { ModelTestBadge, ToolsTestBadge, relativeTimeSv } from "./components/GarageShared";
 import { GarageHealthIndicators, GarageModelList, GarageTroubleshooting } from "./components/GarageHealth";
 import { useGarageModels } from "@/hooks/useGarageModels";
 import { t } from "@/i18n";
@@ -29,17 +27,14 @@ import { LocationBadge } from "./components/LocationBadge";
 import { useGarageLocations } from "@/hooks/useGarageLocations";
 import { useLatestOnboardingEvents } from "@/hooks/useOnboardingEvents";
 import { connectionTool } from "@/models/services/onboardingTool";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 const MyGaragesPage = () => {
   const { data: isAdmin = false } = useQuery({ queryKey: ["is-admin"], queryFn: () => adminService.isAdmin() });
   const navigate = useNavigate();
   const { toast } = useToast();
   const { garages, isLoading, isError, latestTests, invalidate } = useMyGarages();
-  const [confirmGarage, setConfirmGarage] = useState<GarageRow | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const { reliability } = useGarageReliability();
-  const [creds, setCreds] = useState<{ c: GarageCredentials; runtime: string; models: string[] } | null>(null);
   const { locations } = useGarageLocations();
   const { byGarage, setOffered, setPaused, pending } = useGarageModels(garages.map((g) => g.id));
   const onboarding = useLatestOnboardingEvents(garages.filter((g) => g.connection_type !== "endpoint").map((g) => g.id));
@@ -53,20 +48,6 @@ const MyGaragesPage = () => {
       invalidate();
     } catch (e) {
       toast({ title: t("The test failed"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const rotate = async (g: GarageRow) => {
-    setConfirmGarage(null);
-    setBusy(`c:${g.name}`);
-    try {
-      const c = await garageRepository.create({ name: g.name, create_setup_key: !g.netbird_peer_id || g.mesh_connected !== true, terms_accepted: !!g.terms_accepted_at });
-      setCreds({ c, runtime: g.runtime || "ollama", models: (byGarage.get(g.id) ?? []).filter((m) => m.offered && m.installed).map((m) => m.model) });
-      invalidate();
-    } catch (e) {
-      toast({ title: t("Could not create a new command"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
     } finally {
       setBusy(null);
     }
@@ -135,9 +116,7 @@ const MyGaragesPage = () => {
                     </Button>
                     <GaragePauseButton garage={g} onDone={invalidate} />
                     <DeleteGarageButton garage={g} operator onDone={invalidate} />
-                    <Button size="sm" variant="outline" disabled={!!busy} onClick={() => setConfirmGarage(g)}>
-                      <KeyRound className="w-3.5 h-3.5 mr-1.5" />{busy === `c:${g.name}` ? t("Creating...") : t("New command")}
-                    </Button>
+                     {g.connection_type !== "endpoint" && <Button size="sm" variant="outline" onClick={() => navigate("/connect")}>{t("Connect this computer")}</Button>}
                   </div>
                 )}
                 {g.disabled && <p className="text-xs text-destructive">{t("The garage has been disabled by the platform.")}</p>}
@@ -152,24 +131,7 @@ const MyGaragesPage = () => {
         </div>
       )}
 
-      <AlertDialog open={!!confirmGarage} onOpenChange={(open) => !open && setConfirmGarage(null)}>
-        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t("New command")}</AlertDialogTitle><AlertDialogDescription>{t("This will create a new command for your existing garage {name}.", { name: confirmGarage?.name ?? "" })}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>{t("Cancel")}</AlertDialogCancel><AlertDialogAction onClick={() => { if (confirmGarage) void rotate(confirmGarage); }}>{t("Create new command")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-      </AlertDialog>
-      <Dialog open={!!creds} onOpenChange={(o) => !o && setCreds(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t("New command")}</DialogTitle>
-            <DialogDescription>{t("Run garageai connect with Bridge on the machine {name}.", { name: creds?.c.garage.name ?? "" })}</DialogDescription>
-          </DialogHeader>
-          {creds && (
-            <div className="space-y-4">
-              <OneTimeWarning />
-              <GarageConnectCommand credentials={creds.c} runtime={creds.runtime} options={{ models: creds.models }} />
-              <Button className="w-full" onClick={() => setCreds(null)}>{t("Done – I have copied it")}</Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 };
