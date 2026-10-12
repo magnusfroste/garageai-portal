@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Remove portal legacy scripts, retain Bridge linking and advanced token renewal, update Swedish translations, verify and publish
+
 - [x] Add announcements schema, audience security, Admin management and signed-in bar (no seed rows)
 - [x] Remove garage-card callout entirely; keep announcements only; tests pass and build clean
 - [x] Verify announcement rule tests, public/auth exclusion and desktop/mobile previews
