@@ -1279,11 +1279,29 @@ export type Database = {
           requests: number
         }[]
       }
-      record_bridge_release: {
-        Args: { p_checked_at: string; p_tag: string; p_version: string }
-        Returns: undefined
-      }
+      record_bridge_release:
+        | {
+            Args: { p_checked_at: string; p_tag: string; p_version: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_checked_at: string
+              p_published_at: string
+              p_tag: string
+              p_version: string
+            }
+            Returns: undefined
+          }
       set_bridge_pin: { Args: { p_pinned: string }; Returns: undefined }
+      set_bridge_update: {
+        Args: {
+          p_auto_after_hours?: number
+          p_mode?: string
+          p_stable?: string
+        }
+        Returns: Json
+      }
       set_garage_location_display: {
         Args: { _garage_id: string; _mode: string }
         Returns: undefined
