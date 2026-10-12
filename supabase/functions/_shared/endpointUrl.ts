@@ -24,8 +24,15 @@ export function isBlockedIp(ip: string): boolean {
   return false;
 }
 
+/** True when host is exactly one of blockedHosts or sits under one of blockedDomains. */
+export function matchesBlockedHost(host: string, blockedHosts: readonly string[] = [], blockedDomains: readonly string[] = []): boolean {
+  const h = host.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+  if (blockedHosts.map((x) => x.toLowerCase()).includes(h)) return true;
+  return blockedDomains.some((d) => h === d.toLowerCase() || h.endsWith(`.${d.toLowerCase()}`));
+}
+
 /** Returns the normalised URL ending in /v1, or throws with a user-facing message. */
-export async function validateEndpointUrl(raw: unknown, opts: { allowPort?: boolean; blockedHosts?: string[] } = {}): Promise<string> {
+export async function validateEndpointUrl(raw: unknown, opts: { allowPort?: boolean; blockedHosts?: string[]; blockedDomains?: string[] } = {}): Promise<string> {
   if (typeof raw !== "string" || raw.length > 300) throw new Error("endpoint_url must be a URL string");
   let u: URL;
   try { u = new URL(raw.trim()); } catch { throw new Error("endpoint_url is not a valid URL"); }
@@ -36,7 +43,7 @@ export async function validateEndpointUrl(raw: unknown, opts: { allowPort?: bool
   const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal") || !host.includes(".") && !host.includes(":"))
     throw new Error("endpoint_url host is not a public hostname");
-  if ((opts.blockedHosts || []).includes(host)) throw new Error("endpoint_url must not point at this gateway");
+  if (matchesBlockedHost(host, opts.blockedHosts, opts.blockedDomains)) throw new Error("endpoint_url must not point at this gateway");
   if (V4_RE.test(host) || host.includes(":")) {
     if (isBlockedIp(host)) throw new Error("endpoint_url points to a private or reserved address");
   } else {
@@ -55,4 +62,7 @@ export async function validateEndpointUrl(raw: unknown, opts: { allowPort?: bool
 // Unit-style self-check (runs once at import, cheap).
 for (const [ip, blocked] of [["10.1.2.3", true], ["172.20.0.1", true], ["192.168.1.5", true], ["100.83.1.1", true], ["169.254.1.1", true], ["127.0.0.1", true], ["8.8.8.8", false], ["::1", true], ["fd00::1", true], ["fe80::1", true], ["2606:4700::1111", false]] as const) {
   if (isBlockedIp(ip) !== blocked) console.error(`[endpointUrl] self-check failed for ${ip}`);
+}
+for (const [h, blocked] of [["api.garageai.eu", true], ["llm.garageai.eu", true], ["garageai.eu", true], ["notgarageai.eu", false], ["garageai.eu.evil.example", false]] as const) {
+  if (matchesBlockedHost(h, [], ["garageai.eu"]) !== blocked) console.error(`[endpointUrl] self-check failed for host ${h}`);
 }
