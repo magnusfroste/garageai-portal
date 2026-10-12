@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Fetch Bridge releases every six hours, preserve admin pin and expose version setting safely
+- [ ] Add operator update commands, admin version column/outdated filter and Operations Center version summary
+- [ ] Test version rules, verify signed-in views, deploy functions and publish
+
 - [x] Replace portal marks and favicon; add Apple touch icon; verified signed-in /connect and /bridge/link plus auth; theme/layout unchanged
 
 - [x] Remove portal legacy scripts, retain Bridge linking and advanced token renewal; Swedish updated, 90 tests pass, build clean

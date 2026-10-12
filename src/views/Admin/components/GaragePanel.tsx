@@ -27,7 +27,7 @@ import { useGarageLocations } from "@/hooks/useGarageLocations";
 import { useQuery } from "@tanstack/react-query";
 import { garageRepository } from "@/data/repositories/garageRepository";
 import { useGarageRevenue } from "@/hooks/useGarageRevenue";
-import { presentAdminGarage, matchesAdminGarage, sortAdminGarages, type AdminGarageFilter, type AdminGarageTypeFilter } from "@/models/services/adminGaragePresentation";
+import { presentAdminGarage, presentAdminBridge, matchesAdminGarage, sortAdminGarages, type AdminGarageFilter, type AdminGarageTypeFilter } from "@/models/services/adminGaragePresentation";
 import { GarageTable } from "./garages/GarageTable";
 import { GarageMobileList } from "./garages/GarageMobileList";
 import { GaragePauseDialog } from "@/views/Garages/components/GarageOperatorControls";
@@ -35,6 +35,7 @@ import { GarageDetailSheet } from "./garages/GarageDetailSheet";
 import type { GarageActionHandlers, AdminGarageRow } from "./garages/types";
 import { useLatestOnboardingEvents } from "@/hooks/useOnboardingEvents";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useBridgeVersion } from "@/hooks/useBridgeVersion";
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 
 const CopyButton = ({ value }: { value: string }) => {
@@ -77,6 +78,7 @@ const ResultView = ({ result, onClose }: { result: CreateGarageResult; onClose: 
 
 export const GaragePanel = () => {
   const navigate = useNavigate();
+  const { latest: bridgeLatest } = useBridgeVersion();
   const { garages, isLoading, isError, refetch, isRefetching, createGarage, latestTests, retestGarage, operatorEmails, setGarageDisabled, invalidate } = useGarages();
   const { byGarage, setOffered, setAlias, pending } = useGarageModels(garages.map((g) => g.id));
   const [providerOpen, setProviderOpen] = useState(false);
@@ -182,7 +184,7 @@ export const GaragePanel = () => {
     return {
       garage,
       models,
-      view: presentAdminGarage(garage, models),
+      view: { ...presentAdminGarage(garage, models), ...presentAdminBridge(garage, bridgeLatest) },
       reliability: reliability.get(garage.name),
       location: locations.get(garage.name),
       revenue: revenue.summary.garages.find((item) => item.garage === garage.name),
@@ -194,7 +196,7 @@ export const GaragePanel = () => {
   })).filter((row) => matchesAdminGarage(row.garage, row.view, search, statusFilter, typeFilter));
   const selectedRow = selectedGarage ? rows.find((row) => row.garage.id === selectedGarage.id) ?? (() => {
     const garage = selectedGarage; const models = byGarage.get(garage.id) ?? [];
-    return { garage, models, view: presentAdminGarage(garage, models), reliability: reliability.get(garage.name), location: locations.get(garage.name), revenue: revenue.summary.garages.find((item) => item.garage === garage.name), operatorEmail: garage.operator_id ? operatorEmails.get(garage.operator_id) : undefined, changedRecently: countryChanges.data?.has(garage.id) ?? false, tests: latestTests };
+    return { garage, models, view: { ...presentAdminGarage(garage, models), ...presentAdminBridge(garage, bridgeLatest) }, reliability: reliability.get(garage.name), location: locations.get(garage.name), revenue: revenue.summary.garages.find((item) => item.garage === garage.name), operatorEmail: garage.operator_id ? operatorEmails.get(garage.operator_id) : undefined, changedRecently: countryChanges.data?.has(garage.id) ?? false, tests: latestTests };
   })() : null;
   const actions: GarageActionHandlers = {
     onOpen: setSelectedGarage,
@@ -244,7 +246,7 @@ export const GaragePanel = () => {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as AdminGarageFilter)}>
               <TabsList className="h-auto max-w-full flex-wrap justify-start">
-                {(["all", "attention", "live", "paused", "disabled"] as const).map((value) => <TabsTrigger key={value} value={value} className="text-xs">{t(({ all: "All", attention: "Needs attention", live: "Live", paused: "Paused", disabled: "Disabled" } as const)[value])}</TabsTrigger>)}
+                {(["all", "attention", "live", "paused", "disabled", "outdated"] as const).map((value) => <TabsTrigger key={value} value={value} className="text-xs">{t(({ all: "All", attention: "Needs attention", live: "Live", paused: "Paused", disabled: "Disabled", outdated: "Outdated" } as const)[value])}</TabsTrigger>)}
               </TabsList>
             </Tabs>
             <Tabs value={typeFilter} onValueChange={(value) => setTypeFilter(value as AdminGarageTypeFilter)}>

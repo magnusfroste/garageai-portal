@@ -1,5 +1,19 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
+  "Bridge {version} · {latest} available": "Bridge {version} · {latest} finns tillgänglig",
+  "Run it on the garage's computer; the heartbeat and tunnel services update themselves. No reconnect needed.": "Kör det på garagets dator; heartbeat- och tunneltjänsterna uppdaterar sig själva. Ingen ny anslutning behövs.",
+  "Could not copy command.": "Kunde inte kopiera kommandot.",
+  "Bridge versions": "Bridge-versioner",
+  "Latest release": "Senaste utgåva",
+  "Active version": "Aktiv version",
+  "Pinned": "Fäst",
+  "Last checked": "Senast kontrollerad",
+  "Pinned Bridge version": "Fäst Bridge-version",
+  "Empty follows the latest release. A pinned version overrides it.": "Tomt följer den senaste utgåvan. En fäst version har företräde.",
+  "Enter a version such as v0.4.5.": "Ange en version som v0.4.5.",
+  "Bridge version saved.": "Bridge-versionen sparades.",
+  "Outdated": "Föråldrad",
+
   "Announcements": "Meddelanden",
   "Title": "Titel",
   "Preview": "Förhandsvisning",
