@@ -24,8 +24,15 @@ export function isBlockedIp(ip: string): boolean {
   return false;
 }
 
+/** True when host is exactly one of blockedHosts or sits under one of blockedDomains. */
+export function matchesBlockedHost(host: string, blockedHosts: readonly string[] = [], blockedDomains: readonly string[] = []): boolean {
+  const h = host.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+  if (blockedHosts.map((x) => x.toLowerCase()).includes(h)) return true;
+  return blockedDomains.some((d) => h === d.toLowerCase() || h.endsWith(`.${d.toLowerCase()}`));
+}
+
 /** Returns the normalised URL ending in /v1, or throws with a user-facing message. */
-export async function validateEndpointUrl(raw: unknown, opts: { allowPort?: boolean; blockedHosts?: string[] } = {}): Promise<string> {
+export async function validateEndpointUrl(raw: unknown, opts: { allowPort?: boolean; blockedHosts?: string[]; blockedDomains?: string[] } = {}): Promise<string> {
   if (typeof raw !== "string" || raw.length > 300) throw new Error("endpoint_url must be a URL string");
   let u: URL;
   try { u = new URL(raw.trim()); } catch { throw new Error("endpoint_url is not a valid URL"); }
