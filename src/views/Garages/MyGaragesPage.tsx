@@ -1,4 +1,6 @@
 import { BridgeAgentSection } from "./components/BridgeAgentSection";
+import { PoolShareNote } from "./components/PoolShareNote";
+import { useModelCatalog } from "@/hooks/useModelCatalog";
 import { BridgeUpdateNotice } from "./components/BridgeUpdateNotice";
 import { useBridgeVersion } from "@/hooks/useBridgeVersion";
 import { transportLabel } from "@/models/services/transport";
@@ -32,6 +34,7 @@ import { connectionTool } from "@/models/services/onboardingTool";
 
 const MyGaragesPage = () => {
   const { latest: bridgeLatest } = useBridgeVersion();
+  const { models: catalog } = useModelCatalog();
   const { data: isAdmin = false } = useQuery({ queryKey: ["is-admin"], queryFn: () => adminService.isAdmin() });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -101,6 +104,7 @@ const MyGaragesPage = () => {
                 {g.connection_type !== "endpoint" && <p className="text-xs text-muted-foreground">{t("Transport")} · {transportLabel(g)}</p>}
                 {g.agent && <BridgeAgentSection agent={g.agent} at={g.agent_at ?? null} />}
                 <BridgeUpdateNotice version={g.agent?.version} latest={bridgeLatest} />
+                <PoolShareNote garage={g.name} catalog={catalog} />
                 {g.connection_type === "endpoint" && !isAdmin && <p className="text-xs text-muted-foreground">{t("Models on provider endpoints are offered by GarageAI admins.")}</p>}
                 <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onPause={setPaused} readOnly={g.connection_type === "endpoint" && !isAdmin} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
                 <div className="flex gap-1.5 flex-wrap">
