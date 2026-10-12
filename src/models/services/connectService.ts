@@ -4,6 +4,10 @@ import { stepNumber } from "./onboardingProgress";
 
 export type ConnectOs = "macos" | "linux" | "windows";
 export const BRIDGE_ONE_LINE = "curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect";
+export const BRIDGE_TUNNEL_FLAG = " --tunnel bridge";
+
+/** The one-line Bridge install command; with the tunnel switch on, Bridge carries the tunnel itself instead of NetBird. */
+export const bridgeInstallCommand = (tunnel: boolean): string => BRIDGE_ONE_LINE + (tunnel ? BRIDGE_TUNNEL_FLAG : "");
 
 export function detectOs(userAgent: string): ConnectOs {
   const ua = userAgent.toLowerCase();
