@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
         .eq("garage_id", garage.id).eq("model", model).select("model").maybeSingle();
       if (!row) return json({ error: "Model not found on this garage" }, 404);
     } else {
-      await admin.from("garages").update({ paused_at: at, paused_reason: paused ? reason : null }).eq("id", garage.id);
+      await admin.from("garages").update({ paused_at: at, paused_reason: paused ? reason : null, paused_by_admin: paused && isAdmin && garage.operator_id !== userId }).eq("id", garage.id);
     }
     let routing_synced = true;
     try { await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true }); }

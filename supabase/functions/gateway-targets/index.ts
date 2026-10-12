@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { transportTargetFields, isTunnel } from "../_shared/tunnel.ts";
+import { isGatewayTarget } from "../_shared/gatewayTargetFilter.ts";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
 
 Deno.serve(async (req) => {
@@ -8,9 +9,9 @@ Deno.serve(async (req) => {
   try {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: garages, error } = await admin.from("garages")
-      .select("id, name, netbird_peer_id, api_host, mesh_ip, port, connection_type, endpoint_url, last_heartbeat_at, agent, agent_at, machine_id, last_machine_id, transport, tunnel_ip, tunnel_public_key").eq("disabled", false).order("name");
+      .select("id, name, netbird_peer_id, api_host, mesh_ip, port, connection_type, endpoint_url, last_heartbeat_at, agent, agent_at, machine_id, last_machine_id, transport, tunnel_ip, tunnel_public_key, disabled, paused_at").eq("disabled", false).is("paused_at", null).order("name");
     if (error) throw error;
-    const list = (garages || []) as Array<{ id: string; name: string; netbird_peer_id: string | null; api_host: string | null; mesh_ip: string | null; port: number | null; connection_type: string | null; endpoint_url: string | null; last_heartbeat_at: string | null; agent: unknown; agent_at: string | null; machine_id: string | null; last_machine_id: string | null; transport: string | null; tunnel_ip: string | null; tunnel_public_key: string | null }>;
+    const list = ((garages || []) as Array<{ disabled?: boolean; paused_at?: string | null }>).filter(isGatewayTarget) as unknown as Array<{ id: string; name: string; netbird_peer_id: string | null; api_host: string | null; mesh_ip: string | null; port: number | null; connection_type: string | null; endpoint_url: string | null; last_heartbeat_at: string | null; agent: unknown; agent_at: string | null; machine_id: string | null; last_machine_id: string | null; transport: string | null; tunnel_ip: string | null; tunnel_public_key: string | null }>;
     const { data: secrets } = await admin.from("garage_runtime_secrets").select("garage_id, runtime_api_key").in("garage_id", list.map((g) => g.id));
     const keys = new Map(((secrets || []) as Array<{ garage_id: string; runtime_api_key: string | null }>).map((s) => [s.garage_id, s.runtime_api_key]));
     const { data: ctxRows } = await admin.from("garage_models").select("garage_id, model, context_length").in("garage_id", list.map((g) => g.id)).not("context_length", "is", null);

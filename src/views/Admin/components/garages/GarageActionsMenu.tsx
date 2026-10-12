@@ -1,4 +1,4 @@
-import { Ban, Coins, FlaskConical, KeyRound, MoreHorizontal, Power, Trash2 } from "lucide-react";
+import { Ban, Coins, FlaskConical, KeyRound, MoreHorizontal, Pause, Play, Power, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Garage } from "../../hooks/useGarages";
@@ -19,6 +19,9 @@ export const GarageActionsMenu = ({ garage, actions }: { garage: Garage; actions
       </DropdownMenuItem>
       <DropdownMenuItem onSelect={() => actions.onNewCredential(garage)}><KeyRound className="mr-2 h-4 w-4" />{t(garage.connection_type === "endpoint" ? "Update API key" : "New token (advanced)")}</DropdownMenuItem>
       <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={() => actions.onTogglePaused(garage)}>
+        {garage.paused_at ? <Play className="mr-2 h-4 w-4" /> : <Pause className="mr-2 h-4 w-4" />}{t(garage.paused_at ? "Resume" : "Pause")}
+      </DropdownMenuItem>
       <DropdownMenuItem onSelect={() => actions.onToggleDisabled(garage)}>
         {garage.disabled ? <Power className="mr-2 h-4 w-4" /> : <Ban className="mr-2 h-4 w-4" />}{t(garage.disabled ? "Enable" : "Disable")}
       </DropdownMenuItem>
