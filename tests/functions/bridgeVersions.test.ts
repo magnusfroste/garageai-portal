@@ -1,7 +1,7 @@
-import { expect, test } from "bun:test";
-// Bun does not resolve Deno npm: specifiers; exercise the same module with its npm import mapped.
-const source = await Bun.file("supabase/functions/_shared/bridgeVersions.ts").text();
-const module = await import(`data:text/javascript,${encodeURIComponent((await Bun.Transpiler.prototype.transform.call(new Bun.Transpiler({loader:"ts"}),source.replace('"npm:semver@7.8.5"',JSON.stringify(import.meta.resolve("semver"))))))}`);
+import { expect, test, mock } from "bun:test";
+import { valid, lt } from "semver";
+mock.module("npm:semver@7.8.5", () => ({ valid, lt }));
+const module = await import("../../supabase/functions/_shared/bridgeVersions.ts");
 
 test("newest published Bridge release includes prereleases and excludes drafts and other tags", () => {
   expect(module.newestBridgeRelease([
