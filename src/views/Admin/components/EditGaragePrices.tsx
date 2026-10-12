@@ -30,14 +30,11 @@ export const EditGaragePrices = ({ garage, models = [], onSaved, open: controlle
   const [error, setError] = useState("");
   const modelId = models[0] ? (models[0].canonical_model || models[0].model) : null;
   const suggestion = useSuggestedPrice(open ? modelId : null, garage.name).data;
-  const useSuggestion = () => suggestion && setRows((r) => ({
+  const applySuggestion = () => suggestion && setRows((r) => ({
     pool: { ...r.pool, input: fmt(suggestion.input), output: fmt(suggestion.output) },
     dedicated: { ...r.dedicated, input: fmt(suggestion.input), output: fmt(suggestion.output) },
   }));
   const unpriced = ![garage.pool_input_cost_per_million, garage.pool_output_cost_per_million, garage.dedicated_input_cost_per_million, garage.dedicated_output_cost_per_million].some((v) => Number(v));
-  // Never-priced garage: prefill the form with the suggestion; the admin can edit or save as is.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (open && unpriced && suggestion) useSuggestion(); }, [open, unpriced, suggestion]);
 
   const reset = () => {
     setRows({
@@ -49,6 +46,9 @@ export const EditGaragePrices = ({ garage, models = [], onSaved, open: controlle
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (open) reset(); }, [open, garage]);
+  // Never-priced garage: prefill the form with the suggestion; the admin can edit or save as is.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open && unpriced && suggestion) applySuggestion(); }, [open, unpriced, suggestion]);
 
   const input = (tier: Tier) => Number(rows[tier].input) || 0;
   const tierDefault = (tier: Tier) => rows[tier].cache.trim() === "" ? fmt(defaultCacheRead(input(tier))) : rows[tier].cache;
@@ -81,7 +81,7 @@ export const EditGaragePrices = ({ garage, models = [], onSaved, open: controlle
         {suggestion && modelId && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/50 bg-muted/20 p-2 text-xs">
             <span><span className="font-medium">{t(PRICE_SOURCE_LABEL[suggestion.source])}</span> · <span className="font-mono">{modelId}</span> · ${fmt(suggestion.input)} / ${fmt(suggestion.output)}</span>
-            <Button type="button" size="sm" variant="outline" className="h-7" onClick={useSuggestion}>{t("Use this price")}</Button>
+            <Button type="button" size="sm" variant="outline" className="h-7" onClick={applySuggestion}>{t("Use this price")}</Button>
           </div>
         )}
         {tiers.map(({ key, label }) => (
