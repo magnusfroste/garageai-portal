@@ -21,12 +21,13 @@ export const GarageTable = ({ rows, actions }: { rows: AdminGarageRow[]; actions
   <div className="hidden overflow-x-auto rounded-md border lg:block">
     <Table className="table-fixed min-w-[880px]">
       <TableHeader><TableRow>
-        <TableHead className="w-[17%]">{t("Status")}</TableHead>
-        <TableHead className="w-[20%]">{t("Garage")}</TableHead>
+        <TableHead className="w-[15%]">{t("Status")}</TableHead>
+        <TableHead className="w-[18%]">{t("Garage")}</TableHead>
         <TableHead className="w-[10%]">{t("Models")}</TableHead>
         <TableHead className="w-[15%]">{t("Grade & availability")}</TableHead>
-        <TableHead className="w-[19%]">{t("Price in / out per 1M")}</TableHead>
-        <TableHead className="w-[13%]">{t("Last seen")}</TableHead>
+        <TableHead className="w-[17%]">{t("Price in / out per 1M")}</TableHead>
+        <TableHead className="w-[9%]">Bridge</TableHead>
+        <TableHead className="w-[10%]">{t("Last seen")}</TableHead>
         <TableHead className="w-[6%]"><span className="sr-only">{t("Actions")}</span></TableHead>
       </TableRow></TableHeader>
       <TableBody>{rows.map((row) => (
@@ -36,6 +37,7 @@ export const GarageTable = ({ rows, actions }: { rows: AdminGarageRow[]; actions
           <TableCell className="tabular-nums"><span className="font-medium">{row.view.live}</span><span className="text-muted-foreground"> {t("of")} {row.view.offered} {t("live")}</span></TableCell>
           <TableCell><div className="flex items-center gap-2">{row.reliability ? <GradeBadge grade={row.reliability.grade} /> : "—"}<span className="text-xs tabular-nums text-muted-foreground">{row.location?.is_endpoint ? t("Always on") : row.location ? liveHoursText(row.location) : "—"}</span></div></TableCell>
           <TableCell><GaragePriceCell garage={row.garage} /></TableCell>
+          <TableCell className={`text-xs font-mono ${row.view.bridgeOutdated ? "text-danger-foreground" : "text-muted-foreground"}`}>{row.view.bridgeVersion ?? "—"}</TableCell>
           <TableCell className="text-xs tabular-nums text-muted-foreground" title={row.view.lastSeen ? new Date(row.view.lastSeen).toLocaleString() : undefined}>{relative(row.view.lastSeen)}</TableCell>
           <TableCell className="text-right"><GarageActionsMenu garage={row.garage} actions={actions} /></TableCell>
         </TableRow>

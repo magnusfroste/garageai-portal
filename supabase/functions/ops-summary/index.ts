@@ -6,6 +6,8 @@ import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 import { median } from "../_shared/bridgeLink.ts";
 import { autoDeploymentId, parseAutoSettings } from "../_shared/autoRoute.ts";
 
+import { bridgeVersionsSummary } from "../_shared/bridgeVersions.ts";
+
 const H = 3600_000;
 const BUDGET_MS = 1500;
 const round = (n: number) => Math.round(n * 100) / 100;
@@ -155,6 +157,15 @@ async function adminActivity(admin: SupabaseClient) {
   return ((data || []) as Array<{ effective_from: string; garage_name: string | null }>).map((r) => ({ at: r.effective_from, action: "price changed", target: r.garage_name }));
 }
 
+async function bridgeVersions(admin: SupabaseClient) {
+  const [setting, garages] = await Promise.all([
+    admin.from("admin_settings").select("value").eq("key", "bridge_latest").maybeSingle(),
+    admin.from("garages").select("name, agent"),
+  ]);
+  if (setting.error || garages.error) throw new Error("Bridge version data unavailable");
+  return bridgeVersionsSummary(setting.data?.value, garages.data ?? []);
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "GET") return gatewayJson({ error: "Method not allowed" }, 405);
   if (!(await isGatewayAuthorized(req))) return gatewayJson({ error: "Unauthorized" }, 401);
@@ -164,7 +175,7 @@ Deno.serve(async (req) => {
     const now = Date.now(), d1 = new Date(now - 24 * H).toISOString(), d7 = new Date(now - 7 * 24 * H).toISOString();
     const base = await timed(getProxyBaseUrl(admin), null as string | null);
 
-    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel, auto] = await Promise.all([
+    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel, auto, versions] = await Promise.all([
       admin.from("profiles").select("id, created_at, litellm_user_id, starting_credit_usd, purchased_credits_usd"),
       admin.from("api_keys").select("user_id, key_value, litellm_token"),
       admin.from("chat_conversations").select("user_id, updated_at").gte("updated_at", d7),
@@ -172,7 +183,7 @@ Deno.serve(async (req) => {
       base ? timed(keySpend(base, master, 1), null) : Promise.resolve(null),
       base ? timed(keySpend(base, master, 7), null) : Promise.resolve(null),
       timed(pendingCheckouts(), null),
-      operators(admin), onboarding(admin), adminActivity(admin), timed(onboardingFunnel(admin), null), timed(autoSummary(admin, base, master), null),
+      operators(admin), onboarding(admin), adminActivity(admin), timed(onboardingFunnel(admin), null), timed(autoSummary(admin, base, master), null), timed(bridgeVersions(admin), null),
     ]);
     const profiles = (profilesRes.data || []) as Array<{ id: string; created_at: string; litellm_user_id: string | null; starting_credit_usd: number; purchased_credits_usd: number }>;
     const keyOwner = new Map<string, string>();
@@ -215,6 +226,7 @@ Deno.serve(async (req) => {
       onboarding_funnel: funnel,
       admin_activity: activity,
       auto,
+      bridge_versions: versions,
     });
   } catch (e) {
     console.error("[ops-summary] error", e instanceof Error ? e.message : "unknown");

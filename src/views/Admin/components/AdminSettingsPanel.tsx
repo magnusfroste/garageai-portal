@@ -1,4 +1,5 @@
 import { DemandModelsField } from "./DemandModelsField";
+import { BridgeVersionField } from "./BridgeVersionField";
 import { PlatformFeeField } from "./PlatformFeeField";
 import { useState, useEffect } from "react";
 import { Settings, Save } from "lucide-react";
@@ -115,6 +116,7 @@ export const AdminSettingsPanel = () => {
         <PlatformFeeField />
 
         <DemandModelsField />
+        <BridgeVersionField />
 
 
         <Button onClick={handleSave} disabled={saving} className="w-full md:w-auto">

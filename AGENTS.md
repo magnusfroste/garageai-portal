@@ -3,7 +3,7 @@
 - Public garage cards/headers use shared public service/header, aggregate RPCs and canonical identities, never runtime ids.
 - Flow stays repositories → services/models → hooks → views, so data and UI stay independent.
 - Derive admin garage status, attention, filtering and sorting in the shared presentation service, so all admin views agree.
-- Keep metadata in `admin_settings.site_settings`; share portal marks via GarageAIMark/useId to prevent SVG clashes.
+- Keep metadata in site_settings; GarageAIMark/useId avoids clashes. Bridge version services own semver/pins; atomic RPCs preserve pins.
 - Keep signup intent as profile metadata, never an authorization role; roles stay in `user_roles`.
 - Route initial node registration and changed heartbeats through the shared garage registration service, so cleanup and catalogue sync stay consistent.
 - Centralize runtime metadata, allowed ports and onboarding tool; resolve demand IDs by runtime to match install filters.

@@ -1,8 +1,9 @@
 import type { GarageModelRow } from "@/data/repositories/garageRepository";
 import type { Garage } from "@/views/Admin/hooks/useGarages";
+import { bridgeStatus, parseBridgeLatest, type BridgeLatest } from "./bridgeVersionService";
 
 export type AdminGarageStatus = "disabled" | "paused" | "offline" | "degraded" | "live";
-export type AdminGarageFilter = "all" | "attention" | "live" | "paused" | "disabled";
+export type AdminGarageFilter = "all" | "attention" | "live" | "paused" | "disabled" | "outdated";
 export type AdminGarageTypeFilter = "all" | "garage" | "provider";
 
 export interface AdminGaragePresentation {
@@ -14,6 +15,8 @@ export interface AdminGaragePresentation {
   offered: number;
   live: number;
   lastSeen: string | null;
+  bridgeVersion?: string | null;
+  bridgeOutdated?: boolean;
 }
 
 const newest = (...values: Array<string | null | undefined>) => {
@@ -41,10 +44,15 @@ export const presentAdminGarage = (garage: Garage, models: GarageModelRow[], now
   return { status: "live", label: "Live", reason: null, attention: false, severity: 2, offered: offeredRows.length, live, lastSeen };
 };
 
+export const presentAdminBridge = (garage: Garage, latest: BridgeLatest = parseBridgeLatest(null)) => {
+  const bridge = bridgeStatus(garage.agent?.version, latest);
+  return { bridgeVersion: bridge.version, bridgeOutdated: bridge.outdated };
+};
+
 export const matchesAdminGarage = (garage: Garage, view: AdminGaragePresentation, search: string, status: AdminGarageFilter, type: AdminGarageTypeFilter) => {
   const query = search.trim().toLowerCase();
   const matchesSearch = !query || [garage.name, garage.display_name, garage.runtime, garage.endpoint_url].some((value) => value?.toLowerCase().includes(query));
-  const matchesStatus = status === "all" || (status === "attention" ? view.attention : view.status === status);
+  const matchesStatus = status === "all" || (status === "attention" ? view.attention : status === "outdated" ? view.bridgeOutdated === true : view.status === status);
   const matchesType = type === "all" || (type === "provider" ? garage.connection_type === "endpoint" : garage.connection_type !== "endpoint");
   return matchesSearch && matchesStatus && matchesType;
 };
