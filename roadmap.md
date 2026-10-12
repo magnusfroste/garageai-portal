@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Add announcements schema, audience security, Admin management and signed-in bar (no seed rows)
+- [ ] Add NetBird-only Bridge tunnel note, Swedish translations and rule tests
+- [ ] Verify announcements and garage note, then publish
+
 - [x] Align public garage cards/profile headers with catalogue, verify anonymous data and desktop/mobile interactions
 
 - [x] Clarify operator earnings and add audited admin pricing
