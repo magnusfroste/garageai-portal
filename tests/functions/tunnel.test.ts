@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { lowestFreeTunnelIp, validTunnelKey, resolveGaragePeer, transportTargetFields, tunnelStatus } from "../../supabase/functions/_shared/tunnel";
 
-const KEY = "Y2tVj41DZ7Db+C6djttop0A4Z3I0NbpnZ70Y1AJ1/R0=";
+const KEY = "y2tVj41DZ7Db+C6djttop0A4Z3I0NbpnZ70Y1AJ1/R0=";
 
 test("tunnel-assign: first address is 10.66.0.2 and the lowest free one is reused", () => {
   expect(lowestFreeTunnelIp([])).toBe("10.66.0.2");
