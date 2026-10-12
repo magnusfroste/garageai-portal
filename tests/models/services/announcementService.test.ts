@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { currentAnnouncement, validateAnnouncement, dismissalKey, tunnelUpgradeEligible } from '../../../src/models/services/announcementService';
+import { currentAnnouncement, validateAnnouncement, dismissalKey } from '../../../src/models/services/announcementService';
 import type { Announcement } from '../../../src/models/types/announcement.types';
 const at = Date.parse('2026-10-12T07:29:00Z');
 const a = (id: string, patch: Partial<Announcement> = {}): Announcement => ({ id, title: 'Maintenance', body: 'Message', link_url: null, link_text: null, audience: 'all', level: 'info', starts_at: '2026-10-12T07:00:00Z', ends_at: null, created_at: '2026-10-12T06:00:00Z', created_by: 'u', ...patch });
@@ -27,9 +27,4 @@ test('link excludes executable schemes', () => {
 test('dismissal key is per announcement', () => {
   expect(dismissalKey('first')).toBe('announcement_dismissed:first');
   expect(dismissalKey('second')).not.toBe(dismissalKey('first'));
-});
-test('upgrade note only appears on NetBird mesh garages', () => {
-  expect(tunnelUpgradeEligible({ connection_type: 'mesh', transport: 'netbird' })).toBe(true);
-  expect(tunnelUpgradeEligible({ connection_type: 'mesh', transport: 'tunnel' })).toBe(false);
-  expect(tunnelUpgradeEligible({ connection_type: 'endpoint', transport: 'netbird' })).toBe(false);
 });

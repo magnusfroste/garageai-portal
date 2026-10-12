@@ -27,4 +27,3 @@ export const announcementService = {
   end: announcementRepository.end,
 };
 export const dismissalKey = (id: string) => `announcement_dismissed:${id}`;
-export const tunnelUpgradeEligible = (g: { connection_type: string; transport?: string | null }) => g.connection_type === 'mesh' && g.transport === 'netbird';
