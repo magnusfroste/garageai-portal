@@ -31,3 +31,6 @@ verify_jwt = false
 
 [functions.bridge-link-poll]
 verify_jwt = false
+
+[functions.tunnel-assign]
+verify_jwt = false

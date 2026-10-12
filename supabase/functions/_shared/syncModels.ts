@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { getNetbirdApiUrl, netbirdHeaders } from "./netbirdConfig.ts";
+import { isTunnel, tunnelStatus } from "./tunnel.ts";
 import { offeredByGarage, pausedModels } from "./garageModels.ts";
 import { updateMeasuredCountries } from "./garageLocation.ts";
 import { AUTO_CATALOG_ID, AUTO_TIER, autoCatalogRow } from "./autoRoute.ts";
@@ -101,9 +102,11 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const heartbeatStatus = new Map<string, "healthy" | "unhealthy">();
   const gatewayGarages = new Set<string>();
   if (garageNames.size > 0) {
-    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id, last_heartbeat_at, connection_type, last_gateway_check_at, runtime_ok, mesh_connected").in("name", Array.from(garageNames));
+    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id, last_heartbeat_at, connection_type, last_gateway_check_at, runtime_ok, mesh_connected, transport").in("name", Array.from(garageNames));
     const staleBefore = Date.now() - 15 * 60 * 1000;
-    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null; last_heartbeat_at: string | null; connection_type: string | null; last_gateway_check_at: string | null; runtime_ok: boolean | null; mesh_connected: boolean | null }>) {
+    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null; last_heartbeat_at: string | null; connection_type: string | null; last_gateway_check_at: string | null; runtime_ok: boolean | null; mesh_connected: boolean | null; transport: string | null }>) {
+      // Tunnel garages: connectivity from the gateway (hub handshake) and heartbeats only, never NetBird.
+      if (isTunnel(g)) { const st = tunnelStatus(g); if (st !== "unknown") { if (g.last_gateway_check_at) gatewayGarages.add(g.name); heartbeatStatus.set(g.name, st); } continue; }
       if (g.last_gateway_check_at) { gatewayGarages.add(g.name); heartbeatStatus.set(g.name, gatewayHealthy(g) ? "healthy" : "unhealthy"); }
       else if (g.connection_type === "endpoint") heartbeatStatus.set(g.name, "healthy"); // no tunnel; routes follow recent tests
       else if (g.last_heartbeat_at) heartbeatStatus.set(g.name, Date.parse(g.last_heartbeat_at) < staleBefore ? "unhealthy" : "healthy");
