@@ -106,7 +106,7 @@ const ModelDetailPage = () => {
   if (isError) return <div className="p-6 text-sm text-destructive">{t("Could not load the catalogue.")} <Button variant="link" onClick={refetch}>{t("Try again")}</Button></div>;
   if (!m) return <p className="p-6 text-sm text-muted-foreground">{t("Model not found.")}</p>;
 
-  const baseUrl = `${(settings?.api_base_url || "https://llm.garageai.eu").replace(/\/+$/, "")}/v1`;
+  const baseUrl = `${(settings?.api_base_url || "https://api.garageai.eu").replace(/\/+$/, "")}/v1`;
   const modelId = m.poolId ?? m.name;
   const chart = dailyTotals(daily.data ?? []);
   const hasUsage = chart.some((d) => d.tokens > 0);

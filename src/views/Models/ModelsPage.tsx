@@ -45,7 +45,7 @@ export const ModelsPage = () => {
         )}
       </div>
 
-      <ConnectSection defaultModel={defaultModel} baseUrl={settings?.api_base_url || "https://llm.garageai.eu"} />
+      <ConnectSection defaultModel={defaultModel} baseUrl={settings?.api_base_url || "https://api.garageai.eu"} />
     </div>
     </>
   );

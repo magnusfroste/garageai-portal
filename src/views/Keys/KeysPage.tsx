@@ -108,8 +108,8 @@ export const KeysPage = () => {
 
       <section className="min-w-0 space-y-3">
         <h2 className="text-sm font-medium">{t("Base URL")}</h2>
-        <CommandBlock command="https://llm.garageai.eu/v1" />
-        {poolModel && <CommandBlock command={`curl https://llm.garageai.eu/v1/chat/completions \\
+        <CommandBlock command="https://api.garageai.eu/v1" />
+        {poolModel && <CommandBlock command={`curl https://api.garageai.eu/v1/chat/completions \\
   -H "Authorization: Bearer $GARAGE_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify({ model: poolModel, messages: [{ role: "user", content: "Hello" }] })}'`} />}
