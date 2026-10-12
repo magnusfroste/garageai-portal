@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { bridgeProgress, detectOs } from "../../../src/models/services/connectService";
+import { bridgeInstallCommand, bridgeProgress, detectOs } from "../../../src/models/services/connectService";
 import { entryFor } from "../../../supabase/functions/_shared/bridgeLink";
 import type { OnboardingEvent } from "../../../src/models/types/onboarding.types";
 
@@ -8,6 +8,11 @@ test("OS detection picks the right tab", () => {
   expect(detectOs("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")).toBe("windows");
   expect(detectOs("Mozilla/5.0 (X11; Ubuntu; Linux x86_64)")).toBe("linux");
   expect(detectOs("")).toBe("linux");
+});
+
+test("the tunnel switch only appends --tunnel bridge", () => {
+  expect(bridgeInstallCommand(false)).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
+  expect(bridgeInstallCommand(true)).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect --tunnel bridge");
 });
 
 let n = 0;

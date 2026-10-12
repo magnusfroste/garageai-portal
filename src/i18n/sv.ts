@@ -793,6 +793,7 @@ export const sv: Record<string, string> = {
   "Heartbeats come from another machine ({id}) than the one this garage was linked to.": "Hjärtslagen kommer från en annan maskin ({id}) än den garaget länkades till.",
   "Connect this computer": "Anslut den här datorn",
   "Run this in a terminal on the computer with the GPU. It installs GarageAI Bridge, and you approve the computer here in the browser. Nothing secret is in the command.": "Kör detta i en terminal på datorn med GPU:n. Det installerar GarageAI Bridge, och du godkänner datorn här i webbläsaren. Kommandot innehåller inget hemligt.",
+  "Bridge tunnel (new): no NetBird app, and the runtime can stay on localhost": "Bridge-tunnel (nytt): ingen NetBird-app, och runtimen kan ligga kvar på localhost",
   "Coming soon: use the legacy script for now.": "Kommer snart: använd det äldre skriptet så länge.",
   "Windows instructions": "Instruktioner för Windows",
   "Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp…) with a model loaded.": "Ha din modellruntime igång (Ollama, LM Studio, vLLM, llama.cpp…) med en modell laddad.",
