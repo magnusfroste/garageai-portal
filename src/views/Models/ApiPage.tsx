@@ -14,7 +14,7 @@ export const ApiPage = () => {
   const defaultModel =
     models.find((m) => m.is_default && m.garage_tier === "pool")?.model_name ||
     models.find((m) => m.garage_tier === "pool")?.model_name || "";
-  const baseUrl = settings?.api_base_url || "https://llm.garageai.eu";
+  const baseUrl = settings?.api_base_url || "https://api.garageai.eu";
 
   return (
     <>
