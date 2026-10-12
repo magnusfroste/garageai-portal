@@ -23,8 +23,12 @@ export async function getProxyBaseUrl(client?: SupabaseClient): Promise<string> 
         .eq("key", "site_settings")
         .maybeSingle();
       const settings = data?.value as Record<string, unknown> | null;
+      // Internal admin calls (model/new, /model/info, /user/*) must use the gateway's internal host:
+      // the public API host (api_base_url, shown to buyers) blocks admin routes with 403.
+      const internal = (settings?.internal_api_base_url as string | undefined)?.trim();
       const configured = (settings?.api_base_url as string | undefined)?.trim();
-      if (configured) url = configured.replace(/\/+$/, "");
+      if (internal) url = internal.replace(/\/+$/, "");
+      else if (!envFallback && configured) url = configured.replace(/\/+$/, "");
     }
   } catch (e) {
     console.warn("[proxyConfig] Failed to read admin_settings, using env fallback:", e);
