@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { isPublicGatewayHost } from "../../supabase/functions/_shared/proxyConfig";
+import { isPublicGatewayHost } from "../../supabase/functions/_shared/gatewayHostGuard";
 
 describe("internal gateway host guard", () => {
   it("rejects the public API host for internal admin calls", () => {

@@ -1,15 +1,12 @@
 // Shared helper: resolve LiteLLM proxy base URL from admin_settings.
 // Falls back to LITELLM_BASE_URL env var. Trailing slashes are stripped.
+import { isPublicGatewayHost } from "./gatewayHostGuard.ts";
+export { isPublicGatewayHost };
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 let cached: { url: string; expires: number } | null = null;
 const TTL_MS = 60_000;
 
-// Public buyer API hosts block admin routes by design; never use them for internal calls.
-const PUBLIC_GATEWAY_HOSTS = new Set(["api.garageai.eu"]);
-export function isPublicGatewayHost(url: string): boolean {
-  try { return PUBLIC_GATEWAY_HOSTS.has(new URL(url).hostname.toLowerCase()); } catch { return false; }
-}
 
 export async function getProxyBaseUrl(client?: SupabaseClient): Promise<string> {
   const now = Date.now();
