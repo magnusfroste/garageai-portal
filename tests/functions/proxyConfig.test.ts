@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { isPublicGatewayHost } from "../../supabase/functions/_shared/proxyConfig";
 
 describe("internal gateway host guard", () => {
