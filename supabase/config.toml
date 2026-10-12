@@ -34,3 +34,6 @@ verify_jwt = false
 
 [functions.tunnel-assign]
 verify_jwt = false
+
+[functions.check-bridge-release]
+verify_jwt = false
