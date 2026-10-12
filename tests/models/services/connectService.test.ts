@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { bridgeInstallCommand, bridgeProgress, detectOs } from "../../../src/models/services/connectService";
+import { bridgeInstallCommand, bridgeNetbirdCommand, bridgeProgress, detectOs } from "../../../src/models/services/connectService";
 import { entryFor } from "../../../supabase/functions/_shared/bridgeLink";
 import type { OnboardingEvent } from "../../../src/models/types/onboarding.types";
 
@@ -10,9 +10,9 @@ test("OS detection picks the right tab", () => {
   expect(detectOs("")).toBe("linux");
 });
 
-test("the tunnel switch only appends --tunnel bridge", () => {
-  expect(bridgeInstallCommand(false)).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
-  expect(bridgeInstallCommand(true)).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect --tunnel bridge");
+test("the plain command is the tunnel; the NetBird fallback appends --tunnel netbird", () => {
+  expect(bridgeInstallCommand()).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
+  expect(bridgeNetbirdCommand()).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect --tunnel netbird");
 });
 
 let n = 0;
