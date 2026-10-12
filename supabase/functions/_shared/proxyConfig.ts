@@ -1,9 +1,12 @@
 // Shared helper: resolve LiteLLM proxy base URL from admin_settings.
 // Falls back to LITELLM_BASE_URL env var. Trailing slashes are stripped.
+import { isPublicGatewayHost } from "./gatewayHostGuard.ts";
+export { isPublicGatewayHost };
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 let cached: { url: string; expires: number } | null = null;
 const TTL_MS = 60_000;
+
 
 export async function getProxyBaseUrl(client?: SupabaseClient): Promise<string> {
   const now = Date.now();
@@ -27,8 +30,9 @@ export async function getProxyBaseUrl(client?: SupabaseClient): Promise<string> 
       // the public API host (api_base_url, shown to buyers) blocks admin routes with 403.
       const internal = (settings?.internal_api_base_url as string | undefined)?.trim();
       const configured = (settings?.api_base_url as string | undefined)?.trim();
-      if (internal) url = internal.replace(/\/+$/, "");
-      else if (!envFallback && configured) url = configured.replace(/\/+$/, "");
+      if (internal && !isPublicGatewayHost(internal)) url = internal.replace(/\/+$/, "");
+      else if (internal) console.error("[proxyConfig] internal_api_base_url points at the public API host (blocks admin routes); ignoring it");
+      if (!url && configured && !isPublicGatewayHost(configured)) url = configured.replace(/\/+$/, "");
     }
   } catch (e) {
     console.warn("[proxyConfig] Failed to read admin_settings, using env fallback:", e);
