@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { newestBridgeRelease } from "../_shared/bridgeVersions.ts";
+import { parseBridgeUpdate, shouldPromote } from "../_shared/bridgeUpdate.ts";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 Deno.serve(async (req) => {
@@ -28,9 +29,20 @@ Deno.serve(async (req) => {
     const release = newestBridgeRelease(releases);
     if (!release?.version) return json({ error: "No Bridge release found" }, 404);
     const checked_at = new Date().toISOString();
-    const { error } = await admin.rpc("record_bridge_release", { p_version: release.version, p_tag: release.tag, p_checked_at: checked_at });
+    const { error } = await admin.rpc("record_bridge_release", { p_version: release.version, p_tag: release.tag, p_checked_at: checked_at, p_published_at: release.published_at });
     if (error) throw error;
-    return json({ ...release, checked_at });
+    // Auto mode: promote once the release is old enough and one of our garages already runs it.
+    const [{ data: upd }, { data: garages }] = await Promise.all([
+      admin.from("admin_settings").select("value").eq("key", "bridge_update").maybeSingle(),
+      admin.from("garages").select("agent, last_heartbeat_at"),
+    ]);
+    const promoted = shouldPromote(parseBridgeUpdate(upd?.value), release, garages ?? []);
+    if (promoted) {
+      const { error: pErr } = await admin.rpc("set_bridge_update", { p_stable: promoted });
+      if (pErr) throw pErr;
+      console.log("[check-bridge-release] promoted to stable", promoted);
+    }
+    return json({ ...release, checked_at, promoted });
   } catch (e) {
     console.error("[check-bridge-release]", e instanceof Error ? e.message : "Unknown error");
     return json({ error: e instanceof Error ? e.message : "Release check failed" }, 502);
