@@ -1,6 +1,6 @@
 import { expect, test, mock } from "bun:test";
-import { valid, lt } from "semver";
-mock.module("npm:semver@7.8.5", () => ({ valid, lt }));
+import { valid, lt, gt } from "semver";
+mock.module("npm:semver@7.8.5", () => ({ valid, lt, gt }));
 const module = await import("../../supabase/functions/_shared/bridgeVersions.ts");
 
 test("newest published Bridge release includes prereleases and excludes drafts and other tags", () => {

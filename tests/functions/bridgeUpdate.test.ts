@@ -1,5 +1,7 @@
-import { expect, test } from "bun:test";
-import { heartbeatBridgeFields, parseBridgeUpdate, shouldPromote } from "../../supabase/functions/_shared/bridgeUpdate";
+import { expect, test, mock } from "bun:test";
+import { valid, lt, gt } from "semver";
+mock.module("npm:semver@7.8.5", () => ({ valid, lt, gt }));
+const { heartbeatBridgeFields, parseBridgeUpdate, shouldPromote } = await import("../../supabase/functions/_shared/bridgeUpdate.ts");
 import { parseAgent } from "../../supabase/functions/_shared/agentReport";
 
 const now = Date.parse("2026-10-14T12:00:00Z");
