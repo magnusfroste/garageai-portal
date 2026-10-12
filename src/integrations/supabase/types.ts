@@ -760,6 +760,10 @@ export type Database = {
           status: string
           terms_accepted_at: string | null
           terms_version: string | null
+          transport: string
+          tunnel_assigned_at: string | null
+          tunnel_ip: string | null
+          tunnel_public_key: string | null
           updated_at: string
         }
         Insert: {
@@ -805,6 +809,10 @@ export type Database = {
           status?: string
           terms_accepted_at?: string | null
           terms_version?: string | null
+          transport?: string
+          tunnel_assigned_at?: string | null
+          tunnel_ip?: string | null
+          tunnel_public_key?: string | null
           updated_at?: string
         }
         Update: {
@@ -850,6 +858,10 @@ export type Database = {
           status?: string
           terms_accepted_at?: string | null
           terms_version?: string | null
+          transport?: string
+          tunnel_assigned_at?: string | null
+          tunnel_ip?: string | null
+          tunnel_public_key?: string | null
           updated_at?: string
         }
         Relationships: []
