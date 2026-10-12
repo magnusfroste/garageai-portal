@@ -958,6 +958,27 @@ export type Database = {
         }
         Relationships: []
       }
+      market_prices: {
+        Row: {
+          fetched_at: string
+          input_per_m: number
+          model_id: string
+          output_per_m: number
+        }
+        Insert: {
+          fetched_at?: string
+          input_per_m: number
+          model_id: string
+          output_per_m: number
+        }
+        Update: {
+          fetched_at?: string
+          input_per_m?: number
+          model_id?: string
+          output_per_m?: number
+        }
+        Relationships: []
+      }
       onboarding_events: {
         Row: {
           arch: string | null
