@@ -1,7 +1,7 @@
 # Project architecture
 
 - Public garage cards/headers use shared public service/header, aggregate RPCs and canonical identities, never runtime ids.
-- Flow stays repositories → services/models → hooks → views, so data and UI stay independent.
+- Flow: repositories → services/models → hooks → views.
 - Derive admin garage status, attention, filtering and sorting in the shared presentation service, so all admin views agree.
 - Keep metadata in site_settings; GarageAIMark/useId avoids clashes. Bridge version services own semver/pins; atomic RPCs preserve pins.
 - Keep signup intent as profile metadata, never an authorization role; roles stay in `user_roles`.
@@ -9,7 +9,7 @@
 - Centralize runtime metadata, allowed ports and onboarding tool; resolve demand IDs by runtime to match install filters.
 - Compute garage reliability grades only in the `garage_reliability` database function, fed by the five-minute cron, so every view agrees.
 - Define portal navigation groups only in `src/models/services/navigation.ts`; public-readable pages use `PublicOrAppLayout`, so visitors and users share routes.
-- Build the buyer catalogue (one entry per base model, garages as providers) only in `catalogService.buildCatalog` from public data (curated_models + public garage RPCs), so list and model pages agree.
+- Build the buyer catalogue (one entry per base model, garages as providers) only in `catalogService.buildCatalog` from public data (curated_models + public garage RPCs); pool weights/shares come only from `_shared/poolPricing.ts`.
 - Track why a catalogue model is off in `curated_models.disabled_reason` (admin vs failed_test); only syncModels re-enables failed_test rows on a pass, never admin-disabled ones.
 - Decide tool-calling support only from the acceptance-test probe (`garage_model_tests.supports_tools`, public via `garage_tool_support`); chat backend and UI share one "garage/<g>/<m> vs pool" match.
 - Route user-facing strings through `t()` (`src/i18n`, English source, translations in `src/i18n/<lang>.ts`); site_settings text is English with `translations.<lang>` overrides merged only in `useSiteSettings`.
