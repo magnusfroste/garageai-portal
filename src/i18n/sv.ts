@@ -742,6 +742,8 @@ export const sv: Record<string, string> = {
   "Register (acceptance test)": "Registrera (acceptanstest)",
   "Bridge says what to do in your terminal; fix it and run garageai connect again.": "Bridge berättar i terminalen vad du ska göra; åtgärda det och kör garageai connect igen.",
   "Go to My garages": "Gå till Mina garage",
+  "Which models you offer, and at what price, you decide under My garages. New models you load show up there within 5 minutes; they are not offered until you say so.": "Vilka modeller du erbjuder, och till vilket pris, bestämmer du under Mina garage. Nya modeller du laddar dyker upp där inom 5 minuter; de erbjuds inte förrän du säger till.",
+  "After connecting, choose the models to offer and their prices under My garages.": "Efter anslutningen väljer du vilka modeller som ska erbjudas och deras priser under Mina garage.",
   "Auto": "Auto",
   "One model name that always answers: tried in this order, falling over to the next when one fails.": "Ett modellnamn som alltid svarar: provas i den här ordningen och går vidare till nästa när en fallerar.",
   "Auto answers with up to {n} models; context window = the smallest in the list ({x} tokens); tools: {tools} (all entries must support tools)": "Auto svarar med upp till {n} modeller; kontextfönster = det minsta i listan ({x} tokens); verktyg: {tools} (alla poster måste stödja verktyg)",

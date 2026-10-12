@@ -57,6 +57,7 @@ const ConnectPage = () => {
           </Collapsible>}
           {os !== "windows" && <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp…) with a model loaded.")}</li>
+            <li>{t("After connecting, choose the models to offer and their prices under My garages.")}</li>
           </ul>}
           {waiting && os !== "windows" && (
             <div className="space-y-1 rounded-md border p-3 text-sm">

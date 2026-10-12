@@ -57,6 +57,7 @@ export const BridgeLiveProgress = ({ garageId }: { garageId: string }) => {
               {passed.map((m) => <li key={m.model} className="flex justify-between gap-2"><span className="break-all font-mono">{m.model}</span>{m.tokens_per_second != null && <span className="tabular-nums text-muted-foreground">{m.tokens_per_second} tok/s</span>}</li>)}
             </ul>
           )}
+          <p className="text-sm text-muted-foreground">{t("Which models you offer, and at what price, you decide under My garages. New models you load show up there within 5 minutes; they are not offered until you say so.")}</p>
           <Button asChild><Link to="/dashboard/garages">{t("Go to My garages")}</Link></Button>
         </div>
       )}
