@@ -1,5 +1,6 @@
 // Garage routing: LiteLLM deployments must exist ONLY for sellable garage models.
 import { assignPoolWeights } from "./poolPricing.ts";
+import { deploymentBody } from "./deploymentBody.ts";
 import { isProbeDeployment, isStaleProbe } from "./probeDeployments.ts";
 // Desired state = garages table + latest acceptance/probe tests + curated_models admin choices.
 // reconcileGarageRouting compares it with LiteLLM /model/info and adds/removes deployments idempotently.
@@ -107,18 +108,6 @@ async function buildDeploymentSpec(g: RoutingGarage, keys: Map<string, string>, 
   if (!apiBase) return null;
   const apiKey = keys.get(g.id) ?? null;
   return { ...p, apiBase, apiKey, keyFp: await keyFingerprint(apiKey), garage: g };
-}
-
-/** Exactly what /model/new receives; pool deployments carry the simple-shuffle `weight`. */
-export function deploymentBody(s: Omit<DeploymentSpec, "keyFp"> & { keyFp: string }) {
-  return {
-      model_name: s.route,
-      litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey || NO_KEY, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6, cache_read_input_token_cost: s.cacheRead / 1e6,
-        ...(s.tier === "pool" && s.weight != null ? { weight: s.weight } : {}) },
-      model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh", key_fingerprint: s.keyFp, cache_read_input_token_cost: s.cacheRead / 1e6,
-        ...(s.order != null ? { order: s.order } : {}),
-        ...(s.limits ? { max_input_tokens: s.limits.maxInput, max_output_tokens: s.limits.maxOutput, max_tokens: s.limits.maxInput } : {}) },
-  };
 }
 
 async function addDeployment(base: string, masterKey: string, s: DeploymentSpec) {
