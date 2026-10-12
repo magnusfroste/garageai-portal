@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Replace portal marks and favicon; add Apple touch icon; verify unchanged theme/layout
+- [x] Replace portal marks and favicon; add Apple touch icon; verified signed-in /connect and /bridge/link plus auth; theme/layout unchanged
 
 - [x] Remove portal legacy scripts, retain Bridge linking and advanced token renewal; Swedish updated, 90 tests pass, build clean
 - [ ] Verify signed-in Bridge-only controls — blocked: requesting user's email has no app account/session
