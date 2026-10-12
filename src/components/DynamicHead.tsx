@@ -27,14 +27,15 @@ export const DynamicHead = () => {
     setMeta("property", "og:image", settings.og_image_url);
 
     // Favicon
-    if (settings.favicon_url) {
+    {
       let link = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
       if (!link) {
         link = document.createElement("link");
         link.rel = "icon";
         document.head.appendChild(link);
       }
-      link.href = settings.favicon_url;
+      link.type = "image/svg+xml";
+      link.href = "/favicon.svg";
     }
 
     // JSON-LD
