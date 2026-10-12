@@ -1,0 +1,1 @@
+ALTER TABLE public.garages ADD COLUMN IF NOT EXISTS paused_by_admin boolean NOT NULL DEFAULT false;

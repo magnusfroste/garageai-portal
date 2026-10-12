@@ -30,6 +30,7 @@ import { useGarageRevenue } from "@/hooks/useGarageRevenue";
 import { presentAdminGarage, matchesAdminGarage, sortAdminGarages, type AdminGarageFilter, type AdminGarageTypeFilter } from "@/models/services/adminGaragePresentation";
 import { GarageTable } from "./garages/GarageTable";
 import { GarageMobileList } from "./garages/GarageMobileList";
+import { GaragePauseDialog } from "@/views/Garages/components/GarageOperatorControls";
 import { GarageDetailSheet } from "./garages/GarageDetailSheet";
 import type { GarageActionHandlers, AdminGarageRow } from "./garages/types";
 import { useLatestOnboardingEvents } from "@/hooks/useOnboardingEvents";
@@ -91,6 +92,7 @@ export const GaragePanel = () => {
   const [priceGarage, setPriceGarage] = useState<Garage | null>(null);
   const [deleteGarage, setDeleteGarage] = useState<Garage | null>(null);
   const [confirmGarage, setConfirmGarage] = useState<Garage | null>(null);
+  const [pauseGarage, setPauseGarage] = useState<Garage | null>(null);
   const [toggling, setToggling] = useState(false);
   const [retesting, setRetesting] = useState<string | null>(null);
   const { toast } = useToast();
@@ -199,6 +201,7 @@ export const GaragePanel = () => {
     onEditPrices: setPriceGarage,
     onRetest: (garage) => { void handleRetest(garage); },
     onNewCredential: (garage) => garage.connection_type === "endpoint" ? (setNewKey(""), setKeyGarage(garage)) : handleNewToken(garage),
+    onTogglePaused: setPauseGarage,
     onToggleDisabled: setConfirmGarage,
     onDelete: setDeleteGarage,
     retesting,
@@ -258,6 +261,7 @@ export const GaragePanel = () => {
         ) : rows.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">{t("No garages match these filters.")}</p> : <><GarageTable rows={rows} actions={actions} /><GarageMobileList rows={rows} actions={actions} /></>}
       </CardContent>
 
+      <GaragePauseDialog garage={pauseGarage} admin onClose={() => setPauseGarage(null)} onDone={invalidate} />
       <GarageDetailSheet row={selectedRow} open={!!selectedGarage} onOpenChange={(open) => !open && setSelectedGarage(null)} pending={pending} onToggle={setOffered} onAlias={setAlias} onSaved={invalidate} />
       {priceGarage && <EditGaragePrices garage={priceGarage} models={byGarage.get(priceGarage.id) ?? []} onSaved={invalidate} open onOpenChange={(open) => !open && setPriceGarage(null)} hideTrigger />}
       {deleteGarage && <DeleteGarageButton garage={deleteGarage} onDone={invalidate} open onOpenChange={(open) => !open && setDeleteGarage(null)} hideTrigger />}

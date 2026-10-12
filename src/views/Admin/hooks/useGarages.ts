@@ -40,6 +40,7 @@ export interface Garage {
   runtime_error?: string | null;
   paused_at?: string | null;
   paused_reason?: string | null;
+  paused_by_admin?: boolean;
   terms_accepted_at?: string | null;
   terms_version?: string | null;
   location_display?: string;

@@ -87,7 +87,7 @@ const MyGaragesPage = () => {
               <CardContent className="pt-6 space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-mono">{g.name}</span>
-                  {g.paused_at && <PausedBadge reason={g.paused_reason} />}
+                  {g.paused_at && <PausedBadge reason={g.paused_reason} byAdmin={g.paused_by_admin} />}
                   <LocationBadge location={locations.get(g.name)} />
                    {g.runtime && <Badge variant="outline" className="text-[10px]">{runtimeLabel(g.runtime)}{g.port ? `:${g.port}` : ""}</Badge>}
                   <span className="text-xs text-muted-foreground ml-auto">{t("Registered:")} {relativeTimeSv(g.last_registered_at)}</span>

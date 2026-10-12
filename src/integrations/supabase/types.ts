@@ -801,6 +801,7 @@ export type Database = {
           netbird_peer_id: string | null
           operator_id: string | null
           paused_at: string | null
+          paused_by_admin: boolean
           paused_reason: string | null
           pool_cache_read_cost_per_million: number | null
           pool_input_cost_per_million: number
@@ -850,6 +851,7 @@ export type Database = {
           netbird_peer_id?: string | null
           operator_id?: string | null
           paused_at?: string | null
+          paused_by_admin?: boolean
           paused_reason?: string | null
           pool_cache_read_cost_per_million?: number | null
           pool_input_cost_per_million?: number
@@ -899,6 +901,7 @@ export type Database = {
           netbird_peer_id?: string | null
           operator_id?: string | null
           paused_at?: string | null
+          paused_by_admin?: boolean
           paused_reason?: string | null
           pool_cache_read_cost_per_million?: number | null
           pool_input_cost_per_million?: number

@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { GarageHealthIndicators, GarageModelList } from "@/views/Garages/components/GarageHealth";
 import { ToolsTestBadge } from "@/views/Garages/components/GarageShared";
 import { GarageCountryCell } from "../GarageCountryEditor";
+import { GaragePauseButton } from "@/views/Garages/components/GarageOperatorControls";
 import { GarageStatusCell } from "./GarageStatusCell";
 import type { AdminGarageRow } from "./types";
 import { GarageOnboardingSection } from "./GarageOnboardingSection";
@@ -42,6 +43,7 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
             <div className="mt-1 rounded-md border bg-muted/40 p-2">{provider ? <Building2 className="h-4 w-4" /> : <Network className="h-4 w-4" />}</div>
             <div className="min-w-0 flex-1"><SheetTitle className="truncate font-mono">{garage.name}</SheetTitle><SheetDescription>{garage.display_name || t(provider ? "Provider" : "Garage")}</SheetDescription></div>
             <GarageStatusCell view={row.view} />
+            <GaragePauseButton garage={garage} admin onDone={onSaved} />
           </div>
         </SheetHeader>
         <div className="space-y-6 px-5 py-5">
