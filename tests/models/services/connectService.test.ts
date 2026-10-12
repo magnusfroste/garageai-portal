@@ -10,6 +10,11 @@ test("OS detection picks the right tab", () => {
   expect(detectOs("")).toBe("linux");
 });
 
+test("the tunnel switch only appends --tunnel bridge", () => {
+  expect(bridgeInstallCommand(false)).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
+  expect(bridgeInstallCommand(true)).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect --tunnel bridge");
+});
+
 let n = 0;
 const ev = (step: string, status: OnboardingEvent["status"], message: string | null = null): OnboardingEvent =>
   ({ id: String(n), garage_id: "g", created_at: `2026-10-11T12:00:${String(n++).padStart(2, "0")}Z`, step, status, message, script_version: null, node_name: null, runtime: null, port: null, os: null, arch: null, gpu: null, memory_gb: null });
