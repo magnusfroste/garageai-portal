@@ -185,6 +185,7 @@ export type Database = {
           runtime: string | null
           status: string
           suggested_name: string | null
+          transport: string
           user_code: string
         }
         Insert: {
@@ -212,6 +213,7 @@ export type Database = {
           runtime?: string | null
           status?: string
           suggested_name?: string | null
+          transport?: string
           user_code: string
         }
         Update: {
@@ -239,6 +241,7 @@ export type Database = {
           runtime?: string | null
           status?: string
           suggested_name?: string | null
+          transport?: string
           user_code?: string
         }
         Relationships: [

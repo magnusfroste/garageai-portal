@@ -309,6 +309,13 @@
       "when": 1791790234214,
       "tag": "0043_announcements",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791823629650,
+      "tag": "0044_bridge_links_transport",
+      "breakpoints": true
     }
   ]
 }
