@@ -1,5 +1,6 @@
 import type { ReliabilityGrade } from "./reliability.types";
 import type { GarageLocation } from "@/models/services/location";
+import type { PoolSummary } from "@/models/services/poolPricing";
 
 export interface GaragePublicStat {
   garage_name: string;
@@ -38,6 +39,7 @@ export interface GarageOffer {
   /** Display name when this garage is an endpoint provider (company), else null. */
   providerName: string | null;
   location: GarageLocation | null;
+  contextLength?: number | null;
 }
 
 /** Buyer-facing catalogue entry: one per base model name. */
@@ -64,6 +66,8 @@ export interface CatalogModel {
   supportsTools: boolean;
   /** Provider-private model: own name, dedicated tier only, never pooled. */
   privateModel: boolean;
+  /** Pool pricing: from / expected / cap and members with weights (null when not pooled). */
+  pool?: PoolSummary | null;
 }
 
 export type CatalogSort = "popular" | "cheapest" | "fastest" | "reliable";

@@ -5,6 +5,7 @@ import type {
   CatalogFilters, CatalogModel, CatalogSort, GarageDailyTokens, GarageOffer, GaragePublicStat, Price,
 } from "@/models/types/catalog.types";
 import { bestGrade } from "./reliabilityService";
+import { summarisePool } from "./poolPricing";
 import { qualifiesEu, type GarageLocation } from "./location";
 
 const GRADE_RANK: Record<ReliabilityGrade, number> = { Nytt: 0, D: 1, C: 2, B: 3, A: 4 };
@@ -67,6 +68,7 @@ export const buildCatalog = (
         tokens7d: st?.tokens_7d ?? 0,
         providerName: providers.get(g) ?? null,
         location: locations.get(g) ?? null,
+        contextLength: maxOf(list.filter((r) => r.garage === g).map((r) => r.max_input_tokens)),
       };
     });
     const allPrices = list.map((r) => ({ i: r.input_cost_per_million, o: r.output_cost_per_million, c: r.cache_read_cost_per_million ?? null }));
@@ -93,6 +95,9 @@ export const buildCatalog = (
       auto: list.some((r) => r.garage_tier === "auto"),
       supportsTools: list.some((r) => r.garage_tier === "auto") ? list.some((r) => r.supports_tools === true) : tools.some((t) => t.supports_tools && t.model === name && garages.includes(t.garage_name)),
       privateModel,
+      // Routed pool members (one healthy pool row per garage) and their simple-shuffle shares.
+      pool: privateModel ? null : summarisePool(list.filter((r) => r.garage && r.garage_tier === "pool" && r.status !== "unhealthy" && r.input_cost_per_million != null && r.output_cost_per_million != null)
+        .map((r) => ({ garage: r.garage!, input: Number(r.input_cost_per_million), output: Number(r.output_cost_per_million), context: r.max_input_tokens }))),
     });
   }
   return out;
