@@ -1,6 +1,7 @@
 import { corsHeaders, json, NAME_RE, getCaller } from "../_shared/garageAuth.ts";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 import { validateEndpointUrl } from "../_shared/endpointUrl.ts";
+import { GARAGE_DOMAINS, GARAGE_EXTRA_HOSTS } from "../_shared/garageHosts.ts";
 import { modelIdError, storeRuntimeKey } from "../_shared/garageRouting.ts";
 import { registerGarage, type GarageRecord } from "../_shared/registerGarage.ts";
 import { termsAccepted, termsFields } from "../_shared/garageTerms.ts";
@@ -8,12 +9,13 @@ import { toPublicResult } from "../_shared/acceptanceTest.ts";
 
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
 const PRICE_KEYS = ["dedicated_input_cost_per_million", "dedicated_output_cost_per_million", "pool_input_cost_per_million", "pool_output_cost_per_million", "pool_cache_read_cost_per_million", "dedicated_cache_read_cost_per_million"] as const;
-const GARAGE_HOSTS = ["llm.garageai.eu", "app.garageai.eu", "garageai.eu", "portal.liteit.se"];
 
 const bad = (msg: string) => json({ error: msg }, 400);
 
+// Hosts that are ours: a provider endpoint must never point back at the gateway.
+// Whole garageai.eu subtree is blocked via blockedDomains (see _shared/garageHosts.ts).
 async function blockedHosts(admin: Parameters<typeof getProxyBaseUrl>[0]) {
-  const hosts = [...GARAGE_HOSTS];
+  const hosts = [...GARAGE_EXTRA_HOSTS];
   try { hosts.push(new URL(await getProxyBaseUrl(admin)).hostname.toLowerCase()); } catch { /* ignore */ }
   try { hosts.push(new URL(Deno.env.get("SUPABASE_URL") || "").hostname.toLowerCase()); } catch { /* ignore */ }
   return hosts;
@@ -76,7 +78,7 @@ Deno.serve(async (req) => {
     if (!displayName) return bad("display_name is required");
     const declared = typeof body.declared_country === "string" && /^[A-Za-z]{2}$/.test(body.declared_country) ? body.declared_country.toUpperCase() : null;
     let endpointUrl: string;
-    try { endpointUrl = await validateEndpointUrl(body.endpoint_url, { allowPort, blockedHosts: await blockedHosts(admin) }); } catch (e) { return bad((e as Error).message); }
+    try { endpointUrl = await validateEndpointUrl(body.endpoint_url, { allowPort, blockedHosts: await blockedHosts(admin), blockedDomains: [...GARAGE_DOMAINS] }); } catch (e) { return bad((e as Error).message); }
     const models = body.models;
     if (!Array.isArray(models) || models.length < 1 || models.length > 20 || !models.every((m) => typeof m === "string" && MODEL_RE.test(m))) return bad("models must be 1-20 valid model ids");
     for (const m of models as string[]) { const err = modelIdError(m); if (err) return bad(err); }
