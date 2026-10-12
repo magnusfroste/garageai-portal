@@ -158,12 +158,13 @@ async function adminActivity(admin: SupabaseClient) {
 }
 
 async function bridgeVersions(admin: SupabaseClient) {
-  const [setting, garages] = await Promise.all([
+  const [setting, update, garages] = await Promise.all([
     admin.from("admin_settings").select("value").eq("key", "bridge_latest").maybeSingle(),
+    admin.from("admin_settings").select("value").eq("key", "bridge_update").maybeSingle(),
     admin.from("garages").select("name, agent"),
   ]);
-  if (setting.error || garages.error) throw new Error("Bridge version data unavailable");
-  return bridgeVersionsSummary(setting.data?.value, garages.data ?? []);
+  if (setting.error || update.error || garages.error) throw new Error("Bridge version data unavailable");
+  return bridgeVersionsSummary(setting.data?.value, garages.data ?? [], update.data?.value);
 }
 
 Deno.serve(async (req) => {
