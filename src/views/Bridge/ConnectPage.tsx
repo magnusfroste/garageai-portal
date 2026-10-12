@@ -4,20 +4,21 @@ import { Check, ChevronDown, Copy, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useSession } from "@/hooks/useSession";
 import { connectRepository } from "@/data/repositories/connectRepository";
-import { BRIDGE_ONE_LINE, detectOs, type ConnectOs } from "@/models/services/connectService";
+import { bridgeInstallCommand, detectOs, type ConnectOs } from "@/models/services/connectService";
 import { t } from "@/i18n";
 
 const LEGACY_URL = "/dashboard/offer-gpu";
 
-const OneLine = ({ onCopied }: { onCopied: () => void }) => {
+const OneLine = ({ command, onCopied }: { command: string; onCopied: () => void }) => {
   const [copied, setCopied] = useState(false);
-  const copy = async () => { await navigator.clipboard.writeText(BRIDGE_ONE_LINE); setCopied(true); onCopied(); setTimeout(() => setCopied(false), 2000); };
+  const copy = async () => { await navigator.clipboard.writeText(command); setCopied(true); onCopied(); setTimeout(() => setCopied(false), 2000); };
   return (
     <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-3">
-      <code className="min-w-0 flex-1 break-all font-mono text-sm">{BRIDGE_ONE_LINE}</code>
+      <code className="min-w-0 flex-1 break-all font-mono text-sm">{command}</code>
       <Button size="sm" variant="secondary" onClick={copy} aria-label={t("Copy")}>{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}</Button>
     </div>
   );
