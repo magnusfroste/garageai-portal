@@ -42,3 +42,22 @@ test("garage-m4 (16 GB): Add list offers fitting models, skips installed, too-la
   expect(c[0].requestsPerDay).toBe(10);
   expect(c[0].garages).toBe(2);
 });
+
+test("a pull that becomes ready is offered at once; removes and other reports are not", async () => {
+  const { readyToOffer } = await import("../../supabase/functions/_shared/managedModels");
+  const rows: ManagedRow[] = [pull, { model: "old:1b", action: "remove", by: "operator", status: "wanted" }];
+  const { models } = parseAgentModels([{ model: "qwen3:4b", status: "ready", at }, { model: "old:1b", status: "removed", at }]);
+  expect(readyToOffer(rows, applyReports(rows, models))).toEqual(["qwen3:4b"]);
+  const dl = parseAgentModels([{ model: "qwen3:4b", status: "downloading", completed_mb: 10, total_mb: 2600, at }]).models;
+  expect(readyToOffer(rows, applyReports(rows, dl))).toEqual([]);
+});
+test("sizes are stored on every report and a final ready without sizes keeps them (2.6 GB)", async () => {
+  const { progressGb } = await import("../../src/models/services/managedModels");
+  const row: ManagedRow = { ...pull, status: "downloading", completed_mb: 1300, total_mb: 2600 };
+  const [u] = applyReports([row], parseAgentModels([{ model: "qwen3:4b", status: "ready", at }]).models);
+  expect(u.patch.total_mb).toBe(2600);
+  expect(u.patch.completed_mb).toBe(2600);
+  expect(progressGb(u.patch.total_mb)).toBe(2.6);
+  const [d] = applyReports([pull], parseAgentModels([{ model: "qwen3:4b", status: "downloading", completed_mb: 500, total_mb: 2600, at }]).models);
+  expect(d.patch).toMatchObject({ completed_mb: 500, total_mb: 2600 });
+});
