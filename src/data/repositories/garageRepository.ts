@@ -10,6 +10,8 @@ export interface GarageRow {
   last_machine_id?: string | null;
   transport?: "netbird" | "tunnel" | string | null;
   tunnel_ip?: string | null;
+  first_models_at?: string | null;
+  offer_page_seen_at?: string | null;
   id: string;
   name: string;
   operator_id: string | null;

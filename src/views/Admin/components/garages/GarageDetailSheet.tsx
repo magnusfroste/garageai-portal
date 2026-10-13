@@ -14,6 +14,8 @@ import { runtimeLabel } from "@/models/services/garageRuntime";
 import { t } from "@/i18n";
 import { transportLabel } from "@/models/services/transport";
 import { BridgeAgentSection } from "@/views/Garages/components/BridgeAgentSection";
+import { ManagedModelStatusList } from "@/views/Garages/components/ManagedModels";
+import { useManagedModels } from "@/hooks/useManagedModels";
 import { machineMismatch, shortMachineId } from "@/models/services/bridgeLinkService";
 
 const Section = ({ icon: Icon, title, children }: { icon: typeof Server; title: string; children: ReactNode }) => (
@@ -52,6 +54,7 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
             <dl className="grid grid-cols-2 gap-3"><Field label={t("Last gateway check")} value={date(garage.last_gateway_check_at)} /><Field label={t("Last heartbeat")} value={provider ? t("Not applicable") : date(garage.last_heartbeat_at)} /></dl>
           </Section>
           {garage.agent && <><Separator /><BridgeAgentSection agent={garage.agent} at={garage.agent_at ?? null} /></>}
+          <AdminManagedModels garageId={garage.id} />
           <Separator />
           {!provider && <><Section icon={Rocket} title={t("Onboarding")}><GarageOnboardingSection garageId={garage.id} /></Section><Separator /></>}
           <Section icon={Server} title={t("Models")}>
@@ -77,4 +80,8 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
       </SheetContent>
     </Sheet>
   );
+};
+const AdminManagedModels = ({ garageId }: { garageId: string }) => {
+  const { byGarage, cancel, pending } = useManagedModels([garageId]);
+  return <ManagedModelStatusList rows={byGarage.get(garageId) ?? []} busy={pending} onCancel={(model) => cancel({ garageId, model })} />;
 };
