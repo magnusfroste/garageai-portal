@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ManagedRow } from "@/models/services/managedModels";
 
 export interface ManagedModelRow extends ManagedRow { garage_id: string; requested_at: string }
-export interface CuratedPoolRow { model_name: string; ollama_tag: string | null }
+export interface CuratedPoolRow { model_name: string; ollama_tag: string | null; download_bytes: number | null }
 
 export const managedModelRepository = {
   async list(garageIds: string[]): Promise<ManagedModelRow[]> {
@@ -30,7 +30,7 @@ export const managedModelRepository = {
   },
   /** Pool models with a known Ollama tag (the fetchable catalogue). */
   async fetchable(): Promise<CuratedPoolRow[]> {
-    const { data, error } = await supabase.from("curated_models").select("model_name, ollama_tag").eq("enabled", true).not("ollama_tag", "is", null).not("model_name", "like", "probe/%");
+    const { data, error } = await supabase.from("curated_models").select("model_name, ollama_tag, download_bytes").eq("enabled", true).not("ollama_tag", "is", null).not("model_name", "like", "probe/%");
     if (error) throw error;
     const seen = new Set<string>();
     return ((data ?? []) as CuratedPoolRow[]).filter((r) => r.model_name && !seen.has(r.model_name) && seen.add(r.model_name));
