@@ -612,6 +612,7 @@ export type Database = {
           dedicated_cache_read_cost_per_million: number | null
           garage_id: string
           installed: boolean
+          missing_heartbeats: number
           model: string
           offered: boolean
           paused_at: string | null
@@ -627,6 +628,7 @@ export type Database = {
           dedicated_cache_read_cost_per_million?: number | null
           garage_id: string
           installed?: boolean
+          missing_heartbeats?: number
           model: string
           offered?: boolean
           paused_at?: string | null
@@ -642,6 +644,7 @@ export type Database = {
           dedicated_cache_read_cost_per_million?: number | null
           garage_id?: string
           installed?: boolean
+          missing_heartbeats?: number
           model?: string
           offered?: boolean
           paused_at?: string | null
