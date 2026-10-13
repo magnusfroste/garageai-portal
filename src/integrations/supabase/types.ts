@@ -316,6 +316,7 @@ export type Database = {
           cache_read_cost_per_million: number | null
           created_at: string
           disabled_reason: string | null
+          download_bytes: number | null
           enabled: boolean
           garage: string | null
           garage_tier: string | null
@@ -331,6 +332,7 @@ export type Database = {
           ollama_tag: string | null
           output_cost_per_million: number | null
           provider: string
+          size_checked_at: string | null
           status: string
           supports_tools: boolean | null
           updated_at: string
@@ -339,6 +341,7 @@ export type Database = {
           cache_read_cost_per_million?: number | null
           created_at?: string
           disabled_reason?: string | null
+          download_bytes?: number | null
           enabled?: boolean
           garage?: string | null
           garage_tier?: string | null
@@ -354,6 +357,7 @@ export type Database = {
           ollama_tag?: string | null
           output_cost_per_million?: number | null
           provider?: string
+          size_checked_at?: string | null
           status?: string
           supports_tools?: boolean | null
           updated_at?: string
@@ -362,6 +366,7 @@ export type Database = {
           cache_read_cost_per_million?: number | null
           created_at?: string
           disabled_reason?: string | null
+          download_bytes?: number | null
           enabled?: boolean
           garage?: string | null
           garage_tier?: string | null
@@ -377,6 +382,7 @@ export type Database = {
           ollama_tag?: string | null
           output_cost_per_million?: number | null
           provider?: string
+          size_checked_at?: string | null
           status?: string
           supports_tools?: boolean | null
           updated_at?: string

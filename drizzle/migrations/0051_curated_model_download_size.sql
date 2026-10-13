@@ -1,0 +1,1 @@
+ALTER TABLE public.curated_models ADD COLUMN IF NOT EXISTS download_bytes bigint, ADD COLUMN IF NOT EXISTS size_checked_at timestamptz;
