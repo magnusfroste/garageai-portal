@@ -36,3 +36,6 @@
 - [x] Run typechecks and focused/live tests
 - [x] Deploy backend functions and publish the frontend (previous review)
 - [x] Report migration, test results, webhook URL/event, and external secret blocker (previous review)
+
+- [x] Managed models step 1 (Add/Remove on My garages) and step 2 (offer page)
+- [ ] Managed models step 3: GarageAI Smart — waits for go-ahead

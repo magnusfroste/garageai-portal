@@ -1,7 +1,7 @@
 # Project architecture
 
 - Public garage cards/headers use shared public service/header, aggregate RPCs and canonical identities, never runtime ids.
-- Flow: repositories → services/models → hooks → views.
+- Flow: repositories → services/models → hooks → views. Managed models: rules only in `_shared/managedModels.ts`; operator changes only via request/cancel RPCs.
 - Derive admin garage status, attention, filtering and sorting in the shared presentation service, so all admin views agree.
 - Keep metadata in site_settings; GarageAIMark/useId avoids clashes. Bridge version services own semver/pins; atomic RPCs preserve pins.
 - Keep signup intent as profile metadata, never an authorization role; roles stay in `user_roles`.
