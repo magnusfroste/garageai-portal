@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { modelsToRetest, isModelSellable, deploymentId, type RoutingGarage } from "../../supabase/functions/_shared/garageRouting";
 import { inventoryMisses } from "../../supabase/functions/_shared/garageModels";
 
