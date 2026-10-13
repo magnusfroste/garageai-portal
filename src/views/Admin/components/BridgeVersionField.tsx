@@ -15,6 +15,7 @@ export const BridgeVersionField = () => {
     <h3 className="font-semibold">{t("Bridge updates")}</h3>
     <dl className="grid grid-cols-2 gap-2 text-sm">
       <dt className="text-muted-foreground">{t("Stable version")}</dt><dd className="font-mono">{update.stable ?? "—"}</dd>
+      <dt className="text-muted-foreground">{t("Made stable")}</dt><dd>{update.stable_set_at ? `${new Date(update.stable_set_at).toLocaleString()}${update.stable_set_by ? ` · ${t("by {who}", { who: update.stable_set_by })}` : ""}` : "—"}</dd>
       <dt className="text-muted-foreground">{t("Latest release")}</dt><dd className="font-mono">{isLoading ? t("Loading...") : release ?? "—"}</dd>
       <dt className="text-muted-foreground">{t("Last checked")}</dt><dd>{latest.checked_at ? new Date(latest.checked_at).toLocaleString() : "—"}</dd>
     </dl>

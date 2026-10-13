@@ -18,7 +18,8 @@ const statusText = (r: ManagedModelRow) => {
   if (r.status === "wanted") return t("waiting for Bridge…");
   if (r.status === "failed") return `${t("failed")}: ${r.error ?? "—"} · ${t("Bridge retries in an hour")}`;
   if (r.status === "refused") return `${t("refused by Bridge")}: ${r.error ?? "—"}`;
-  return t("ready");
+  const gb = progressGb(r.total_mb);
+  return gb != null ? `${t("ready")} · ${gb} GB` : t("ready");
 };
 
 /** Status of Bridge-fetched models (garage detail, admin sheet). */

@@ -5,7 +5,7 @@ import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts, applyInventoryMisses } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
 import { heartbeatBridgeFields, parseBridgeUpdate } from "../_shared/bridgeUpdate.ts";
-import { parseAgentModels, applyReports, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
+import { parseAgentModels, applyReports, readyToOffer, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
 import { parseMachineId, claimMachineId } from "../_shared/bridgeLink.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type" };
@@ -40,12 +40,19 @@ Deno.serve(async (req) => {
     await admin.from("garages").update({ last_heartbeat_at: now, ...machinePatch, ...firstModels, ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
     // Managed models: store Bridge's reports, answer with what the portal still wants. Never rejects the heartbeat.
     let wanted: WantedModel[] = [];
+    let offerNow: string[] = [];
     try {
       const reports = parseAgentModels((body.agent as Record<string, unknown> | undefined)?.models);
       if (reports.errors.length) console.warn("[node-heartbeat] ignored agent.models entries", garage.name, reports.errors);
-      const { data: rows } = await admin.from("garage_managed_models").select("model, action, by, status").eq("garage_id", garage.id);
+      const { data: rows } = await admin.from("garage_managed_models").select("model, action, by, status, completed_mb, total_mb").eq("garage_id", garage.id);
       const current = (rows ?? []) as ManagedRow[];
-      for (const u of applyReports(current, reports.models)) {
+      const updates = applyReports(current, reports.models);
+      offerNow = readyToOffer(current, updates).filter((m) => payload.models.includes(m));
+      for (const u of updates) {
+        if (u.patch.status === "ready" && u.patch.total_mb == null) { // Bridge sent no size: use the registry's
+          const { data: cm } = await admin.from("curated_models").select("download_bytes").eq("ollama_tag", u.model).not("download_bytes", "is", null).limit(1).maybeSingle();
+          if (cm?.download_bytes) { u.patch.total_mb = Math.round(Number(cm.download_bytes) / 1e6); u.patch.completed_mb = u.patch.total_mb; }
+        }
         await admin.from("garage_managed_models").update(u.patch).eq("garage_id", garage.id).eq("model", u.model);
         const row = current.find((r) => r.model === u.model); if (row && u.patch.status) row.status = u.patch.status;
       }
@@ -60,7 +67,7 @@ Deno.serve(async (req) => {
     const removed = [...previous].filter((model) => !current.has(model));
     const contextChanges = await changedContexts(admin, garage.id, payload.contexts ?? {});
     const contextChanged = Object.keys(contextChanges).some((m) => previous.has(m));
-    const changed = added.length > 0 || removedRows.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
+    const changed = offerNow.length > 0 || added.length > 0 || removedRows.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
 
     if (!changed) {
       if (garage.status === "offline") {
@@ -75,7 +82,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, changed: false, wanted_models: wanted, ...bridge });
     }
 
-    const result = await registerGarage(admin, garage, payload, { testOnly: added });
+    const result = await registerGarage(admin, garage, payload, { testOnly: [...new Set([...added, ...offerNow])], offer: offerNow });
     return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), wanted_models: wanted, ...bridge });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";

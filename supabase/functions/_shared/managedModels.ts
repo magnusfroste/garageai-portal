@@ -42,10 +42,17 @@ export function applyReports(rows: ManagedRow[], reports: AgentModelReport[]): A
   for (const rep of reports) {
     const row = byModel.get(rep.model);
     if (!row || !isOpen(row) || !ACCEPTS[row.action].has(rep.status)) continue;
-    out.push({ model: rep.model, patch: { status: rep.status, completed_mb: rep.completed_mb, total_mb: rep.total_mb, error: rep.error, reported_at: rep.at } });
+    // Sizes: a report without them never clears known values; ready means the whole download is done.
+    const total = rep.total_mb ?? row.total_mb ?? null;
+    const completed = rep.status === "ready" ? (rep.completed_mb ?? total) : (rep.completed_mb ?? row.completed_mb ?? null);
+    out.push({ model: rep.model, patch: { status: rep.status, completed_mb: completed, total_mb: total, error: rep.error, reported_at: rep.at } });
   }
   return out;
 }
+
+/** Pulls that just became ready: asking for a model is the decision to offer it (no second click). */
+export const readyToOffer = (rows: ManagedRow[], updates: Array<{ model: string; patch: Partial<ManagedRow> }>) =>
+  updates.filter((u) => u.patch.status === "ready" && rows.find((r) => r.model === u.model)?.action === "pull").map((u) => u.model);
 
 // ---------- Fit rule ----------
 /** Fallback only, when the registry gives no size: GB ≈ parameters in B × 0.6 (Q4). */

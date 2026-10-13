@@ -12,11 +12,12 @@ export const parseBridgeLatest = (raw: unknown): BridgeLatest => {
 };
 /** Target version garages should run: the portal's stable (bridge_update), else pin, else latest release. */
 export const effectiveBridgeVersion = (s: BridgeLatest, stable?: string | null) => stable ?? s.pinned ?? s.version;
-export interface BridgeUpdate { stable: string | null; mode: "manual" | "auto"; auto_after_hours: number }
+export interface BridgeUpdate { stable: string | null; mode: "manual" | "auto"; auto_after_hours: number; stable_set_at: string | null; stable_set_by: string | null }
 export const parseBridgeUpdate = (raw: unknown): BridgeUpdate => {
   const s = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
   const h = Number(s.auto_after_hours);
-  return { stable: bridgeVersion(s.stable), mode: s.mode === "manual" ? "manual" : "auto", auto_after_hours: Number.isFinite(h) && h >= 0 ? h : 24 };
+  return { stable: bridgeVersion(s.stable), mode: s.mode === "manual" ? "manual" : "auto", auto_after_hours: Number.isFinite(h) && h >= 0 ? h : 24,
+    stable_set_at: typeof s.stable_set_at === "string" ? s.stable_set_at : typeof s.stable_at === "string" ? s.stable_at : null, stable_set_by: typeof s.stable_set_by === "string" ? s.stable_set_by.slice(0, 120) : null };
 };
 export type BridgeUpdateState = { kind: "none" } | { kind: "current"; version: string } | { kind: "updating"; version: string; target: string } | { kind: "failed"; version: string | null; error: string } | { kind: "off"; version: string | null };
 /** Admin Bridge column: failed > auto-update off > updating > version. */
