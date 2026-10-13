@@ -75,3 +75,27 @@ export async function storeContexts(admin: SupabaseClient, garageId: string, con
     await admin.from("garage_models").update({ context_length }).eq("garage_id", garageId).eq("model", model);
   }
 }
+
+/** A model missing from this many consecutive heartbeats is removed from the garage. */
+export const MISSING_HEARTBEATS_REMOVE = 3;
+
+/** Heartbeat is the only source of served models: count misses, reset reported ones, remove after N misses. */
+export function inventoryMisses(rows: Array<{ model: string; missing_heartbeats: number }>, reported: string[], n = MISSING_HEARTBEATS_REMOVE) {
+  const seen = new Set(reported);
+  const reset: string[] = [], bump: Array<{ model: string; missing_heartbeats: number }> = [], remove: string[] = [];
+  for (const r of rows) {
+    if (seen.has(r.model)) { if (r.missing_heartbeats) reset.push(r.model); continue; }
+    const next = (r.missing_heartbeats ?? 0) + 1;
+    if (next >= n) remove.push(r.model); else bump.push({ model: r.model, missing_heartbeats: next });
+  }
+  return { reset, bump, remove };
+}
+
+export async function applyInventoryMisses(admin: SupabaseClient, garageId: string, reported: string[]) {
+  const { data } = await admin.from("garage_models").select("model, missing_heartbeats").eq("garage_id", garageId);
+  const { reset, bump, remove } = inventoryMisses((data || []) as Array<{ model: string; missing_heartbeats: number }>, reported);
+  if (reset.length) await admin.from("garage_models").update({ missing_heartbeats: 0 }).eq("garage_id", garageId).in("model", reset);
+  for (const b of bump) await admin.from("garage_models").update({ missing_heartbeats: b.missing_heartbeats, installed: false }).eq("garage_id", garageId).eq("model", b.model);
+  if (remove.length) await admin.from("garage_models").delete().eq("garage_id", garageId).in("model", remove);
+  return remove;
+}

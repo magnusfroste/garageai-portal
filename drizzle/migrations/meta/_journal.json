@@ -351,6 +351,13 @@
       "when": 1791889872346,
       "tag": "0049_managed_models",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1791892353842,
+      "tag": "0050_garage_models_missing_heartbeats",
+      "breakpoints": true
     }
   ]
 }

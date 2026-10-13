@@ -1,0 +1,1 @@
+ALTER TABLE public.garage_models ADD COLUMN IF NOT EXISTS missing_heartbeats integer NOT NULL DEFAULT 0;

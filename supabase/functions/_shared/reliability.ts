@@ -6,7 +6,7 @@ import { garageOfDeploymentId } from "./autoRoute.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { runAndStoreAcceptanceTests } from "./acceptanceTest.ts";
-import { GARAGE_SELECT, apiBaseFor, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
+import { GARAGE_SELECT, apiBaseFor, gatewayHealthy, hasGatewaySignal, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 import { syncModels } from "./syncModels.ts";
 import type { SyncResult } from "./syncModels.ts";
 
@@ -290,7 +290,9 @@ export async function runHourlyProbes(admin: SupabaseClient) {
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const { data: garages } = await admin.from("garages")
     .select(GARAGE_SELECT).eq("disabled", false).in("status", ["online", "failed_test", "offline"]);
-  const list = ((garages || []) as RoutingGarage[]).filter((g) => !!apiBaseFor(g) && !g.paused_at);
+  const list = ((garages || []) as RoutingGarage[]).filter((g) => !!apiBaseFor(g) && !g.paused_at
+    // A garage the gateway reports unreachable is not probed: its failure would be a health fact, not a test result.
+    && !(hasGatewaySignal(g) && !gatewayHealthy(g)));
   if (!list.length) return { probed: [] as string[] };
 
   const healthy = await healthyModelsByGarage(admin);
