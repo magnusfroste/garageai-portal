@@ -48,8 +48,12 @@ export function applyReports(rows: ManagedRow[], reports: AgentModelReport[]): A
 }
 
 // ---------- Fit rule ----------
-/** Rule of thumb for Q4: GB ≈ parameters in B × 0.6. */
+/** Fallback only, when the registry gives no size: GB ≈ parameters in B × 0.6 (Q4). */
 export const estimatedSizeGb = (paramsB: number) => Math.round(paramsB * 0.6 * 10) / 10;
-/** A model fits when its estimated size plus 2 GB spare fits in memory. */
-export const fitsMemory = (paramsB: number | null, memoryGb: number | null) =>
-  paramsB != null && memoryGb != null && memoryGb > 0 && estimatedSizeGb(paramsB) + 2 <= memoryGb;
+export const bytesToGb = (b: number) => Math.round((b / 1e9) * 10) / 10;
+/** A model fits when its download size plus 2 GB spare fits in memory (RAM on Apple silicon, VRAM on NVIDIA). */
+export const fitsMemory = (sizeGb: number | null, memoryGb: number | null) =>
+  sizeGb != null && memoryGb != null && memoryGb > 0 && sizeGb + 2 <= memoryGb;
+/** Fits together with the garage's current models (all loaded at once)? */
+export const fitsTogether = (sizeGb: number | null, otherGb: number[], memoryGb: number | null) =>
+  fitsMemory(sizeGb == null ? null : sizeGb + otherGb.reduce((a, b) => a + b, 0), memoryGb);

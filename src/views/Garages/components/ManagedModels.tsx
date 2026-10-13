@@ -3,6 +3,7 @@ import { Download, Loader2, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { t } from "@/i18n";
 import type { ManagedModelRow } from "@/data/repositories/managedModelRepository";
 import { buildCandidates, isOpen, progressGb, type ModelCandidate } from "@/models/services/managedModels";
@@ -37,19 +38,38 @@ export const ManagedModelStatusList = ({ rows, onCancel, onRemove, busy }: { row
     </ul>
   );
 
-export const CandidateRow = ({ c, onAdd, busy }: { c: ModelCandidate; onAdd: () => void; busy?: boolean }) => (
-  <div className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-    <div className="min-w-0 flex-1">
-      <p className="text-sm font-medium truncate">{c.model} <span className="font-mono text-xs text-muted-foreground">{c.tag}</span></p>
-      <p className="text-xs text-muted-foreground">
-        {c.market ? `${t("Market price")} $${c.market.input}/$${c.market.output} · ` : ""}
-        {t("{n} garages offer it", { n: c.garages })} · {t("{n} requests/day", { n: c.requestsPerDay })}
-        {c.sizeGb != null ? ` · ~${c.sizeGb} GB` : ""}
-      </p>
+const sizeText = (c: ModelCandidate) => c.sizeGb == null ? t("download size unknown")
+  : c.sizeEstimated ? t("~{gb} GB download (estimated)", { gb: c.sizeGb }) : t("{gb} GB download", { gb: c.sizeGb });
+
+export const CandidateRow = ({ c, onAdd, busy }: { c: ModelCandidate; onAdd: () => void; busy?: boolean }) => {
+  const [confirm, setConfirm] = useState(false);
+  return (
+    <div className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium truncate">{c.model} <span className="font-mono text-xs text-muted-foreground">{c.tag}</span></p>
+        <p className="text-xs text-muted-foreground">
+          {sizeText(c)} · {c.market ? `${t("Market price")} $${c.market.input}/$${c.market.output} · ` : ""}
+          {t("{n} garages offer it", { n: c.garages })} · {t("{n} requests/day", { n: c.requestsPerDay })}
+        </p>
+        {c.fits && <p className="text-xs text-muted-foreground">{c.fitsWithOthers ? t("Fits with your other models") : t("Does not fit at once with your other models: will swap with {m}", { m: c.swapsWith.join(", ") })}</p>}
+      </div>
+      <Button size="sm" variant="outline" disabled={busy || !c.fits} onClick={() => setConfirm(true)}><Plus className="h-3.5 w-3.5 mr-1" />{c.fits ? t("Add") : t("Too large")}</Button>
+      <AlertDialog open={confirm} onOpenChange={setConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Add {m}?", { m: c.model })}</AlertDialogTitle>
+            <AlertDialogDescription>{c.sizeGb == null ? t("The download size is unknown. Check that this machine is not on mobile data.")
+              : t("This downloads {size} on this machine's connection. Check that it is not on mobile data.", { size: c.sizeEstimated ? t("about {gb} GB (estimated)", { gb: c.sizeGb }) : `${c.sizeGb} GB` })}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={onAdd}>{t("Download")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-    <Button size="sm" variant="outline" disabled={busy || !c.fits} onClick={onAdd}><Plus className="h-3.5 w-3.5 mr-1" />{c.fits ? t("Add") : t("Too large")}</Button>
-  </div>
-);
+  );
+};
 
 interface SectionProps { garageId: string; runtime: string | null; installed: string[]; rows: ManagedModelRow[]; memoryGb: number | null; catalog: CatalogModel[];
   onRequest: (v: { garageId: string; model: string; action: "pull" | "remove" }) => void; onCancel: (v: { garageId: string; model: string }) => void; busy: boolean }

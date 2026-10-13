@@ -29,10 +29,10 @@ test("malformed agent.models entries are dropped, valid ones kept", () => {
   expect(parseAgentModels("x").models).toEqual([]);
 });
 test("fit rule: params × 0.6 GB + 2 GB spare must fit memory", () => {
-  expect(fitsMemory(4, 16)).toBe(true);      // 2.4 + 2
-  expect(fitsMemory(12, 16)).toBe(true);     // 7.2 + 2
-  expect(fitsMemory(27, 16)).toBe(false);    // 16.2 + 2
-  expect(fitsMemory(11, 8)).toBe(false);     // 6.6 + 2 > 8
+  expect(fitsMemory(2.4, 16)).toBe(true);
+  expect(fitsMemory(7.2, 16)).toBe(true);
+  expect(fitsMemory(16.2, 16)).toBe(false);
+  expect(fitsMemory(6.6, 8)).toBe(false);
   expect(fitsMemory(4, null)).toBe(false);
 });
 test("garage-m4 (16 GB): Add list offers fitting models, skips installed, too-large last", () => {
