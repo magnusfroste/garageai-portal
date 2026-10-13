@@ -5,3 +5,4 @@
 - Record operator prompt-confidentiality acceptance only via `_shared/garageTerms.ts` (version string + fields) in create-garage, create-provider and set-garage-terms, so acceptance is server-enforced and versioned in one place.
 - Resolve cache-read prices only via `cacheReadPrice` in `_shared/garageRouting.ts` (garage_models override → garage tier → default share of input, clamped to input; mirrored in `src/models/services/cacheReadPricing.ts`); values found only in LiteLLM are adopted once as model overrides so the sync never overwrites them.
 - Validate the Bridge heartbeat `agent` report only via `_shared/agentReport.ts` (bad input is ignored and logged, never rejects the heartbeat), so stored and gateway-exposed agent data has one shape.
+- Managed-model rules (wanted lifecycle, agent.models parsing, fit rule) live only in `_shared/managedModels.ts`; operators change entries only via the request/cancel RPCs.
