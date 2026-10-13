@@ -6,7 +6,7 @@ import { garageOfDeploymentId } from "./autoRoute.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { runAndStoreAcceptanceTests } from "./acceptanceTest.ts";
-import { GARAGE_SELECT, apiBaseFor, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
+import { GARAGE_SELECT, apiBaseFor, gatewayHealthy, hasGatewaySignal, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 import { syncModels } from "./syncModels.ts";
 import type { SyncResult } from "./syncModels.ts";
 

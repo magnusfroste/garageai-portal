@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { registerGarage, validateGaragePayload } from "../_shared/registerGarage.ts";
 import { syncModels } from "../_shared/syncModels.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
-import { changedContexts } from "../_shared/garageModels.ts";
+import { changedContexts, applyInventoryMisses } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
 import { heartbeatBridgeFields, parseBridgeUpdate } from "../_shared/bridgeUpdate.ts";
 import { parseAgentModels, applyReports, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
@@ -51,13 +51,16 @@ Deno.serve(async (req) => {
       }
       wanted = wantedModels(current);
     } catch (e) { console.warn("[node-heartbeat] managed models", garage.name, e instanceof Error ? e.message : e); }
+    let removedRows: string[] = [];
+    try { removedRows = await applyInventoryMisses(admin, garage.id, payload.models); if (removedRows.length) console.log("[node-heartbeat] removed unreported models", garage.name, removedRows); }
+    catch (e) { console.warn("[node-heartbeat] inventory", garage.name, e instanceof Error ? e.message : e); }
     const previous = new Set<string>((garage.models || []) as string[]);
     const current = new Set(payload.models);
     const added = payload.models.filter((model) => !previous.has(model));
     const removed = [...previous].filter((model) => !current.has(model));
     const contextChanges = await changedContexts(admin, garage.id, payload.contexts ?? {});
     const contextChanged = Object.keys(contextChanges).some((m) => previous.has(m));
-    const changed = added.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
+    const changed = added.length > 0 || removedRows.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
 
     if (!changed) {
       if (garage.status === "offline") {
