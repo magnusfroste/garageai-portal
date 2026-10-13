@@ -368,3 +368,19 @@ export function modelIdError(model: string): string | null {
   for (const m of reject) if (modelIdError(m) === null) throw new Error(`modelIdError selfcheck: "${m}" should be rejected`);
   for (const m of accept) if (modelIdError(m) !== null) throw new Error(`modelIdError selfcheck: "${m}" should be accepted`);
 })();
+
+export const FAILED_RETEST_INTERVAL_MS = 30 * 60 * 1000;
+/**
+ * Which offered models a gateway health report should retest on a healthy garage.
+ * Missing/stale tests always; a latest failed test too, so a garage that recovers is routed again:
+ * immediately when the report flips it back to healthy, otherwise at most every 30 minutes.
+ */
+export function modelsToRetest(models: string[], latest: Map<string, { passed: boolean; at: number }>, o: { recovered: boolean; lastAnyAt: number; cooldownMs: number; now?: number }): string[] {
+  const now = o.now ?? Date.now();
+  const stale = models.filter((m) => { const t = latest.get(m); return !t || now - t.at > GATEWAY_TEST_MAX_AGE_MS; });
+  const failed = models.filter((m) => { const t = latest.get(m); return !!t && !t.passed && now - t.at <= GATEWAY_TEST_MAX_AGE_MS; });
+  if (o.recovered) return [...stale, ...failed];
+  const out = now - o.lastAnyAt > o.cooldownMs ? [...stale] : [];
+  if (now - o.lastAnyAt > FAILED_RETEST_INTERVAL_MS) out.push(...failed);
+  return out;
+}

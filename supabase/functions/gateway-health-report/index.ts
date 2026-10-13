@@ -1,7 +1,7 @@
 // Gateway L1 (NetBird peer) / L2 (GET /v1/models) results -> garages columns -> routing within a minute.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
-import { GARAGE_SELECT, GATEWAY_TEST_MAX_AGE_MS, gatewayHealthy, withProbeDeployments, type RoutingGarage } from "../_shared/garageRouting.ts";
+import { GARAGE_SELECT, GATEWAY_TEST_MAX_AGE_MS, gatewayHealthy, modelsToRetest, withProbeDeployments, type RoutingGarage } from "../_shared/garageRouting.ts";
 import { offeredByGarage } from "../_shared/garageModels.ts";
 import { runAndStoreAcceptanceTests } from "../_shared/acceptanceTest.ts";
 import { syncModels } from "../_shared/syncModels.ts";
@@ -69,8 +69,8 @@ Deno.serve(async (req) => {
       if (healthy && !g.paused_at) {
         const off = offered.get(g.id);
         const models = (g.models || []).filter((m) => !off || off.has(m));
-        const stale = models.filter((m) => { const t = latest.get(m); return !t || Date.now() - t.at > GATEWAY_TEST_MAX_AGE_MS; });
-        if (stale.length && Date.now() - lastAny > RETEST_COOLDOWN_MS) {
+        const stale = modelsToRetest(models, latest, { recovered: !!g.last_gateway_check_at && !wasHealthy, lastAnyAt: lastAny, cooldownMs: RETEST_COOLDOWN_MS });
+        if (stale.length) {
           const fresh = { ...g, ...next, last_gateway_check_at: r.checked_at } as RoutingGarage;
           try {
             await withProbeDeployments(admin, fresh, stale, (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, g, stale, routeFor));
