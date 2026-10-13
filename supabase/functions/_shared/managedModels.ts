@@ -1,0 +1,55 @@
+// Models chosen in the portal, fetched by Bridge (docs/bridge.md). Pure, no Deno imports (unit-tested).
+export type ManagedAction = "pull" | "remove";
+export type ManagedBy = "operator" | "garageai";
+export type ManagedStatus = "wanted" | "downloading" | "ready" | "failed" | "removed" | "refused";
+export interface ManagedRow { model: string; action: ManagedAction; by: ManagedBy; status: ManagedStatus; completed_mb?: number | null; total_mb?: number | null; error?: string | null; reported_at?: string | null }
+export interface AgentModelReport { model: string; status: Exclude<ManagedStatus, "wanted">; by: ManagedBy | null; completed_mb: number | null; total_mb: number | null; error: string | null; at: string }
+export interface WantedModel { model: string; action: ManagedAction; by: ManagedBy }
+
+const REPORT_STATUSES = new Set(["downloading", "ready", "failed", "removed", "refused"]);
+const MODEL_RE = /^[A-Za-z0-9._:/-]{1,200}$/;
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+const num = (v: unknown) => v === null || v === undefined ? null : typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined;
+
+/** Validates agent.models; malformed entries are dropped with a reason, the rest kept. */
+export function parseAgentModels(raw: unknown): { models: AgentModelReport[]; errors: string[] } {
+  const models: AgentModelReport[] = [], errors: string[] = [];
+  if (raw === undefined || raw === null) return { models, errors };
+  if (!Array.isArray(raw)) return { models, errors: ["agent.models is not an array"] };
+  for (const [i, e] of raw.slice(0, 100).entries()) {
+    if (!isObj(e) || typeof e.model !== "string" || !MODEL_RE.test(e.model) || typeof e.status !== "string" || !REPORT_STATUSES.has(e.status)) { errors.push(`agent.models[${i}] invalid`); continue; }
+    const completed = num(e.completed_mb), total = num(e.total_mb);
+    const by = e.by === "operator" || e.by === "garageai" ? e.by : e.by == null ? null : undefined;
+    const err = e.error == null ? null : typeof e.error === "string" ? e.error.slice(0, 300) : undefined;
+    const at = typeof e.at === "string" && Number.isFinite(Date.parse(e.at)) ? e.at : e.at == null ? new Date().toISOString() : undefined;
+    if (completed === undefined || total === undefined || by === undefined || err === undefined || at === undefined) { errors.push(`agent.models[${i}] invalid`); continue; }
+    models.push({ model: e.model, status: e.status as AgentModelReport["status"], by, completed_mb: completed, total_mb: total, error: err, at });
+  }
+  if (raw.length > 100) errors.push("agent.models truncated to 100");
+  return { models, errors };
+}
+
+/** Entry stays wanted until Bridge reports ready (pull) or removed (remove); failed/refused stay too. */
+export const isOpen = (r: Pick<ManagedRow, "action" | "status">) => r.action === "pull" ? r.status !== "ready" : r.status !== "removed";
+export const wantedModels = (rows: ManagedRow[]): WantedModel[] => rows.filter(isOpen).map((r) => ({ model: r.model, action: r.action, by: r.by }));
+
+const ACCEPTS: Record<ManagedAction, Set<string>> = { pull: new Set(["downloading", "ready", "failed", "refused"]), remove: new Set(["removed", "failed", "refused"]) };
+
+/** Row updates from Bridge reports. Reports for unknown models or that don't fit the row's action are ignored. */
+export function applyReports(rows: ManagedRow[], reports: AgentModelReport[]): Array<{ model: string; patch: Partial<ManagedRow> & { reported_at: string } }> {
+  const byModel = new Map(rows.map((r) => [r.model, r]));
+  const out: Array<{ model: string; patch: Partial<ManagedRow> & { reported_at: string } }> = [];
+  for (const rep of reports) {
+    const row = byModel.get(rep.model);
+    if (!row || !isOpen(row) || !ACCEPTS[row.action].has(rep.status)) continue;
+    out.push({ model: rep.model, patch: { status: rep.status, completed_mb: rep.completed_mb, total_mb: rep.total_mb, error: rep.error, reported_at: rep.at } });
+  }
+  return out;
+}
+
+// ---------- Fit rule ----------
+/** Rule of thumb for Q4: GB ≈ parameters in B × 0.6. */
+export const estimatedSizeGb = (paramsB: number) => Math.round(paramsB * 0.6 * 10) / 10;
+/** A model fits when its estimated size plus 2 GB spare fits in memory. */
+export const fitsMemory = (paramsB: number | null, memoryGb: number | null) =>
+  paramsB != null && memoryGb != null && memoryGb > 0 && estimatedSizeGb(paramsB) + 2 <= memoryGb;
