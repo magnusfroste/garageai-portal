@@ -5,6 +5,7 @@ import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
 import { heartbeatBridgeFields, parseBridgeUpdate } from "../_shared/bridgeUpdate.ts";
+import { parseAgentModels, applyReports, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
 import { parseMachineId, claimMachineId } from "../_shared/bridgeLink.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type" };
@@ -68,11 +69,11 @@ Deno.serve(async (req) => {
           await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
         }
       }
-      return json({ ok: true, changed: false, ...bridge });
+      return json({ ok: true, changed: false, wanted_models: wanted, ...bridge });
     }
 
     const result = await registerGarage(admin, garage, payload, { testOnly: added });
-    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), ...bridge });
+    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), wanted_models: wanted, ...bridge });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     if (message.includes("connected to the mesh") || message.includes("connected to mesh")) return json({ error: message }, 409);
