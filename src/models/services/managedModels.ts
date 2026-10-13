@@ -58,5 +58,5 @@ export const recommend = (c: ModelCandidate[], n = 3) => c.filter((x) => x.fits 
 /** "Runs models up to ~N B well" from memory. */
 export const maxParamsB = (memoryGb: number | null) => memoryGb && memoryGb > 2 ? Math.floor((memoryGb - 2) / 0.6) : null;
 
-export const progressGb = (mb: number | null | undefined) => mb == null ? null : Math.round((mb / 1024) * 10) / 10;
+export const progressGb = (mb: number | null | undefined) => mb == null ? null : Math.round((mb / 1000) * 10) / 10;
 export const openEntries = (rows: ManagedRow[]) => rows.filter(isOpen);

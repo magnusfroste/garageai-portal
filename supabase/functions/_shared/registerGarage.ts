@@ -56,7 +56,7 @@ export function parseContexts(body: Record<string, unknown>, models: string[]): 
   return out;
 }
 
-export async function registerGarage(admin: SupabaseClient, garage: GarageRecord, payload: GarageRegistrationPayload, opts: { testOnly?: string[] } = {}): Promise<GarageRegistration> {
+export async function registerGarage(admin: SupabaseClient, garage: GarageRecord, payload: GarageRegistrationPayload, opts: { testOnly?: string[]; offer?: string[] } = {}): Promise<GarageRegistration> {
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const isEndpoint = garage.connection_type === "endpoint";
@@ -77,7 +77,7 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   const headers = { Authorization: `Bearer ${masterKey}`, "Content-Type": "application/json" };
   await storeRuntimeKey(admin, garage.id, payload.runtime_api_key);
 
-  const offered = await syncInventory(admin, garage.id, payload.models);
+  const offered = await syncInventory(admin, garage.id, payload.models, opts.offer);
   await storeContexts(admin, garage.id, payload.contexts ?? {});
   const testModels = (opts.testOnly ?? payload.models).filter((m) => offered.has(m));
   const routingGarage = { ...garage, api_host: garage.api_host, mesh_ip: peer.ip, port: payload.port, runtime: payload.runtime, models: payload.models, status: "pending", disabled: false, last_heartbeat_at: null, connection_type: garage.connection_type || "mesh", endpoint_url: garage.endpoint_url ?? null } as RoutingGarage;

@@ -37,6 +37,8 @@ export const sv: Record<string, string> = {
   "Active version": "Aktiv version",
   "Pinned": "Fäst",
   "Last checked": "Senast kontrollerad",
+  "Made stable": "Gjord stabil",
+  "by {who}": "av {who}",
   "Pinned Bridge version": "Fäst Bridge-version",
   "Empty follows the latest release. A pinned version overrides it.": "Tomt följer den senaste utgåvan. En fäst version har företräde.",
   "Enter a version such as v0.4.5.": "Ange en version som v0.4.5.",

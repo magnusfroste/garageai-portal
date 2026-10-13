@@ -365,6 +365,13 @@
       "when": 1791894885142,
       "tag": "0051_curated_model_download_size",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1791905344107,
+      "tag": "0052_bridge_update_audit_fields",
+      "breakpoints": true
     }
   ]
 }

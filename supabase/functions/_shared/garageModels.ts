@@ -7,8 +7,9 @@ export const isEmbeddingModel = (model: string) => EMBEDDING_RE.test(model);
 
 type Row = { garage_id: string; model: string; installed: boolean; offered: boolean; status: string };
 
-/** Writes the reported inventory. First registration offers everything reported (except embeddings); later new models are not auto-offered. */
-export async function syncInventory(admin: SupabaseClient, garageId: string, models: string[]): Promise<Set<string>> {
+/** Writes the reported inventory. Models in `offer` (fetched on request) are offered at once. First registration offers everything reported (except embeddings); later new models are not auto-offered. */
+export async function syncInventory(admin: SupabaseClient, garageId: string, models: string[], offer: string[] = []): Promise<Set<string>> {
+  const offerNow = new Set(offer);
   const { data } = await admin.from("garage_models").select("garage_id, model, installed, offered, status").eq("garage_id", garageId);
   const rows = (data || []) as Row[];
   const first = rows.length === 0;
@@ -16,6 +17,7 @@ export async function syncInventory(admin: SupabaseClient, garageId: string, mod
   const now = new Date().toISOString();
   const upserts = models.map((model) => {
     const prev = byModel.get(model);
+    if (offerNow.has(model) && !isEmbeddingModel(model)) return { garage_id: garageId, model, installed: true, offered: true, status: "testing", updated_at: now };
     return { garage_id: garageId, model, installed: true, offered: prev ? prev.offered && !isEmbeddingModel(model) : first && !isEmbeddingModel(model), status: prev?.status ?? "untested", updated_at: now };
   });
   if (upserts.length) await admin.from("garage_models").upsert(upserts, { onConflict: "garage_id,model" });
