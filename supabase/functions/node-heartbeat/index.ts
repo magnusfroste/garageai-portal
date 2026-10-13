@@ -5,6 +5,7 @@ import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
 import { heartbeatBridgeFields, parseBridgeUpdate } from "../_shared/bridgeUpdate.ts";
+import { parseAgentModels, applyReports, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
 import { parseMachineId, claimMachineId } from "../_shared/bridgeLink.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type" };
@@ -35,7 +36,21 @@ Deno.serve(async (req) => {
     if (parsedAgent.error) console.warn("[node-heartbeat] ignored agent", garage.name, parsedAgent.error);
     const machineId = parseMachineId(body.machine_id); // a set machine_id never changes here; claim on first use only
     const machinePatch = claimMachineId(garage.machine_id, machineId); // { machine_id, last_machine_id } | { last_machine_id }
-    await admin.from("garages").update({ last_heartbeat_at: now, ...machinePatch, ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
+    const firstModels = !garage.first_models_at && payload.models.length > 0 ? { first_models_at: now } : {};
+    await admin.from("garages").update({ last_heartbeat_at: now, ...machinePatch, ...firstModels, ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
+    // Managed models: store Bridge's reports, answer with what the portal still wants. Never rejects the heartbeat.
+    let wanted: WantedModel[] = [];
+    try {
+      const reports = parseAgentModels((body.agent as Record<string, unknown> | undefined)?.models);
+      if (reports.errors.length) console.warn("[node-heartbeat] ignored agent.models entries", garage.name, reports.errors);
+      const { data: rows } = await admin.from("garage_managed_models").select("model, action, by, status").eq("garage_id", garage.id);
+      const current = (rows ?? []) as ManagedRow[];
+      for (const u of applyReports(current, reports.models)) {
+        await admin.from("garage_managed_models").update(u.patch).eq("garage_id", garage.id).eq("model", u.model);
+        const row = current.find((r) => r.model === u.model); if (row && u.patch.status) row.status = u.patch.status;
+      }
+      wanted = wantedModels(current);
+    } catch (e) { console.warn("[node-heartbeat] managed models", garage.name, e instanceof Error ? e.message : e); }
     const previous = new Set<string>((garage.models || []) as string[]);
     const current = new Set(payload.models);
     const added = payload.models.filter((model) => !previous.has(model));
@@ -54,11 +69,11 @@ Deno.serve(async (req) => {
           await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
         }
       }
-      return json({ ok: true, changed: false, ...bridge });
+      return json({ ok: true, changed: false, wanted_models: wanted, ...bridge });
     }
 
     const result = await registerGarage(admin, garage, payload, { testOnly: added });
-    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), ...bridge });
+    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), wanted_models: wanted, ...bridge });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     if (message.includes("connected to the mesh") || message.includes("connected to mesh")) return json({ error: message }, 409);

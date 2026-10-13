@@ -31,6 +31,9 @@ import { LocationBadge } from "./components/LocationBadge";
 import { useGarageLocations } from "@/hooks/useGarageLocations";
 import { useLatestOnboardingEvents } from "@/hooks/useOnboardingEvents";
 import { connectionTool } from "@/models/services/onboardingTool";
+import { Link } from "react-router-dom";
+import { useManagedModels } from "@/hooks/useManagedModels";
+import { ManagedModelsSection } from "./components/ManagedModels";
 
 const MyGaragesPage = () => {
   const { latest: bridgeLatest, stable: bridgeStable } = useBridgeVersion();
@@ -43,6 +46,7 @@ const MyGaragesPage = () => {
   const { reliability } = useGarageReliability();
   const { locations } = useGarageLocations();
   const { byGarage, setOffered, setPaused, pending } = useGarageModels(garages.map((g) => g.id));
+  const managed = useManagedModels(garages.map((g) => g.id));
   const onboarding = useLatestOnboardingEvents(garages.filter((g) => g.connection_type !== "endpoint").map((g) => g.id));
 
   const retest = async (g: GarageRow) => {
@@ -107,6 +111,13 @@ const MyGaragesPage = () => {
                 <PoolShareNote garage={g.name} catalog={catalog} />
                 {g.connection_type === "endpoint" && !isAdmin && <p className="text-xs text-muted-foreground">{t("Models on provider endpoints are offered by GarageAI admins.")}</p>}
                 <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onPause={setPaused} readOnly={g.connection_type === "endpoint" && !isAdmin} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
+                {g.first_models_at && !g.offer_page_seen_at && (
+                  <p className="text-sm rounded-md border border-primary/40 bg-primary/10 p-2">{t("Your garage sent its first models.")} <Link className="underline" to={`/dashboard/garages/${g.id}/offer`}>{t("What should my garage offer?")}</Link></p>
+                )}
+                {g.connection_type !== "endpoint" && !g.disabled && (
+                  <ManagedModelsSection garageId={g.id} runtime={g.runtime} installed={g.models} rows={managed.byGarage.get(g.id) ?? []} memoryGb={managed.machines.get(g.id)?.memoryGb ?? null} catalog={catalog} onRequest={managed.request} onCancel={managed.cancel} busy={managed.pending} />
+                )}
+                {g.connection_type !== "endpoint" && <Link className="text-xs underline text-muted-foreground" to={`/dashboard/garages/${g.id}/offer`}>{t("What should my garage offer?")}</Link>}
                 <div className="flex gap-1.5 flex-wrap">
                   {g.models.length === 0
                     ? <span className="text-xs text-muted-foreground">{t("No models registered yet")}</span>

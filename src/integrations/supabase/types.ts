@@ -328,6 +328,7 @@ export type Database = {
           max_output_tokens: number | null
           mode: string | null
           model_name: string | null
+          ollama_tag: string | null
           output_cost_per_million: number | null
           provider: string
           status: string
@@ -350,6 +351,7 @@ export type Database = {
           max_output_tokens?: number | null
           mode?: string | null
           model_name?: string | null
+          ollama_tag?: string | null
           output_cost_per_million?: number | null
           provider?: string
           status?: string
@@ -372,6 +374,7 @@ export type Database = {
           max_output_tokens?: number | null
           mode?: string | null
           model_name?: string | null
+          ollama_tag?: string | null
           output_cost_per_million?: number | null
           provider?: string
           status?: string
@@ -402,6 +405,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "garage_country_history_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      garage_managed_models: {
+        Row: {
+          action: string
+          by: string
+          completed_mb: number | null
+          error: string | null
+          garage_id: string
+          model: string
+          reported_at: string | null
+          requested_at: string
+          status: string
+          total_mb: number | null
+        }
+        Insert: {
+          action: string
+          by: string
+          completed_mb?: number | null
+          error?: string | null
+          garage_id: string
+          model: string
+          reported_at?: string | null
+          requested_at?: string
+          status?: string
+          total_mb?: number | null
+        }
+        Update: {
+          action?: string
+          by?: string
+          completed_mb?: number | null
+          error?: string | null
+          garage_id?: string
+          model?: string
+          reported_at?: string | null
+          requested_at?: string
+          status?: string
+          total_mb?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_managed_models_garage_id_fkey"
             columns: ["garage_id"]
             isOneToOne: false
             referencedRelation: "garages"
@@ -784,6 +834,7 @@ export type Database = {
           disabled: boolean
           display_name: string | null
           endpoint_url: string | null
+          first_models_at: string | null
           id: string
           last_gateway_check_at: string | null
           last_heartbeat_at: string | null
@@ -799,6 +850,7 @@ export type Database = {
           models: string[]
           name: string
           netbird_peer_id: string | null
+          offer_page_seen_at: string | null
           operator_id: string | null
           paused_at: string | null
           paused_by_admin: boolean
@@ -834,6 +886,7 @@ export type Database = {
           disabled?: boolean
           display_name?: string | null
           endpoint_url?: string | null
+          first_models_at?: string | null
           id?: string
           last_gateway_check_at?: string | null
           last_heartbeat_at?: string | null
@@ -849,6 +902,7 @@ export type Database = {
           models?: string[]
           name: string
           netbird_peer_id?: string | null
+          offer_page_seen_at?: string | null
           operator_id?: string | null
           paused_at?: string | null
           paused_by_admin?: boolean
@@ -884,6 +938,7 @@ export type Database = {
           disabled?: boolean
           display_name?: string | null
           endpoint_url?: string | null
+          first_models_at?: string | null
           id?: string
           last_gateway_check_at?: string | null
           last_heartbeat_at?: string | null
@@ -899,6 +954,7 @@ export type Database = {
           models?: string[]
           name?: string
           netbird_peer_id?: string | null
+          offer_page_seen_at?: string | null
           operator_id?: string | null
           paused_at?: string | null
           paused_by_admin?: boolean
@@ -1153,6 +1209,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_managed_model: {
+        Args: { _garage_id: string; _model: string }
+        Returns: undefined
+      }
       claim_checkout_credits: {
         Args: { p_credits: number; p_session_id: string; p_user_id: string }
         Returns: {
@@ -1266,6 +1326,14 @@ export type Database = {
         Returns: boolean
       }
       mark_connect_page_seen: { Args: never; Returns: undefined }
+      mark_offer_page_seen: { Args: { _garage_id: string }; Returns: undefined }
+      model_demand: {
+        Args: never
+        Returns: {
+          model: string
+          requests_7d: number
+        }[]
+      }
       normalise_model_id: { Args: { _id: string }; Returns: string }
       operator_garage_activity: {
         Args: never
@@ -1293,6 +1361,10 @@ export type Database = {
             }
             Returns: undefined
           }
+      request_managed_model: {
+        Args: { _action: string; _garage_id: string; _model: string }
+        Returns: undefined
+      }
       set_bridge_pin: { Args: { p_pinned: string }; Returns: undefined }
       set_bridge_update: {
         Args: {
