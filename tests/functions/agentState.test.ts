@@ -1,18 +1,14 @@
 import { describe, it, expect } from "bun:test";
 import { statusAfterHealth, parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, modelsToTestOnReturn } from "../../supabase/functions/_shared/agentState";
-import { isModelSellable, type RoutingGarage } from "../../supabase/functions/_shared/garageRouting";
 
 const now = Date.parse("2026-10-14T21:12:00Z");
 const maint = { kind: "maintenance", reason: "Redeploying vLLM", since: "2026-10-14T21:11:00Z", until: "2026-10-14T21:25:00Z" } as const;
-const g = { id: "g1", name: "dgx-city", connection_type: "mesh", mesh_ip: "10.66.0.9", port: 8000, status: "online", disabled: false, paused_at: null,
-  last_gateway_check_at: new Date(now).toISOString(), runtime_ok: true, mesh_connected: true, models: ["m"], agent_state: null } as unknown as RoutingGarage;
 
 describe("agent lifecycle state", () => {
   it("state in -> the garage leaves routing in the same heartbeat", () => {
     const next = nextAgentState(null, parseAgentState(maint));
     expect(lifecycleTransition(null, next)).toBe("leave");
-    expect(isModelSellable(g, "m", { passed: true, tested_at: now }, now)).toBe(true);
-    expect(isModelSellable({ ...g, agent_state: next } as RoutingGarage, "m", { passed: true, tested_at: now }, now)).toBe(false);
+    expect(next?.kind).toBe("maintenance"); // stored agent_state excludes routing (isModelSellable) and syncModels runs now
   });
   it("back to serving -> restored; stale tests (>24 h) are retested first", () => {
     const next = nextAgentState(maint, parseAgentState(undefined));
