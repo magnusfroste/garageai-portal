@@ -898,6 +898,8 @@ export type Database = {
         Row: {
           agent: Json | null
           agent_at: string | null
+          agent_nodes: Json | null
+          agent_state: Json | null
           api_host: string | null
           canary: boolean
           connection_type: string
@@ -953,6 +955,8 @@ export type Database = {
         Insert: {
           agent?: Json | null
           agent_at?: string | null
+          agent_nodes?: Json | null
+          agent_state?: Json | null
           api_host?: string | null
           canary?: boolean
           connection_type?: string
@@ -1008,6 +1012,8 @@ export type Database = {
         Update: {
           agent?: Json | null
           agent_at?: string | null
+          agent_nodes?: Json | null
+          agent_state?: Json | null
           api_host?: string | null
           canary?: boolean
           connection_type?: string

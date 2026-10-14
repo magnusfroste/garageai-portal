@@ -1,3 +1,4 @@
+import { statusAfterHealth } from "../_shared/agentState.ts";
 // Gateway L1 (NetBird peer) / L2 (GET /v1/models) results -> garages columns -> routing within a minute.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
@@ -59,14 +60,15 @@ Deno.serve(async (req) => {
         if (!t.inconclusive && !latest.has(t.model)) latest.set(t.model, { passed: t.passed, at: Date.parse(t.tested_at) });
       }
       const anyRecentPass = [...latest.values()].some((t) => t.passed && Date.now() - t.at <= GATEWAY_TEST_MAX_AGE_MS);
-      const status = !healthy ? (g.status === "failed_test" ? "failed_test" : "offline") : anyRecentPass ? "online" : g.status === "offline" ? "pending" : g.status;
+      const absent = !!g.agent_state; // planned absence (Bridge agent.state): measured, never marked offline/unhealthy
+      const status = statusAfterHealth(g.status, healthy, anyRecentPass, absent);
       if (status !== g.status) changed = true;
       await admin.from("garages").update({ last_gateway_check_at: r.checked_at, ...next, runtime_error: r.runtime_error, runtime_models: r.models, status }).eq("id", g.id);
-      await admin.from("curated_models").update({ status: healthy ? "healthy" : "unhealthy" }).eq("garage", g.name);
+      if (!absent) await admin.from("curated_models").update({ status: healthy ? "healthy" : "unhealthy" }).eq("garage", g.name);
 
       let tested: string[] | undefined;
       // A paused garage is measured but never relisted or retested here (routing also excludes paused_at).
-      if (healthy && !g.paused_at) {
+      if (healthy && !g.paused_at && !absent) {
         const off = offered.get(g.id);
         const models = (g.models || []).filter((m) => !off || off.has(m));
         const stale = modelsToRetest(models, latest, { recovered: !!g.last_gateway_check_at && !wasHealthy, lastAnyAt: lastAny, cooldownMs: RETEST_COOLDOWN_MS });
