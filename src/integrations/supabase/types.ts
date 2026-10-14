@@ -833,6 +833,7 @@ export type Database = {
           agent: Json | null
           agent_at: string | null
           api_host: string | null
+          canary: boolean
           connection_type: string
           country_override: string | null
           created_at: string
@@ -885,6 +886,7 @@ export type Database = {
           agent?: Json | null
           agent_at?: string | null
           api_host?: string | null
+          canary?: boolean
           connection_type?: string
           country_override?: string | null
           created_at?: string
@@ -937,6 +939,7 @@ export type Database = {
           agent?: Json | null
           agent_at?: string | null
           api_host?: string | null
+          canary?: boolean
           connection_type?: string
           country_override?: string | null
           created_at?: string
@@ -1395,6 +1398,10 @@ export type Database = {
           p_stable?: string
         }
         Returns: Json
+      }
+      set_garage_canary: {
+        Args: { _canary: boolean; _garage_id: string }
+        Returns: undefined
       }
       set_garage_location_display: {
         Args: { _garage_id: string; _mode: string }

@@ -379,6 +379,13 @@
       "when": 1791964852024,
       "tag": "0053_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1791978645077,
+      "tag": "0054_garage_canary",
+      "breakpoints": true
     }
   ]
 }
