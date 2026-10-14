@@ -161,7 +161,7 @@ async function bridgeVersions(admin: SupabaseClient) {
   const [setting, update, garages] = await Promise.all([
     admin.from("admin_settings").select("value").eq("key", "bridge_latest").maybeSingle(),
     admin.from("admin_settings").select("value").eq("key", "bridge_update").maybeSingle(),
-    admin.from("garages").select("name, agent"),
+    admin.from("garages").select("name, agent, canary"),
   ]);
   if (setting.error || update.error || garages.error) throw new Error("Bridge version data unavailable");
   return bridgeVersionsSummary(setting.data?.value, garages.data ?? [], update.data?.value);

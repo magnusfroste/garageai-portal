@@ -19,10 +19,12 @@ export function parseBridgeUpdate(raw: unknown): BridgeUpdateSetting {
 
 export const DOWNLOAD_BASE = "https://github.com/magnusfroste/garageai/releases/download";
 
-/** Fields added to every node-heartbeat response. */
-export function heartbeatBridgeFields(setting: BridgeUpdateSetting): { bridge_stable: string | null; bridge_download_base: string | null } {
-  return setting.stable
-    ? { bridge_stable: setting.stable, bridge_download_base: `${DOWNLOAD_BASE}/bridge-${setting.stable}` }
+/** Fields added to every node-heartbeat response. Canary garages get the latest release instead of stable. */
+export function heartbeatBridgeFields(setting: BridgeUpdateSetting, opts: { canary?: boolean; latest?: unknown } = {}): { bridge_stable: string | null; bridge_download_base: string | null } {
+  const latest = opts.canary ? v((opts.latest as { version?: unknown } | null | undefined)?.version) : null;
+  const target = latest ?? setting.stable;
+  return target
+    ? { bridge_stable: target, bridge_download_base: `${DOWNLOAD_BASE}/bridge-${target}` }
     : { bridge_stable: null, bridge_download_base: null };
 }
 

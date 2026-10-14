@@ -40,6 +40,7 @@ export interface GarageRow {
   paused_at?: string | null;
   paused_reason?: string | null;
   paused_by_admin?: boolean;
+  canary?: boolean;
   terms_accepted_at?: string | null;
   terms_version?: string | null;
   location_display?: "country" | "region" | "hidden";
@@ -133,7 +134,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, paused_by_admin, location_display, terms_accepted_at, terms_version, agent, agent_at, machine_id, machine_hostname, last_machine_id, transport, tunnel_ip")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, paused_by_admin, canary, location_display, terms_accepted_at, terms_version, agent, agent_at, machine_id, machine_hostname, last_machine_id, transport, tunnel_ip")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -187,6 +188,10 @@ export const garageRepository = {
   setAlias: (name: string, model: string, canonical: string, isPrivate: boolean) =>
     invoke<{ ok: boolean; canonical_model: string }>("set-model-alias", { name, model, canonical, private: isPrivate }),
 
+  async setCanary(garageId: string, canary: boolean) {
+    const { error } = await supabase.rpc("set_garage_canary", { _garage_id: garageId, _canary: canary });
+    if (error) throw error;
+  },
   setPaused: (name: string, paused: boolean, opts: { model?: string; reason?: string } = {}) =>
     invoke<{ ok: boolean; paused: boolean; routing_synced: boolean }>("set-garage-paused", { name, paused, ...opts }),
 

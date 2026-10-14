@@ -31,7 +31,8 @@ Deno.serve(async (req) => {
     try { payload = validateGaragePayload(body, true); } catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid body" }, 400); }
     const now = new Date().toISOString();
     const { data: updateRow } = await admin.from("admin_settings").select("value").eq("key", "bridge_update").maybeSingle();
-    const bridge = heartbeatBridgeFields(parseBridgeUpdate((updateRow as { value?: unknown } | null)?.value));
+    const latestRow = garage.canary ? (await admin.from("admin_settings").select("value").eq("key", "bridge_latest").maybeSingle()).data : null;
+    const bridge = heartbeatBridgeFields(parseBridgeUpdate((updateRow as { value?: unknown } | null)?.value), { canary: garage.canary === true, latest: (latestRow as { value?: unknown } | null)?.value });
     const parsedAgent = parseAgent(body.agent);
     if (parsedAgent.error) console.warn("[node-heartbeat] ignored agent", garage.name, parsedAgent.error);
     const machineId = parseMachineId(body.machine_id); // a set machine_id never changes here; claim on first use only
