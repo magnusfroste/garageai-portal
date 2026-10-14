@@ -372,6 +372,13 @@
       "when": 1791905344107,
       "tag": "0052_bridge_update_audit_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1791964852024,
+      "tag": "0053_migration",
+      "breakpoints": true
     }
   ]
 }
