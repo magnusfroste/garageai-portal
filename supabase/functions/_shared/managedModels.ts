@@ -64,3 +64,14 @@ export const fitsMemory = (sizeGb: number | null, memoryGb: number | null) =>
 /** Fits together with the garage's current models (all loaded at once)? */
 export const fitsTogether = (sizeGb: number | null, otherGb: number[], memoryGb: number | null) =>
   fitsMemory(sizeGb == null ? null : sizeGb + otherGb.reduce((a, b) => a + b, 0), memoryGb);
+
+/** Idempotent auto-offer: fetched pulls Bridge now lists that are not offered yet (Bridge may list a model one heartbeat after reporting ready). */
+export const pendingOffers = (rows: ManagedRow[], listed: string[], offered: Set<string>) =>
+  rows.filter((r) => r.action === "pull" && r.status === "ready" && listed.includes(r.model) && !offered.has(r.model)).map((r) => r.model);
+
+/** What Cancel does (mirrors SQL apply_managed_model_cancel). Once Bridge has fetched, cancel becomes a remove. */
+export function cancelOutcome(r: Pick<ManagedRow, "action" | "status"> | null): "none" | "delete" | "remove" | "revert" {
+  if (!r) return "none";
+  if (r.action === "remove") return r.status === "removed" ? "none" : "revert";
+  return r.status === "downloading" || r.status === "ready" ? "remove" : "delete";
+}
