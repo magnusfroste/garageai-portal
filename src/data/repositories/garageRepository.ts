@@ -146,7 +146,7 @@ export const garageRepository = {
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as GarageRow[];
+    return (data ?? []) as unknown as GarageRow[];
   },
 
   async latestTests(garageIds: string[]): Promise<Map<string, GarageTestRow>> {
