@@ -262,7 +262,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   for (const g of routingGarages) for (const model of g.models || []) {
     const ids0 = [deploymentId(g.name, model, "dedicated"), deploymentId(g.name, model, "pool")];
     // Operator pause (garage or model): same as un-offer — out of LiteLLM, catalogue rows disabled as 'paused'.
-    if (g.paused_at || paused.has(`${g.id}::${model}`)) {
+    if (g.paused_at || g.agent_state || paused.has(`${g.id}::${model}`)) {
       await admin.from("curated_models").update({ enabled: false, disabled_reason: "paused" }).in("id", ids0).or("disabled_reason.is.null,disabled_reason.neq.admin");
       continue;
     }

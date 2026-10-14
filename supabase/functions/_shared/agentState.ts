@@ -58,3 +58,9 @@ export const RETURN_TEST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 export function modelsToTestOnReturn(models: string[], lastTestAt: Map<string, number>, now = Date.now()): string[] {
   return models.filter((m) => { const at = lastTestAt.get(m); return at === undefined || now - at > RETURN_TEST_MAX_AGE_MS; });
 }
+
+/** Garage status after a gateway health report; a planned absence keeps the previous status (never offline). */
+export function statusAfterHealth(prev: string, healthy: boolean, anyRecentPass: boolean, absent: boolean): string {
+  if (absent) return prev;
+  return !healthy ? (prev === "failed_test" ? "failed_test" : "offline") : anyRecentPass ? "online" : prev === "offline" ? "pending" : prev;
+}
