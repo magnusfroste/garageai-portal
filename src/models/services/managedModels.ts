@@ -38,15 +38,15 @@ export function sizeOf(tag: string, modelName: string | null, bytes: number | nu
 /** Curated models the garage can fetch: fitting ones first, most requested first. */
 export function buildCandidates(i: CandidateInput): ModelCandidate[] {
   const have = new Set([...i.installed, ...i.managed.filter((m) => m.action === "pull").map((m) => m.model)]);
-  const bytesByTag = new Map(i.fetchable.filter((r) => r.ollama_tag).map((r) => [r.ollama_tag!, r]));
+  const bytesByTag = new Map(i.fetchable.flatMap(r => r.ollama_tag ? [[r.ollama_tag, r] as const] : []));
   const current = [...have].map((tag) => ({ tag, gb: sizeOf(tag, bytesByTag.get(tag)?.model_name ?? null, bytesByTag.get(tag)?.download_bytes).sizeGb ?? 0 }));
   return i.fetchable
-    .filter((r) => r.ollama_tag && !have.has(r.ollama_tag))
+    .filter((r): r is typeof r & {ollama_tag:string} => !!r.ollama_tag && !have.has(r.ollama_tag))
     .map((r) => {
-      const { sizeGb, estimated } = sizeOf(r.ollama_tag!, r.model_name, r.download_bytes);
+      const { sizeGb, estimated } = sizeOf(r.ollama_tag, r.model_name, r.download_bytes);
       const fits = fitsMemory(sizeGb, i.memoryGb);
       const fitsWithOthers = fits && fitsTogether(sizeGb, current.map((c) => c.gb), i.memoryGb);
-      return { model: r.model_name, tag: r.ollama_tag!, sizeGb, sizeEstimated: estimated, fits, fitsWithOthers, swapsWith: fits && !fitsWithOthers ? current.map((c) => c.tag) : [],
+      return { model: r.model_name, tag: r.ollama_tag, sizeGb, sizeEstimated: estimated, fits, fitsWithOthers, swapsWith: fits && !fitsWithOthers ? current.map((c) => c.tag) : [],
         garages: i.garagesPerModel.get(r.model_name) ?? 0, requestsPerDay: Math.round((i.demand.get(r.model_name) ?? 0) / 7), market: i.market.get(r.model_name) ?? null };
     })
     .sort((a, b) => Number(b.fits) - Number(a.fits) || b.requestsPerDay - a.requestsPerDay || a.model.localeCompare(b.model));
