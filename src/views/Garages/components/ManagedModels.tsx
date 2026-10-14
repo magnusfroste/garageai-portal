@@ -32,6 +32,7 @@ export const ManagedModelStatusList = ({ rows, onCancel, onRemove, busy }: { row
           <span className="font-mono">{r.model}</span>
           <span className={r.status === "failed" || r.status === "refused" ? "text-danger-foreground" : "text-muted-foreground"}>{statusText(r)}</span>
           {r.by === "garageai" && <Badge variant="outline" className="text-[10px]">GarageAI</Badge>}
+          {r.by === "ops-test" && <Badge variant="outline" className="text-[10px]">{t("test")}</Badge>}
           {onCancel && isOpen(r) && <Button size="sm" variant="ghost" className="h-6 px-2" disabled={busy} onClick={() => onCancel(r.model)}><X className="h-3 w-3 mr-1" />{t("Cancel")}</Button>}
           {onRemove && r.action === "pull" && r.status === "ready" && <Button size="sm" variant="ghost" className="h-6 px-2" disabled={busy} onClick={() => onRemove(r.model)}><Trash2 className="h-3 w-3 mr-1" />{t("Remove")}</Button>}
         </li>

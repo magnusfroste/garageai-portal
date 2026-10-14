@@ -1,10 +1,10 @@
 // Models chosen in the portal, fetched by Bridge (docs/bridge.md). Pure, no Deno imports (unit-tested).
 export type ManagedAction = "pull" | "remove";
-export type ManagedBy = "operator" | "garageai";
+export type ManagedBy = "operator" | "garageai" | "ops-test";
 export type ManagedStatus = "wanted" | "downloading" | "ready" | "failed" | "removed" | "refused";
 export interface ManagedRow { model: string; action: ManagedAction; by: ManagedBy; status: ManagedStatus; completed_mb?: number | null; total_mb?: number | null; error?: string | null; reported_at?: string | null }
 export interface AgentModelReport { model: string; status: Exclude<ManagedStatus, "wanted">; by: ManagedBy | null; completed_mb: number | null; total_mb: number | null; error: string | null; at: string }
-export interface WantedModel { model: string; action: ManagedAction; by: ManagedBy }
+export interface WantedModel { model: string; action: ManagedAction; by: "operator" | "garageai" }
 
 const REPORT_STATUSES = new Set(["downloading", "ready", "failed", "removed", "refused"]);
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,200}$/;
@@ -31,7 +31,7 @@ export function parseAgentModels(raw: unknown): { models: AgentModelReport[]; er
 
 /** Entry stays wanted until Bridge reports ready (pull) or removed (remove); failed/refused stay too. */
 export const isOpen = (r: Pick<ManagedRow, "action" | "status">) => r.action === "pull" ? r.status !== "ready" : r.status !== "removed";
-export const wantedModels = (rows: ManagedRow[]): WantedModel[] => rows.filter(isOpen).map((r) => ({ model: r.model, action: r.action, by: r.by }));
+export const wantedModels = (rows: ManagedRow[]): WantedModel[] => rows.filter(isOpen).map((r) => ({ model: r.model, action: r.action, by: r.by === "operator" ? "operator" : "garageai" })); // Bridge contract knows only operator/garageai; ops tests are GarageAI's
 
 const ACCEPTS: Record<ManagedAction, Set<string>> = { pull: new Set(["downloading", "ready", "failed", "refused"]), remove: new Set(["removed", "failed", "refused"]) };
 

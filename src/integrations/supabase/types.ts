@@ -1218,6 +1218,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_managed_model_cancel: {
+        Args: { _garage_id: string; _model: string }
+        Returns: undefined
+      }
+      apply_managed_model_request: {
+        Args: {
+          _action: string
+          _by: string
+          _garage_id: string
+          _model: string
+        }
+        Returns: undefined
+      }
       cancel_managed_model: {
         Args: { _garage_id: string; _model: string }
         Returns: undefined
