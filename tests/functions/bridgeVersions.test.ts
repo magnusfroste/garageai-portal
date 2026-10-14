@@ -14,5 +14,5 @@ test("newest published Bridge release includes prereleases and excludes drafts a
 test("Operations Center summary respects pin and legacy versions", () => {
   expect(module.bridgeVersionsSummary({version:"v0.4.6",pinned:"v0.4.5"},[
     {name:"old",agent:{version:"bridge-v0.4.0"}}, {name:"current",agent:{version:"v0.4.5"}}, {name:"legacy",agent:null},
-  ])).toEqual({latest:"v0.4.5",pinned:"v0.4.5",stable:null,mode:"auto",garages:[{name:"old",version:"v0.4.0",outdated:true,auto:null,last_error:null},{name:"current",version:"v0.4.5",outdated:false,auto:null,last_error:null},{name:"legacy",version:null,outdated:false,auto:null,last_error:null}]});
+  ])).toEqual({latest:"v0.4.5",pinned:"v0.4.5",stable:null,mode:"auto",garages:[{name:"old",canary:false,version:"v0.4.0",outdated:true,auto:null,last_error:null},{name:"current",canary:false,version:"v0.4.5",outdated:false,auto:null,last_error:null},{name:"legacy",canary:false,version:null,outdated:false,auto:null,last_error:null}]});
 });

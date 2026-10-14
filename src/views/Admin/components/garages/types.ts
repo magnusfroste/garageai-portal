@@ -25,6 +25,7 @@ export interface GarageActionHandlers {
   onRetest: (garage: Garage) => void;
   onNewCredential: (garage: Garage) => void;
   onTogglePaused: (garage: Garage) => void;
+  onToggleCanary: (garage: Garage) => void;
   onToggleDisabled: (garage: Garage) => void;
   onDelete: (garage: Garage) => void;
   retesting: string | null;
