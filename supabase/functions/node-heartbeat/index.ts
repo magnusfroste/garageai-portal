@@ -4,6 +4,7 @@ import { syncModels } from "../_shared/syncModels.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts, applyInventoryMisses } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
+import { parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, modelsToTestOnReturn, type AgentState } from "../_shared/agentState.ts";
 import { heartbeatBridgeFields, parseBridgeUpdate } from "../_shared/bridgeUpdate.ts";
 import { parseAgentModels, applyReports, pendingOffers, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
 import { parseMachineId, claimMachineId } from "../_shared/bridgeLink.ts";
@@ -35,10 +36,18 @@ Deno.serve(async (req) => {
     const bridge = heartbeatBridgeFields(parseBridgeUpdate((updateRow as { value?: unknown } | null)?.value), { canary: garage.canary === true, latest: (latestRow as { value?: unknown } | null)?.value });
     const parsedAgent = parseAgent(body.agent);
     if (parsedAgent.error) console.warn("[node-heartbeat] ignored agent", garage.name, parsedAgent.error);
+    const agentRaw = (body.agent && typeof body.agent === "object" ? body.agent : {}) as Record<string, unknown>;
+    const parsedState = parseAgentState(agentRaw.state);
+    if (parsedState.kind === "ignored") console.warn("[node-heartbeat] ignored agent.state", garage.name, parsedState.error);
+    const parsedNodes = parseAgentNodes(agentRaw.nodes);
+    if (parsedNodes.error) console.warn("[node-heartbeat] ignored agent.nodes", garage.name, parsedNodes.error);
+    const prevState = (garage.agent_state ?? null) as AgentState | null;
+    const agentState = nextAgentState(prevState, parsedState);
+    const transition = lifecycleTransition(prevState, agentState);
     const machineId = parseMachineId(body.machine_id); // a set machine_id never changes here; claim on first use only
     const machinePatch = claimMachineId(garage.machine_id, machineId); // { machine_id, last_machine_id } | { last_machine_id }
     const firstModels = !garage.first_models_at && payload.models.length > 0 ? { first_models_at: now } : {};
-    await admin.from("garages").update({ last_heartbeat_at: now, ...machinePatch, ...firstModels, ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
+    await admin.from("garages").update({ last_heartbeat_at: now, ...machinePatch, ...firstModels, agent_state: agentState, ...(parsedNodes.nodes ? { agent_nodes: parsedNodes.nodes } : {}), ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
     // Managed models: store Bridge's reports, answer with what the portal still wants. Never rejects the heartbeat.
     let wanted: WantedModel[] = [];
     let offerNow: string[] = [];
@@ -64,6 +73,19 @@ Deno.serve(async (req) => {
       }
       wanted = wantedModels(current);
     } catch (e) { console.warn("[node-heartbeat] managed models", garage.name, e instanceof Error ? e.message : e); }
+    // Planned absence (maintenance/starting/away): out of routing in this heartbeat, like an admin pause.
+    // No acceptance tests, no inventory pruning, no status change; in-flight requests drain on the gateway.
+    if (agentState) {
+      if (transition === "leave") await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
+      return json({ ok: true, changed: transition === "leave", state: agentState.kind, wanted_models: wanted, ...bridge });
+    }
+    let returnTests: string[] = [];
+    if (transition === "return") {
+      const { data: tests } = await admin.from("garage_model_tests").select("model, tested_at").eq("garage_id", garage.id).eq("inconclusive", false).order("tested_at", { ascending: false }).limit(500);
+      const last = new Map<string, number>();
+      for (const t of (tests || []) as Array<{ model: string; tested_at: string }>) if (!last.has(t.model)) last.set(t.model, Date.parse(t.tested_at));
+      returnTests = modelsToTestOnReturn(payload.models, last);
+    }
     let removedRows: string[] = [];
     try { removedRows = await applyInventoryMisses(admin, garage.id, payload.models); if (removedRows.length) console.log("[node-heartbeat] removed unreported models", garage.name, removedRows); }
     catch (e) { console.warn("[node-heartbeat] inventory", garage.name, e instanceof Error ? e.message : e); }
@@ -73,7 +95,7 @@ Deno.serve(async (req) => {
     const removed = [...previous].filter((model) => !current.has(model));
     const contextChanges = await changedContexts(admin, garage.id, payload.contexts ?? {});
     const contextChanged = Object.keys(contextChanges).some((m) => previous.has(m));
-    const changed = offerNow.length > 0 || added.length > 0 || removedRows.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
+    const changed = transition === "return" || offerNow.length > 0 || added.length > 0 || removedRows.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
 
     if (!changed) {
       if (garage.status === "offline") {
@@ -88,7 +110,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, changed: false, wanted_models: wanted, ...bridge });
     }
 
-    const result = await registerGarage(admin, garage, payload, { testOnly: [...new Set([...added, ...offerNow])], offer: offerNow });
+    const result = await registerGarage(admin, garage, payload, { testOnly: [...new Set([...added, ...offerNow, ...returnTests])], offer: offerNow });
     return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), wanted_models: wanted, ...bridge });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
