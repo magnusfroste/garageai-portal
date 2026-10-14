@@ -1,5 +1,6 @@
 // Garage routing: LiteLLM deployments must exist ONLY for sellable garage models.
 import { assignPoolWeights } from "./poolPricing.ts";
+import { modelTierPrice, type ModelPrices } from './modelPrices.ts';
 import { deploymentBody } from "./deploymentBody.ts";
 import { isProbeDeployment, isStaleProbe } from "./probeDeployments.ts";
 // Desired state = garages table + latest acceptance/probe tests + curated_models admin choices.
@@ -11,7 +12,7 @@ import { normaliseModelId } from "./modelIdentity.ts";
 import { AUTO_TIER, parseAutoSettings, planAutoDeployments, type AutoEntry, type AutoPlanItem, type AutoSettings, type BaseDeployment } from "./autoRoute.ts";
 
 /** "garage_id::runtime id" -> canonical model + provider-private flag. */
-export type ModelIdentity = Map<string, { canonical: string; private: boolean; context?: number | null; poolCacheRead?: number | null; dedicatedCacheRead?: number | null }>;
+export type ModelIdentity = Map<string, ModelPrices & { canonical: string; private: boolean; context?: number | null; poolCacheRead?: number | null; dedicatedCacheRead?: number | null }>;
 /** Default cache-read price as a share of the row's input price, when neither the model nor the garage sets one. */
 export const CACHE_READ_DEFAULT_SHARE = 0.25;
 /** Cache-read $/M: model override → garage tier price → 25 % of input; always clamped to 0…input. */
@@ -22,8 +23,8 @@ export const cacheReadPrice = (input: number, modelValue?: number | null, garage
 export async function modelIdentities(admin: SupabaseClient, garageIds: string[]): Promise<ModelIdentity> {
   const map: ModelIdentity = new Map();
   if (!garageIds.length) return map;
-  const { data } = await admin.from("garage_models").select("garage_id, model, canonical_model, private, context_length, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million").in("garage_id", garageIds);
-  for (const r of (data || []) as Array<{ garage_id: string; model: string; canonical_model: string; private: boolean; context_length: number | null; pool_cache_read_cost_per_million: number | null; dedicated_cache_read_cost_per_million: number | null }>) map.set(`${r.garage_id}::${r.model}`, { canonical: r.canonical_model || normaliseModelId(r.model), private: !!r.private, context: r.context_length, poolCacheRead: r.pool_cache_read_cost_per_million == null ? null : Number(r.pool_cache_read_cost_per_million), dedicatedCacheRead: r.dedicated_cache_read_cost_per_million == null ? null : Number(r.dedicated_cache_read_cost_per_million) });
+  const { data } = await admin.from("garage_models").select("garage_id, model, canonical_model, private, context_length, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million").in("garage_id", garageIds);
+  for (const r of data || []) map.set(`${r.garage_id}::${r.model}`, { canonical: r.canonical_model || normaliseModelId(r.model), private: !!r.private, context: r.context_length, poolCacheRead: r.pool_cache_read_cost_per_million, dedicatedCacheRead: r.dedicated_cache_read_cost_per_million, poolInput:r.pool_input_cost_per_million,poolOutput:r.pool_output_cost_per_million,dedicatedInput:r.dedicated_input_cost_per_million,dedicatedOutput:r.dedicated_output_cost_per_million });
   return map;
 }
 export const identityOf = (ids: ModelIdentity, garageId: string, model: string) => ids.get(`${garageId}::${model}`) ?? { canonical: normaliseModelId(model), private: false };
@@ -193,7 +194,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   for (const l of learned) await admin.from("garage_models").update({ context_length: l.context_length }).eq("garage_id", l.garage_id).eq("model", l.model);
 
   // Cache-read prices set directly in LiteLLM (no portal value at model or garage level) are adopted once as model overrides.
-  const depById = new Map(deps.filter((d) => d.model_info?.id).map((d) => [d.model_info!.id!, d]));
+  const depById = new Map(deps.flatMap(d => d.model_info?.id ? [[d.model_info.id,d] as const] : []));
   for (const g of garages) for (const model of g.models || []) {
     const cur = ids.get(`${g.id}::${model}`);
     if (!cur) continue;
@@ -204,7 +205,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
       const d = depById.get(deploymentId(g.name, model, tier));
       const raw = d?.model_info?.cache_read_input_token_cost ?? d?.litellm_params?.cache_read_input_token_cost;
       if (raw == null || !Number.isFinite(Number(raw))) continue;
-      const input = Number(tier === "dedicated" ? g.dedicated_input_cost_per_million : g.pool_input_cost_per_million);
+      const input = Number(modelTierPrice(tier,cur,g).input);
       const perM = Math.round(Number(raw) * 1e6 * 1e9) / 1e9;
       if (Math.abs(perM - input * CACHE_READ_DEFAULT_SHARE) < 1e-9) continue; // our own default, nothing to adopt
       cur[key] = Math.min(Math.max(0, perM), input);
@@ -224,11 +225,12 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
         // Deployment id stays derived from the runtime id so aliases can change without new ids.
         const id = deploymentId(g.name, model, tier);
         if (!enabledTiers.has(id)) continue;
+        const price = modelTierPrice(tier,ident,g);
         const spec = await buildDeploymentSpec(g, keys, {
           id, model, tier, route: tierRoute(g.name, ident.canonical, tier), limits: tokenLimits(ident.context),
-          input: Number(tier === "dedicated" ? g.dedicated_input_cost_per_million : g.pool_input_cost_per_million),
-          output: Number(tier === "dedicated" ? g.dedicated_output_cost_per_million : g.pool_output_cost_per_million),
-          cacheRead: cacheReadPrice(Number(tier === "dedicated" ? g.dedicated_input_cost_per_million : g.pool_input_cost_per_million),
+          input: Number(price.input),
+          output: Number(price.output),
+          cacheRead: cacheReadPrice(Number(price.input),
             tier === "dedicated" ? ident.dedicatedCacheRead : ident.poolCacheRead,
             tier === "dedicated" ? g.dedicated_cache_read_cost_per_million : g.pool_cache_read_cost_per_million),
         });

@@ -1,0 +1,16 @@
+import { expect, test } from 'bun:test';
+import { planSmart, supportsSmart, type SmartInput } from '../../supabase/functions/_shared/garageSmart';
+const now = Date.parse('2026-10-14T04:30:00Z');
+const base: SmartInput = { smart:true, createdAt:'2026-10-12T04:30:00Z', version:'v0.6.0', runtime:'ollama', memoryGb:8, diskFreeGb:20, diskBudgetGb:40, installed:[], managed:[], changedToday:false, now,
+ candidates:[{model:'qwen/qwen3-4b',tag:'qwen3:4b',bytes:6e9,requests7:1260,requests14:2000,healthy:2}] };
+test('Smart fit is exact download size plus 2 GB, no rounded-down acceptance',()=>{expect(planSmart(base)?.model).toBe('qwen3:4b');expect(planSmart({...base,memoryGb:7.99})).toBeNull();});
+test('Smart obeys 40 GB managed disk budget',()=>{const managed=[{model:'old',action:'pull',status:'ready',by:'operator',total_mb:35000,requested_at:'2026-10-01'}] as SmartInput['managed']; expect(planSmart({...base,managed})).toBeNull();expect(planSmart({...base,managed:[{...managed[0],total_mb:34000}]})).not.toBeNull();});
+test('Smart leaves at least 10 GB disk free',()=>{expect(planSmart({...base,diskFreeGb:16})).not.toBeNull();expect(planSmart({...base,diskFreeGb:15.99})).toBeNull();expect(planSmart({...base,diskFreeGb:null})).toBeNull();});
+test('Smart makes at most one change per UTC day',()=>{expect(planSmart({...base,changedToday:true})).toBeNull();expect(Array.isArray(planSmart(base))).toBe(false);});
+test('Smart fetches nothing in the first 24 hours',()=>{expect(planSmart({...base,createdAt:new Date(now-86400_000+1).toISOString()})).toBeNull();expect(planSmart({...base,createdAt:new Date(now-86400_000).toISOString()})).not.toBeNull();});
+test('Smart never removes operator-added models',()=>{const c={...base.candidates[0],requests7:0,requests14:0}; const r={model:c.tag,action:'pull',status:'ready',by:'operator',total_mb:6000,requested_at:'2026-09-01'} as const;expect(planSmart({...base,candidates:[c],managed:[r]})).toBeNull();expect(planSmart({...base,candidates:[c],managed:[{...r,by:'garageai'}]})?.action).toBe('remove');});
+test('Smart removes only after 14 days without requests',()=>{const r={model:'qwen3:4b',action:'pull',status:'ready',by:'garageai',requested_at:'2026-10-13'} as const;expect(planSmart({...base,managed:[r],candidates:[{...base.candidates[0],requests14:0}]})).toBeNull();});
+test('Smart runtime and Bridge guards',()=>{expect(planSmart({...base,runtime:'lmstudio'})).toBeNull();expect(planSmart({...base,version:'v0.5.9'})).toBeNull();expect(supportsSmart('v0.6.0')).toBe(true);expect(supportsSmart('v1.0.0')).toBe(true);expect(supportsSmart('v0.6.0-beta')).toBe(false);});
+test('Smart off means no automatic changes; pool of three needs no fourth garage',()=>{expect(planSmart({...base,smart:false})).toBeNull();expect(planSmart({...base,candidates:[{...base.candidates[0],healthy:3}]})).toBeNull();});
+test('Smart chooses highest demand and requires known size',()=>{expect(planSmart({...base,candidates:[...base.candidates,{...base.candidates[0],tag:'other',requests7:2000}]})?.model).toBe('other');expect(planSmart({...base,candidates:[{...base.candidates[0],bytes:null}]})).toBeNull();});
+test('Smart waits while any managed action is pending',()=>{expect(planSmart({...base,managed:[{model:'x',action:'pull',by:'operator',status:'wanted',requested_at:'2026-10-01'}]})).toBeNull();});

@@ -38,4 +38,9 @@
 - [x] Report migration, test results, webhook URL/event, and external secret blocker (previous review)
 
 - [x] Managed models step 1 (Add/Remove on My garages) and step 2 (offer page)
-- [ ] Managed models step 3: GarageAI Smart — waits for go-ahead
+- [x] Rebuild My garage: status, earnings, offers and collapsed full-control Details; English/Swedish
+- [x] Implement Smart settings, nightly 04:30 UTC selection, atomic daily limit and owner-only app notices
+- [ ] Smart email notices — blocked: no project sender domain; email infrastructure/templates require domain setup
+- [x] Test Smart/default/price/report rules; verify desktop/mobile fixture layout; deploy nightly function and verify safe no-op live
+- [ ] Real-account Smart toggle, price save and fetch flow — blocked: requester has no app account; explicit-account session approval unavailable
+- [x] Request publication of My garage and Smart to app.garageai.eu

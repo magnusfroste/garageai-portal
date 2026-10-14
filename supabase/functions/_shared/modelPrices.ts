@@ -1,0 +1,4 @@
+export interface ModelPrices { poolInput?: number | null; poolOutput?: number | null; dedicatedInput?: number | null; dedicatedOutput?: number | null }
+export function modelTierPrice(tier:'pool'|'dedicated', model:ModelPrices, garage:{pool_input_cost_per_million:number;pool_output_cost_per_million:number;dedicated_input_cost_per_million:number;dedicated_output_cost_per_million:number}) {
+ return tier==='pool' ? {input:model.poolInput ?? garage.pool_input_cost_per_million,output:model.poolOutput ?? garage.pool_output_cost_per_million} : {input:model.dedicatedInput ?? garage.dedicated_input_cost_per_million,output:model.dedicatedOutput ?? garage.dedicated_output_cost_per_million};
+}

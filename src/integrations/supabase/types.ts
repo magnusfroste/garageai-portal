@@ -616,6 +616,8 @@ export type Database = {
           canonical_source: string
           context_length: number | null
           dedicated_cache_read_cost_per_million: number | null
+          dedicated_input_cost_per_million: number | null
+          dedicated_output_cost_per_million: number | null
           garage_id: string
           installed: boolean
           missing_heartbeats: number
@@ -623,6 +625,8 @@ export type Database = {
           offered: boolean
           paused_at: string | null
           pool_cache_read_cost_per_million: number | null
+          pool_input_cost_per_million: number | null
+          pool_output_cost_per_million: number | null
           private: boolean
           status: string
           updated_at: string
@@ -632,6 +636,8 @@ export type Database = {
           canonical_source?: string
           context_length?: number | null
           dedicated_cache_read_cost_per_million?: number | null
+          dedicated_input_cost_per_million?: number | null
+          dedicated_output_cost_per_million?: number | null
           garage_id: string
           installed?: boolean
           missing_heartbeats?: number
@@ -639,6 +645,8 @@ export type Database = {
           offered?: boolean
           paused_at?: string | null
           pool_cache_read_cost_per_million?: number | null
+          pool_input_cost_per_million?: number | null
+          pool_output_cost_per_million?: number | null
           private?: boolean
           status?: string
           updated_at?: string
@@ -648,6 +656,8 @@ export type Database = {
           canonical_source?: string
           context_length?: number | null
           dedicated_cache_read_cost_per_million?: number | null
+          dedicated_input_cost_per_million?: number | null
+          dedicated_output_cost_per_million?: number | null
           garage_id?: string
           installed?: boolean
           missing_heartbeats?: number
@@ -655,6 +665,8 @@ export type Database = {
           offered?: boolean
           paused_at?: string | null
           pool_cache_read_cost_per_million?: number | null
+          pool_input_cost_per_million?: number | null
+          pool_output_cost_per_million?: number | null
           private?: boolean
           status?: string
           updated_at?: string
@@ -703,6 +715,7 @@ export type Database = {
           garage_id: string
           garage_name: string | null
           hour: string
+          last_request_at: string | null
           prompt_tokens: number
           requests: number
           spend_usd: number
@@ -715,6 +728,7 @@ export type Database = {
           garage_id: string
           garage_name?: string | null
           hour: string
+          last_request_at?: string | null
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
@@ -727,6 +741,7 @@ export type Database = {
           garage_id?: string
           garage_name?: string | null
           hour?: string
+          last_request_at?: string | null
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
@@ -757,6 +772,57 @@ export type Database = {
             columns: ["garage_id"]
             isOneToOne: true
             referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      garage_smart_events: {
+        Row: {
+          action: string
+          created_at: string
+          day: string
+          email_sent_at: string | null
+          garage_id: string
+          id: string
+          model: string
+          operator_id: string
+          reason: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          day?: string
+          email_sent_at?: string | null
+          garage_id: string
+          id?: string
+          model: string
+          operator_id: string
+          reason: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          day?: string
+          email_sent_at?: string | null
+          garage_id?: string
+          id?: string
+          model?: string
+          operator_id?: string
+          reason?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_smart_events_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "garage_smart_events_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -873,6 +939,8 @@ export type Database = {
           runtime_error: string | null
           runtime_models: string[]
           runtime_ok: boolean | null
+          smart: boolean
+          smart_disk_gb: number
           status: string
           terms_accepted_at: string | null
           terms_version: string | null
@@ -926,6 +994,8 @@ export type Database = {
           runtime_error?: string | null
           runtime_models?: string[]
           runtime_ok?: boolean | null
+          smart?: boolean
+          smart_disk_gb?: number
           status?: string
           terms_accepted_at?: string | null
           terms_version?: string | null
@@ -979,6 +1049,8 @@ export type Database = {
           runtime_error?: string | null
           runtime_models?: string[]
           runtime_ok?: boolean | null
+          smart?: boolean
+          smart_disk_gb?: number
           status?: string
           terms_accepted_at?: string | null
           terms_version?: string | null
@@ -1234,6 +1306,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      apply_smart_model_change: {
+        Args: {
+          _action: string
+          _garage_id: string
+          _model: string
+          _reason: Json
+        }
+        Returns: string
+      }
       cancel_managed_model: {
         Args: { _garage_id: string; _model: string }
         Returns: undefined
@@ -1372,6 +1453,7 @@ export type Database = {
           requests: number
         }[]
       }
+      operator_garage_overview: { Args: { _garage_id: string }; Returns: Json }
       record_bridge_release:
         | {
             Args: { p_checked_at: string; p_tag: string; p_version: string }
@@ -1406,6 +1488,30 @@ export type Database = {
       set_garage_location_display: {
         Args: { _garage_id: string; _mode: string }
         Returns: undefined
+      }
+      set_garage_smart: {
+        Args: { _disk_gb?: number; _garage_id: string; _smart: boolean }
+        Returns: undefined
+      }
+      set_operator_model_prices: {
+        Args: {
+          _direct_input: number
+          _direct_output: number
+          _garage_id: string
+          _model: string
+          _pool_input: number
+          _pool_output: number
+        }
+        Returns: undefined
+      }
+      smart_model_demand: {
+        Args: never
+        Returns: {
+          healthy_garages: number
+          model: string
+          requests_14d: number
+          requests_7d: number
+        }[]
       }
       verify_cron_secret: { Args: { secret: string }; Returns: boolean }
     }

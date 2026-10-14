@@ -38,7 +38,7 @@ export const AppSidebar = () => {
   const hasGarages = garagesLoading || garages.length > 0;
   const myGarages: NavGroup = {
     id: "my-garages",
-    label: "My garages",
+    label: "My garage",
     items: hasGarages ? [MY_GARAGES_ITEM, OFFER_GPU_ITEM] : [OFFER_GPU_ITEM],
   };
 
