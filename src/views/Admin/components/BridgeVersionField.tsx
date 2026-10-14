@@ -7,7 +7,7 @@ import { t } from "@/i18n";
 
 /** Admin → Settings: the portal decides which Bridge version garages run (stable), never GitHub directly. */
 export const BridgeVersionField = () => {
-  const { latest, isLoading, error, update, setUpdate } = useBridgeVersion();
+  const { latest, isLoading, error, update, setUpdate, candidates } = useBridgeVersion();
   const release = latest.version;
   const save = (patch: { stable?: string; mode?: "manual" | "auto" }) =>
     setUpdate.mutate(patch, { onSuccess: () => toast.success(t("Bridge update setting saved.")), onError: (e) => toast.error(e.message) });
@@ -22,6 +22,19 @@ export const BridgeVersionField = () => {
     {release && release !== update.stable && (
       <Button variant="outline" disabled={setUpdate.isPending} onClick={() => save({ stable: release })}>{t("Make {version} stable", { version: release })}</Button>
     )}
+    {candidates.length > 0 && <div className="space-y-1.5">
+      <Label className="text-xs">{t("Candidates")}</Label>
+      <ul className="divide-y divide-border rounded-md border border-border text-xs">
+        {candidates.map((c) => <li key={c.version} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+          <span className="font-mono font-medium">{c.version}</span>
+          <span className="text-muted-foreground">{c.firstSeen ? t("first seen {when}", { when: new Date(c.firstSeen).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }) : t("not seen on our garages")}</span>
+          {c.hoursRun != null && <span className="text-muted-foreground">{t("{hours} h run", { hours: Math.floor(c.hoursRun) })}</span>}
+          <span className={c.errors ? "text-danger-foreground" : "text-muted-foreground"} title={c.lastError ?? undefined}>{t("{n} errors", { n: c.errors })}</span>
+          {c.eligibleAt && update.mode === "auto" && <span className="text-muted-foreground">{t("eligible at {time}", { time: new Date(c.eligibleAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) })}</span>}
+          <Button size="sm" variant="ghost" className="ml-auto h-7" disabled={setUpdate.isPending} onClick={() => save({ stable: c.version })}>{t("Make {version} stable", { version: c.version })}</Button>
+        </li>)}
+      </ul>
+    </div>}
     <div className="space-y-1.5">
       <Label className="text-xs">{t("Mode")}</Label>
       <RadioGroup value={update.mode} onValueChange={(m) => save({ mode: m as "manual" | "auto" })} className="flex gap-4">
@@ -29,7 +42,7 @@ export const BridgeVersionField = () => {
         <div className="flex items-center gap-1.5"><RadioGroupItem value="manual" id="bridge-mode-manual" /><Label htmlFor="bridge-mode-manual" className="text-xs">{t("Manual")}</Label></div>
       </RadioGroup>
       <p className="text-xs text-muted-foreground">{update.mode === "auto"
-        ? t("A new release becomes stable after {hours} hours, once one of our garages already runs it.", { hours: update.auto_after_hours })
+        ? t("The newest version that has run {hours} hours on our own garages without update errors becomes stable.", { hours: update.auto_after_hours })
         : t("Garages stay on the stable version until you make another one stable.")}</p>
     </div>
     {(error || setUpdate.error) && <p role="alert" className="text-sm text-danger-foreground">{(setUpdate.error ?? error)?.message}</p>}

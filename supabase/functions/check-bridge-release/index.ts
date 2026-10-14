@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { newestBridgeRelease } from "../_shared/bridgeVersions.ts";
-import { parseBridgeUpdate, shouldPromote } from "../_shared/bridgeUpdate.ts";
+import { parseBridgeUpdate, pickStable } from "../_shared/bridgeUpdate.ts";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 Deno.serve(async (req) => {
@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const releases = [];
     for (let page = 1; page <= 10; page++) {
       const response = await fetch(`https://api.github.com/repos/magnusfroste/garageai/releases?per_page=100&page=${page}`, {
-        headers: { Accept: "application/vnd.github+json", "User-Agent": "GarageAI-Portal" }, signal: AbortSignal.timeout(10_000),
+        cache: "no-store", headers: { "Cache-Control": "no-cache", Accept: "application/vnd.github+json", "User-Agent": "GarageAI-Portal" }, signal: AbortSignal.timeout(10_000),
       });
       if (!response.ok) throw new Error(`GitHub release check failed (${response.status})`);
       const rows = await response.json();
@@ -31,12 +31,12 @@ Deno.serve(async (req) => {
     const checked_at = new Date().toISOString();
     const { error } = await admin.rpc("record_bridge_release", { p_version: release.version, p_tag: release.tag, p_checked_at: checked_at, p_published_at: release.published_at });
     if (error) throw error;
-    // Auto mode: promote once the release is old enough and one of our garages already runs it.
-    const [{ data: upd }, { data: garages }] = await Promise.all([
+    // Auto mode: newest version that has run long enough on our own (admin/canary) garages without update errors.
+    const [{ data: upd }, { data: runs }] = await Promise.all([
       admin.from("admin_settings").select("value").eq("key", "bridge_update").maybeSingle(),
-      admin.from("garages").select("agent, last_heartbeat_at"),
+      admin.from("bridge_release_runs").select("version, first_seen_at, update_errors"),
     ]);
-    const promoted = shouldPromote(parseBridgeUpdate(upd?.value), release, garages ?? []);
+    const promoted = pickStable(parseBridgeUpdate(upd?.value), runs ?? []);
     if (promoted) {
       const { error: pErr } = await admin.rpc("set_bridge_update", { p_stable: promoted });
       if (pErr) throw pErr;
