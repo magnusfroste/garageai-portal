@@ -5,7 +5,7 @@ import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts, applyInventoryMisses } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
 import { parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, modelsToTestOnReturn, type AgentState } from "../_shared/agentState.ts";
-import { heartbeatBridgeFields, parseBridgeUpdate } from "../_shared/bridgeUpdate.ts";
+import { heartbeatBridgeFields, parseBridgeUpdate, updateErrorVersion } from "../_shared/bridgeUpdate.ts";
 import { parseAgentModels, applyReports, pendingOffers, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
 import { parseMachineId, claimMachineId } from "../_shared/bridgeLink.ts";
 
@@ -48,6 +48,12 @@ Deno.serve(async (req) => {
     const machinePatch = claimMachineId(garage.machine_id, machineId); // { machine_id, last_machine_id } | { last_machine_id }
     const firstModels = !garage.first_models_at && payload.models.length > 0 ? { first_models_at: now } : {};
     await admin.from("garages").update({ last_heartbeat_at: now, ...machinePatch, ...firstModels, agent_state: agentState, ...(parsedNodes.nodes ? { agent_nodes: parsedNodes.nodes } : {}), ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
+    // Bridge release runs on our own garages drive auto promotion (RPC ignores non-admin, non-canary garages).
+    if (parsedAgent.agent?.version) {
+      const errVer = updateErrorVersion(parsedAgent.agent.version, bridge.bridge_stable, parsedAgent.agent.update?.last_error);
+      const { error: runErr } = await admin.rpc("record_bridge_run", { _garage_id: garage.id, _version: parsedAgent.agent.version.startsWith("v") ? parsedAgent.agent.version : `v${parsedAgent.agent.version.replace(/^bridge-/, "")}`, _error: errVer ? parsedAgent.agent.update?.last_error ?? null : null, _error_version: errVer });
+      if (runErr) console.warn("[node-heartbeat] bridge run", garage.name, runErr.message);
+    }
     // Managed models: store Bridge's reports, answer with what the portal still wants. Never rejects the heartbeat.
     let wanted: WantedModel[] = [];
     let offerNow: string[] = [];

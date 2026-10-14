@@ -30,22 +30,31 @@ export function heartbeatBridgeFields(setting: BridgeUpdateSetting, opts: { cana
 
 export const HEARTBEAT_FRESH_MS = 60 * 60 * 1000;
 
-/**
- * Auto mode promotes the latest release to stable when it is newer than stable, at least
- * auto_after_hours old (from published_at), and at least one garage already runs it with a heartbeat in the last hour.
- */
-export function shouldPromote(
-  setting: BridgeUpdateSetting,
-  latest: { version?: unknown; published_at?: unknown } | null | undefined,
-  garages: Array<{ agent?: { version?: unknown } | null; last_heartbeat_at?: string | null }>,
-  now = Date.now(),
-): string | null {
-  if (setting.mode !== "auto") return null;
-  const candidate = v(latest?.version);
-  if (!candidate) return null;
-  if (setting.stable && !gt(candidate, setting.stable)) return null;
-  const published = typeof latest?.published_at === "string" ? Date.parse(latest.published_at) : NaN;
-  if (!Number.isFinite(published) || now - published < setting.auto_after_hours * 3600_000) return null;
-  const running = garages.some((g) => v(g.agent?.version) === candidate && !!g.last_heartbeat_at && now - Date.parse(g.last_heartbeat_at) <= HEARTBEAT_FRESH_MS);
-  return running ? candidate : null;
+export interface BridgeReleaseRun { version: string; first_seen_at: string; update_errors: number }
+
+/** When a run becomes eligible (first seen on an admin/canary garage + auto_after_hours), or null if never. */
+export function eligibleAt(setting: BridgeUpdateSetting, run: BridgeReleaseRun): number | null {
+  const first = Date.parse(run.first_seen_at);
+  return Number.isFinite(first) && run.update_errors === 0 ? first + setting.auto_after_hours * 3600_000 : null;
 }
+
+/**
+ * Auto mode: stable = the newest version first seen on one of our (admin or canary) garages at least
+ * auto_after_hours ago, with no update errors, and newer than the current stable. Release age is irrelevant,
+ * so several releases a day still promote in order.
+ */
+export function pickStable(setting: BridgeUpdateSetting, runs: BridgeReleaseRun[], now = Date.now()): string | null {
+  if (setting.mode !== "auto") return null;
+  let best: string | null = null;
+  for (const r of runs) {
+    const ver = v(r.version); const at = eligibleAt(setting, r);
+    if (!ver || at === null || at > now) continue;
+    if (setting.stable && !gt(ver, setting.stable)) continue;
+    if (!best || gt(ver, best)) best = ver;
+  }
+  return best;
+}
+
+/** Which version an update error is about: the target the garage was offered, when it is not already running it. */
+export const updateErrorVersion = (running: unknown, target: string | null, error: unknown): string | null =>
+  typeof error === "string" && error && target && v(running) !== target ? target : null;
