@@ -1,8 +1,9 @@
 // Validates the optional Bridge `agent` object sent with node-heartbeat. Pure, no Deno imports (unit-tested).
 export type AgentSeverity = "error" | "warning" | "info";
-export interface AgentProblem { severity: AgentSeverity; code: string; message: string }
+export interface AgentProblem { severity: AgentSeverity; code: string; message: string; fix?: string }
+export interface AgentMachine { load_pct?: number; mem_total_mb?: number; mem_free_mb?: number; disk_free_gb?: number; power?: 'ac' | 'battery' | ''; battery_pct?: number; user_active?: boolean; gpu_util_pct?: number; vram_used_mb?: number; vram_total_mb?: number }
 export interface AgentUpdate { last_check: string | null; last_update: string | null; last_error: string | null; auto: boolean }
-export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems: AgentProblem[]; update?: AgentUpdate }
+export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems: AgentProblem[]; update?: AgentUpdate; machine?: AgentMachine }
 
 export const AGENT_STRING_MAX = 64;
 export const AGENT_PROBLEMS_MAX = 20;
@@ -28,7 +29,7 @@ export function parseAgent(raw: unknown): { agent: AgentReport | null; error?: s
       if (!isObj(p) || typeof p.severity !== "string" || !SEVERITIES.has(p.severity)
         || typeof p.code !== "string" || p.code.length > AGENT_STRING_MAX
         || typeof p.message !== "string" || p.message.length > AGENT_MESSAGE_MAX) return { agent: null, error: "agent.problems item invalid" };
-      out.problems.push({ severity: p.severity as AgentSeverity, code: p.code, message: p.message });
+      out.problems.push({ severity: p.severity as AgentSeverity, code: p.code, message: p.message, ...(typeof p.fix === 'string' && p.fix.length <= AGENT_MESSAGE_MAX ? {fix:p.fix} : {}) });
     }
   }
   if (raw.update !== undefined && raw.update !== null) {
@@ -39,6 +40,16 @@ export function parseAgent(raw: unknown): { agent: AgentReport | null; error?: s
     const lastError = u.last_error === null || u.last_error === undefined ? null : typeof u.last_error === "string" && u.last_error.length <= AGENT_MESSAGE_MAX ? u.last_error : undefined;
     if (lastCheck === undefined || lastUpdate === undefined || lastError === undefined) return { agent: null, error: "agent.update invalid" };
     out.update = { last_check: lastCheck, last_update: lastUpdate, last_error: lastError || null, auto: u.auto };
+  }
+  if (isObj(raw.machine)) {
+    const machine: AgentMachine = {};
+    for (const key of ['load_pct','mem_total_mb','mem_free_mb','disk_free_gb','battery_pct','gpu_util_pct','vram_used_mb','vram_total_mb'] as const) {
+      const value = raw.machine[key];
+      if (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= (key.endsWith('_pct') ? 100 : 1e9)) machine[key] = value;
+    }
+    if (raw.machine.power === 'ac' || raw.machine.power === 'battery' || raw.machine.power === '') machine.power = raw.machine.power;
+    if (typeof raw.machine.user_active === 'boolean') machine.user_active = raw.machine.user_active;
+    out.machine = machine;
   }
   return { agent: out };
 }

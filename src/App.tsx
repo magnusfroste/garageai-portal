@@ -15,7 +15,6 @@ import { AdminPage } from "./views/Admin/AdminPage";
 import { ChatPage } from "./views/Chat/ChatPage";
 import OfferGpuPage from "./views/Garages/OfferGpuPage";
 import MyGaragesPage from "./views/Garages/MyGaragesPage";
-import OfferPage from "./views/Garages/OfferPage";
 import GarageProfilePage from "./views/Garages/GarageProfilePage";
 import { SiteSettingsPage } from "./views/SiteSettings/SiteSettingsPage";
 import CatalogPage from "./views/Models/CatalogPage";
@@ -60,7 +59,7 @@ const App = () => (
             <Route path="chat" element={<ChatPage />} />
             <Route path="offer-gpu" element={<OfferGpuPage />} />
             <Route path="garages" element={<MyGaragesPage />} />
-            <Route path="garages/:id/offer" element={<OfferPage />} />
+            <Route path="garages/:id/offer" element={<Navigate to="/dashboard/garages" replace />} />
           </Route>
           <Route path="/garages" element={<PublicOrAppLayout />}>
             <Route index element={<GaragesListPage />} />

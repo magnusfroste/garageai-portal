@@ -6,7 +6,7 @@ const good = { tool: "garageai-bridge", version: "bridge-v0.2.1", os: "macOS 27.
 test("no agent field means nothing to store", () => expect(parseAgent(undefined)).toEqual({ agent: null }));
 test("valid agent is kept and extra fields dropped", () => {
   const r = parseAgent({ ...good, secret: "x", problems: [{ ...good.problems[0], fix: "y" }] });
-  expect(r.agent).toEqual(good);
+  expect(r.agent).toEqual({...good, problems:[{...good.problems[0],fix:'y'}]});
 });
 test("string over 64 chars is rejected", () => expect(parseAgent({ ...good, os: "a".repeat(65) }).agent).toBeNull());
 test("more than 20 problems is rejected", () => expect(parseAgent({ ...good, problems: Array(21).fill(good.problems[0]) }).agent).toBeNull());
@@ -14,3 +14,6 @@ test("unknown severity is rejected", () => expect(parseAgent({ ...good, problems
 test("message over 300 chars is rejected", () => expect(parseAgent({ ...good, problems: [{ ...good.problems[0], message: "m".repeat(301) }] }).agent).toBeNull());
 test("code over 64 chars is rejected", () => expect(parseAgent({ ...good, problems: [{ ...good.problems[0], code: "c".repeat(65) }] }).agent).toBeNull());
 test("non-object agent is rejected with a reason", () => expect(parseAgent("x").error).toBeTruthy());
+test('Bridge v0.6.3 machine report retains validated capacity and drops invalid telemetry', () => {
+  expect(parseAgent({...good,machine:{mem_total_mb:16000,disk_free_gb:40,power:'ac',load_pct:25,secret:'no',battery_pct:101,mem_free_mb:-1}}).agent?.machine).toEqual({mem_total_mb:16000,disk_free_gb:40,power:'ac',load_pct:25});
+});

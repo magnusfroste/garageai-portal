@@ -1,158 +1,73 @@
-import { BridgeAgentSection } from "./components/BridgeAgentSection";
-import { PoolShareNote } from "./components/PoolShareNote";
-import { useModelCatalog } from "@/hooks/useModelCatalog";
-import { BridgeUpdateNotice } from "./components/BridgeUpdateNotice";
-import { useBridgeVersion } from "@/hooks/useBridgeVersion";
-import { transportLabel } from "@/models/services/transport";
-import { GarageEarnings } from "./components/GarageEarnings";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Server, Plus, FlaskConical } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
-import { useMyGarages } from "@/hooks/useMyGarages";
-import { garageRepository, GarageRow } from "@/data/repositories/garageRepository";
-import { runtimeLabel } from "@/models/services/garageRuntime";
-import { useGarageReliability } from "@/hooks/useGarageReliability";
-import { GarageReliabilityPanel } from "./components/GarageReliabilityPanel";
-import { ModelTestBadge, ToolsTestBadge, relativeTimeSv } from "./components/GarageShared";
-import { GarageHealthIndicators, GarageModelList, GarageTroubleshooting } from "./components/GarageHealth";
-import { useGarageModels } from "@/hooks/useGarageModels";
-import { t } from "@/i18n";
-import { GarageTermsBanner } from "./components/GarageTermsBanner";
-import { GaragePauseButton, LocationDisplaySetting, PausedBadge } from "./components/GarageOperatorControls";
-import { useQuery } from "@tanstack/react-query";
-import { adminService } from "@/models/services/adminService";
-import { DeleteGarageButton } from "./components/DeleteGarageButton";
-import { ReliabilityAvailability } from "./components/ReliabilityAvailability";
-import { LocationBadge } from "./components/LocationBadge";
-import { useGarageLocations } from "@/hooks/useGarageLocations";
-import { useLatestOnboardingEvents } from "@/hooks/useOnboardingEvents";
-import { connectionTool } from "@/models/services/onboardingTool";
-import { Link } from "react-router-dom";
-import { useManagedModels } from "@/hooks/useManagedModels";
-import { ManagedModelsSection } from "./components/ManagedModels";
+import {useState} from 'react';
+import {Link,useSearchParams} from 'react-router-dom';
+import {Plus} from 'lucide-react';
+import {BarChart,Bar,XAxis,Tooltip,ResponsiveContainer} from 'recharts';
+import {Button} from '@/components/ui/button';
+import {Switch} from '@/components/ui/switch';
+import {Tabs,TabsList,TabsTrigger} from '@/components/ui/tabs';
+import {useMyGarages} from '@/hooks/useMyGarages';
+import {useGarageModels} from '@/hooks/useGarageModels';
+import {useManagedModels} from '@/hooks/useManagedModels';
+import {useModelCatalog} from '@/hooks/useModelCatalog';
+import {useMyGarageOverview} from '@/hooks/useMyGarageOverview';
+import {myGarageStatus,runtimeStatKey} from '@/models/services/myGaragePresentation';
+import type {GarageRow} from '@/data/repositories/garageRepository';
+import {ManagedModelsSection} from './components/ManagedModels';
+import {MyGarageDetails} from './components/MyGarageDetails';
+import {GarageTermsBanner} from './components/GarageTermsBanner';
+import {t} from '@/i18n';
+import {toast} from 'sonner';
 
-const MyGaragesPage = () => {
-  const { latest: bridgeLatest, stable: bridgeStable } = useBridgeVersion();
-  const { models: catalog } = useModelCatalog();
-  const { data: isAdmin = false } = useQuery({ queryKey: ["is-admin"], queryFn: () => adminService.isAdmin() });
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { garages, isLoading, isError, latestTests, invalidate } = useMyGarages();
-  const [busy, setBusy] = useState<string | null>(null);
-  const { reliability } = useGarageReliability();
-  const { locations } = useGarageLocations();
-  const { byGarage, setOffered, setPaused, pending } = useGarageModels(garages.map((g) => g.id));
-  const managed = useManagedModels(garages.map((g) => g.id));
-  const onboarding = useLatestOnboardingEvents(garages.filter((g) => g.connection_type !== "endpoint").map((g) => g.id));
-
-  const retest = async (g: GarageRow) => {
-    setBusy(`t:${g.name}`);
-    try {
-      const res = await garageRepository.retest(g.name);
-      const ok = res.acceptance.filter((a) => a.passed).length;
-      toast({ title: t("Test done: {ok}/{n} passed", { ok, n: res.acceptance.length }) });
-      invalidate();
-    } catch (e) {
-      toast({ title: t("The test failed"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Server className="w-6 h-6 text-primary" />{t("My garages")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t("Your connected GPU machines and their models.")}</p>
-        </div>
-        <Button onClick={() => navigate("/connect")}><Plus className="w-4 h-4 mr-2" />{t("Add garage")}</Button>
-      </div>
-
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">{t("Loading...")}</p>
-      ) : isError ? (
-        <p className="text-sm text-destructive">{t("Could not load your garages.")} <Button variant="link" onClick={invalidate}>{t("Try again")}</Button></p>
-      ) : garages.length === 0 ? (
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle>{t("You have no garages yet")}</CardTitle>
-            <CardDescription>
-              {t("Have a computer with a good GPU? Connect it as a garage and it will run open models for the platform's users – encrypted over a private mesh network, with nothing exposed to the internet.")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/connect")}>{t("Offer your GPU")}</Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          <GarageTermsBanner garages={garages.filter((g) => !g.terms_accepted_at)} onAccepted={invalidate} />
-          {garages.map((g) => (
-            <Card key={g.id} className="glass-card">
-              <CardContent className="pt-6 space-y-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono">{g.name}</span>
-                  {g.paused_at && <PausedBadge reason={g.paused_reason} byAdmin={g.paused_by_admin} />}
-                  <LocationBadge location={locations.get(g.name)} />
-                   {g.runtime && <Badge variant="outline" className="text-[10px]">{runtimeLabel(g.runtime)}{g.port ? `:${g.port}` : ""}</Badge>}
-                  <span className="text-xs text-muted-foreground ml-auto">{t("Registered:")} {relativeTimeSv(g.last_registered_at)}</span>
-                   <span className="text-xs text-muted-foreground">{t("Last heartbeat:")} {g.last_heartbeat_at ? relativeTimeSv(g.last_heartbeat_at) : t("No heartbeat (older installation)")}</span>
-                </div>
-                <GarageHealthIndicators garage={g} models={byGarage.get(g.id) ?? []} />
-                {g.connection_type !== "endpoint" && <p className="text-xs text-muted-foreground">{t("Last connected with")} · {onboarding.isError ? t("Could not load connection tool.") : onboarding.isLoading ? t("Loading...") : connectionTool(onboarding.data?.get(g.id)?.script_version) ?? "—"}</p>}
-                {g.connection_type !== "endpoint" && <p className="text-xs text-muted-foreground">{t("Transport")} · {transportLabel(g)}</p>}
-                {g.agent && <BridgeAgentSection agent={g.agent} at={g.agent_at ?? null} />}
-                <BridgeUpdateNotice version={g.agent?.version} latest={bridgeLatest} stable={bridgeStable} />
-                <PoolShareNote garage={g.name} catalog={catalog} />
-                {g.connection_type === "endpoint" && !isAdmin && <p className="text-xs text-muted-foreground">{t("Models on provider endpoints are offered by GarageAI admins.")}</p>}
-                <GarageModelList garageName={g.name} models={byGarage.get(g.id) ?? []} pending={pending} onToggle={setOffered} onPause={setPaused} readOnly={g.connection_type === "endpoint" && !isAdmin} offline={g.runtime_ok === false || g.mesh_connected === false || g.status === "offline" || g.disabled} />
-                {g.first_models_at && !g.offer_page_seen_at && (
-                  <p className="text-sm rounded-md border border-primary/40 bg-primary/10 p-2">{t("Your garage sent its first models.")} <Link className="underline" to={`/dashboard/garages/${g.id}/offer`}>{t("What should my garage offer?")}</Link></p>
-                )}
-                {g.connection_type !== "endpoint" && !g.disabled && (
-                  <ManagedModelsSection garageId={g.id} runtime={g.runtime} installed={g.models} rows={managed.byGarage.get(g.id) ?? []} memoryGb={managed.machines.get(g.id)?.memoryGb ?? null} catalog={catalog} onRequest={managed.request} onCancel={managed.cancel} busy={managed.pending} />
-                )}
-                {g.connection_type !== "endpoint" && <Link className="text-xs underline text-muted-foreground" to={`/dashboard/garages/${g.id}/offer`}>{t("What should my garage offer?")}</Link>}
-                <div className="flex gap-1.5 flex-wrap">
-                  {g.models.length === 0
-                    ? <span className="text-xs text-muted-foreground">{t("No models registered yet")}</span>
-                    : g.models.map((m) => (
-                      <span key={m} className="inline-flex flex-wrap gap-1">
-                        <ModelTestBadge model={m} test={latestTests.get(`${g.id}::${m}`)} />
-                        <ToolsTestBadge test={latestTests.get(`${g.id}::${m}`)} runtime={g.runtime} />
-                      </span>
-                    ))}
-                </div>
-                {!g.disabled && (
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" disabled={!!busy || g.models.length === 0} onClick={() => retest(g)}>
-                      <FlaskConical className="w-3.5 h-3.5 mr-1.5" />{busy === `t:${g.name}` ? t("Testing...") : t("Test again")}
-                    </Button>
-                    <GaragePauseButton garage={g} onDone={invalidate} />
-                    <DeleteGarageButton garage={g} operator onDone={invalidate} />
-                     {g.connection_type !== "endpoint" && <Button size="sm" variant="outline" onClick={() => navigate("/connect")}>{t("Connect this computer")}</Button>}
-                  </div>
-                )}
-                {g.disabled && <p className="text-xs text-destructive">{t("The garage has been disabled by the platform.")}</p>}
-                <ReliabilityAvailability reliability={reliability.get(g.name)} location={locations.get(g.name)} />
-                <LocationDisplaySetting garageId={g.id} value={g.location_display ?? "country"} />
-                <GarageEarnings garage={g} />
-                <GarageReliabilityPanel name={g.name} reliability={reliability.get(g.name)} />
-                <GarageTroubleshooting />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-
-    </div>
-  );
-};
-
-export default MyGaragesPage;
+function GaragePage({garage:g,onDone}:{garage:GarageRow;onDone:()=>void}){
+ const {byGarage,setOffered,pending}=useGarageModels([g.id]);
+ const models=byGarage.get(g.id)??[];
+ const managed=useManagedModels([g.id]);
+ const {models:catalog}=useModelCatalog();
+ const {overview,events,smart}=useMyGarageOverview(g.id);
+ const stats=overview.data;
+ const status=myGarageStatus(g,models);
+ const memory=g.agent?.machine?.mem_total_mb!=null?g.agent.machine.mem_total_mb/1000:managed.machines.get(g.id)?.memoryGb??null;
+ const money=(n:number|undefined)=>n==null?'—':new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+ const [noticeCount,setNoticeCount]=useState(1);
+ return <>
+  <section aria-label={t('Is it working?')} className="space-y-3">
+   <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-sm"><span className={`h-2.5 w-2.5 rounded-full shrink-0 ${status.online?'bg-success':'bg-warning'}`}/><span className="font-medium">{status.online?t('Online, answering requests'):g.paused_at?t('Paused'):t('Not answering requests')}</span><span className="text-xs text-muted-foreground">{stats?.last_request_hour?t('Last request around {time}',{time:new Date(stats.last_request_hour).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}):t('No requests yet')}</span></div>
+   {status.problems.map(p=><div key={p.code} className="text-sm text-warning-foreground"><p>{p.message}</p><p className="text-xs mt-1">{p.fix??t('Run garageai doctor on this machine to check and fix the problem.')}</p></div>)}
+   {!status.online&&status.reason&&<p className="text-sm text-warning-foreground">{t(status.reason.text,status.reason.params)}</p>}
+   {status.tunnelFailed&&<p className="text-xs text-warning-foreground">{t('Tunnel unavailable. Run garageai doctor on this machine.')}</p>}
+   {status.runtimeFailed&&<p className="text-xs text-warning-foreground">{g.runtime_error??t('Start the model runtime on this machine, then run garageai doctor.')}</p>}
+   {status.heartbeatMissing&&<p className="text-xs text-warning-foreground">{t('Bridge has stopped reporting. Wake the machine and run garageai doctor.')}</p>}
+   {g.transport==='netbird'&&<p className="text-xs text-muted-foreground">{t('Transport')}: NetBird</p>}
+  </section>
+  <section aria-label={t('Is it earning?')} className="border-t border-border pt-5 space-y-4">
+   <h2 className="text-base font-medium">{t('Earnings')}</h2>
+   {overview.isError?<p className="text-sm text-destructive">{t('Could not load earnings.')} <Button variant="link" size="sm" onClick={()=>overview.refetch()}>{t('Try again')}</Button></p>:<div className="grid grid-cols-3 gap-3">{[['Today',stats?.today],['This week',stats?.week],['Total',stats?.total]].map(([label,value])=><div key={String(label)}><p className="text-xs text-muted-foreground">{t(String(label))}</p><p className="mt-1 text-xl sm:text-2xl font-semibold tabular-nums">{money(value as number|undefined)}</p></div>)}</div>}
+   <div className="flex justify-between gap-3 flex-wrap text-xs text-muted-foreground"><span>{t('Requests per day · 14 days')}</span>{stats?.response_ms!=null&&<span>{t('Answers in {s} s',{s:(stats.response_ms/1000).toFixed(1)})}</span>}</div>
+   <div className="h-24 w-full" role="img" aria-label={t('Requests per day · 14 days')}><ResponsiveContainer width="100%" height="100%"><BarChart data={stats?.daily??[]} margin={{top:0,right:0,bottom:0,left:0}}><XAxis dataKey="day" tickFormatter={day=>String(day).slice(8)} axisLine={false} tickLine={false} tick={{fill:'hsl(var(--muted-foreground))',fontSize:10}} interval={2}/><Tooltip cursor={false} content={({active,payload})=>active&&payload?.length?<div className="rounded border border-border bg-popover px-3 py-2 text-xs">{String(payload[0].payload.day)} · {t('{n} requests',{n:Number(payload[0].value)})}</div>:null}/><Bar dataKey="requests" fill="hsl(var(--primary))" radius={[2,2,0,0]} maxBarSize={28}/></BarChart></ResponsiveContainer></div>
+  </section>
+  <section aria-label={t('What does it offer?')} className="border-t border-border pt-5 space-y-4">
+   <div className="flex items-center justify-between gap-3"><h2 className="text-base font-medium">{t('Models')}</h2>{!g.disabled&&g.connection_type!=='endpoint'&&<ManagedModelsSection garageId={g.id} runtime={g.runtime} installed={g.models} rows={managed.byGarage.get(g.id)??[]} memoryGb={memory} catalog={catalog} onRequest={managed.request} onCancel={managed.cancel} busy={managed.pending} showHistory={false}/>}</div>
+   <div className="divide-y divide-border">{models.length===0?<p className="py-3 text-sm text-muted-foreground">{t('No models registered yet')}</p>:models.map(m=>{
+    const cm=catalog.find(c=>c.name===m.canonical_model),pool=cm?.pool,member=pool?.members.find(p=>p.garage===g.name);
+    const requests=stats?.models.filter(s=>s.model===m.model||s.model===runtimeStatKey(m.model)).reduce((n,s)=>n+s.requests,0)??0;
+    const live=status.online&&m.offered&&m.installed&&m.status==='live'&&!m.paused_at;
+    return <div key={m.model} className="py-3 flex items-center gap-3"><div className="min-w-0 flex-1 space-y-1"><p className="text-sm font-medium break-words">{m.canonical_model}</p><p className="text-xs text-muted-foreground">{member&&pool?t('{share}% of the pool, {n} garages',{share:Math.round(member.share*100),n:pool.members.length}):t('Not in the pool')} · {t('{n} requests this week',{n:requests})}</p></div><span className={`text-xs shrink-0 ${live?'text-success-foreground':'text-muted-foreground'}`}>{live?t('Live'):m.status==='testing'?t('Testing...'):m.status==='failed'?t('Failed'):t('Not offered')}</span>{g.connection_type!=='endpoint'&&<Switch aria-label={`${t('Offer')} ${m.canonical_model}`} checked={m.offered} disabled={!!pending||g.disabled} onCheckedChange={async on=>{try{await setOffered(g.name,m.model,on);}catch(e){toast.error(e instanceof Error?e.message:t('Unknown error'));}}}/>}</div>;
+   })}</div>
+   {g.connection_type!=='endpoint'&&<div className="flex items-start gap-3 border-t border-border pt-4"><Switch id={`smart-${g.id}`} checked={g.smart??false} disabled={smart.isPending||g.disabled} onCheckedChange={on=>smart.mutate({on,disk:g.smart_disk_gb??40})}/><div className="min-w-0"><label htmlFor={`smart-${g.id}`} className="text-sm font-medium cursor-pointer">{t('GarageAI manages my models')}</label><p className="text-xs text-muted-foreground mt-1 leading-relaxed">{t('We fetch models that are in demand and fit your machine, and tell you why. Uses up to {gb} GB of disk.',{gb:g.smart_disk_gb??40})}</p></div></div>}
+   {(events.data??[]).slice(0,noticeCount).map(e=><p key={e.id} className="text-xs text-muted-foreground">{e.action==='pull'?t('We requested {model} for {garage}: {n} requests/day, {garages} garages were not enough.',{model:e.model,garage:g.name,n:e.reason.requests_per_day??0,garages:e.reason.healthy_garages??0}):t('We requested removal of {model} from {garage}: no requests in 14 days.',{model:e.model,garage:g.name})}</p>)}
+   {(events.data?.length??0)>noticeCount&&<Button size="sm" variant="link" className="px-0" onClick={()=>setNoticeCount(events.data?.length??1)}>{t('All Smart activity')}</Button>}
+  </section>
+  <MyGarageDetails garage={g} models={models} managed={managed} onDone={onDone}/>
+  {!g.terms_accepted_at&&<GarageTermsBanner garages={[g]} onAccepted={onDone}/>}
+ </>;
+}
+export default function MyGaragesPage(){
+ const {garages,isLoading,isError,invalidate}=useMyGarages();
+ const [params,setParams]=useSearchParams();
+ const selected=garages.find(g=>g.id===params.get('garage'))??garages[0];
+ return <div className="p-4 sm:p-6 space-y-5 max-w-4xl">
+  <div className="flex items-center justify-between gap-3"><div><h1 className="text-2xl font-semibold">{t('My garage')}</h1>{selected&&<p className="text-xs text-muted-foreground mt-1 font-mono">{selected.name}</p>}</div><Button asChild size="icon" variant="ghost" title={t('Add garage')} aria-label={t('Add garage')}><Link to="/connect"><Plus className="w-4 h-4"/></Link></Button></div>
+  {garages.length>1&&<Tabs value={selected?.id} onValueChange={id=>setParams({garage:id})}><TabsList className="w-full justify-start overflow-x-auto bg-transparent border-b border-border rounded-none h-auto p-0">{garages.map(g=><TabsTrigger className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none py-2 text-xs" key={g.id} value={g.id}>{g.name}</TabsTrigger>)}</TabsList></Tabs>}
+  {isLoading?<p className="text-sm text-muted-foreground">{t('Loading...')}</p>:isError?<p className="text-sm text-destructive">{t('Could not load your garages.')} <Button variant="link" onClick={invalidate}>{t('Try again')}</Button></p>:selected?<GaragePage key={selected.id} garage={selected} onDone={invalidate}/>:<div className="space-y-4 py-8"><p className="text-muted-foreground">{t('You have no garages yet')}</p><Button asChild><Link to="/connect">{t('Offer your GPU')}</Link></Button></div>}
+ </div>;
+}

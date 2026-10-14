@@ -38,4 +38,6 @@
 - [x] Report migration, test results, webhook URL/event, and external secret blocker (previous review)
 
 - [x] Managed models step 1 (Add/Remove on My garages) and step 2 (offer page)
-- [ ] Managed models step 3: GarageAI Smart — waits for go-ahead
+- [ ] Rebuild My garage: status, earnings, offers and collapsed full-control Details; English/Swedish
+- [ ] Implement Smart settings, nightly safe selection and per-event app/email notifications
+- [ ] Test Smart rules, verify signed-in desktop/mobile flow, deploy and publish

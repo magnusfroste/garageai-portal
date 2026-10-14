@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { t } from "@/i18n";
 import type { ManagedModelRow } from "@/data/repositories/managedModelRepository";
-import { buildCandidates, isOpen, progressGb, type ModelCandidate } from "@/models/services/managedModels";
+import { buildCandidates, isOpen, progressGb, recommend, type ModelCandidate } from "@/models/services/managedModels";
 import type { CatalogModel } from "@/models/types/catalog.types";
 import { useFetchableModels } from "@/hooks/useManagedModels";
 
@@ -73,14 +73,16 @@ export const CandidateRow = ({ c, onAdd, busy }: { c: ModelCandidate; onAdd: () 
   );
 };
 
-interface SectionProps { garageId: string; runtime: string | null; installed: string[]; rows: ManagedModelRow[]; memoryGb: number | null; catalog: CatalogModel[];
+interface SectionProps { garageId: string; runtime: string | null; installed: string[]; rows: ManagedModelRow[]; memoryGb: number | null; catalog: CatalogModel[]; showHistory?: boolean;
   onRequest: (v: { garageId: string; model: string; action: "pull" | "remove" }) => void; onCancel: (v: { garageId: string; model: string }) => void; busy: boolean }
 
 /** "Add a model" + fetch progress on a garage card. Ollama only. */
-export const ManagedModelsSection = ({ garageId, runtime, installed, rows, memoryGb, catalog, onRequest, onCancel, busy }: SectionProps) => {
+export const ManagedModelsSection = ({ garageId, runtime, installed, rows, memoryGb, catalog, onRequest, onCancel, busy, showHistory = true }: SectionProps) => {
   const [open, setOpen] = useState(false);
   const { fetchable, demand, market, isLoading } = useFetchableModels();
   const candidates = useMemo(() => buildCandidates({ fetchable, memoryGb, installed, managed: rows, garagesPerModel: garagesPerModel(catalog), demand, market }), [fetchable, memoryGb, installed, rows, catalog, demand, market]);
+  const recommended = recommend(candidates);
+  const recommendedTags = new Set(recommended.map(c => c.tag));
   if (runtime !== "ollama") return <p className="text-xs text-muted-foreground">{t("Fetching models is available for Ollama.")}</p>;
   const managedTags = new Set(rows.map((r) => r.model));
   const ownAdded = installed.some((m) => !managedTags.has(m));
@@ -88,9 +90,9 @@ export const ManagedModelsSection = ({ garageId, runtime, installed, rows, memor
     <div className="space-y-1.5">
       <div className="flex items-center gap-2 flex-wrap">
         <Button size="sm" variant="outline" onClick={() => setOpen(true)}><Plus className="h-3.5 w-3.5 mr-1.5" />{t("Add a model")}</Button>
-        {ownAdded && <span className="text-xs text-muted-foreground">{t("Models you added yourself: remove them with ollama rm on the machine.")}</span>}
+        {showHistory && ownAdded && <span className="text-xs text-muted-foreground">{t("Models you added yourself: remove them with ollama rm on the machine.")}</span>}
       </div>
-      <ManagedModelStatusList rows={rows} busy={busy} onCancel={(model) => onCancel({ garageId, model })} onRemove={(model) => onRequest({ garageId, model, action: "remove" })} />
+      {showHistory && <ManagedModelStatusList rows={rows} busy={busy} onCancel={(model) => onCancel({ garageId, model })} onRemove={(model) => onRequest({ garageId, model, action: "remove" })} />}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -100,7 +102,10 @@ export const ManagedModelsSection = ({ garageId, runtime, installed, rows, memor
           <div className="max-h-[60vh] overflow-y-auto">
             {isLoading ? <p className="text-sm text-muted-foreground">{t("Loading...")}</p>
               : candidates.length === 0 ? <p className="text-sm text-muted-foreground">{t("No models to add right now.")}</p>
-              : candidates.map((c) => <CandidateRow key={c.tag} c={c} busy={busy} onAdd={() => { onRequest({ garageId, model: c.tag, action: "pull" }); setOpen(false); }} />)}
+              : <>
+                {recommended.length > 0 && <><h3 className="text-sm font-medium">{t("Recommended for you")}</h3>{recommended.map(c => <CandidateRow key={c.tag} c={c} busy={busy} onAdd={() => { onRequest({garageId,model:c.tag,action:'pull'});setOpen(false); }} />)}<h3 className="mt-4 text-sm font-medium">{t("All models")}</h3></>}
+                {candidates.filter(c => !recommendedTags.has(c.tag)).map((c) => <CandidateRow key={c.tag} c={c} busy={busy} onAdd={() => { onRequest({ garageId, model: c.tag, action: "pull" }); setOpen(false); }} />)}
+              </>}
           </div>
         </DialogContent>
       </Dialog>

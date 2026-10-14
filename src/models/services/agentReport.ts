@@ -1,7 +1,7 @@
 // Frontend view of the Bridge self-report stored on garages.agent (validated server-side in node-heartbeat).
 export type AgentSeverity = "error" | "warning" | "info";
-export interface AgentProblem { severity: AgentSeverity; code: string; message: string }
-export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems?: AgentProblem[]; update?: { last_check: string | null; last_update: string | null; last_error: string | null; auto: boolean } }
+export interface AgentProblem { severity: AgentSeverity; code: string; message: string; fix?: string }
+export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems?: AgentProblem[]; machine?: import('../../../supabase/functions/_shared/agentReport').AgentMachine; update?: { last_check: string | null; last_update: string | null; last_error: string | null; auto: boolean } }
 
 const RANK: Record<AgentSeverity, number> = { error: 0, warning: 1, info: 2 };
 export const sortedProblems = (agent: AgentReport): AgentProblem[] =>
