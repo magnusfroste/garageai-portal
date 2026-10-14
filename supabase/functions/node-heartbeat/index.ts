@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     try {
       const reports = parseAgentModels((body.agent as Record<string, unknown> | undefined)?.models);
       if (reports.errors.length) console.warn("[node-heartbeat] ignored agent.models entries", garage.name, reports.errors);
-      const { data: rows } = await admin.from("garage_managed_models").select("model, action, by, status, completed_mb, total_mb").eq("garage_id", garage.id);
+      const { data: rows } = await admin.from("garage_managed_models").select("model, action, by, status, completed_mb, total_mb, reported_at").eq("garage_id", garage.id);
       const current = (rows ?? []) as ManagedRow[];
       const updates = applyReports(current, reports.models);
       for (const u of updates) {
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
           if (cm?.download_bytes) { u.patch.total_mb = Math.round(Number(cm.download_bytes) / 1e6); u.patch.completed_mb = u.patch.total_mb; }
         }
         await admin.from("garage_managed_models").update(u.patch).eq("garage_id", garage.id).eq("model", u.model);
-        const row = current.find((r) => r.model === u.model); if (row && u.patch.status) row.status = u.patch.status;
+        const row = current.find((r) => r.model === u.model); if (row && u.patch.status) { row.status = u.patch.status; row.reported_at = u.patch.reported_at; }
       }
       // Idempotent: every heartbeat offers fetched pulls that Bridge lists but that are not offered yet.
       const candidates = pendingOffers(current, payload.models, new Set());
