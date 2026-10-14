@@ -198,7 +198,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   const { rows, source } = await fetchSpendLogs(base, masterKey, new Date(fromMs), new Date(toMs));
   const rates = await deploymentRates(base, masterKey);
 
-  type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number };
+  type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number; lastRequest: number | null };
   type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number; dedicatedPrompt: number; dedicatedTokens: number; cached: number; inSpend: number; cachedSpend: number; outSpend: number };
   const mbuckets = new Map<string, MBucket>();
   const buckets = new Map<string, Bucket>();
@@ -220,8 +220,9 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const hour = floorHour(start);
     const key = `${gid}|${hour}`;
     let b = buckets.get(key);
-    if (!b) { b = { garage_id: gid, hour, requests: 0, failures: 0, ttft: [], tps: [], tokens: 0, prompt: 0, spend: 0 }; buckets.set(key, b); }
+    if (!b) { b = { garage_id: gid, hour, requests: 0, failures: 0, ttft: [], tps: [], tokens: 0, prompt: 0, spend: 0, lastRequest:null }; buckets.set(key, b); }
     b.requests++;
+    if (statusOf(r) === 'success') b.lastRequest = Math.max(b.lastRequest ?? 0,start);
     if (statusOf(r) !== "success") b.failures++;
     const completionTokens = Number(r.completion_tokens ?? 0) || 0;
     b.tokens += completionTokens;
@@ -256,6 +257,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const tps = median(b.tps);
     return {
       garage_id: b.garage_id, hour: new Date(b.hour).toISOString(), requests: b.requests, failures: b.failures,
+      last_request_at: b.lastRequest == null ? null : new Date(b.lastRequest).toISOString(),
       ttft_ms_p50: ttft === null ? null : Math.round(ttft),
       tokens_per_second_p50: tps === null ? null : Math.round(tps * 10) / 10,
       completion_tokens: b.tokens, prompt_tokens: b.prompt, spend_usd: Math.round(b.spend * 1e8) / 1e8,

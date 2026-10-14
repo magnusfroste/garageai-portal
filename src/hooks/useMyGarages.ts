@@ -18,6 +18,7 @@ export const useMyGarages = () => {
   const garagesQuery = useQuery({
     queryKey: ["my-garages", userId],
     enabled: !!userId,
+    refetchInterval: 30_000,
     queryFn: () => {
       if (!userId) return Promise.resolve([]);
       return garageRepository.listOwn(userId);
