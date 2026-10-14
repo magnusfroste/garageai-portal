@@ -254,6 +254,36 @@ export type Database = {
           },
         ]
       }
+      bridge_release_runs: {
+        Row: {
+          error_garages: string[]
+          first_seen_at: string
+          garages_seen: string[]
+          last_error: string | null
+          last_seen_at: string
+          update_errors: number
+          version: string
+        }
+        Insert: {
+          error_garages?: string[]
+          first_seen_at?: string
+          garages_seen?: string[]
+          last_error?: string | null
+          last_seen_at?: string
+          update_errors?: number
+          version: string
+        }
+        Update: {
+          error_garages?: string[]
+          first_seen_at?: string
+          garages_seen?: string[]
+          last_error?: string | null
+          last_seen_at?: string
+          update_errors?: number
+          version?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -1474,6 +1504,15 @@ export type Database = {
             }
             Returns: undefined
           }
+      record_bridge_run: {
+        Args: {
+          _error: string
+          _error_version: string
+          _garage_id: string
+          _version: string
+        }
+        Returns: undefined
+      }
       request_managed_model: {
         Args: { _action: string; _garage_id: string; _model: string }
         Returns: undefined
