@@ -41,3 +41,10 @@ test("agent.update is stored; a malformed one drops the agent like other bad fie
   expect(parseAgent({ version: "v0.5.0", update: u }).agent?.update).toEqual(u);
   expect(parseAgent({ version: "v0.5.0", update: { auto: "yes" } }).agent).toBeNull();
 });
+
+test("canary garage gets the latest release, a normal garage gets stable", () => {
+  const latest = { version: "v0.6.1" };
+  expect(heartbeatBridgeFields(auto, { canary: true, latest })).toEqual({ bridge_stable: "v0.6.1", bridge_download_base: "https://github.com/magnusfroste/garageai/releases/download/bridge-v0.6.1" });
+  expect(heartbeatBridgeFields(auto, { canary: false, latest })).toEqual({ bridge_stable: "v0.4.6", bridge_download_base: "https://github.com/magnusfroste/garageai/releases/download/bridge-v0.4.6" });
+  expect(heartbeatBridgeFields(auto, { canary: true, latest: null }).bridge_stable).toBe("v0.4.6");
+});
