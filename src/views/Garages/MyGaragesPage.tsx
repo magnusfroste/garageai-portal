@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {lifecycleLine} from '@/models/services/agentLifecycle';
 import {Link,useSearchParams} from 'react-router-dom';
 import {Plus} from 'lucide-react';
 import {BarChart,Bar,XAxis,Tooltip,ResponsiveContainer} from 'recharts';
@@ -29,11 +30,12 @@ function GaragePage({garage:g,onDone}:{garage:GarageRow;onDone:()=>void}){
  const memory=g.agent?.machine?.mem_total_mb!=null?g.agent.machine.mem_total_mb/1000:managed.machines.get(g.id)?.memoryGb??null;
  const money=(n:number|undefined)=>n==null?'—':new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
  const [noticeCount,setNoticeCount]=useState(1);
+ const life=lifecycleLine(g.agent_state);
  return <>
   <section aria-label={t('Is it working?')} className="space-y-3">
-   <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-sm"><span className={`h-2.5 w-2.5 rounded-full shrink-0 ${status.online?'bg-success':'bg-warning'}`}/><span className="font-medium">{status.online?t('Online, answering requests'):g.paused_at?t('Paused'):t('Not answering requests')}</span><span className="text-xs text-muted-foreground">{stats?.last_request_at?t('Last request {n} min ago',{n:Math.max(0,Math.round((Date.now()-Date.parse(stats.last_request_at))/60000))}):stats?.last_request_hour?t('Last request around {time}',{time:new Date(stats.last_request_hour).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}):t('No requests yet')}</span></div>
+   <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-sm"><span className={`h-2.5 w-2.5 rounded-full shrink-0 ${life?'bg-muted-foreground':status.online?'bg-success':'bg-warning'}`}/><span className="font-medium">{life?t(life.key,life.params):status.online?t('Online, answering requests'):g.paused_at?t('Paused'):t('Not answering requests')}</span>{life&&g.agent_state?.reason&&<span className="text-sm text-muted-foreground">{g.agent_state.reason}</span>}<span className="text-xs text-muted-foreground">{stats?.last_request_at?t('Last request {n} min ago',{n:Math.max(0,Math.round((Date.now()-Date.parse(stats.last_request_at))/60000))}):stats?.last_request_hour?t('Last request around {time}',{time:new Date(stats.last_request_hour).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}):t('No requests yet')}</span></div>
    {status.problems.map(p=><div key={p.code} className="text-sm text-warning-foreground"><p>{p.message}</p><p className="text-xs mt-1">{p.fix??t('Run garageai doctor on this machine to check and fix the problem.')}</p></div>)}
-   {!status.online&&status.reason&&<p className="text-sm text-warning-foreground">{t(status.reason.text,status.reason.params)}</p>}
+   {!life&&!status.online&&status.reason&&<p className="text-sm text-warning-foreground">{t(status.reason.text,status.reason.params)}</p>}
    {status.tunnelFailed&&<p className="text-xs text-warning-foreground">{t('Tunnel unavailable. Run garageai doctor on this machine.')}</p>}
    {status.runtimeFailed&&<p className="text-xs text-warning-foreground">{g.runtime_error??t('Start the model runtime on this machine, then run garageai doctor.')}</p>}
    {status.heartbeatMissing&&<p className="text-xs text-warning-foreground">{t('Bridge has stopped reporting. Wake the machine and run garageai doctor.')}</p>}
