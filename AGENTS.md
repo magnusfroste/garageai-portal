@@ -1,5 +1,6 @@
 # Project architecture
 
+- Subdirectories have their own `AGENTS.md`; read it before changing files there.
 - Public garage cards/headers use shared public service/header, aggregate RPCs and canonical identities, never runtime ids.
 - Flow: repositories → services/models → hooks → views.
 - Derive admin garage status, attention, filtering and sorting in the shared presentation service, so all admin views agree.
@@ -22,12 +23,9 @@
 - Read operator earnings through an ownership-scoped aggregate RPC; estimates stay separate from invoice totals to prevent current-price repricing.
 - Keep garage_models.model as the runtime id (sent upstream, never shown to buyers) and canonical_model as the catalogue/pool name: OpenRouter-style `<creator>/<model>` from the org/family tables in `modelIdentity.ts` (SQL mirror `normalise_model_id`), mesh names normalised by the DB trigger, model pages use a splat route (names contain `/`), only admins may alias endpoint-provider models, deployment ids derive from the runtime id.
 - Record connect-script progress only via the `onboarding-report` edge function (register-token auth, service-role insert, rate-limited, newest 200 kept); derive step states only in `onboardingProgress.ts`, so wizard, admin Supply and gateway agree.
-- Issue garage credentials (register token, setup key, old-peer cleanup) only via `_shared/garageCredentials.ts`; create-garage and the Bridge link share it, so both enforce the same limits.
-- Plan garageai/auto deployments only in `_shared/autoRoute.ts` on top of the normal desired set inside reconcileGarageRouting; auto ids are `auto__<curated id>`, so usage ingest credits the entry's own garage.
 
 ## Where logic lives
 
 - Announcements use repository → service → hook → views; RLS enforces audience/window/admin access and the signed-in shell owns the bar, preventing public exposure.
 
 - The portal decides what should hold: people's decisions and business terms (models for sale, prices, the garageai/auto list, garages, owners, terms, earnings, accounts, onboarding). The gateway (LiteLLM) carries it out within seconds: routing, failover, cooldown, context checks, health. Never build a fast reaction (failover, retries, timeouts, blocking) as a portal function on a schedule. Never make a routing or health decision from gateway data gathered while the gateway itself is unreachable: treat it as inconclusive. Routing, pricing and health code needs tests. Full rationale: https://github.com/magnusfroste/garageai/blob/main/docs/architecture.md (syncModels moves into a separate control plane when there is more than one gateway or region).
-- Ops-test managed-model requests go through `managed-models-ops` (gateway key) and the shared `apply_managed_model_request`/`apply_managed_model_cancel` SQL path, limited to admin-owned garages, so nightly tests use the exact Add/Remove/Cancel rules and never touch operator machines.
