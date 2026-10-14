@@ -5,7 +5,7 @@ export const bridgeVersion = (raw: unknown): string | null => {
   const version = valid(raw.trim().replace(/^bridge-/, ""));
   return version ? `v${version}` : null;
 };
-export const bridgeVersionsSummary = (setting: unknown, garages: Array<{ name: string; canary?: boolean | null; agent?: { version?: unknown; update?: { auto?: unknown; last_error?: unknown } } | null }>, update?: unknown) => {
+export const bridgeVersionsSummary = (setting: unknown, garages: Array<{ name: string; canary?: boolean | null; agent_state?: unknown; agent?: { version?: unknown; update?: { auto?: unknown; last_error?: unknown } } | null }>, update?: unknown) => {
   const s = setting && typeof setting === "object" ? setting as Record<string, unknown> : {};
   const u = update && typeof update === "object" ? update as Record<string, unknown> : {};
   const pinned = bridgeVersion(s.pinned), stable = bridgeVersion(u.stable), mode = u.mode === "manual" ? "manual" : "auto";
@@ -15,7 +15,7 @@ export const bridgeVersionsSummary = (setting: unknown, garages: Array<{ name: s
     const version = bridgeVersion(g.agent?.version);
     const auto = typeof g.agent?.update?.auto === "boolean" ? g.agent.update.auto : null;
     const last_error = typeof g.agent?.update?.last_error === "string" ? g.agent.update.last_error : null;
-    return { name: g.name, canary: g.canary === true, version, outdated: !!version && !!target && lt(version, target), auto, last_error };
+    return { name: g.name, canary: g.canary === true, agent_state: g.agent_state ?? null, version, outdated: !!version && !!target && lt(version, target), auto, last_error };
   }) };
 };
 export const newestBridgeRelease = (releases: Array<{ tag_name: string; draft: boolean; published_at?: string | null; created_at?: string }>) => {

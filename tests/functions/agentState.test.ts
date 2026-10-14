@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, modelsToTestOnReturn } from "../../supabase/functions/_shared/agentState";
+import { statusAfterHealth, parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, modelsToTestOnReturn } from "../../supabase/functions/_shared/agentState";
 import { isModelSellable, type RoutingGarage } from "../../supabase/functions/_shared/garageRouting";
 
 const now = Date.parse("2026-10-14T21:12:00Z");
@@ -28,10 +28,8 @@ describe("agent lifecycle state", () => {
     expect(parseAgentState({ kind: "away", until: "not a date" }).kind).toBe("ignored");
   });
   it("a planned absence never marks the garage unhealthy (gateway signal stays healthy)", () => {
-    // Routing excludes it by state, not by health; health fields are untouched.
-    const absent = { ...g, agent_state: maint } as RoutingGarage;
-    expect(absent.runtime_ok).toBe(true);
-    expect(absent.status).toBe("online");
+    expect(statusAfterHealth("online", false, false, true)).toBe("online");
+    expect(statusAfterHealth("online", false, false, false)).toBe("offline");
   });
   it("nodes are validated and malformed lists ignored", () => {
     expect(parseAgentNodes([{ name: "spark-1", role: "head", ok: true, container: "vllm", gpu_temp_c: 61, gpu_util_pct: 400 }]).nodes)
