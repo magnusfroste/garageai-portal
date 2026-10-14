@@ -28,7 +28,6 @@ export function heartbeatBridgeFields(setting: BridgeUpdateSetting, opts: { cana
     : { bridge_stable: null, bridge_download_base: null };
 }
 
-export const HEARTBEAT_FRESH_MS = 60 * 60 * 1000;
 
 export interface BridgeReleaseRun { version: string; first_seen_at: string; update_errors: number }
 
