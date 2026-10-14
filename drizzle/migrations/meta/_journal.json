@@ -407,6 +407,20 @@
       "when": 1791990480073,
       "tag": "0057_garage_last_request_and_price_estimates",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1792000452190,
+      "tag": "0058_cancel_fetched_becomes_remove",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1792000464825,
+      "tag": "0059_cancel_single_step",
+      "breakpoints": true
     }
   ]
 }

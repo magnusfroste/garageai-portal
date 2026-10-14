@@ -61,3 +61,23 @@ test("sizes are stored on every report and a final ready without sizes keeps the
   const [d] = applyReports([pull], parseAgentModels([{ model: "qwen3:4b", status: "downloading", completed_mb: 500, total_mb: 2600, at }]).models);
   expect(d.patch).toMatchObject({ completed_mb: 500, total_mb: 2600 });
 });
+
+test("auto-offer is idempotent: ready at heartbeat N without listing, listed at N+1 → offered at N+1", async () => {
+  const { pendingOffers } = await import("../../supabase/functions/_shared/managedModels");
+  const now = Date.parse(at);
+  const rows: ManagedRow[] = [pull];
+  const [u] = applyReports(rows, parseAgentModels([{ model: "qwen3:4b", status: "ready", at }]).models);
+  rows[0] = { ...rows[0], ...u.patch };
+  expect(pendingOffers(rows, [], new Set(), now)).toEqual([]);                    // heartbeat N: not listed yet
+  expect(pendingOffers(rows, ["qwen3:4b"], new Set(), now + 60_000)).toEqual(["qwen3:4b"]); // N+1: listed → offer
+  expect(pendingOffers(rows, ["qwen3:4b"], new Set(["qwen3:4b"]), now + 120_000)).toEqual([]); // already offered
+  expect(pendingOffers(rows, ["qwen3:4b"], new Set(), now + 2 * 3600_000)).toEqual([]); // operator switched off later: respected
+});
+test("cancel deletes only unfetched pulls; downloading/ready become a remove", async () => {
+  const { cancelOutcome } = await import("../../supabase/functions/_shared/managedModels");
+  expect(cancelOutcome({ action: "pull", status: "wanted" })).toBe("delete");
+  expect(cancelOutcome({ action: "pull", status: "failed" })).toBe("delete");
+  expect(cancelOutcome({ action: "pull", status: "downloading" })).toBe("remove");
+  expect(cancelOutcome({ action: "pull", status: "ready" })).toBe("remove");
+  expect(cancelOutcome({ action: "remove", status: "wanted" })).toBe("revert");
+});

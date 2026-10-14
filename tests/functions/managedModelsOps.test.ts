@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { handleOps, parseOpsBody, type OpsStore, type OpsBody } from "../../supabase/functions/_shared/managedModelsOps";
 import { isGatewayAuthorized } from "../../supabase/functions/_shared/gatewayAuth";
+import { cancelOutcome } from "../../supabase/functions/_shared/managedModels";
 
 (globalThis as any).Deno ??= { env: { get: (k: string) => (k === "LITELLM_MASTER_KEY" ? "secret-key" : undefined) } };
 const req = (key?: string) => new Request("http://x", { method: "POST", headers: key ? { "x-gateway-key": key } : {} });
@@ -21,7 +22,7 @@ function fakeStore() {
     garage: async (n) => garages[n] ?? null,
     isAdmin: async (u) => u === "admin-user",
     want: async (_g, model, action) => { rows.set(model, { model, action, by: "ops-test", status: "wanted" }); },
-    cancel: async (_g, model) => { const r = rows.get(model); if (r?.action === "pull" && r.status !== "ready") rows.delete(model); },
+    cancel: async (_g, model) => { const r = rows.get(model) ?? null; const o = cancelOutcome(r); if (o === "delete") rows.delete(model); else if (o === "remove") rows.set(model, { ...r!, action: "remove", status: "wanted" }); else if (o === "revert") rows.set(model, { ...r!, action: "pull", status: "ready" }); },
     managedRows: async (_g, m) => [...rows.values()].filter((r) => !m || r.model === m),
     inventory: async () => [{ model: "qwen3:4b", installed: true, offered: true, status: "live" }],
     latestTests: async () => [{ model: "qwen3:4b", passed: true, tested_at: "2026-10-14T07:00:00Z" }, { model: "qwen3:4b", passed: false, tested_at: "2026-10-13T07:00:00Z" }],
