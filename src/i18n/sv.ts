@@ -884,8 +884,6 @@ export const sv: Record<string, string> = {
   "My garage": "Mitt garage",
   "Details": "Detaljer",
   "Context window": "Kontextfönster",
-  "All models": "Alla modeller",
-  "Could not load earnings.": "Kunde inte ladda intäkter.",
   "Automatic updates": "Automatiska uppdateringar",
   "Last update": "Senaste uppdatering",
   "Last update check": "Senaste uppdateringskontroll",
