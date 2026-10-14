@@ -3,11 +3,15 @@ export type AgentSeverity = "error" | "warning" | "info";
 export interface AgentProblem { severity: AgentSeverity; code: string; message: string; fix?: string }
 export interface AgentMachine { load_pct?: number; mem_total_mb?: number; mem_free_mb?: number; disk_free_gb?: number; power?: 'ac' | 'battery' | ''; battery_pct?: number; user_active?: boolean; gpu_util_pct?: number; vram_used_mb?: number; vram_total_mb?: number }
 export interface AgentUpdate { last_check: string | null; last_update: string | null; last_error: string | null; auto: boolean }
-export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems: AgentProblem[]; update?: AgentUpdate; machine?: AgentMachine }
+export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems: AgentProblem[]; update?: AgentUpdate; machine?: AgentMachine; [extra: string]: unknown }
 
 export const AGENT_STRING_MAX = 64;
 export const AGENT_PROBLEMS_MAX = 20;
 export const AGENT_MESSAGE_MAX = 300;
+export const AGENT_EXTRA_FIELD_MAX = 16_384;
+export const AGENT_EXTRAS_MAX = 32_768;
+// models is stored in garage_managed_models; the rest are validated individually.
+const KNOWN = new Set(["tool", "version", "os", "arch", "problems", "update", "machine", "models"]);
 const SEVERITIES = new Set(["error", "warning", "info"]);
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -17,6 +21,14 @@ export function parseAgent(raw: unknown): { agent: AgentReport | null; error?: s
   if (raw === undefined) return { agent: null };
   if (!isObj(raw)) return { agent: null, error: "agent is not an object" };
   const out: AgentReport = { problems: [] };
+  // Keep future Bridge fields (state, nodes, requests, ...) as sent, within a size cap; validated keys below override.
+  const extras: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (KNOWN.has(k) || k.length > AGENT_STRING_MAX) continue;
+    const size = JSON.stringify(v ?? null).length;
+    if (size <= AGENT_EXTRA_FIELD_MAX) extras[k] = v;
+  }
+  if (JSON.stringify(extras).length <= AGENT_EXTRAS_MAX) Object.assign(out, extras);
   for (const key of ["tool", "version", "os", "arch"] as const) {
     const v = raw[key];
     if (v === undefined || v === null) continue;
