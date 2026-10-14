@@ -21,6 +21,17 @@ import {GarageTermsBanner} from './components/GarageTermsBanner';
 import {t} from '@/i18n';
 import {toast} from 'sonner';
 
+/** The operator's own Pause/Resume, next to the status line. Admin-paused garages get a contact link instead. */
+function PauseControl({g,onDone}:{g:GarageRow;onDone:()=>void}){
+ const [open,setOpen]=useState(false);const [busy,setBusy]=useState(false);
+ const run=async(paused:boolean)=>{setBusy(true);try{await garageRepository.setPaused(g.name,paused);onDone();}catch(e){toast.error(e instanceof Error?e.message:t('Unknown error'));}finally{setBusy(false);}};
+ if(g.paused_by_admin&&g.paused_at)return <a className="text-xs underline text-muted-foreground" href="mailto:support@garageai.eu">{t('Contact us')}</a>;
+ if(g.paused_at)return <Button size="sm" variant="outline" disabled={busy} onClick={()=>run(false)}><Play className="w-3.5 h-3.5 mr-1.5"/>{busy?t('Working...'):t('Resume')}</Button>;
+ return <>
+  <Button size="sm" variant="outline" onClick={()=>setOpen(true)}><Pause className="w-3.5 h-3.5 mr-1.5"/>{t('Pause')}</Button>
+  <AlertDialog open={open} onOpenChange={setOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{t('Pause {name}?',{name:g.name})}</AlertDialogTitle><AlertDialogDescription>{t('Buyers go elsewhere while paused; you can resume any time.')}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={busy}>{t('Cancel')}</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={async e=>{e.preventDefault();await run(true);setOpen(false);}}>{busy?t('Working...'):t('Pause')}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+ </>;
+}
 function GaragePage({garage:g,onDone}:{garage:GarageRow;onDone:()=>void}){
  const {byGarage,setOffered,pending}=useGarageModels([g.id]);
  const models=byGarage.get(g.id)??[];
