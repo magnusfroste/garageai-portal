@@ -1,4 +1,4 @@
-import { valid, lt } from "semver";
+import { valid, lt, gt } from "semver";
 
 export interface BridgeLatest { version: string | null; tag: string | null; checked_at: string | null; pinned: string | null }
 export const bridgeVersion = (raw: unknown): string | null => {
@@ -35,3 +35,13 @@ export const bridgeStatus = (raw: unknown, s: BridgeLatest, stable?: string | nu
   return { version, latest, outdated: !!version && !!latest && lt(version, latest) };
 };
 export const BRIDGE_UPDATE_COMMAND = "curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh";
+export interface BridgeReleaseRunRow { version: string; first_seen_at: string; last_seen_at: string; garages_seen: string[]; update_errors: number; last_error: string | null }
+export interface BridgeCandidate { version: string; firstSeen: string | null; hoursRun: number | null; errors: number; lastError: string | null; garages: string[]; eligibleAt: string | null }
+/** Admin → Settings candidate list: versions newer than stable, newest first (same rule as the hourly promotion). */
+export const bridgeCandidates = (runs: BridgeReleaseRunRow[], u: BridgeUpdate, now = Date.now()): BridgeCandidate[] =>
+  runs.map((r) => ({ r, v: bridgeVersion(r.version) })).filter((x): x is { r: BridgeReleaseRunRow; v: string } => !!x.v && (!u.stable || gt(x.v, u.stable)))
+    .sort((a, b) => (gt(a.v, b.v) ? -1 : 1)).map(({ r, v }) => {
+      const first = Date.parse(r.first_seen_at); const seen = Number.isFinite(first);
+      return { version: v, firstSeen: seen ? r.first_seen_at : null, hoursRun: seen ? Math.max(0, (now - first) / 3600_000) : null, errors: r.update_errors, lastError: r.last_error,
+        garages: r.garages_seen, eligibleAt: seen && r.update_errors === 0 ? new Date(first + u.auto_after_hours * 3600_000).toISOString() : null };
+    });
