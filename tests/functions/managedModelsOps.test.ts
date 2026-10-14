@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { handleOps, parseOpsBody, type OpsStore, type OpsBody } from "../../supabase/functions/_shared/managedModelsOps";
 import { isGatewayAuthorized } from "../../supabase/functions/_shared/gatewayAuth";
+import { cancelOutcome } from "../../supabase/functions/_shared/managedModels";
 
 (globalThis as any).Deno ??= { env: { get: (k: string) => (k === "LITELLM_MASTER_KEY" ? "secret-key" : undefined) } };
 const req = (key?: string) => new Request("http://x", { method: "POST", headers: key ? { "x-gateway-key": key } : {} });
