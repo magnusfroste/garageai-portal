@@ -393,6 +393,7 @@ export const sv: Record<string, string> = {
   "Stop (Esc)": "Stoppa (Esc)",
   "Send": "Skicka",
   "Cancel": "Avbryt",
+  "test": "test",
   "Edit": "Redigera",
   "Regenerate": "Generera igen",
   "Thinking… {n} s": "Tänker… {n} s",
