@@ -38,7 +38,7 @@ export const GarageTable = ({ rows, actions }: { rows: AdminGarageRow[]; actions
           <TableCell className="tabular-nums"><span className="font-medium">{row.view.live}</span><span className="text-muted-foreground"> {t("of")} {row.view.offered} {t("live")}</span></TableCell>
           <TableCell><div className="flex items-center gap-2">{row.reliability ? <GradeBadge grade={row.reliability.grade} /> : "—"}<span className="text-xs tabular-nums text-muted-foreground">{row.location?.is_endpoint ? t("Always on") : row.location ? liveHoursText(row.location) : "—"}</span></div></TableCell>
           <TableCell><GaragePriceCell garage={row.garage} /></TableCell>
-          <TableCell className="text-xs font-mono"><GarageBridgeCell view={row.view} /></TableCell>
+          <TableCell className="text-xs font-mono"><GarageBridgeCell view={row.view} canary={row.garage.canary} /></TableCell>
           <TableCell className="text-xs tabular-nums text-muted-foreground" title={row.view.lastSeen ? new Date(row.view.lastSeen).toLocaleString() : undefined}>{relative(row.view.lastSeen)}</TableCell>
           <TableCell className="text-right"><GarageActionsMenu garage={row.garage} actions={actions} /></TableCell>
         </TableRow>

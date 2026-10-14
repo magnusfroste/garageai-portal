@@ -204,6 +204,7 @@ export const GaragePanel = () => {
     onRetest: (garage) => { void handleRetest(garage); },
     onNewCredential: (garage) => garage.connection_type === "endpoint" ? (setNewKey(""), setKeyGarage(garage)) : handleNewToken(garage),
     onTogglePaused: setPauseGarage,
+    onToggleCanary: (garage) => { void garageRepository.setCanary(garage.id, !garage.canary).then(() => { invalidate(); toast({ title: t(garage.canary ? "Canary removed" : "Canary enabled") }); }, (e) => toast({ title: t("Could not change canary"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" })); },
     onToggleDisabled: setConfirmGarage,
     onDelete: setDeleteGarage,
     retesting,

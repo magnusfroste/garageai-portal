@@ -12,7 +12,7 @@ export const GarageMobileList = ({ rows, actions }: { rows: AdminGarageRow[]; ac
       <div key={row.garage.id} role="button" tabIndex={0} className="space-y-3 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" onClick={() => actions.onOpen(row.garage)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") actions.onOpen(row.garage); }}>
         <div className="flex items-start justify-between gap-3"><GarageIdentityCell row={row} /><GarageActionsMenu garage={row.garage} actions={actions} /></div>
         <GarageStatusCell view={row.view} />
-        <p className="text-xs">Bridge · <GarageBridgeCell view={row.view} /></p>
+        <p className="text-xs">Bridge · <GarageBridgeCell view={row.view} canary={row.garage.canary} /></p>
         <div className="flex items-center justify-between gap-3 text-xs">
           <span className="tabular-nums"><strong>{row.view.live}</strong><span className="text-muted-foreground"> / {row.view.offered} {t("models live")}</span></span>
           {row.reliability ? <GradeBadge grade={row.reliability.grade} /> : <span className="text-muted-foreground">—</span>}
