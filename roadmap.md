@@ -43,4 +43,4 @@
 - [ ] Smart email notices — blocked: no project sender domain; email infrastructure/templates require domain setup
 - [x] Test Smart/default/price/report rules; verify desktop/mobile fixture layout; deploy nightly function and verify safe no-op live
 - [ ] Real-account Smart toggle, price save and fetch flow — blocked: requester has no app account; explicit-account session approval unavailable
-- [ ] Publish the My garage and Smart revision
+- [x] Request publication of My garage and Smart to app.garageai.eu
