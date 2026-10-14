@@ -421,6 +421,13 @@
       "when": 1792000464825,
       "tag": "0059_cancel_single_step",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792002048764,
+      "tag": "0060_garage_agent_state",
+      "breakpoints": true
     }
   ]
 }

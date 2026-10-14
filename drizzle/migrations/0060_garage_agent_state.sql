@@ -1,0 +1,3 @@
+ALTER TABLE public.garages ADD COLUMN IF NOT EXISTS agent_state jsonb, ADD COLUMN IF NOT EXISTS agent_nodes jsonb;
+COMMENT ON COLUMN public.garages.agent_state IS 'Bridge lifecycle state {kind: maintenance|starting|away, reason, since, until}; NULL = serving. Planned absence: out of routing, never unhealthy.';
+COMMENT ON COLUMN public.garages.agent_nodes IS 'Bridge agent.nodes report (validated, bounded).';
