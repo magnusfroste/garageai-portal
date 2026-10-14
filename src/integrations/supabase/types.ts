@@ -715,6 +715,7 @@ export type Database = {
           garage_id: string
           garage_name: string | null
           hour: string
+          last_request_at: string | null
           prompt_tokens: number
           requests: number
           spend_usd: number
@@ -727,6 +728,7 @@ export type Database = {
           garage_id: string
           garage_name?: string | null
           hour: string
+          last_request_at?: string | null
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
@@ -739,6 +741,7 @@ export type Database = {
           garage_id?: string
           garage_name?: string | null
           hour?: string
+          last_request_at?: string | null
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
