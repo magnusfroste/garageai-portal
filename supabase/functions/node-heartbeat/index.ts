@@ -86,12 +86,29 @@ Deno.serve(async (req) => {
       return json({ ok: true, changed: transition === "leave", state: agentState.kind, wanted_models: wanted, ...bridge });
     }
     let returnTests: string[] = [];
+    let backgroundTests: string[] = [];
     if (transition === "return") {
-      const { data: tests } = await admin.from("garage_model_tests").select("model, tested_at").eq("garage_id", garage.id).eq("inconclusive", false).order("tested_at", { ascending: false }).limit(500);
-      const last = new Map<string, number>();
-      for (const t of (tests || []) as Array<{ model: string; tested_at: string }>) if (!last.has(t.model)) last.set(t.model, Date.parse(t.tested_at));
-      returnTests = modelsToTestOnReturn(payload.models, last);
+      const { data: tests } = await admin.from("garage_model_tests").select("model, passed, tested_at").eq("garage_id", garage.id).eq("inconclusive", false).order("tested_at", { ascending: false }).limit(500);
+      const last = new Map<string, { passed: boolean; at: number }>();
+      for (const t of (tests || []) as Array<{ model: string; passed: boolean; tested_at: string }>) if (!last.has(t.model)) last.set(t.model, { passed: t.passed, at: Date.parse(t.tested_at) });
+      const { data: inv } = await admin.from("garage_models").select("model, offered").eq("garage_id", garage.id);
+      const split = splitReturnModels(payload.models, last, new Set((inv ?? []).filter((r) => r.offered).map((r) => r.model as string)));
+      returnTests = split.testFirst; backgroundTests = split.testAfter;
     }
+    // Live before the planned state: route now, test afterwards; a failed test takes it out via the next sync.
+    const runBackgroundTests = () => {
+      if (!backgroundTests.length) return;
+      const job = (async () => {
+        try {
+          const { data: fresh } = await admin.from("garages").select(GARAGE_SELECT).eq("id", garage.id).maybeSingle();
+          if (!fresh) return;
+          const results = await withProbeDeployments(admin, fresh as RoutingGarage, backgroundTests, (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, garage, backgroundTests, routeFor));
+          if (results.some((r) => !r.inconclusive && !r.passed)) await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
+        } catch (e) { console.warn("[node-heartbeat] background return test", garage.name, e instanceof Error ? e.message : e); }
+      })();
+      const rt = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+      if (rt) rt.waitUntil(job);
+    };
     let removedRows: string[] = [];
     try { removedRows = await applyInventoryMisses(admin, garage.id, payload.models); if (removedRows.length) console.log("[node-heartbeat] removed unreported models", garage.name, removedRows); }
     catch (e) { console.warn("[node-heartbeat] inventory", garage.name, e instanceof Error ? e.message : e); }
