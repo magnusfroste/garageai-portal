@@ -64,3 +64,15 @@ export function statusAfterHealth(prev: string, healthy: boolean, anyRecentPass:
   if (absent) return prev;
   return !healthy ? (prev === "failed_test" ? "failed_test" : "offline") : anyRecentPass ? "online" : prev === "offline" ? "pending" : prev;
 }
+
+/** Return from a planned state: models that were live before (offered + last conclusive test passed) go straight
+ * back; a stale test for them runs afterwards in the background. Models not live before keep test-first. */
+export function splitReturnModels(models: string[], latest: Map<string, { passed: boolean; at: number }>, offered: Set<string>, now = Date.now()): { testFirst: string[]; testAfter: string[] } {
+  const testFirst: string[] = [], testAfter: string[] = [];
+  for (const m of models) {
+    const t = latest.get(m);
+    if (t && now - t.at <= RETURN_TEST_MAX_AGE_MS) continue;
+    (t?.passed && offered.has(m) ? testAfter : testFirst).push(m);
+  }
+  return { testFirst, testAfter };
+}

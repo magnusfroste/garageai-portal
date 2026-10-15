@@ -33,3 +33,19 @@ describe("agent lifecycle state", () => {
     expect(parseAgentNodes([{ role: "x" }]).nodes).toBeNull();
   });
 });
+
+import { splitReturnModels } from "../../supabase/functions/_shared/agentState";
+describe("return from a planned state", () => {
+  const old = now - 25 * 3600_000;
+  it("a model live before goes straight back; its stale test runs afterwards", () => {
+    const r = splitReturnModels(["mimo"], new Map([["mimo", { passed: true, at: old }]]), new Set(["mimo"]), now);
+    expect(r).toEqual({ testFirst: [], testAfter: ["mimo"] });
+  });
+  it("a model not live before is tested first", () => {
+    const latest = new Map([["a", { passed: false, at: old }], ["b", { passed: true, at: old }]]);
+    expect(splitReturnModels(["a", "b", "c"], latest, new Set(["a"]), now)).toEqual({ testFirst: ["a", "b", "c"], testAfter: [] });
+  });
+  it("a fresh test (<24 h) means no test at all", () => {
+    expect(splitReturnModels(["a"], new Map([["a", { passed: true, at: now - 3600_000 }]]), new Set(["a"]), now)).toEqual({ testFirst: [], testAfter: [] });
+  });
+});
