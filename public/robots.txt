@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://app.garageai.eu/sitemap.xml
+Sitemap: https://sjopaiquzqotymqmrcke.supabase.co/functions/v1/sitemap?base=https://app.garageai.eu
