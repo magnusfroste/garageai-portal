@@ -1,6 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { GarageAIMark } from "@/components/GarageAIMark";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { adminRepository } from "@/data/repositories/adminRepository";
 import { useMyGarages } from "@/hooks/useMyGarages";
@@ -42,16 +42,13 @@ export const AppSidebar = () => {
     items: hasGarages ? [MY_GARAGES_ITEM, OFFER_GPU_ITEM] : [OFFER_GPU_ITEM],
   };
 
-  const go = (i: NavItem) => {
-    navigate(itemHref(i));
-    if (isMobile) setOpenMobile(false);
-  };
-
   const renderItem = (i: NavItem) => (
     <SidebarMenuItem key={i.title + (i.tab ?? "")}>
-      <SidebarMenuButton isActive={isItemActive(i, pathname, search)} onClick={() => go(i)} tooltip={t(i.title)}>
-        <i.icon className="w-4 h-4" />
-        <span>{t(i.title)}</span>
+      <SidebarMenuButton asChild isActive={isItemActive(i, pathname, search)} tooltip={t(i.title)}>
+        <Link to={itemHref(i)} onClick={() => { if (isMobile) setOpenMobile(false); }}>
+          <i.icon className="w-4 h-4" />
+          <span>{t(i.title)}</span>
+        </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );

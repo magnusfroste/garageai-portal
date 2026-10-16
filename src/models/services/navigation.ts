@@ -40,7 +40,7 @@ export const EXPLORE: NavGroup = {
 };
 
 export const MY_GARAGES_ITEM: NavItem = { title: "My garage", url: "/dashboard/garages", icon: Server };
-export const OFFER_GPU_ITEM: NavItem = { title: "Offer your GPU", url: "/connect", icon: Cpu };
+export const OFFER_GPU_ITEM: NavItem = { title: "Offer your GPU", url: "/dashboard/offer", icon: Cpu };
 
 export const DEVELOPERS: NavGroup = {
   id: "developers",
