@@ -1477,6 +1477,32 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_welcome_notices: {
+        Row: {
+          event_id: string
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          event_id?: string
+          sent_at?: string | null
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signup_welcome_notices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       token_usage: {
         Row: {
           api_key_id: string
@@ -1759,6 +1785,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      signup_welcome_eligible: { Args: { _user_id: string }; Returns: boolean }
       smart_model_demand: {
         Args: never
         Returns: {
