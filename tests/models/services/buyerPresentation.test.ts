@@ -10,7 +10,7 @@ test("each model gets at most one label, auto never", () => {
   expect(l.get("garageai/auto")).toBeUndefined();
   expect(l.get("a")).toBe("recommended");
   expect(l.get("b")).toBe("fastest");
-  expect(l.get("c")).toBe("cheapest");
+  expect(l.get("c")).toBe("longest context"); // b is cheapest but already "fastest"
 });
 
 test("logs show the public model name", () => {
