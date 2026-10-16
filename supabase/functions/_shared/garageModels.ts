@@ -121,6 +121,12 @@ export async function applyInventoryMisses(admin: SupabaseClient, garageId: stri
   const { reset, bump, remove } = inventoryMisses((data || []) as Array<{ model: string; missing_heartbeats: number }>, reported);
   if (reset.length) await admin.from("garage_models").update({ missing_heartbeats: 0 }).eq("garage_id", garageId).in("model", reset);
   for (const b of bump) await admin.from("garage_models").update({ missing_heartbeats: b.missing_heartbeats, installed: false }).eq("garage_id", garageId).eq("model", b.model);
-  if (remove.length) await admin.from("garage_models").delete().eq("garage_id", garageId).in("model", remove);
+  if (remove.length) {
+    // Remember the offer choice and prices so a runtime switch / re-link back restores them.
+    const { data: gone } = await admin.from("garage_models").select(`model, offered, ${PRICE_COLUMNS.join(", ")}`).eq("garage_id", garageId).in("model", remove);
+    const mem = ((gone || []) as unknown as Remembered[]).map((r) => ({ ...r, garage_id: garageId, removed_at: new Date().toISOString() }));
+    if (mem.length) await admin.from("garage_model_memory").upsert(mem, { onConflict: "garage_id,model" });
+    await admin.from("garage_models").delete().eq("garage_id", garageId).in("model", remove);
+  }
   return remove;
 }
