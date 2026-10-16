@@ -484,6 +484,13 @@
       "when": 1792190711229,
       "tag": "0068_public_customer_request_figures",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792190782354,
+      "tag": "0069_preserve_recorded_earnings_with_customer_counts",
+      "breakpoints": true
     }
   ]
 }
