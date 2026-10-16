@@ -30,8 +30,31 @@ const clean = (s: string) => s.replace(/:/g, "-").replace(/-latest$/, "").replac
  * then org prefix → creator via ORG_CREATORS (unknown org kept), else creator from FAMILY_CREATORS
  * (unknown family → bare name).
  */
+/** GGUF quantization tag at the end of an id (after .gguf is removed): -Q4_K_M, -Q8_0, -IQ4_NL, -F16, -BF16, :Q4_K_M. */
+const QUANT_RE = /[-_.:]((?:i?q[0-9]+(?:_[a-z0-9]+)*)|bf16|f16|f32)$/i;
+
+/** Splits a runtime id into its model part and quantization tag (uppercase, or null). Strips a `.gguf` file suffix. */
+export function splitQuantization(runtimeId: string): { base: string; quantization: string | null; gguf: boolean } {
+  let base = runtimeId.trim();
+  const gguf = /\.gguf$/i.test(base);
+  if (gguf) base = base.slice(0, -5);
+  const m = base.match(QUANT_RE);
+  if (!m) return { base, quantization: null, gguf };
+  return { base: base.slice(0, m.index), quantization: m[1].toUpperCase(), gguf: true };
+}
+
+export const modelQuantization = (runtimeId: string) => splitQuantization(runtimeId).quantization;
+
+/** GGUF file names write the family version apart ("gemma-4-12b-it"); Ollama tags join it ("gemma4"). */
+const joinFamilyVersion = (name: string) => {
+  const fam = FAMILY_CREATORS.find(([p]) => name.startsWith(`${p}-`) && /^[0-9]/.test(name.slice(p.length + 1)));
+  return fam ? fam[0] + name.slice(fam[0].length + 1) : name;
+};
+
 export function normaliseModelId(runtimeId: string): string {
-  const s = clean(runtimeId.toLowerCase());
+  const { base, gguf } = splitQuantization(runtimeId);
+  let s = clean(base.toLowerCase());
+  if (gguf && !s.includes("/")) s = joinFamilyVersion(s);
   const slash = s.indexOf("/");
   const name = slash >= 0 ? s.slice(slash + 1).replace(/^-+|-+$/g, "") : s;
   if (slash >= 0) {
@@ -53,5 +76,8 @@ const CASES: Array<[string, string]> = [
   ["unsloth/Llama-3.1-8B-Instruct-GGUF", "meta-llama/llama-3.1-8b-instruct-gguf"],
   ["llama3.1:latest", "meta-llama/llama3.1"], ["deepseek-ai/DeepSeek-V3", "deepseek/deepseek-v3"],
   ["autoversio", "autoversio"], ["SomeOrg/Foo-1B", "someorg/foo-1b"], ["bartowski/foo:latest", "foo"],
+  ["Qwen3-4B-Q4_K_M.gguf", "qwen/qwen3-4b"], ["gemma-4-12b-it-Q8_0.gguf", "google/gemma4-12b-it"],
+  ["Llama-3.1-8B-Instruct-IQ4_NL.gguf", "meta-llama/llama3.1-8b-instruct"], ["qwen3:4b-q4_K_M", "qwen/qwen3-4b"],
+  ["Mistral-7B-Instruct-BF16.gguf", "mistralai/mistral-7b-instruct"], ["Qwen3-4B.gguf", "qwen/qwen3-4b"],
 ];
 for (const [i, o] of CASES) if (normaliseModelId(i) !== o) throw new Error(`normaliseModelId selfcheck: ${i} -> ${normaliseModelId(i)}, expected ${o}`);
