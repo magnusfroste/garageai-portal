@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     }
     const result = await registerGarage(admin, garage, payload);
     console.log("[register-node] registered", { garage: garage.name, models: result.models.length, catalog_synced: result.catalog_synced });
-    return json({ ok: true, garage: garage.name, api_base: result.api_base, models: result.models, catalog_synced: result.catalog_synced, acceptance: result.acceptance.map(toPublicResult) });
+    return json({ ok: true, garage: garage.name, api_base: result.api_base, models: result.models, catalog_synced: result.catalog_synced, acceptance: result.acceptance.map(toPublicResult), found: result.summary.found, offered: result.summary.offered, not_offered: result.summary.not_offered, message: result.summary.message });
   } catch (e) {
     const message = e instanceof Error ? e.message : "unknown";
     if (message.includes("connected to the mesh") || message.includes("connected to mesh")) return json({ error: message }, 409);

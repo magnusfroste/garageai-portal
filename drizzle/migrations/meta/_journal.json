@@ -449,6 +449,13 @@
       "when": 1792169144283,
       "tag": "0063_gguf_model_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1792171296290,
+      "tag": "0064_garage_model_memory",
+      "breakpoints": true
     }
   ]
 }
