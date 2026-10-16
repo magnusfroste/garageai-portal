@@ -524,6 +524,53 @@ export type Database = {
           },
         ]
       }
+      garage_model_memory: {
+        Row: {
+          dedicated_cache_read_cost_per_million: number | null
+          dedicated_input_cost_per_million: number | null
+          dedicated_output_cost_per_million: number | null
+          garage_id: string
+          model: string
+          offered: boolean
+          pool_cache_read_cost_per_million: number | null
+          pool_input_cost_per_million: number | null
+          pool_output_cost_per_million: number | null
+          removed_at: string
+        }
+        Insert: {
+          dedicated_cache_read_cost_per_million?: number | null
+          dedicated_input_cost_per_million?: number | null
+          dedicated_output_cost_per_million?: number | null
+          garage_id: string
+          model: string
+          offered: boolean
+          pool_cache_read_cost_per_million?: number | null
+          pool_input_cost_per_million?: number | null
+          pool_output_cost_per_million?: number | null
+          removed_at?: string
+        }
+        Update: {
+          dedicated_cache_read_cost_per_million?: number | null
+          dedicated_input_cost_per_million?: number | null
+          dedicated_output_cost_per_million?: number | null
+          garage_id?: string
+          model?: string
+          offered?: boolean
+          pool_cache_read_cost_per_million?: number | null
+          pool_input_cost_per_million?: number | null
+          pool_output_cost_per_million?: number | null
+          removed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_model_memory_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_model_stats_hourly: {
         Row: {
           cached_prompt_tokens: number
