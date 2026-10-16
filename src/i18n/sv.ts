@@ -927,6 +927,7 @@ export const sv: Record<string, string> = {
   "GarageAI manages my models": "GarageAI hanterar mina modeller",
   "We fetch models that are in demand and fit your machine, and tell you why. Uses up to {gb} GB of disk.": "Vi hämtar efterfrågade modeller som ryms på din dator och berättar varför. Använder upp till {gb} GB diskutrymme.",
   "We requested {model} for {garage}: {n} requests/day, {garages} garages were not enough.": "Vi begärde {model} för {garage}: {n} förfrågningar/dag, {garages} garage räckte inte.",
+  "We requested {model} for {garage}: {n} requests/day ({r7} requests from {keys} API keys in 7 days), {garages} garages were not enough.": "Vi begärde {model} för {garage}: {n} förfrågningar/dag ({r7} förfrågningar från {keys} API-nycklar på 7 dagar), {garages} garage räckte inte.",
   "We requested removal of {model} from {garage}: no requests in 14 days.": "Vi begärde borttagning av {model} från {garage}: inga förfrågningar på 14 dagar.",
   "All Smart activity": "All Smart-aktivitet",
   "Smart disk budget": "Smarts diskbudget",
