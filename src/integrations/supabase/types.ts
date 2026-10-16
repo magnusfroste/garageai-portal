@@ -658,6 +658,7 @@ export type Database = {
           pool_input_cost_per_million: number | null
           pool_output_cost_per_million: number | null
           private: boolean
+          quantization: string | null
           status: string
           updated_at: string
         }
@@ -678,6 +679,7 @@ export type Database = {
           pool_input_cost_per_million?: number | null
           pool_output_cost_per_million?: number | null
           private?: boolean
+          quantization?: string | null
           status?: string
           updated_at?: string
         }
@@ -698,6 +700,7 @@ export type Database = {
           pool_input_cost_per_million?: number | null
           pool_output_cost_per_million?: number | null
           private?: boolean
+          quantization?: string | null
           status?: string
           updated_at?: string
         }
@@ -1476,6 +1479,7 @@ export type Database = {
           requests_7d: number
         }[]
       }
+      model_quantization: { Args: { _id: string }; Returns: string }
       normalise_model_id: { Args: { _id: string }; Returns: string }
       operator_garage_activity: {
         Args: never
