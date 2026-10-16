@@ -16,7 +16,7 @@ export const catalogLabels = (models: CatalogModel[]): Map<string, CatalogLabel>
     // Only the true winner gets the label; if it already has one, nobody does (labels stay honest).
     if (best && !out.has(best.name)) out.set(best.name, label);
   };
-  pick("recommended", (m) => (m.tokens7d > 0 ? m.tokens7d : null));
+  pick("recommended", (m) => ((m.requests7d ?? 0) > 0 ? m.requests7d ?? 0 : null));
   pick("fastest", (m) => m.tokensPerSecond);
   pick("cheapest", (m) => (m.minPrice.output != null ? -m.minPrice.output : null));
   pick("longest context", (m) => m.contextLength);

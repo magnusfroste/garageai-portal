@@ -31,13 +31,8 @@ class OnboardingService {
       ?? (isSignupIntent(profile?.signup_intent) ? profile.signup_intent : null)
       ?? (isSignupIntent(metadataIntent) ? metadataIntent : null);
 
-    if (intent) {
-      await profileService.completeOnboarding(intent);
-      this.clearStoredIntent();
-      return intent === "operator" ? "/connect" : "/dashboard";
-    }
-
-    return profile?.onboarding_done ? "/dashboard" : "/onboarding";
+    this.clearStoredIntent();
+    return "/dashboard";
   }
 }
 

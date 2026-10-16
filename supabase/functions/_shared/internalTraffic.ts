@@ -22,10 +22,14 @@ export function countsAsDemand(row: Record<string, unknown>, identities: Readonl
 
 export async function loadInternalIdentities(admin: any, base: string, master: string, rows: Record<string, unknown>[]): Promise<Set<string>> {
   const identities = new Set<string>([master, await fingerprint(master)]);
+  const knownCustomer = new Set<string>();
   const { data: keys, error } = await admin.from("api_keys").select("key_value,litellm_token,name,internal");
   if (error) throw new Error("Cannot classify API keys");
   for (const k of keys ?? []) {
-    if (!k.internal && !internalAlias(k.name)) continue;
+    if (!k.internal && !internalAlias(k.name)) {
+      for (const value of [k.key_value, k.litellm_token]) if (value) { knownCustomer.add(value); knownCustomer.add(await fingerprint(value)); }
+      continue;
+    }
     for (const value of [k.key_value, k.litellm_token]) if (value) { identities.add(value); identities.add(await fingerprint(value)); }
   }
   const records = [{ fingerprint: await fingerprint(master), alias: "gateway / acceptance-test", internal: true, checked_at: new Date().toISOString() }];
@@ -41,8 +45,15 @@ export async function loadInternalIdentities(admin: any, base: string, master: s
     const body = res.ok ? await res.json() : {};
     const info = body.info ?? body;
     const alias = info.key_alias ?? cached?.alias ?? "";
-    const internal = identities.has(key) || internalAlias(alias) || info.metadata?.internal === true;
+    // A deleted/unknown gateway-only key cannot establish genuine buyer demand.
+    const internal = identities.has(key) || internalAlias(alias) || info.metadata?.internal === true || (res.status === 404 && !knownCustomer.has(key));
     if (internal) identities.add(key);
+    if (internal) {
+      for (const column of ["litellm_token", "key_value"]) {
+        const { error } = await admin.from("api_keys").update({ internal: true }).eq(column, key);
+        if (error) throw new Error("Cannot mark internal API key");
+      }
+    }
     records.push({ fingerprint: hash, alias: String(alias), internal, checked_at: new Date().toISOString() });
   }
   const { error: saveError } = await admin.from("gateway_key_records").upsert(records, { onConflict: "fingerprint" });
