@@ -273,6 +273,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     if (error) throw new Error(`hourly upsert failed: ${error.message}`);
   }
   const mUpserts = [...mbuckets.values()].map((b) => ({
+    garage_name: [...garageIds].find(([, id]) => id === b.garage_id)?.[0] ?? null,
     garage_id: b.garage_id, model: b.model, hour: new Date(b.hour).toISOString(), requests: b.requests, failures: b.failures,
     dedicated_prompt_tokens: b.dedicatedPrompt, dedicated_completion_tokens: b.dedicatedTokens, prompt_tokens: b.prompt, completion_tokens: b.tokens, spend_usd: Math.round(b.spend * 1e8) / 1e8,
     cached_prompt_tokens: b.cached, input_spend_usd: Math.round(b.inSpend * 1e8) / 1e8, cached_spend_usd: Math.round(b.cachedSpend * 1e8) / 1e8, output_spend_usd: Math.round(b.outSpend * 1e8) / 1e8,
@@ -316,7 +317,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   await admin.from("ingest_cursors").upsert({ name: USAGE_CURSOR, value: new Date(toMs).toISOString(), updated_at: new Date().toISOString() });
 
   return {
-    source, fetched: rows.length, ...all, customer, internal_requests: internalBuckets.size,
+    source, fetched: rows.length, ...all, customer, internal_requests: [...internalBuckets.values()].reduce((n,b)=>n+b.requests,0),
     from: new Date(fromMs).toISOString(), to: new Date(toMs).toISOString(),
   };
 }

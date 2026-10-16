@@ -4,7 +4,8 @@
 - [x] Add first-sign-in AI/GPU paths and Overview fallback in English/Swedish
 - [ ] Send once-only ten-minute welcome — blocked: sender domain not configured; eligibility/state prepared, sender and scheduling deferred
 - [ ] Verify real-account first-sign-in — blocked: requesting user has no matching app account
-- [ ] Verify traffic exclusions, migrations, focused tests and deployment
+- [x] Verify filtering/eligibility rules, migrations and deployment; desktop/mobile starting paths checked
+- [ ] Verify live customer history replay — waiting for scheduled ingestion; unknown historical keys excluded conservatively
 
 - [ ] Fetch Bridge releases every six hours, preserve admin pin and expose version setting safely
 - [ ] Add operator update commands, admin version column/outdated filter and Operations Center version summary
