@@ -1,190 +1,56 @@
-import { useState } from "react";
-import { format, subDays, startOfMonth } from "date-fns";
-import { CalendarIcon, Shield } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Link } from "react-router-dom";
+import { Shield } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useDashboardData } from "./hooks/useDashboardData";
 import { useAccountData } from "@/views/Account/hooks/useAccountData";
-import { ActivityCard } from "./components/ActivityCard";
-import { MonthlyUsageChart } from "./components/MonthlyUsageChart";
-import { DailySpendChart } from "@/views/Account/components/DailySpendChart";
+import { useMyEarnings } from "@/hooks/useMyEarnings";
+import { boughtEarnedSeries, usedThisWeek } from "@/models/services/overviewService";
 import { SetupChecklist } from "./components/SetupChecklist";
-
+import { BoughtEarnedChart } from "./components/BoughtEarnedChart";
 import { t } from "@/i18n";
-const PRESETS = [
-  { label: "7d", days: 7 },
-  { label: "30d", days: 30 },
-  { label: "This month", fromDate: () => startOfMonth(new Date()) },
-  { label: "All", days: null },
-] as const;
+
+const money = (v: number) => `$${v.toFixed(v > 0 && v < 1 ? 3 : 2)}`;
+
+const Big = ({ label, value, to, link }: { label: string; value: string; to: string; link: string }) => (
+  <div className="border-b border-border pb-4">
+    <p className="text-sm text-muted-foreground">{label}</p>
+    <p className="text-4xl font-bold tabular-nums mt-1">{value}</p>
+    <Link to={to} className="text-xs text-primary hover:underline">{link}</Link>
+  </div>
+);
 
 export const DashboardActivity = () => {
-  const { profile, loading: profileLoading } = useProfile();
+  const { loading: profileLoading } = useProfile();
   const { apiKeys, loading: keysLoading } = useDashboardData();
-
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [activePreset, setActivePreset] = useState<string>("All");
-
-  const { usageByModel, totalSpend, allLogs, dailyBreakdown, loading: usageLoading } = useAccountData({
-    startDate,
-    endDate,
-  });
-
-  const applyPreset = (preset: typeof PRESETS[number]) => {
-    setActivePreset(preset.label);
-    if (preset.label === "All") {
-      setStartDate(undefined);
-      setEndDate(undefined);
-    } else if ("fromDate" in preset) {
-      setStartDate(preset.fromDate());
-      setEndDate(new Date());
-    } else if (preset.days) {
-      setStartDate(subDays(new Date(), preset.days));
-      setEndDate(new Date());
-    }
-  };
-
-  const handleCustomDate = (type: "start" | "end", date: Date | undefined) => {
-    setActivePreset("");
-    if (type === "start") setStartDate(date);
-    else setEndDate(date);
-  };
+  const { allLogs, dailyBreakdown, loading: usageLoading } = useAccountData();
+  const earn = useMyEarnings();
 
   if (profileLoading || keysLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="text-center">
-          <Shield className="w-12 h-12 text-primary animate-pulse mx-auto mb-4" />
-          <p className="text-muted-foreground">{t("Loading dashboard...")}</p>
-        </div>
+        <Shield className="w-12 h-12 text-primary animate-pulse" />
+        <span className="sr-only">{t("Loading dashboard...")}</span>
       </div>
     );
   }
 
-  const totalRequests = usageByModel.reduce((s, m) => s + m.requests, 0);
-  const totalTokens = usageByModel.reduce((s, m) => s + m.tokens, 0);
-  const cachedTokens = usageByModel.reduce((s, m) => s + (m.cachedTokens ?? 0), 0);
-
-  const spendData = usageByModel.map((m) => ({ name: m.model, value: m.cost }));
-  const requestData = usageByModel
-    .map((m) => ({ name: m.model, value: m.requests }))
-    .sort((a, b) => b.value - a.value);
-  const tokenData = usageByModel
-    .map((m) => ({ name: m.model, value: m.tokens }))
-    .sort((a, b) => b.value - a.value);
-
-  const formatTokens = (v: number) =>
-    v >= 1_000_000 ? `${(v / 1_000_000).toFixed(2)}M` : v >= 1_000 ? `${(v / 1_000).toFixed(0)}K` : v.toString();
+  const used = usedThisWeek(dailyBreakdown);
+  const series = boughtEarnedSeries(dailyBreakdown, earn.dailyEarned);
 
   return (
-    <div className="p-6 space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">{t("Overview")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t("Your model usage on GarageAI")}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {PRESETS.map((p) => (
-            <Button
-              key={p.label}
-              size="sm"
-              variant={activePreset === p.label ? "default" : "outline"}
-              onClick={() => applyPreset(p)}
-              className="text-xs"
-            >
-              {t(p.label)}
-            </Button>
-          ))}
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className={cn("text-xs gap-1.5", startDate && "text-foreground")}
-              >
-                <CalendarIcon className="h-3.5 w-3.5" />
-                {startDate ? format(startDate, "d MMM") : t("From")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={startDate}
-                onSelect={(d) => handleCustomDate("start", d)}
-                disabled={(d) => d > new Date()}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className={cn("text-xs gap-1.5", endDate && "text-foreground")}
-              >
-                <CalendarIcon className="h-3.5 w-3.5" />
-                {endDate ? format(endDate, "d MMM") : t("To")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={endDate}
-                onSelect={(d) => handleCustomDate("end", d)}
-                disabled={(d) => d > new Date()}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+    <div className="p-4 sm:p-6 space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">{t("Overview")}</h1>
       </div>
 
       <SetupChecklist hasKey={apiKeys.some(k => k.is_active && !k.revoked_at)} hasRequest={allLogs.length > 0 || dailyBreakdown.some(d => d.api_requests > 0)} />
-      {usageLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground text-sm animate-pulse">{t("Loading usage data...")}</p>
-        </div>
-      ) : totalRequests > 0 || dailyBreakdown.some(d => d.api_requests > 0) ? (
-        <>
-          {dailyBreakdown.some(d => d.api_requests > 0 || d.spend > 0) && <DailySpendChart data={dailyBreakdown} loading={usageLoading} />}
 
-          {allLogs.length > 0 && <MonthlyUsageChart logs={allLogs} />}
+      <div className={`grid gap-6 ${earn.hasGarage ? "sm:grid-cols-2" : ""}`}>
+        <Big label={t("You used this week")} value={usageLoading ? "…" : money(used)} to="/dashboard/logs" link={t("See usage")} />
+        {earn.hasGarage && <Big label={t("Your garage earned this week")} value={earn.loading ? "…" : money(earn.weekEarned)} to="/dashboard/garages" link={t("Open my garage")} />}
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ActivityCard
-              title="Spend"
-              value={`$${totalSpend.toFixed(3)}`}
-              data={spendData.filter(d => d.value > 0)}
-              formatLegend={(v) => v.toFixed(4)}
-            />
-            <ActivityCard
-              title="Requests"
-              value={totalRequests.toLocaleString()}
-              data={requestData}
-              formatLegend={(v) => v.toLocaleString()}
-            />
-            <ActivityCard
-              title="Tokens"
-              value={formatTokens(totalTokens)}
-              data={tokenData}
-              formatLegend={formatTokens}
-            />
-          </div>
-          {cachedTokens > 0 && <p className="text-xs text-muted-foreground">{t("{c} of these were cached input tokens, billed at the lower cache-read price.", { c: formatTokens(cachedTokens) })}</p>}
-        </>
-      ) : <p className="text-sm text-muted-foreground">{t("No usage yet — create an API key and send your first request.")}</p>}
+      {!usageLoading && series && <BoughtEarnedChart data={series} showEarned={earn.hasGarage} />}
     </div>
   );
 };

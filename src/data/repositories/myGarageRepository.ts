@@ -1,5 +1,5 @@
 import {supabase} from '@/integrations/supabase/client';
-export interface GarageOverview {today:number;week:number;total:number;last_request_at:string|null;last_request_hour:string|null;response_ms:number|null;daily:Array<{day:string;requests:number}>;models:Array<{model:string;requests:number}>}
+export interface GarageOverview {today:number;week:number;total:number;last_request_at:string|null;last_request_hour:string|null;response_ms:number|null;daily:Array<{day:string;requests:number;earned?:number}>;models:Array<{model:string;requests:number}>}
 export interface SmartEvent {id:string;model:string;action:string;created_at:string;reason:{requests_per_day?:number;healthy_garages?:number;kind?:string}}
 export const myGarageRepository={
  async overview(id:string):Promise<GarageOverview|null>{const {data,error}=await supabase.rpc('operator_garage_overview',{_garage_id:id});if(error) throw error;return data as unknown as GarageOverview|null;},

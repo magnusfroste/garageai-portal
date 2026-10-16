@@ -15,6 +15,7 @@ export interface RequestLog {
   garage: string | null;
   tier: string | null;
   latencyMs: number | null;
+  modelId: string | null;
 }
 
 export const useRequestLogs = () => {

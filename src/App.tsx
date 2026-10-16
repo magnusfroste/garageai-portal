@@ -57,7 +57,11 @@ const App = () => (
             <Route path="models" element={<KeepQueryRedirect to="/models" />} />
             <Route path="api" element={<DashboardApiPage />} />
             <Route path="chat" element={<ChatPage />} />
-            <Route path="offer-gpu" element={<OfferGpuPage />} />
+            <Route path="offer" element={<OfferGpuPage />} />
+            <Route path="connect" element={<OfferGpuPage />} />
+            <Route path="offer-gpu" element={<Navigate to="/dashboard/offer" replace />} />
+            <Route path="usage" element={<Navigate to="/dashboard/logs" replace />} />
+            <Route path="profile" element={<Navigate to="/dashboard/account" replace />} />
             <Route path="garages" element={<MyGaragesPage />} />
             <Route path="garages/:id/offer" element={<Navigate to="/dashboard/garages" replace />} />
           </Route>
@@ -81,6 +85,10 @@ const App = () => (
           <Route path="/account" element={<Navigate to="/dashboard/account" replace />} />
           <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
           <Route path="/chat" element={<Navigate to="/dashboard/chat" replace />} />
+          <Route path="/offer" element={<Navigate to="/dashboard/offer" replace />} />
+          <Route path="/logs" element={<Navigate to="/dashboard/logs" replace />} />
+          <Route path="/keys" element={<Navigate to="/dashboard/keys" replace />} />
+          <Route path="/credits" element={<Navigate to="/dashboard/credits" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </LanguageBoundary>

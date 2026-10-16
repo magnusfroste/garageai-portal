@@ -4,6 +4,7 @@ import { t } from "@/i18n";
 import { useState, useMemo } from "react";
 import { useRequestLogs } from "./hooks/useRequestLogs";
 import { RequestLogTable } from "./components/RequestLogTable";
+import { summarizeLogs } from "@/models/services/requestLogService";
 import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,8 +50,11 @@ export const LogsPage = () => {
     });
   }, [requestLogs, modelFilter, keyFilter, statusFilter, search]);
 
+  const summary = useMemo(() => summarizeLogs(requestLogs), [requestLogs]);
+  const fmtTok = (v: number) => (v >= 1_000_000 ? `${(v / 1_000_000).toFixed(2)}M` : v >= 1_000 ? `${(v / 1_000).toFixed(1)}k` : String(v));
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-1">{t("Logs")}</h1>
         <p className="text-muted-foreground text-sm">
@@ -60,6 +64,18 @@ export const LogsPage = () => {
           )}
         </p>
       </div>
+
+      {!logsLoading && requestLogs.length > 0 && (
+        <div className="grid grid-cols-2 gap-4">
+          {(["today", "week"] as const).map((k) => (
+            <div key={k} className="border-b border-border pb-3">
+              <p className="text-sm text-muted-foreground">{t(k === "today" ? "Today" : "This week")}</p>
+              <p className="text-2xl font-bold tabular-nums">${summary[k].cost.toFixed(summary[k].cost > 0 && summary[k].cost < 1 ? 4 : 2)}</p>
+              <p className="text-xs text-muted-foreground tabular-nums">{t("{r} requests · {tk} tokens", { r: summary[k].requests.toLocaleString(), tk: fmtTok(summary[k].tokens) })}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {!logsLoading && requestLogs.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">

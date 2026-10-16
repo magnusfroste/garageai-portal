@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, Menu, PanelLeft, SquarePen } from "lucide-react";
+import { ArrowDown, Menu, PanelLeft, SlidersHorizontal, SquarePen } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -212,12 +213,24 @@ export const ChatPage = () => {
               <SquarePen className="h-4 w-4" />
             </Button>
           )}
-          <ChatModelPicker models={modelInfos} selected={selectedModel} onSelect={chooseModel} disabled={isStreaming} />
+          <div className="flex min-w-0 flex-col">
+            <ChatModelPicker models={modelInfos} selected={selectedModel} onSelect={chooseModel} disabled={isStreaming} />
+            {selectedModelInfo?.garage_tier === "auto" && <span className="-mt-1 px-2 text-[11px] text-muted-foreground">{t("picks the best available model for you")}</span>}
+          </div>
           {selectedOffline && (
             <span className="hidden text-xs text-muted-foreground sm:inline">{t("This model's garage is offline right now")}</span>
           )}
           <div className="ml-auto">
-            <ChatKeyPicker keys={apiKeys} selected={selectedKeyId} onSelect={chooseKey} onCreated={refetchKeys} isAdmin={!!isAdmin} disabled={isStreaming} />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("Chat settings")}><SlidersHorizontal className="h-4 w-4" /></Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 space-y-2">
+                <p className="text-sm font-medium">{t("Chat settings")}</p>
+                <p className="text-xs text-muted-foreground">{t("Usage from this chat is billed through this API key.")}</p>
+                <ChatKeyPicker keys={apiKeys} selected={selectedKeyId} onSelect={chooseKey} onCreated={refetchKeys} isAdmin={!!isAdmin} disabled={isStreaming} />
+              </PopoverContent>
+            </Popover>
           </div>
         </header>
 

@@ -1,9 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/ui/status-badge";
-import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
 import { useMemo } from "react";
 import { useEuOnly } from "@/hooks/useEuOnly";
-import { LocationBadge, liveHoursText } from "@/views/Garages/components/LocationBadge";
 import { Link, useSearchParams } from "react-router-dom";
 import { Cpu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -13,14 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useModelCatalog } from "@/hooks/useModelCatalog";
 import {
-  applyFilters, filtersFromParams, filtersToParams, formatContext, formatPrice,
+  applyFilters, filtersFromParams, filtersToParams, formatContext,
 } from "@/models/services/catalogService";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import type { CatalogFilters, CatalogModel, CatalogSort } from "@/models/types/catalog.types";
-import { GradeBadge } from "@/views/Garages/components/Reliability";
-import { ToolsBadge } from "@/views/Models/components/ToolsBadge";
-import { ProviderModelBadge } from "@/views/Models/components/ProviderModelBadge";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { catalogLabels, priceLine, type CatalogLabel } from "@/models/services/catalogLabels";
 
 import { t } from "@/i18n";
 const ANY = "__any";
@@ -43,41 +39,32 @@ const Pick = ({
   </Select>
 );
 
-const CatalogRow = ({ m }: { m: CatalogModel }) => (
-  <Link
-    to={`/models/${encodeURIComponent(m.name)}`}
-    className="grid grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_70px_150px_80px_80px] items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-accent/30 transition-colors"
-  >
-    <StatusDot tone={m.available ? "success" : "neutral"} title={m.available ? t("Available") : t("Not available right now")} />
-    <div className="min-w-0">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="font-mono text-sm font-semibold truncate">{m.name}</span>
-        {m.privateModel && <ProviderModelBadge />}
-        {m.supportsTools && <ToolsBadge />}
+const CatalogRow = ({ m, label }: { m: CatalogModel; label?: CatalogLabel }) => {
+  const p = priceLine(m.minPrice.input, m.minPrice.output);
+  return (
+    <Link to={`/models/${encodeURIComponent(m.name)}`} className="flex items-start gap-3 px-4 py-3 hover:bg-accent/30 transition-colors">
+      <StatusDot tone={m.available ? "success" : "neutral"} title={m.available ? t("Available") : t("Not available right now")} className="mt-1.5" />
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-sm font-semibold truncate">{m.name}</span>
+          {label && <Badge variant="secondary" className="text-[10px]">{t(label)}</Badge>}
+        </div>
+        {m.auto ? (
+          <p className="text-xs text-muted-foreground">{t("Picks the best available model for each request and switches automatically if one is busy.")}</p>
+        ) : (
+          <>
+            <p className="text-xs tabular-nums">{t("{i} per M tokens in · {o} out", { i: p.input, o: p.output })}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {m.contextLength ? t("{c} context", { c: formatContext(m.contextLength) }) : null}
+              {m.contextLength ? " · " : ""}{t(m.offers.length === 1 ? "{n} garage" : "{n} garages", { n: m.offers.length })}
+              {!m.available ? ` · ${t("Not available right now")}` : ""}
+            </p>
+          </>
+        )}
       </div>
-      <div className="text-xs text-muted-foreground truncate">
-        {m.auto ? t("Always answers: the best available model from a curated list (fails over automatically)") : <>{m.provider}{m.mode ? ` · ${m.mode}` : ""}</>}{!m.available ? ` · ${t("Not available right now")}` : ""}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-        {[...new Map(m.offers.filter((o) => o.location?.country && o.location.location_display !== "hidden").map((o) => [`${o.location!.location_display}:${o.location!.country}`, o])).values()].slice(0, 3).map((o) => <LocationBadge key={o.garage} location={o.location!} compact={m.offers.length > 1} />)}
-        {(() => { const best = m.offers.map((o) => o.location).filter((l) => l && !l.is_endpoint && (l.is_new ? l.live_hours_total : l.live_hours_per_week) != null).sort((a, b) => Number(!!a!.is_new) - Number(!!b!.is_new) || (b!.live_hours_per_week ?? 0) - (a!.live_hours_per_week ?? 0))[0]; const txt = liveHoursText(best, true); return txt ? <span className="text-[11px] text-muted-foreground">{txt}</span> : null; })()}
-      </div>
-      {m.offers.find((o) => o.providerName)?.providerName && <ProviderBadge name={m.offers.find((o) => o.providerName)?.providerName} />}
-      <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground tabular-nums">
-        <span>{t("Context")}: {formatContext(m.contextLength)}</span>
-        <span>{t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)} {m.minPrice.cacheRead != null && <span className="text-muted-foreground">· {t("cache read")} {formatPrice(m.minPrice.cacheRead)}</span>}</span>
-        <span>{t(m.offers.length === 1 ? "{n} garage" : "{n} garages", { n: m.offers.length })}</span>
-      </div>
-    </div>
-    <span className="text-xs tabular-nums text-muted-foreground hidden sm:block">{formatContext(m.contextLength)}</span>
-    <span className="text-xs tabular-nums hidden sm:block">
-      {t("from")} {formatPrice(m.minPrice.input)} / {formatPrice(m.minPrice.output)} {m.minPrice.cacheRead != null && <span className="text-muted-foreground">· {t("cache read")} {formatPrice(m.minPrice.cacheRead)}</span>}
-      {m.pool && m.pool.members.length > 1 && <span className="block text-[11px] text-muted-foreground">{t("expected")} {formatPrice(m.pool.expected.input)} / {formatPrice(m.pool.expected.output)} · {t("cap")} {formatPrice(m.pool.cap.input)} / {formatPrice(m.pool.cap.output)}</span>}
-    </span>
-    <span className="text-xs text-muted-foreground hidden sm:block">{t(m.offers.length === 1 ? "{n} garage" : "{n} garages", { n: m.offers.length })}</span>
-    <span className="justify-self-end">{m.bestGrade && <GradeBadge grade={m.bestGrade} />}</span>
-  </Link>
-);
+    </Link>
+  );
+};
 
 export const CatalogPage = () => {
   const [params, setParams] = useSearchParams();
@@ -91,6 +78,7 @@ export const CatalogPage = () => {
     [models],
   );
   const list = useMemo(() => applyFilters(models, f), [models, params]); // eslint-disable-line react-hooks/exhaustive-deps
+  const labels = useMemo(() => catalogLabels(models), [models]);
 
   return (
     <div className="p-6 space-y-5">
@@ -100,7 +88,7 @@ export const CatalogPage = () => {
           <h1 className="text-2xl font-bold">{t("Models")}</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          {t("Open models running in garages. Prices per 1 million tokens (in / out). Cached input is billed at the lower cache-read price.")}
+          {t("Open models running in garages. Start with garageai/auto, or pick a model.")}
         </p>
       </div>
 
@@ -115,8 +103,6 @@ export const CatalogPage = () => {
           placeholder={t("All prices")} options={[["0.5", `${t("Out")} ≤ $0.5`], ["1", `${t("Out")} ≤ $1`], ["2", `${t("Out")} ≤ $2`], ["5", `${t("Out")} ≤ $5`]]} />
         <Pick value={f.runtime} onChange={(v) => set({ runtime: v })} placeholder={t("All engines")}
           options={runtimes.map((r) => [r, runtimeLabel(r)])} />
-        <Pick value={f.minGrade} onChange={(v) => set({ minGrade: v as CatalogFilters["minGrade"] })} placeholder={t("All grades")}
-          options={[["A", t("Grade A")], ["B", t("B or better")], ["C", t("C or better")]]} />
         <div className="flex items-center gap-2 px-2">
           <Switch id="eu-only" checked={f.euOnly} onCheckedChange={setEuOnly} />
           <Label htmlFor="eu-only" className="text-xs">{t("EU only")}</Label>
@@ -136,15 +122,12 @@ export const CatalogPage = () => {
       </div>
 
       <div className="rounded-lg border border-border/50 bg-card/60 divide-y divide-border/50">
-        <div className="hidden sm:grid grid-cols-[auto_minmax(0,1fr)_70px_150px_80px_80px] gap-x-4 px-4 py-2 text-[11px] text-muted-foreground">
-          <span className="w-2" /><span>{t("Model")}</span><span>{t("Context")}</span><span>{t("Lowest price in / out")}</span><span>Garage</span><span className="justify-self-end">{t("Best grade")}</span>
-        </div>
         {isLoading ? (
           <div><p className="px-4 py-2 text-sm text-muted-foreground">{t("Loading available models…")}</p>{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 m-2" />)}</div>
         ) : isError ? <div className="p-6 text-sm text-destructive">{t("Could not load the catalogue.")} <Button variant="link" onClick={refetch}>{t("Try again")}</Button></div> : list.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">{t("No models match — try a broader search.")} <Button variant="link" onClick={() => setParams({})}>{t("Clear filters")}</Button></p>
         ) : (
-          list.map((m) => <CatalogRow key={m.name} m={m} />)
+          list.map((m) => <CatalogRow key={m.name} m={m} label={labels.get(m.name)} />)
         )}
       </div>
       {f.euOnly && <p className="text-xs text-muted-foreground">{t("EU only shows garages with a visible EU/EEA location. Pool may route to any garage offering this model.")}</p>}

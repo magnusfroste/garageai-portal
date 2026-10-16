@@ -38,10 +38,26 @@ const ConnectPage = () => {
         <h1 className="text-2xl font-semibold">{t("Connect this computer")}</h1>
         <p className="text-sm text-muted-foreground">{t("Run this in a terminal on the computer with the GPU. It installs GarageAI Bridge, and you approve the computer here in the browser. Nothing secret is in the command.")}</p>
       </div>
+      <section className="space-y-2 rounded-md border p-4 text-sm">
+        <p className="font-medium">{t("How it works")}</p>
+        <ol className="list-decimal space-y-1 pl-5">
+          <li>{t("Run this line.")}</li>
+          <li>{t("Approve this computer in the browser.")}</li>
+          <li>{t("Choose a model.")}</li>
+        </ol>
+        <p className="text-muted-foreground">{t("About 5 minutes. You need: a Mac, Linux or Windows machine with a model running (Ollama, LM Studio, vLLM, llama.cpp…).")}</p>
+        <p className="text-muted-foreground">{t("No runtime yet? Bridge will soon install one for you.")}</p>
+      </section>
       <Card>
         <CardContent className="space-y-4 p-4">
           <Tabs value={os} onValueChange={(v) => setOs(v as ConnectOs)}>
-            <TabsList><TabsTrigger value="macos">macOS</TabsTrigger><TabsTrigger value="linux">Linux</TabsTrigger><TabsTrigger value="windows">Windows</TabsTrigger></TabsList>
+            <TabsList className="grid h-auto w-full grid-cols-3 gap-2 bg-transparent p-0">
+              {(["macos", "linux", "windows"] as const).map((o) => (
+                <TabsTrigger key={o} value={o} className="h-10 rounded-md border border-border text-sm font-medium data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  {o === "macos" ? "macOS" : o === "linux" ? "Linux" : "Windows"}
+                </TabsTrigger>
+              ))}
+            </TabsList>
             <TabsContent value="macos" className="mt-3"><OneLine command={bridgeInstallCommand()} onCopied={() => setWaiting(true)} /></TabsContent>
             <TabsContent value="linux" className="mt-3"><OneLine command={bridgeInstallCommand()} onCopied={() => setWaiting(true)} /></TabsContent>
             <TabsContent value="windows" className="mt-3">
@@ -57,7 +73,7 @@ const ConnectPage = () => {
           </Collapsible>}
           {os !== "windows" && <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp…) with a model loaded.")}</li>
-            <li>{t("After connecting, choose the models to offer and their prices under My garages.")}</li>
+            <li>{t("After connecting, choose the models to offer under My garage.")}</li>
           </ul>}
           {waiting && os !== "windows" && (
             <div className="space-y-1 rounded-md border p-3 text-sm">

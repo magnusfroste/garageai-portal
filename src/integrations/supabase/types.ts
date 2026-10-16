@@ -1022,6 +1022,8 @@ export type Database = {
           runtime_models: string[]
           runtime_ok: boolean | null
           smart: boolean
+          smart_changed_at: string | null
+          smart_changed_by: string | null
           smart_disk_gb: number
           status: string
           terms_accepted_at: string | null
@@ -1079,6 +1081,8 @@ export type Database = {
           runtime_models?: string[]
           runtime_ok?: boolean | null
           smart?: boolean
+          smart_changed_at?: string | null
+          smart_changed_by?: string | null
           smart_disk_gb?: number
           status?: string
           terms_accepted_at?: string | null
@@ -1136,6 +1140,8 @@ export type Database = {
           runtime_models?: string[]
           runtime_ok?: boolean | null
           smart?: boolean
+          smart_changed_at?: string | null
+          smart_changed_by?: string | null
           smart_disk_gb?: number
           status?: string
           terms_accepted_at?: string | null
