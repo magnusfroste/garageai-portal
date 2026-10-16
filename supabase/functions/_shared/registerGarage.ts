@@ -7,6 +7,7 @@ import { syncModels } from "./syncModels.ts";
 import { suggestPrice } from "./poolPricing.ts";
 import { normaliseModelId } from "./modelIdentity.ts";
 import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
+import { linkSummary, type LinkSummary } from "./linkSummary.ts";
 import { syncInventory, storeContexts, CONTEXT_MIN, CONTEXT_MAX, CONTEXTS_MAX_ENTRIES } from "./garageModels.ts";
 import { modelIdError, storeRuntimeKey, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 
@@ -14,7 +15,7 @@ const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
 const sanitize = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
 
 export interface GarageRegistrationPayload { name: string; runtime: string; port: number; models: string[]; runtime_api_key?: string; mesh_ip?: string; contexts?: Record<string, number>; }
-export interface GarageRegistration { api_base: string; models: string[]; acceptance: AcceptanceResult[]; catalog_synced: boolean; }
+export interface GarageRegistration { api_base: string; models: string[]; acceptance: AcceptanceResult[]; catalog_synced: boolean; summary: LinkSummary; }
 export interface GarageRecord { id: string; name: string; operator_id: string | null; api_host: string | null; netbird_peer_id: string | null; dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number; pool_input_cost_per_million: number; pool_output_cost_per_million: number; connection_type?: string | null; endpoint_url?: string | null; transport?: string | null; tunnel_ip?: string | null; }
 
 export function validateGaragePayload(body: Record<string, unknown>, allowEmptyModels = false): GarageRegistrationPayload {
@@ -102,7 +103,13 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
     catalogSynced = false;
     console.error("[registerGarage] catalogue sync failed", error instanceof Error ? error.message : "unknown");
   }
-  return { api_base: apiBase, models: payload.models, acceptance, catalog_synced: catalogSynced };
+  let summary: LinkSummary;
+  try {
+    const { data: cm } = await admin.from("curated_models").select("model_name");
+    const known = new Set(((cm || []) as Array<{ model_name: string | null }>).map((r) => r.model_name).filter(Boolean));
+    summary = linkSummary(payload.models, offered, (m) => known.has(normaliseModelId(m)), acceptance);
+  } catch { summary = linkSummary(payload.models, offered, () => true, acceptance); }
+  return { api_base: apiBase, models: payload.models, acceptance, catalog_synced: catalogSynced, summary };
 }
 /** A garage that has never been priced (all four prices 0) gets the market price of its first model, for both tiers. */
 export async function prefillPrices(admin: SupabaseClient, garage: GarageRecord, models: string[]): Promise<Record<string, number>> {

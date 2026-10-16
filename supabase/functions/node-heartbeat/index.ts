@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     }
 
     const result = await registerGarage(admin, garage, payload, { testOnly: [...new Set([...added, ...offerNow, ...returnTests])], offer: offerNow });
-    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), wanted_models: wanted, ...bridge });
+    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), offered: result.summary.offered, not_offered: result.summary.not_offered, wanted_models: wanted, ...bridge });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     if (message.includes("connected to the mesh") || message.includes("connected to mesh")) return json({ error: message }, 409);
