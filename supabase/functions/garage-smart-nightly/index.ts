@@ -17,7 +17,7 @@ Deno.serve(async req => {
   const curated=checked(await admin.from('curated_models').select('model_name,ollama_tag,download_bytes,enabled').not('ollama_tag','is',null).limit(5000)) ?? [];
   const dm=new Map(demand.map((d:any)=>[d.model,d]));
   const unique=new Map<string,SmartCandidate>();
-  for(const c of curated){if(!c.model_name || !c.ollama_tag || c.model_name.startsWith('probe/')) continue;const d:any=dm.get(c.model_name);const prev=unique.get(c.ollama_tag); if(prev && !c.enabled) continue; unique.set(c.ollama_tag,{model:c.model_name,tag:c.ollama_tag,bytes:c.download_bytes,requests7:c.enabled?Number(d?.requests_7d ?? 0):0,requests14:Number(d?.requests_14d ?? 0),healthy:Number(d?.healthy_garages ?? 0)});}
+  for(const c of curated){if(!c.model_name || !c.ollama_tag || c.model_name.startsWith('probe/')) continue;const d:any=dm.get(c.model_name);const prev=unique.get(c.ollama_tag); if(prev && !c.enabled) continue; unique.set(c.ollama_tag,{model:c.model_name,tag:c.ollama_tag,bytes:c.download_bytes,requests7:c.enabled?Number(d?.requests_7d ?? 0):0,requests14:Number(d?.requests_14d ?? 0),healthy:Number(d?.healthy_garages ?? 0),keys7:c.enabled?Number(d?.distinct_keys_7d ?? 0):0});}
   const now=Date.now(), day=new Date(now).toISOString().slice(0,10);
   let changed=0;
   for(const g of garages){

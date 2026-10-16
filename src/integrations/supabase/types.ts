@@ -573,6 +573,7 @@ export type Database = {
       }
       garage_model_stats_hourly: {
         Row: {
+          api_keys: string[]
           cached_prompt_tokens: number
           cached_spend_usd: number
           completion_tokens: number
@@ -590,6 +591,7 @@ export type Database = {
           spend_usd: number
         }
         Insert: {
+          api_keys?: string[]
           cached_prompt_tokens?: number
           cached_spend_usd?: number
           completion_tokens?: number
@@ -607,6 +609,7 @@ export type Database = {
           spend_usd?: number
         }
         Update: {
+          api_keys?: string[]
           cached_prompt_tokens?: number
           cached_spend_usd?: number
           completion_tokens?: number
@@ -1609,6 +1612,7 @@ export type Database = {
       smart_model_demand: {
         Args: never
         Returns: {
+          distinct_keys_7d: number
           healthy_garages: number
           model: string
           requests_14d: number
