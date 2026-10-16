@@ -34,6 +34,12 @@ describe("pickChatModel", () => {
     expect(pickChatModel([m("a", { status: "offline" })], null, null)?.id).toBe("a");
   });
 
+  it("defaults to garageai/auto over last used and default", () => {
+    const withAuto = [m("x", { is_default: true }), m("garageai/auto", { garage_tier: "auto" })];
+    expect(pickChatModel(withAuto, null, "x")?.id).toBe("garageai/auto");
+    expect(pickChatModel(withAuto, "x", null)?.id).toBe("x");
+  });
+
   it("returns undefined with no models", () => {
     expect(pickChatModel([], "a", "b")).toBeUndefined();
   });

@@ -1,4 +1,4 @@
-// Picks the chat model: explicit ?model= wins (even if unhealthy), then
+// Picks the chat model: explicit ?model= wins (even if unhealthy), then garageai/auto, then
 // last used / default only when healthy, then the first healthy pool model,
 // then any healthy model, then the first model.
 
@@ -23,6 +23,7 @@ export function pickChatModel(
   const last = find(lastUsed);
   return (
     find(requested) ??
+    models.find((m) => m.garage_tier === "auto") ??
     (healthy(last) ? last : undefined) ??
     models.find((m) => m.is_default && healthy(m)) ??
     models.find((m) => healthy(m) && isPool(m)) ??
