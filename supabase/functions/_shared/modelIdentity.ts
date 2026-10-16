@@ -47,7 +47,7 @@ export const modelQuantization = (runtimeId: string) => splitQuantization(runtim
 
 /** GGUF file names write the family version apart ("gemma-4-12b-it"); Ollama tags join it ("gemma4"). */
 const joinFamilyVersion = (name: string) => {
-  const fam = FAMILY_CREATORS.find(([p]) => name.startsWith(`${p}-`) && /^[0-9]/.test(name.slice(p.length + 1)));
+  const fam = FAMILY_CREATORS.find(([p]) => name.startsWith(`${p}-`) && /^[0-9]+(\.[0-9]+)*(-|$)/.test(name.slice(p.length + 1)));
   return fam ? fam[0] + name.slice(fam[0].length + 1) : name;
 };
 
