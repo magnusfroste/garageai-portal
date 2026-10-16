@@ -8,6 +8,7 @@ import { boughtEarnedSeries, usedThisWeek } from "@/models/services/overviewServ
 import { SetupChecklist } from "./components/SetupChecklist";
 import { BoughtEarnedChart } from "./components/BoughtEarnedChart";
 import { t } from "@/i18n";
+import { StartingPaths } from "@/views/Onboarding/StartingPaths";
 
 const money = (v: number) => `$${v.toFixed(v > 0 && v < 1 ? 3 : 2)}`;
 
@@ -44,6 +45,7 @@ export const DashboardActivity = () => {
       </div>
 
       <SetupChecklist hasKey={apiKeys.some(k => k.is_active && !k.revoked_at)} hasRequest={allLogs.length > 0 || dailyBreakdown.some(d => d.api_requests > 0)} />
+      {!apiKeys.length && !earn.loading && !earn.hasGarage && <StartingPaths />}
 
       <div className={`grid gap-6 ${earn.hasGarage ? "sm:grid-cols-2" : ""}`}>
         <Big label={t("You used this week")} value={usageLoading ? "…" : money(used)} to="/dashboard/logs" link={t("See usage")} />

@@ -25,6 +25,7 @@ class OnboardingService {
 
   async routeAfterLogin(user: User): Promise<string> {
     const profile = await profileService.getProfile(user.id);
+    if (!profile?.onboarding_done) return "/onboarding";
     const metadataIntent = user.user_metadata?.signup_intent;
     const intent = this.getStoredIntent()
       ?? (isSignupIntent(profile?.signup_intent) ? profile.signup_intent : null)
