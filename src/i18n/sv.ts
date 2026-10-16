@@ -902,6 +902,7 @@ export const sv: Record<string, string> = {
   "My garage": "Mitt garage",
   "Details": "Detaljer",
   "Context window": "Kontextfönster",
+  "Quantization": "Kvantisering",
   "Automatic updates": "Automatiska uppdateringar",
   "Last update": "Senaste uppdatering",
   "Last update check": "Senaste uppdateringskontroll",
