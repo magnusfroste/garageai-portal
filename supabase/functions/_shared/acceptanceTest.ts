@@ -26,6 +26,9 @@ export interface AcceptanceResult {
 const FIRST_TOKEN_TIMEOUT_MS = 60_000;
 const STREAM_WINDOW_MS = 10_000;
 const EXPECTED = "GARAGEAI-OK";
+/** Thinking models may spend the whole budget in hidden reasoning: generated tokens count as an answer. */
+export const MIN_COMPLETION_TOKENS = 8;
+export const answeredByUsage = (completionTokens: number | null) => completionTokens != null && completionTokens >= MIN_COMPLETION_TOKENS;
 
 export async function runAcceptanceTest(
   litellmBase: string,
@@ -57,7 +60,8 @@ export async function runAcceptanceTest(
       body: JSON.stringify({
         model: route,
         stream: true,
-        max_tokens: 128,
+        stream_options: { include_usage: true },
+        max_tokens: 128, // ≥ 64 so thinking models get past their first thoughts
         temperature: 0,
         messages: [{ role: "user", content: `Reply with exactly this text and nothing else: ${EXPECTED}` }],
         metadata: { tags: ["acceptance-test"], garage: garageName },
@@ -109,14 +113,14 @@ export async function runAcceptanceTest(
       }
     }
 
-    if (!content && !reasoning) {
+    if (!content && !reasoning && !answeredByUsage(usageTokens)) {
       result.error = "empty response";
       return result;
     }
     result.passed = true;
     // Any streamed tokens = pass; slowness only affects the grade.
   } catch (e) {
-    if (content || reasoning) result.passed = true;
+    if (content || reasoning || answeredByUsage(usageTokens)) result.passed = true;
     else if (controller.signal.aborted) {
       result.error = "no first token within 60s";
     } else {
@@ -128,7 +132,7 @@ export async function runAcceptanceTest(
     clearTimeout(timer);
     result.duration_ms = Date.now() - start;
     result.instruction_followed = content.includes(EXPECTED);
-    if (content || reasoning) result.output_tokens = usageTokens ?? chunks;
+    if (content || reasoning || usageTokens) result.output_tokens = usageTokens ?? chunks;
     if (result.output_tokens && result.ttft_ms !== null && result.duration_ms > result.ttft_ms) {
       result.tokens_per_second =
         Math.round((result.output_tokens / ((result.duration_ms - result.ttft_ms) / 1000)) * 10) / 10;

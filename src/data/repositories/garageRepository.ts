@@ -52,6 +52,7 @@ export interface GarageRow {
 export type GarageModelStatus = "untested" | "testing" | "live" | "failed" | "paused";
 export interface GarageModelRow {
   context_length?: number | null;
+  quantization?: string | null;
   pool_input_cost_per_million?: number | null;
   pool_output_cost_per_million?: number | null;
   dedicated_input_cost_per_million?: number | null;
