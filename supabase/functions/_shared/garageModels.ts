@@ -6,21 +6,44 @@ export const EMBEDDING_RE = /embed|bge-|bge:|e5-|minilm|rerank|colbert|gte-/i;
 export const isEmbeddingModel = (model: string) => EMBEDDING_RE.test(model);
 
 type Row = { garage_id: string; model: string; installed: boolean; offered: boolean; status: string };
+export const PRICE_COLUMNS = ["pool_input_cost_per_million", "pool_output_cost_per_million", "dedicated_input_cost_per_million", "dedicated_output_cost_per_million", "pool_cache_read_cost_per_million", "dedicated_cache_read_cost_per_million"] as const;
+export type Remembered = { model: string; offered: boolean } & Partial<Record<typeof PRICE_COLUMNS[number], number | null>>;
 
-/** Writes the reported inventory. Models in `offer` (fetched on request) are offered at once. First registration offers everything reported (except embeddings); later new models are not auto-offered. */
+/** Offer flag for one reported model. Existing rows and remembered (removed earlier, e.g. during a runtime switch) rows keep their choice; only truly new names start un-offered (except the very first registration). */
+export function offerFor(model: string, prev: { offered: boolean } | undefined, remembered: { offered: boolean } | undefined, first: boolean, offerNow: boolean): boolean {
+  if (isEmbeddingModel(model)) return false;
+  if (offerNow) return true;
+  if (prev) return prev.offered;
+  if (remembered) return remembered.offered;
+  return first;
+}
+
+/** Writes the reported inventory. Models in `offer` (fetched on request) are offered at once. First registration offers everything reported (except embeddings); remembered models get their earlier offer choice and prices back; other new models are not auto-offered. */
 export async function syncInventory(admin: SupabaseClient, garageId: string, models: string[], offer: string[] = []): Promise<Set<string>> {
   const offerNow = new Set(offer);
   const { data } = await admin.from("garage_models").select("garage_id, model, installed, offered, status").eq("garage_id", garageId);
   const rows = (data || []) as Row[];
   const first = rows.length === 0;
   const byModel = new Map(rows.map((r) => [r.model, r]));
+  const fresh = models.filter((m) => !byModel.has(m));
+  const memory = new Map<string, Remembered>();
+  if (fresh.length) {
+    const { data: mem } = await admin.from("garage_model_memory").select(`model, offered, ${PRICE_COLUMNS.join(", ")}`).eq("garage_id", garageId).in("model", fresh);
+    for (const m of (mem || []) as unknown as Remembered[]) memory.set(m.model, m);
+  }
+  // Very first registration with no memory at all = a brand-new garage.
+  const firstEver = first && memory.size === 0;
   const now = new Date().toISOString();
   const upserts = models.map((model) => {
     const prev = byModel.get(model);
-    if (offerNow.has(model) && !isEmbeddingModel(model)) return { garage_id: garageId, model, installed: true, offered: true, status: "testing", updated_at: now };
-    return { garage_id: garageId, model, installed: true, offered: prev ? prev.offered && !isEmbeddingModel(model) : first && !isEmbeddingModel(model), status: prev?.status ?? "untested", updated_at: now };
+    const rem = prev ? undefined : memory.get(model);
+    const offered = offerFor(model, prev, rem, firstEver, offerNow.has(model));
+    if (offerNow.has(model) && offered) return { garage_id: garageId, model, installed: true, offered: true, status: "testing", updated_at: now };
+    const prices = rem ? Object.fromEntries(PRICE_COLUMNS.filter((c) => rem[c] != null).map((c) => [c, rem[c]])) : {};
+    return { garage_id: garageId, model, installed: true, offered, status: prev?.status ?? "untested", updated_at: now, ...prices };
   });
-  if (upserts.length) await admin.from("garage_models").upsert(upserts, { onConflict: "garage_id,model" });
+  for (const u of upserts) await admin.from("garage_models").upsert(u, { onConflict: "garage_id,model" });
+  if (memory.size) await admin.from("garage_model_memory").delete().eq("garage_id", garageId).in("model", [...memory.keys()]);
   const gone = rows.filter((r) => r.installed && !models.includes(r.model)).map((r) => r.model);
   if (gone.length) await admin.from("garage_models").update({ installed: false, updated_at: now }).eq("garage_id", garageId).in("model", gone);
   return new Set(upserts.filter((u) => u.offered).map((u) => u.model));
