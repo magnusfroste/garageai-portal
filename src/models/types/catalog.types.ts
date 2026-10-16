@@ -44,6 +44,7 @@ export interface GarageOffer {
 
 /** Buyer-facing catalogue entry: one per base model name. */
 export interface CatalogModel {
+  requests7d?: number;
   /** garageai/auto: ordered failover across a curated list. */
   auto?: boolean;
   name: string;

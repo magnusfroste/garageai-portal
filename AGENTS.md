@@ -26,7 +26,7 @@
 
 ## Where logic lives
 
-- Smart plans in shared garageSmart; a locked RPC records one owner-only event and request per UTC day.
+- Smart plans in shared garageSmart; locked RPCs limit daily changes. Signup paths share BridgeInstallLine and StartingPaths to keep connection commands consistent.
 
 - Announcements use repository → service → hook → views; RLS enforces audience/window/admin access and the signed-in shell owns the bar, preventing public exposure.
 

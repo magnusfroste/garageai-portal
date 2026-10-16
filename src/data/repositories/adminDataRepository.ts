@@ -37,9 +37,11 @@ export interface AdminKeyUserSummary {
 }
 
 export interface AdminKeyData {
+  internalTraffic?: { requests: number; tokens: number };
   keys: {
     id: string;
     name: string;
+    internal: boolean;
     is_active: boolean;
     created_at: string;
     revoked_at: string | null;

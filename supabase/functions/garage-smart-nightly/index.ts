@@ -12,6 +12,9 @@ Deno.serve(async req => {
  if(auth.error || auth.data!==true) return json({error:'Unauthorized'},401);
  try {
   const checked = <T>(r:{data:T;error:unknown}):T => {if(r.error) throw r.error;return r.data;};
+  const replay=checked(await admin.from('ingest_cursors').select('value').eq('name','customer_usage_replay').maybeSingle());
+  // Incomplete history must not authorize a demand-based download or a zero-demand removal.
+  if(!replay?.value || Date.parse(replay.value)<Date.now()-24*3600000) return json({checked:0,changed:0,reason:'Customer traffic history is rebuilding'});
   const garages=checked(await admin.from('garages').select('id,name,operator_id,smart,smart_disk_gb,created_at,runtime,models,agent,agent_at').eq('smart',true).eq('disabled',false).is('paused_at',null).eq('runtime','ollama')) ?? [];
   const demand=checked(await admin.rpc('smart_model_demand')) ?? [];
   const curated=checked(await admin.from('curated_models').select('model_name,ollama_tag,download_bytes,enabled').not('ollama_tag','is',null).limit(5000)) ?? [];

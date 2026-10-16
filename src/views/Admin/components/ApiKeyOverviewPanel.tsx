@@ -4,6 +4,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
+import { t } from "@/i18n";
 
 export const ApiKeyOverviewPanel = () => {
   const { data, isLoading } = useQuery<AdminKeyData>({
@@ -24,6 +25,10 @@ export const ApiKeyOverviewPanel = () => {
 
   return (
     <div className="space-y-6">
+      <section className="border-b border-border pb-4">
+        <h3 className="font-semibold">{t("Internal test traffic")}</h3>
+        <p className="text-sm text-muted-foreground">{t("Internal keys")}: {data?.keys.filter(k=>k.internal).length ?? 0} · {t("{r} requests · {tk} tokens", { r: data?.internalTraffic?.requests ?? 0, tk: data?.internalTraffic?.tokens ?? 0 })}</p>
+      </section>
       <div className="flex gap-4">
         <div className="rounded-lg border p-4 flex-1">
           <p className="text-sm text-muted-foreground">Active keys</p>

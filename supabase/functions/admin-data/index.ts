@@ -91,7 +91,7 @@ serve(async (req: Request) => {
   if (type === "keys") {
     const { data: keys, error } = await supabase
       .from("api_keys")
-      .select("id, name, is_active, created_at, revoked_at, user_id")
+      .select("id, name, internal, is_active, created_at, revoked_at, user_id")
       .order("created_at", { ascending: false })
       .limit(500);
 
@@ -142,7 +142,8 @@ serve(async (req: Request) => {
       };
     });
 
-    return json({ keys: enriched, userSummary });
+    const { data: internalTraffic } = await supabase.from("internal_model_stats_hourly").select("requests,tokens").gte("hour",new Date(Date.now()-7*86400000).toISOString());
+    return json({ keys: enriched, userSummary, internalTraffic: (internalTraffic ?? []).reduce((a,r)=>({requests:a.requests+Number(r.requests),tokens:a.tokens+Number(r.tokens)}),{requests:0,tokens:0}) });
   }
 
   // === Usage statistics — fetched server-side from LiteLLM proxy ===
