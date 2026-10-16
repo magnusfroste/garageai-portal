@@ -470,6 +470,13 @@
       "when": 1792187903482,
       "tag": "0066_smart_demand_distinct_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792190602464,
+      "tag": "0067_internal_traffic_customer_aggregates",
+      "breakpoints": true
     }
   ]
 }
