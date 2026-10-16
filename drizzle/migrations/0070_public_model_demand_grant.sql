@@ -1,0 +1,2 @@
+GRANT EXECUTE ON FUNCTION public.model_demand() TO anon,authenticated,service_role;
+COMMENT ON FUNCTION public.model_demand() IS 'Public aggregate customer request counts only; no keys, prompts or internal traffic.';
