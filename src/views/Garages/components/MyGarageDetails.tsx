@@ -24,7 +24,7 @@ function ModelPrice({garage:g,model:m}:{garage:GarageRow;model:GarageModelRow}){
  const labels=['Pool input','Pool output','Direct input','Direct output'];
  return <div className="py-4 border-b border-border space-y-2">
   <p className="text-sm font-medium break-words">{m.canonical_model}</p>
-  <p className="text-xs text-muted-foreground">{t('Context window')}: {m.context_length?.toLocaleString()??'—'}</p>
+  <p className="text-xs text-muted-foreground">{t('Context window')}: {m.context_length?.toLocaleString()??'—'}{m.quantization&&<> · {t('Quantization')}: {m.quantization}</>}</p>
   {suggestion.data && <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span>{t('Suggested input / output')}: ${suggestion.data.input} / ${suggestion.data.output}</span><Button size="sm" variant="ghost" onClick={()=>{const s=suggestion.data;if(s)setValues([s.input,s.output,s.input,s.output].map(String));}}>{t('Use suggestion')}</Button></div>}
   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{labels.map((label,i)=><label key={label} className="space-y-1 text-xs text-muted-foreground">{t(label)}<Input aria-label={`${t(label)} ${m.canonical_model}`} type="number" min="0" max="10000" step="0.01" value={values[i]} onChange={e=>setValues(values.map((v,n)=>n===i?e.target.value:v))}/></label>)}</div>
   <Button size="sm" variant="outline" disabled={prices.isPending||values.some(v=>v.trim()===''||!Number.isFinite(Number(v))||Number(v)<0||Number(v)>10000)} onClick={()=>prices.mutate({model:m.model,values:values.map(Number)})}><Save className="w-3.5 h-3.5 mr-2"/>{t('Save prices')}</Button>
