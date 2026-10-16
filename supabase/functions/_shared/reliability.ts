@@ -199,7 +199,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   const rates = await deploymentRates(base, masterKey);
 
   type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number; lastRequest: number | null };
-  type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number; dedicatedPrompt: number; dedicatedTokens: number; cached: number; inSpend: number; cachedSpend: number; outSpend: number };
+  type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number; dedicatedPrompt: number; dedicatedTokens: number; cached: number; inSpend: number; cachedSpend: number; outSpend: number; keys: Set<string> };
   const mbuckets = new Map<string, MBucket>();
   const buckets = new Map<string, Bucket>();
   const perGarage: Record<string, number> = {};
@@ -232,7 +232,8 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const model = parsed?.model || String(r.model ?? "unknown");
     const mkey = `${gid}|${model}|${hour}`;
     let mb = mbuckets.get(mkey);
-    if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0, dedicatedPrompt: 0, dedicatedTokens: 0, cached: 0, inSpend: 0, cachedSpend: 0, outSpend: 0 }; mbuckets.set(mkey, mb); }
+    if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0, dedicatedPrompt: 0, dedicatedTokens: 0, cached: 0, inSpend: 0, cachedSpend: 0, outSpend: 0, keys: new Set() }; mbuckets.set(mkey, mb); }
+    if (typeof r.api_key === "string" && r.api_key) mb.keys.add(r.api_key);
     mb.requests++; if (statusOf(r) !== "success") mb.failures++;
     mb.prompt += promptTokens; mb.tokens += completionTokens; mb.spend += spend;
     const cached = Math.min(promptTokens, cachedTokensOf(r));
@@ -271,6 +272,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     garage_id: b.garage_id, model: b.model, hour: new Date(b.hour).toISOString(), requests: b.requests, failures: b.failures,
     dedicated_prompt_tokens: b.dedicatedPrompt, dedicated_completion_tokens: b.dedicatedTokens, prompt_tokens: b.prompt, completion_tokens: b.tokens, spend_usd: Math.round(b.spend * 1e8) / 1e8,
     cached_prompt_tokens: b.cached, input_spend_usd: Math.round(b.inSpend * 1e8) / 1e8, cached_spend_usd: Math.round(b.cachedSpend * 1e8) / 1e8, output_spend_usd: Math.round(b.outSpend * 1e8) / 1e8,
+    api_keys: [...b.keys].sort(),
   }));
   if (mUpserts.length) {
     const { error } = await admin.from("garage_model_stats_hourly").upsert(mUpserts, { onConflict: "garage_id,model,hour" });
