@@ -87,6 +87,7 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
+          internal: boolean
           is_active: boolean
           key_value: string
           litellm_token: string | null
@@ -100,6 +101,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          internal?: boolean
           is_active?: boolean
           key_value: string
           litellm_token?: string | null
@@ -113,6 +115,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          internal?: boolean
           is_active?: boolean
           key_value?: string
           litellm_token?: string | null
@@ -416,6 +419,105 @@ export type Database = {
           status?: string
           supports_tools?: boolean | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_garage_model_stats_hourly: {
+        Row: {
+          api_keys: string[]
+          cached_prompt_tokens: number
+          cached_spend_usd: number
+          completion_tokens: number
+          dedicated_completion_tokens: number
+          dedicated_prompt_tokens: number
+          failures: number
+          garage_id: string
+          garage_name: string | null
+          hour: string
+          input_spend_usd: number
+          model: string
+          output_spend_usd: number
+          prompt_tokens: number
+          requests: number
+          spend_usd: number
+        }
+        Insert: {
+          api_keys?: string[]
+          cached_prompt_tokens?: number
+          cached_spend_usd?: number
+          completion_tokens?: number
+          dedicated_completion_tokens?: number
+          dedicated_prompt_tokens?: number
+          failures?: number
+          garage_id: string
+          garage_name?: string | null
+          hour: string
+          input_spend_usd?: number
+          model: string
+          output_spend_usd?: number
+          prompt_tokens?: number
+          requests?: number
+          spend_usd?: number
+        }
+        Update: {
+          api_keys?: string[]
+          cached_prompt_tokens?: number
+          cached_spend_usd?: number
+          completion_tokens?: number
+          dedicated_completion_tokens?: number
+          dedicated_prompt_tokens?: number
+          failures?: number
+          garage_id?: string
+          garage_name?: string | null
+          hour?: string
+          input_spend_usd?: number
+          model?: string
+          output_spend_usd?: number
+          prompt_tokens?: number
+          requests?: number
+          spend_usd?: number
+        }
+        Relationships: []
+      }
+      customer_garage_request_stats_hourly: {
+        Row: {
+          completion_tokens: number
+          failures: number
+          garage_id: string
+          garage_name: string | null
+          hour: string
+          last_request_at: string | null
+          prompt_tokens: number
+          requests: number
+          spend_usd: number
+          tokens_per_second_p50: number | null
+          ttft_ms_p50: number | null
+        }
+        Insert: {
+          completion_tokens?: number
+          failures?: number
+          garage_id: string
+          garage_name?: string | null
+          hour: string
+          last_request_at?: string | null
+          prompt_tokens?: number
+          requests?: number
+          spend_usd?: number
+          tokens_per_second_p50?: number | null
+          ttft_ms_p50?: number | null
+        }
+        Update: {
+          completion_tokens?: number
+          failures?: number
+          garage_id?: string
+          garage_name?: string | null
+          hour?: string
+          last_request_at?: string | null
+          prompt_tokens?: number
+          requests?: number
+          spend_usd?: number
+          tokens_per_second_p50?: number | null
+          ttft_ms_p50?: number | null
         }
         Relationships: []
       }
@@ -1157,6 +1259,27 @@ export type Database = {
         }
         Relationships: []
       }
+      gateway_key_records: {
+        Row: {
+          alias: string | null
+          checked_at: string
+          fingerprint: string
+          internal: boolean
+        }
+        Insert: {
+          alias?: string | null
+          checked_at?: string
+          fingerprint: string
+          internal?: boolean
+        }
+        Update: {
+          alias?: string | null
+          checked_at?: string
+          fingerprint?: string
+          internal?: boolean
+        }
+        Relationships: []
+      }
       ingest_cursors: {
         Row: {
           name: string
@@ -1172,6 +1295,33 @@ export type Database = {
           name?: string
           updated_at?: string
           value?: string
+        }
+        Relationships: []
+      }
+      internal_model_stats_hourly: {
+        Row: {
+          garage_id: string
+          hour: string
+          model: string
+          requests: number
+          spend_usd: number
+          tokens: number
+        }
+        Insert: {
+          garage_id: string
+          hour: string
+          model: string
+          requests?: number
+          spend_usd?: number
+          tokens?: number
+        }
+        Update: {
+          garage_id?: string
+          hour?: string
+          model?: string
+          requests?: number
+          spend_usd?: number
+          tokens?: number
         }
         Relationships: []
       }
@@ -1326,6 +1476,32 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      signup_welcome_notices: {
+        Row: {
+          event_id: string
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          event_id?: string
+          sent_at?: string | null
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signup_welcome_notices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       token_usage: {
         Row: {
@@ -1609,6 +1785,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      signup_welcome_eligible: { Args: { _user_id: string }; Returns: boolean }
       smart_model_demand: {
         Args: never
         Returns: {

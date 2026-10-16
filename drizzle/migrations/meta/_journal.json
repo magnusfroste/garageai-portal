@@ -470,6 +470,34 @@
       "when": 1792187903482,
       "tag": "0066_smart_demand_distinct_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792190602464,
+      "tag": "0067_internal_traffic_customer_aggregates",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1792190711229,
+      "tag": "0068_public_customer_request_figures",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792190782354,
+      "tag": "0069_preserve_recorded_earnings_with_customer_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1792190848211,
+      "tag": "0070_public_model_demand_grant",
+      "breakpoints": true
     }
   ]
 }

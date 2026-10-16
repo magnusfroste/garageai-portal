@@ -18,25 +18,11 @@ class OnboardingService {
     window.localStorage.removeItem(STORAGE_KEY);
   }
 
-  private getStoredIntent(): SignupIntent | null {
-    const value = window.localStorage.getItem(STORAGE_KEY);
-    return isSignupIntent(value) ? value : null;
-  }
-
   async routeAfterLogin(user: User): Promise<string> {
     const profile = await profileService.getProfile(user.id);
-    const metadataIntent = user.user_metadata?.signup_intent;
-    const intent = this.getStoredIntent()
-      ?? (isSignupIntent(profile?.signup_intent) ? profile.signup_intent : null)
-      ?? (isSignupIntent(metadataIntent) ? metadataIntent : null);
-
-    if (intent) {
-      await profileService.completeOnboarding(intent);
-      this.clearStoredIntent();
-      return intent === "operator" ? "/connect" : "/dashboard";
-    }
-
-    return profile?.onboarding_done ? "/dashboard" : "/onboarding";
+    if (!profile?.onboarding_done) return "/onboarding";
+    this.clearStoredIntent();
+    return "/dashboard";
   }
 }
 

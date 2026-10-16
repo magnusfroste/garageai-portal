@@ -1,3 +1,4 @@
+import { countsAsDemand, loadInternalIdentities, fingerprint } from "./internalTraffic.ts";
 import { isTunnel, tunnelStatus } from "./tunnel.ts";
 import { offeredByGarage } from "./garageModels.ts";
 import { garageOfDeploymentId } from "./autoRoute.ts";
@@ -37,7 +38,7 @@ async function healthyModelsByGarage(admin: SupabaseClient) {
   for (const r of (data || []) as Array<{ garage: string; garage_tier: string | null; model_name: string | null; enabled: boolean; status: string }>) {
     if (!r.enabled || r.status !== "healthy") continue;
     if (!map.has(r.garage)) map.set(r.garage, new Set());
-    map.get(r.garage)!.add(underlyingModel(r.garage, r.model_name, r.garage_tier));
+    map.get(r.garage)?.add(underlyingModel(r.garage, r.model_name, r.garage_tier));
   }
   return map;
 }
@@ -121,6 +122,7 @@ async function fetchSpendLogs(base: string, masterKey: string, from: Date, to: D
     const data = (body?.data ?? []) as SpendRow[];
     all.push(...data);
     const totalPages = Number(body?.total_pages ?? 1);
+    if (page === MAX_PAGES && page < totalPages) throw new Error("Spend history page cap reached; cursor not advanced");
     if (!data.length || page >= totalPages) break;
   }
   if (v2ok) return { rows: all, source: "v2" };
@@ -198,6 +200,8 @@ export async function ingestUsageStats(admin: SupabaseClient) {
   const { rows, source } = await fetchSpendLogs(base, masterKey, new Date(fromMs), new Date(toMs));
   const rates = await deploymentRates(base, masterKey);
 
+  const internal = await loadInternalIdentities(admin, base, masterKey, rows);
+  const aggregate = async (rows: SpendRow[], customer: boolean, fromMs: number, toMs: number) => {
   type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number; lastRequest: number | null };
   type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number; dedicatedPrompt: number; dedicatedTokens: number; cached: number; inSpend: number; cachedSpend: number; outSpend: number; keys: Set<string> };
   const mbuckets = new Map<string, MBucket>();
@@ -233,7 +237,7 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     const mkey = `${gid}|${model}|${hour}`;
     let mb = mbuckets.get(mkey);
     if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0, dedicatedPrompt: 0, dedicatedTokens: 0, cached: 0, inSpend: 0, cachedSpend: 0, outSpend: 0, keys: new Set() }; mbuckets.set(mkey, mb); }
-    if (typeof r.api_key === "string" && r.api_key) mb.keys.add(r.api_key);
+    if (typeof r.api_key === "string" && r.api_key) mb.keys.add(await fingerprint(r.api_key));
     mb.requests++; if (statusOf(r) !== "success") mb.failures++;
     mb.prompt += promptTokens; mb.tokens += completionTokens; mb.spend += spend;
     const cached = Math.min(promptTokens, cachedTokensOf(r));
@@ -265,24 +269,55 @@ export async function ingestUsageStats(admin: SupabaseClient) {
     };
   });
   if (upserts.length) {
-    const { error } = await admin.from("garage_request_stats_hourly").upsert(upserts, { onConflict: "garage_id,hour" });
+    const { error } = await admin.from(customer ? "customer_garage_request_stats_hourly" : "garage_request_stats_hourly").upsert(upserts, { onConflict: "garage_id,hour" });
     if (error) throw new Error(`hourly upsert failed: ${error.message}`);
   }
   const mUpserts = [...mbuckets.values()].map((b) => ({
+    garage_name: [...garageIds].find(([, id]) => id === b.garage_id)?.[0] ?? null,
     garage_id: b.garage_id, model: b.model, hour: new Date(b.hour).toISOString(), requests: b.requests, failures: b.failures,
     dedicated_prompt_tokens: b.dedicatedPrompt, dedicated_completion_tokens: b.dedicatedTokens, prompt_tokens: b.prompt, completion_tokens: b.tokens, spend_usd: Math.round(b.spend * 1e8) / 1e8,
     cached_prompt_tokens: b.cached, input_spend_usd: Math.round(b.inSpend * 1e8) / 1e8, cached_spend_usd: Math.round(b.cachedSpend * 1e8) / 1e8, output_spend_usd: Math.round(b.outSpend * 1e8) / 1e8,
     api_keys: [...b.keys].sort(),
   }));
   if (mUpserts.length) {
-    const { error } = await admin.from("garage_model_stats_hourly").upsert(mUpserts, { onConflict: "garage_id,model,hour" });
+    const { error } = await admin.from(customer ? "customer_garage_model_stats_hourly" : "garage_model_stats_hourly").upsert(mUpserts, { onConflict: "garage_id,model,hour" });
     if (error) throw new Error(`model hourly upsert failed: ${error.message}`);
+  }
+  return { aggregated: perGarage, hours: upserts.length, excluded_acceptance: excludedAcceptance, excluded_platform: excludedPlatform, non_garage: nonGarage, out_of_window: outOfWindow };
+  };
+  const all = await aggregate(rows, false, fromMs, toMs);
+  const customer = await aggregate(rows.filter(r => countsAsDemand(r, internal)), true, fromMs, toMs);
+  const internalBuckets = new Map<string, { garage_id: string; model: string; hour: string; requests: number; tokens: number; spend_usd: number }>();
+  for (const r of rows.filter(r => !countsAsDemand(r, internal))) {
+    const route = garageOfDeploymentId(String(r.model_id ?? ""));
+    const id = route ? garageIds.get(route.garage) : null;
+    const ts = parseTs(r.startTime);
+    if (!id || !route || ts === null || ts < fromMs || ts >= toMs) continue;
+    const hour = new Date(floorHour(ts)).toISOString();
+    const key = `${id}|${route.model}|${hour}`;
+    const b = internalBuckets.get(key) ?? { garage_id: id, model: route.model, hour, requests: 0, tokens: 0, spend_usd: 0 };
+    b.requests++; b.tokens += Number(r.prompt_tokens ?? 0) + Number(r.completion_tokens ?? 0); b.spend_usd += Number(r.spend ?? 0);
+    internalBuckets.set(key, b);
+  }
+  if (internalBuckets.size) {
+    const { error } = await admin.from("internal_model_stats_hourly").upsert([...internalBuckets.values()], { onConflict: "garage_id,model,hour" });
+    if (error) throw new Error("Internal statistics save failed");
+  }
+  // Rebuild a complete day per run: never infer customer counts from a mixed hourly bucket.
+  const { data: replay } = await admin.from("ingest_cursors").select("value").eq("name", "customer_usage_replay").maybeSingle();
+  const replayFrom = replay?.value ? Date.parse(replay.value) : Math.floor((nowMs - 14 * 86400_000) / 86400_000) * 86400_000;
+  const replayTo = Math.min(replayFrom + 86400_000, Math.floor(nowMs / 86400_000) * 86400_000);
+  if (replayFrom < replayTo) {
+    const history = await fetchSpendLogs(base, masterKey, new Date(replayFrom), new Date(replayTo));
+    const historyInternal = await loadInternalIdentities(admin, base, masterKey, history.rows);
+    await aggregate(history.rows.filter(r => countsAsDemand(r, historyInternal)), true, replayFrom, replayTo);
+    const { error } = await admin.from("ingest_cursors").upsert({ name: "customer_usage_replay", value: new Date(replayTo).toISOString(), updated_at: new Date().toISOString() });
+    if (error) throw new Error("Customer replay cursor save failed");
   }
   await admin.from("ingest_cursors").upsert({ name: USAGE_CURSOR, value: new Date(toMs).toISOString(), updated_at: new Date().toISOString() });
 
   return {
-    source, fetched: rows.length, aggregated: perGarage, hours: upserts.length,
-    excluded_acceptance: excludedAcceptance, excluded_platform: excludedPlatform, non_garage: nonGarage, out_of_window: outOfWindow,
+    source, fetched: rows.length, ...all, customer, internal_requests: [...internalBuckets.values()].reduce((n,b)=>n+b.requests,0),
     from: new Date(fromMs).toISOString(), to: new Date(toMs).toISOString(),
   };
 }

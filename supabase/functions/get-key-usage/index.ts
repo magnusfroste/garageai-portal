@@ -136,7 +136,7 @@ serve(async (req) => {
 
     const { data: apiKeyData, error: keyError } = await supabase
       .from('api_keys')
-      .select('key_value, litellm_token, user_id, name')
+      .select('key_value, litellm_token, user_id, name, internal')
       .eq('id', keyId)
       .single();
 
@@ -152,6 +152,10 @@ serve(async (req) => {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    if (apiKeyData.internal) {
+      return new Response(JSON.stringify({ error: 'Internal traffic is available only in Admin' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const keyIdentifier = apiKeyData.litellm_token || apiKeyData.key_value;

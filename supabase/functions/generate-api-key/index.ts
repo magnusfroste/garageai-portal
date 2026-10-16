@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
+import { internalAlias } from "../_shared/internalTraffic.ts";
 import { ensureLiteLLMUser } from "../_shared/litellmUsers.ts";
 
 interface GenerateKeyRequest {
@@ -63,8 +64,10 @@ async function createLiteLLMKey(
     duration?: string;
     models?: string[];
     rpm_limit?: number;
+    metadata: { internal: boolean };
   } = {
     key_alias: keyName,
+    metadata: { internal: internalAlias(keyName) },
     user_id: litellmUserId,
     rpm_limit: rpmLimit,
   };
@@ -183,6 +186,7 @@ serve(async (req: Request) => {
         .insert({
           user_id: user.id,
           name: body.keyName,
+          internal: internalAlias(body.keyName),
           key_value: liteLLMResponse.key,
           litellm_token: liteLLMResponse.token || null,
           expires_at: null,

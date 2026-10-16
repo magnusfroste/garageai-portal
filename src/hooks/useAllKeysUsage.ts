@@ -27,7 +27,8 @@ export const useAllKeysUsage = () => {
       const { data: keys, error } = await supabase
         .from("api_keys")
         .select("id, name")
-        .eq("user_id", session.user.id);
+        .eq("user_id", session.user.id)
+        .eq("internal", false);
 
       if (error) throw error;
       if (!keys || keys.length === 0) return [];

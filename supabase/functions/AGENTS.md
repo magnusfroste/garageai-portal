@@ -1,4 +1,5 @@
 # Edge function rules
+- Classify internal keys before usage aggregation; customer aggregates alone feed demand and owner/public counters, while internal aggregates stay admin-only, preventing test-driven recommendations.
 
 - Issue garage credentials (register token, setup key, old-peer cleanup) only via `_shared/garageCredentials.ts`; create-garage and the Bridge link share it, so both enforce the same limits.
 - Plan garageai/auto deployments only in `_shared/autoRoute.ts` on top of the normal desired set inside reconcileGarageRouting; auto ids are `auto__<curated id>`, so usage ingest credits the entry's own garage.

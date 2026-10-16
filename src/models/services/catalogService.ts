@@ -160,7 +160,7 @@ export const applyFilters = (models: CatalogModel[], f: CatalogFilters): Catalog
     return true;
   });
   const cmp: Record<CatalogSort, (a: CatalogModel, b: CatalogModel) => number> = {
-    popular: (a, b) => b.tokens7d - a.tokens7d,
+    popular: (a, b) => (b.requests7d ?? 0) - (a.requests7d ?? 0),
     cheapest: (a, b) => (a.minPrice.output ?? Infinity) - (b.minPrice.output ?? Infinity),
     fastest: (a, b) => (b.tokensPerSecond ?? -1) - (a.tokensPerSecond ?? -1),
     reliable: (a, b) =>

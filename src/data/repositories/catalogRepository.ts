@@ -6,6 +6,11 @@ import { isProbeModel } from "@/models/services/probeFilter";
 
 /** Public, aggregate-only data used by the model catalogue (readable by visitors). */
 export const catalogRepository = {
+  async demand(): Promise<Map<string, number>> {
+    const { data, error } = await supabase.rpc("model_demand");
+    if (error) throw error;
+    return new Map((data ?? []).map(r => [r.model, Number(r.requests_7d)]));
+  },
   async garageStats(): Promise<GaragePublicStat[]> {
     const { data, error } = await supabase.rpc("garage_public_stats");
     if (error) throw error;

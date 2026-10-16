@@ -983,5 +983,9 @@ export const sv: Record<string, string> = {
   "Tokens in / out": "Tokens in / ut",
   "Model id": "Modell-id",
   "Request id": "Förfrågans id",
+  "Create an API key or open the chat (garageai/auto).": "Skapa en API-nyckel eller öppna chatten (garageai/auto).",
+  "Run this one line on the computer with the GPU.": "Kör den här raden på datorn med grafikkortet.",
+  "Internal test traffic": "Intern testtrafik",
+  "Internal keys": "Interna nycklar",
   "{r} requests · {tk} tokens": "{r} förfrågningar · {tk} tokens",
 };

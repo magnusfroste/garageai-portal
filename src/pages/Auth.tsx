@@ -43,9 +43,11 @@ const Auth = () => {
       : t("Welcome");
 
   const routeSession = async (session: { user: Parameters<typeof onboardingService.routeAfterLogin>[0] }) => {
+    const destination = await onboardingService.routeAfterLogin(session.user);
+    if (destination === "/onboarding") { navigate(destination, { replace: true }); return; }
     const next = authReturnService.take(location.search);
     if (next) { navigate(next, { replace: true }); return; }
-    navigate(await onboardingService.routeAfterLogin(session.user), { replace: true });
+    navigate(destination, { replace: true });
   };
 
   useEffect(() => { authReturnService.remember(location.search); }, [location.search]);
