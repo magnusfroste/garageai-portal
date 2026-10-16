@@ -6,7 +6,7 @@ import { boughtEarnedSeries, usedThisWeek } from "../../../src/models/services/o
 const m = (name: string, o: any = {}) => ({ name, auto: false, available: true, tokens7d: 0, tokensPerSecond: null, contextLength: null, minPrice: { input: 1, output: 1 }, offers: [], ...o }) as any;
 
 test("each model gets at most one label, auto never", () => {
-  const l = catalogLabels([m("garageai/auto", { auto: true, tokens7d: 999 }), m("a", { tokens7d: 50, tokensPerSecond: 90 }), m("b", { tokensPerSecond: 40, minPrice: { output: 0.1 } }), m("c", { contextLength: 262000 })]);
+  const l = catalogLabels([m("garageai/auto", { auto: true, tokens7d: 999 }), m("a", { tokens7d: 50 }), m("b", { tokensPerSecond: 40, minPrice: { output: 0.1 } }), m("c", { contextLength: 262000 })]);
   expect(l.get("garageai/auto")).toBeUndefined();
   expect(l.get("a")).toBe("recommended");
   expect(l.get("b")).toBe("fastest");
