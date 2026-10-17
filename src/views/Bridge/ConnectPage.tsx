@@ -58,24 +58,26 @@ const ConnectPage = () => {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <TabsContent value="macos" className="mt-3"><OneLine command={bridgeInstallCommand()} onCopied={() => setWaiting(true)} /></TabsContent>
-            <TabsContent value="linux" className="mt-3"><OneLine command={bridgeInstallCommand()} onCopied={() => setWaiting(true)} /></TabsContent>
-            <TabsContent value="windows" className="mt-3">
-              <p className="text-sm">{t("Windows: coming soon")}</p>
+            <TabsContent value="macos" className="mt-3"><OneLine command={bridgeInstallCommand(os)} onCopied={() => setWaiting(true)} /></TabsContent>
+            <TabsContent value="linux" className="mt-3"><OneLine command={bridgeInstallCommand(os)} onCopied={() => setWaiting(true)} /></TabsContent>
+            <TabsContent value="windows" className="mt-3 space-y-2">
+              <p className="text-sm text-muted-foreground">{t("Open PowerShell as Administrator (right-click → Run as administrator), then paste:")}</p>
+              <OneLine command={bridgeInstallCommand(os)} onCopied={() => setWaiting(true)} />
+              <p className="text-sm text-muted-foreground">{t("Windows 10/11, PowerShell as Administrator. Ollama, LM Studio or llama.cpp.")}</p>
             </TabsContent>
           </Tabs>
-          {os !== "windows" && <p className="text-sm text-muted-foreground">{t("Bridge connects this computer to GarageAI through its own encrypted tunnel. Nothing to configure on your network, and your model runtime can stay on localhost.")}</p>}
-          {os !== "windows" && <Collapsible>
+          <p className="text-sm text-muted-foreground">{t("Bridge connects this computer to GarageAI through its own encrypted tunnel. Nothing to configure on your network, and your model runtime can stay on localhost.")}</p>
+          <Collapsible>
             <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ChevronDown className="h-4 w-4" />{t("Network blocks UDP? Use NetBird instead")}</CollapsibleTrigger>
             <CollapsibleContent className="pt-2">
-              <OneLine command={bridgeNetbirdCommand()} onCopied={() => setWaiting(true)} />
+              <OneLine command={bridgeNetbirdCommand(os)} onCopied={() => setWaiting(true)} />
             </CollapsibleContent>
-          </Collapsible>}
-          {os !== "windows" && <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+          </Collapsible>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp…) with a model loaded.")}</li>
             <li>{t("After connecting, choose the models to offer under My garage.")}</li>
-          </ul>}
-          {waiting && os !== "windows" && (
+          </ul>
+          {waiting && (
             <div className="space-y-1 rounded-md border p-3 text-sm">
               <p className="flex items-center gap-2 font-medium"><Loader2 className="h-4 w-4 animate-spin text-primary" />{t("Waiting for your computer…")}</p>
               <p className="text-muted-foreground">{t("When the terminal opens your browser, approve the computer there.")}</p>

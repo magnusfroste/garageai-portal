@@ -4,11 +4,12 @@ import { stepNumber } from "./onboardingProgress";
 
 export type ConnectOs = "macos" | "linux" | "windows";
 export const BRIDGE_ONE_LINE = "curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect";
+export const BRIDGE_ONE_LINE_WINDOWS = "irm https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.ps1 | iex; garageai connect";
 export const BRIDGE_NETBIRD_FLAG = " --tunnel netbird";
 
 /** The plain command uses the Bridge tunnel (default); the NetBird variant is the fallback when the network blocks UDP. */
-export const bridgeInstallCommand = (): string => BRIDGE_ONE_LINE;
-export const bridgeNetbirdCommand = (): string => BRIDGE_ONE_LINE + BRIDGE_NETBIRD_FLAG;
+export const bridgeInstallCommand = (os: ConnectOs = "linux"): string => (os === "windows" ? BRIDGE_ONE_LINE_WINDOWS : BRIDGE_ONE_LINE);
+export const bridgeNetbirdCommand = (os: ConnectOs = "linux"): string => bridgeInstallCommand(os) + BRIDGE_NETBIRD_FLAG;
 
 export function detectOs(userAgent: string): ConnectOs {
   const ua = userAgent.toLowerCase();
