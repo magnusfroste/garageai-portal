@@ -498,6 +498,13 @@
       "when": 1792190848211,
       "tag": "0070_public_model_demand_grant",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1792280872725,
+      "tag": "0071_account_terms_acceptance",
+      "breakpoints": true
     }
   ]
 }

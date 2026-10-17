@@ -1443,6 +1443,8 @@ export type Database = {
           purchased_credits_usd: number
           signup_intent: string | null
           starting_credit_usd: number
+          terms_accepted_at: string | null
+          terms_version: string | null
           updated_at: string
         }
         Insert: {
@@ -1458,6 +1460,8 @@ export type Database = {
           purchased_credits_usd?: number
           signup_intent?: string | null
           starting_credit_usd?: number
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Update: {
@@ -1473,6 +1477,8 @@ export type Database = {
           purchased_credits_usd?: number
           signup_intent?: string | null
           starting_credit_usd?: number
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1564,6 +1570,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_account_terms: { Args: { _version: string }; Returns: undefined }
+      account_terms_version: { Args: never; Returns: string }
       apply_managed_model_cancel: {
         Args: { _garage_id: string; _model: string }
         Returns: undefined
