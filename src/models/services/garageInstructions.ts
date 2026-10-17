@@ -12,7 +12,7 @@ export type { GarageRuntime } from "./garageRuntime";
 export const OS_OPTIONS: Array<{ value: GarageOs; label: string; supported: boolean }> = [
   { value: "macos", label: "macOS", supported: true },
   { value: "linux", label: "Linux", supported: true },
-  { value: "windows", label: "Windows (not supported yet)", supported: false },
+  { value: "windows", label: "Windows", supported: true },
 ];
 
 export const RUNTIME_OPTIONS = GARAGE_RUNTIME_OPTIONS;

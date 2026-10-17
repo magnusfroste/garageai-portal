@@ -12,7 +12,11 @@ test("OS detection picks the right tab", () => {
 
 test("the plain command is the tunnel; the NetBird fallback appends --tunnel netbird", () => {
   expect(bridgeInstallCommand()).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
-  expect(bridgeNetbirdCommand()).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect --tunnel netbird");
+  expect(bridgeInstallCommand("macos")).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
+  expect(bridgeInstallCommand("linux")).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
+  expect(bridgeInstallCommand("windows")).toBe("irm https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.ps1 | iex; garageai connect");
+  expect(bridgeNetbirdCommand("linux")).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect --tunnel netbird");
+  expect(bridgeNetbirdCommand("windows")).toBe("irm https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.ps1 | iex; garageai connect --tunnel netbird");
 });
 
 let n = 0;

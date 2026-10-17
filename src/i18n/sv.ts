@@ -849,6 +849,8 @@ export const sv: Record<string, string> = {
   "You have connected many times today. Wait a while, or contact us at {support}": "Du har anslutit många gånger i dag. Vänta en stund, eller kontakta oss på {support}",
   "You have {n} garages. Remove one under My garages, or connect this machine as one of them": "Du har {n} garage. Ta bort ett under Mina garage, eller anslut den här datorn som ett av dem",
   "Windows: coming soon": "Windows: kommer snart",
+  "Open PowerShell as Administrator (right-click → Run as administrator), then paste:": "Öppna PowerShell som administratör (högerklicka → Kör som administratör) och klistra in:",
+  "Windows 10/11, PowerShell as Administrator. Ollama, LM Studio or llama.cpp.": "Windows 10/11, PowerShell som administratör. Ollama, LM Studio eller llama.cpp.",
   "New token (advanced)": "Ny token (avancerat)",
   "Create token": "Skapa token",
   "Register token": "Registreringstoken",
