@@ -1,6 +1,5 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
-  "Terms": "Villkor",
   "Privacy": "Integritet",
   "Privacy policy": "Integritetspolicy",
   "I accept the": "Jag accepterar",
