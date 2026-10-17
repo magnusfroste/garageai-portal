@@ -16,6 +16,7 @@ export const RequestLogTable = ({ logs }: { logs: RequestLog[] }) => {
           <TableHead className="w-6" />
           <TableHead>{t("Time")}</TableHead>
           <TableHead>{t("Model")}</TableHead>
+          <TableHead className="hidden sm:table-cell">{t("Key")}</TableHead>
           <TableHead>{t("Garage")}</TableHead>
           <TableHead className="text-right">{t("Tokens")}</TableHead>
           <TableHead className="text-right">{t("Cost")}</TableHead>
@@ -27,11 +28,12 @@ export const RequestLogTable = ({ logs }: { logs: RequestLog[] }) => {
           const isOpen = open === log.request_id;
           return (
             <Fragment key={log.request_id}>
-              {(index === 0 || logs[index - 1].startTime.slice(0, 10) !== log.startTime.slice(0, 10)) && <TableRow className="bg-muted/30"><TableCell colSpan={7} className="text-xs font-medium">{log.startTime ? new Date(log.startTime).toLocaleDateString(locale(), { dateStyle: "long" }) : t("Unknown date")}</TableCell></TableRow>}
+              {(index === 0 || logs[index - 1].startTime.slice(0, 10) !== log.startTime.slice(0, 10)) && <TableRow className="bg-muted/30"><TableCell colSpan={8} className="text-xs font-medium">{log.startTime ? new Date(log.startTime).toLocaleDateString(locale(), { dateStyle: "long" }) : t("Unknown date")}</TableCell></TableRow>}
               <TableRow className="cursor-pointer" onClick={() => setOpen(isOpen ? null : log.request_id)} aria-expanded={isOpen}>
                 <TableCell className="px-2"><ChevronRight className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", isOpen && "rotate-90")} /></TableCell>
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{log.startTime ? new Date(log.startTime).toLocaleTimeString(locale()) : "—"}</TableCell>
                 <TableCell className="font-mono text-xs">{publicModelName(log.model)}</TableCell>
+                <TableCell className="hidden sm:table-cell text-xs whitespace-nowrap"><span className="block max-w-[10rem] truncate" title={log.key_name}>{log.key_name}</span></TableCell>
                 <TableCell className="text-xs whitespace-nowrap">{log.garage || "—"}</TableCell>
                 <TableCell className="text-right text-xs tabular-nums">{log.total_tokens.toLocaleString()}</TableCell>
                 <TableCell className="text-right text-xs tabular-nums">${log.spend.toFixed(6)}</TableCell>
@@ -40,7 +42,7 @@ export const RequestLogTable = ({ logs }: { logs: RequestLog[] }) => {
               {isOpen && (
                 <TableRow className="bg-muted/20 hover:bg-muted/20">
                   <TableCell />
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <dl className="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
                       <div><dt className="inline text-muted-foreground">{t("Route")}: </dt><dd className="inline">{log.tier ? t(log.tier) : "—"}</dd></div>
                       <div><dt className="inline text-muted-foreground">{t("API key")}: </dt><dd className="inline">{log.key_name}</dd></div>

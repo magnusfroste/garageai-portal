@@ -383,6 +383,7 @@ export const sv: Record<string, string> = {
   "Create API key": "Skapa API-nyckel",
   "New API key": "Ny API-nyckel",
   "The chat uses one of your API keys, so usage shows up under that key.": "Chatten använder en av dina API-nycklar, så förbrukningen syns under den nyckeln.",
+  "Key": "Nyckel",
   "Key name": "Nyckelnamn",
   "Creating…": "Skapar…",
   "Create": "Skapa",
