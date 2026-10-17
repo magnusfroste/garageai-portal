@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Add account terms storage, own-user acceptance and signup recording; protect key/payment/garage actions
+- [ ] Add signup checkbox, persistent app banner, legal links and admin terms column in English/Swedish
+- [ ] Add daily twelve-month onboarding retention; test signup/banner/security and deploy changed functions
+
 - [x] Classify internal keys, separate customer demand/counters and show test totals only in Admin
 - [x] Add first-sign-in AI/GPU paths and Overview fallback in English/Swedish
 - [ ] Send once-only ten-minute welcome — blocked: sender domain not configured; eligibility/state prepared, sender and scheduling deferred
