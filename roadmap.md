@@ -1,8 +1,10 @@
 # Roadmap
 
-- [ ] Add account terms storage, own-user acceptance and signup recording; protect key/payment/garage actions
-- [ ] Add signup checkbox, persistent app banner, legal links and admin terms column in English/Swedish
-- [ ] Add daily twelve-month onboarding retention; test signup/banner/security and deploy changed functions
+- [x] Add account terms storage, own-user acceptance and signup recording; protect key/payment/garage actions
+- [x] Add signup checkbox, persistent app banner, legal links and admin terms column in English/Swedish
+- [x] Add daily twelve-month onboarding retention; focused tests and fixture browser signup/banner checks; deployed changed functions
+- [ ] Verify account terms with real signup/OAuth and signed-in acceptance — blocked: no requesting-user account/session; fixture flows checked
+- [ ] Legal Terms/Privacy URLs must become reachable — supplied URLs return 404
 
 - [x] Classify internal keys, separate customer demand/counters and show test totals only in Admin
 - [x] Add first-sign-in AI/GPU paths and Overview fallback in English/Swedish

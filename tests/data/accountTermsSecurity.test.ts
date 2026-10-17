@@ -10,9 +10,11 @@ test.skipIf(!process.env.SUPABASE_DB_URL)("database current version matches the 
   } finally { await sql.end({ timeout: 1 }); }
 });
 
-test.skipIf(!process.env.SUPABASE_DB_URL)("anonymous acceptance cannot write a profile", async () => {
+test.skipIf(!process.env.SUPABASE_DB_URL)("anonymous callers cannot execute acceptance, authenticated callers can", async () => {
   const sql = postgres(process.env.SUPABASE_DB_URL ?? "", { max: 1, connect_timeout: 5, connection: { statement_timeout: 3000 } });
   try {
-    await expect(sql`select public.accept_account_terms('2026-10-17')`).rejects.toThrow();
+    const [row] = await sql`select has_function_privilege('anon', 'public.accept_account_terms(text)', 'EXECUTE') as anonymous, has_function_privilege('authenticated', 'public.accept_account_terms(text)', 'EXECUTE') as authenticated`;
+    expect(row.anonymous).toBe(false);
+    expect(row.authenticated).toBe(true);
   } finally { await sql.end({ timeout: 1 }); }
 });
