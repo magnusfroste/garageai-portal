@@ -1,5 +1,16 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
+  "Privacy": "Integritet",
+  "Privacy policy": "Integritetspolicy",
+  "I accept the": "Jag accepterar",
+  "and the": "och",
+  "Terms version": "Villkorsversion",
+  "Terms and Privacy policy": "Villkor och integritetspolicy",
+  "By paying you accept the": "Genom att betala accepterar du",
+  "Please accept the Terms and Privacy policy.": "Acceptera villkoren och integritetspolicyn.",
+  "We have published our Terms and Privacy policy. Please accept them to keep using GarageAI.": "Vi har publicerat våra villkor och vår integritetspolicy. Acceptera dem för att fortsätta använda GarageAI.",
+  "Please accept the Terms and Privacy policy in the banner above before continuing.": "Acceptera villkoren och integritetspolicyn i meddelandet ovan innan du fortsätter.",
+  "Could not save acceptance. Please try again.": "Kunde inte spara godkännandet. Försök igen.",
   "Bridge updates": "Bridge-uppdateringar",
   "Stable version": "Stabil version",
   "Make {version} stable": "Gör {version} stabil",

@@ -6,6 +6,8 @@ export interface Profile {
   signup_intent: "buyer" | "operator" | null;
   onboarding_done: boolean;
   preferred_language: "en" | "sv";
+  terms_version: string | null;
+  terms_accepted_at: string | null;
 }
 
 export interface ProfileUpdateData {

@@ -6,6 +6,7 @@ import { StartingPaths } from "./StartingPaths";
 import { profileService } from "@/models/services/profileService";
 import type { SignupIntent } from "@/models/types/onboarding.types";
 import { toast } from "sonner";
+import { AccountTermsBanner } from "@/views/Account/components/AccountTermsBanner";
 
 import { t } from "@/i18n";
 export const OnboardingPage = () => {
@@ -26,6 +27,7 @@ export const OnboardingPage = () => {
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-4xl space-y-8">
+        <AccountTermsBanner />
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">{t("What do you want to do?")}</h1>
           <p className="text-muted-foreground">{t("Pick a starting point. You can always use both later.")}</p>

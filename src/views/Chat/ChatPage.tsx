@@ -129,8 +129,8 @@ export const ChatPage = () => {
           keyId = refreshed.data?.find((key) => key.is_active && key.name === "Chat")?.id ?? "";
           if (!keyId) throw new Error(t("The Chat API key could not be loaded."));
           chooseKey(keyId);
-        } catch {
-          setSendError(t("We couldn't create your Chat API key. Try again or create one under API keys."));
+        } catch (error) {
+          setSendError(error instanceof Error ? error.message : t("We couldn't create your Chat API key. Try again or create one under API keys."));
           return;
         }
       }

@@ -9,6 +9,7 @@ export interface AdminUser {
     spend: number;
   } | null;
   created_at: string;
+  terms_version: string | null;
 }
 
 export interface UpdateUserPayload {

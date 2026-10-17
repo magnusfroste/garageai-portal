@@ -5,6 +5,7 @@ import { termsAccepted } from "../_shared/garageTerms.ts";
 import { CredentialError, countOwnedGarages, issueGarageCredentials, loadGarageByName } from "../_shared/garageCredentials.ts";
 import { garageLimitReached } from "../_shared/garageCredentialRules.ts";
 
+import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -17,13 +18,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
     const auth = req.headers.get("Authorization");
     if (!auth?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
     const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || "");
     const { data: { user } } = await anon.auth.getUser(auth.slice(7));
     if (!user) return json({ error: "Unauthorized" }, 401);
-    const admin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const admin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "");
 
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
@@ -32,6 +33,7 @@ Deno.serve(async (req) => {
     const action = body.action;
     if (action !== "lookup" && action !== "approve" && action !== "deny") return json({ error: "action must be lookup, approve or deny" }, 400);
 
+    if (action === "approve" && !await accountTermsAccepted(admin, user.id)) return json({ error: ACCOUNT_TERMS_REQUIRED, code: "terms_required" }, 403);
     const { data: link, error } = await admin.from("bridge_links").select(PUBLIC_FIELDS).eq("user_code", userCode).maybeSingle();
     if (error) throw error;
     const now = Date.now();

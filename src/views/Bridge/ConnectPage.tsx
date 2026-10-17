@@ -10,6 +10,7 @@ import { connectRepository } from "@/data/repositories/connectRepository";
 import { bridgeInstallCommand, bridgeNetbirdCommand, detectOs, type ConnectOs } from "@/models/services/connectService";
 import { t } from "@/i18n";
 
+import { LegalLinks } from "@/views/Account/components/AccountTermsCheckbox";
 const OneLine = ({ command, onCopied }: { command: string; onCopied: () => void }) => {
   const [copied, setCopied] = useState(false);
   const copy = async () => { await navigator.clipboard.writeText(command); setCopied(true); onCopied(); setTimeout(() => setCopied(false), 2000); };
@@ -67,6 +68,7 @@ const ConnectPage = () => {
             </TabsContent>
           </Tabs>
           <p className="text-sm text-muted-foreground">{t("Bridge connects this computer to GarageAI through its own encrypted tunnel. Nothing to configure on your network, and your model runtime can stay on localhost.")}</p>
+          <LegalLinks />
           <Collapsible>
             <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ChevronDown className="h-4 w-4" />{t("Network blocks UDP? Use NetBird instead")}</CollapsibleTrigger>
             <CollapsibleContent className="pt-2">

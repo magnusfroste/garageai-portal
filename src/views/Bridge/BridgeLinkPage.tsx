@@ -17,6 +17,9 @@ import { BridgeLiveProgress } from "./components/BridgeLiveProgress";
 import { t } from "@/i18n";
 import { garageLimitMessage, limitMessage } from "@/models/services/credentialErrors";
 
+import { useProfile } from "@/hooks/useProfile";
+import { ACCOUNT_TERMS_REQUIRED, hasCurrentAccountTerms } from "@/models/services/accountTermsService";
+import { LegalLinks } from "@/views/Account/components/AccountTermsCheckbox";
 const ERRORS: Record<string, string> = {
   not_found: "This code was not found. Check it in your terminal.",
   expired: "This code has expired. Run garageai connect again.",
@@ -34,6 +37,7 @@ const Fact = ({ label, value }: { label: string; value: string | null | undefine
 
 const BridgeLinkPage = () => {
   const { session, loading } = useSession();
+  const { profile } = useProfile();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const [input, setInput] = useState(params.get("code") ?? "");
@@ -60,7 +64,7 @@ const BridgeLinkPage = () => {
   const name = chosen ? chosen.name : newName.trim().toLowerCase();
   const limitBlocksNew = !chosen && link?.garage_limit_reached === true;
   const needsTerms = !chosen || !chosen.terms_accepted_at;
-  const canApprove = !!link && !limitBlocksNew && GARAGE_NAME_RE.test(name) && (!needsTerms || terms) && (!conflict || replace) && !approve.isPending;
+  const canApprove = hasCurrentAccountTerms(profile) && !!link && !limitBlocksNew && GARAGE_NAME_RE.test(name) && (!needsTerms || terms) && (!conflict || replace) && !approve.isPending;
   const mins = link ? Math.max(0, Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000)) : 0;
 
   const submitCode = (e: React.FormEvent) => { e.preventDefault(); setParams({ code: normaliseUserCode(input) }); };
@@ -129,6 +133,7 @@ const BridgeLinkPage = () => {
                   )}
                   {limitBlocksNew && <p className="flex items-start gap-2 rounded border border-warning-border bg-warning-surface p-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-foreground" />{garageLimitMessage()}</p>}
                   {needsTerms && <TermsCheckbox id="link-terms" checked={terms} onChange={setTerms} />}
+                  <LegalLinks />
                   {conflict && (
                     <div className="space-y-2 rounded border border-warning-border bg-warning-surface p-3">
                       <p className="flex items-start gap-2 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-foreground" />{t("This garage was connected from another machine ({host}). Connecting this one replaces it.").replace("{host}", chosen?.machine_hostname || t("unknown"))}</p>
@@ -139,6 +144,7 @@ const BridgeLinkPage = () => {
               </Card>
 
               <div className="space-y-3">
+                {!hasCurrentAccountTerms(profile) && <p className="text-sm text-destructive">{t(ACCOUNT_TERMS_REQUIRED)}</p>}
                 <p className="text-sm">{t("Only approve if you started this on your own machine just now. Approving lets that machine sell inference as your garage.")}</p>
                 {(approve.isError || deny.isError) && <p className="text-sm text-danger-foreground">{errorText(approve.error ?? deny.error)}</p>}
                 <div className="flex gap-2">

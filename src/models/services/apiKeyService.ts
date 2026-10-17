@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { apiKeyRepository } from "@/data/repositories/apiKeyRepository";
 import { ApiKey, CreateApiKeyDto } from "@/models/types/apiKey.types";
 
+import { accountTermsService } from "./accountTermsService";
 export class ApiKeyService {
   async getKeysForCurrentUser(): Promise<ApiKey[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -11,6 +12,7 @@ export class ApiKeyService {
   }
 
   async createKey(dto: CreateApiKeyDto): Promise<void> {
+    await accountTermsService.requireAcceptance();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("Not authenticated");
 

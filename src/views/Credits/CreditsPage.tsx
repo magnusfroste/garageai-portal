@@ -21,6 +21,8 @@ import { transactionRepository } from "@/data/repositories/transactionRepository
 import { CreditTransaction } from "@/models/types/transaction.types";
 import { supabase } from "@/integrations/supabase/client";
 
+import { accountTermsService, ACCOUNT_TERMS_URL } from "@/models/services/accountTermsService";
+import { LegalLinks } from "@/views/Account/components/AccountTermsCheckbox";
 const CREDIT_PACKS = [
   { id: "small", label: "$5", credits: 5, description: "5 credits" },
   { id: "medium", label: "$20", credits: 20, description: "20 credits", popular: true },
@@ -86,6 +88,7 @@ export const CreditsPage = () => {
 
   const handleBuyCredits = async (pack: string) => {
     try {
+      await accountTermsService.requireAcceptance();
       setLoadingPack(pack);
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { pack },
@@ -96,7 +99,7 @@ export const CreditsPage = () => {
       }
     } catch (err) {
       console.error("Checkout error:", err);
-      toast.error(t("Failed to start checkout"));
+      toast.error(err instanceof Error ? err.message : t("Failed to start checkout"));
     } finally {
       setLoadingPack(null);
     }
@@ -193,6 +196,8 @@ export const CreditsPage = () => {
               </Button>
             ))}
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">{t("By paying you accept the")}{" "}<a href={ACCOUNT_TERMS_URL} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">{t("Terms")}</a></p>
+          <LegalLinks />
         </CardContent>
       </Card>
 

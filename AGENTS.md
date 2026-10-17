@@ -14,7 +14,6 @@
 - Track why a catalogue model is off in `curated_models.disabled_reason` (admin vs failed_test); only syncModels re-enables failed_test rows on a pass, never admin-disabled ones.
 - Decide tool-calling support only from the acceptance-test probe (`garage_model_tests.supports_tools`, public via `garage_tool_support`); chat backend and UI share one "garage/<g>/<m> vs pool" match.
 - Route user-facing strings through `t()` (`src/i18n`, English source, translations in `src/i18n/<lang>.ts`); site_settings text is English with `translations.<lang>` overrides merged only in `useSiteSettings`.
-- Reconcile LiteLLM deployments from database status and tests on every sync; only sellable models get routes, acceptance probes use temporary private routes.
 - Grant purchased credits through one idempotent shared claim path; total budget = starting credit + purchased credits.
 - Read signup starter credit from the public default-budget setting, never translated branding; signup profiles use it with zero fallback.
 - Share the browser-link connection view across current and former wizard URLs; advanced token renewal requests no setup key, so portal connection stays independent of legacy scripts.
@@ -26,9 +25,10 @@
 
 ## Where logic lives
 
+- Account legal version/links and edge action guards share `_shared/accountTerms.ts`; own-user acceptance uses a protected RPC and signup trigger, with a SQL version mirror, so clients cannot forge timestamps or bypass new-action acceptance.
+
 - Smart plans in shared garageSmart; locked RPCs limit daily changes. Signup paths share BridgeInstallLine and StartingPaths to keep connection commands consistent.
 
 - Announcements use repository → service → hook → views; RLS enforces audience/window/admin access and the signed-in shell owns the bar, preventing public exposure.
 
 - The portal decides what should hold: people's decisions and business terms (models for sale, prices, the garageai/auto list, garages, owners, terms, earnings, accounts, onboarding). The gateway (LiteLLM) carries it out within seconds: routing, failover, cooldown, context checks, health. Never build a fast reaction (failover, retries, timeouts, blocking) as a portal function on a schedule. Never make a routing or health decision from gateway data gathered while the gateway itself is unreachable: treat it as inconclusive. Routing, pricing and health code needs tests. Full rationale: https://github.com/magnusfroste/garageai/blob/main/docs/architecture.md (syncModels moves into a separate control plane when there is more than one gateway or region).
-- Models dropped after missed heartbeats keep offer/prices in `garage_model_memory`, restored by `syncInventory`, so re-links never reset sales.

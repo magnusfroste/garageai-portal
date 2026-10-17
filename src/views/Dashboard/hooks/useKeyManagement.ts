@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { apiKeyService } from "@/models/services/apiKeyService";
 import { toast } from "sonner";
+import { ACCOUNT_TERMS_REQUIRED } from "@/models/services/accountTermsService";
+import { t } from "@/i18n";
 
 export const useKeyManagement = () => {
   const [isCreatingKey, setIsCreatingKey] = useState(false);
@@ -22,7 +24,7 @@ export const useKeyManagement = () => {
       return true;
     } catch (error) {
       console.error("Error creating API key:", error);
-      toast.error("Failed to create API key");
+      toast.error(error instanceof Error && error.message === t(ACCOUNT_TERMS_REQUIRED) ? error.message : "Failed to create API key");
       return false;
     } finally {
       setIsCreatingKey(false);
