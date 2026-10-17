@@ -9,6 +9,7 @@ import { Features } from "@/components/Features";
 import { TrialCTA } from "@/components/TrialCTA";
 import { DynamicHead } from "@/components/DynamicHead";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { LegalLinks } from "@/views/Account/components/AccountTermsCheckbox";
 
 const Index = () => {
   const { settings } = useSiteSettings();
@@ -34,6 +35,7 @@ const Index = () => {
       <footer className="border-t border-border/50 py-12">
         <div className="container mx-auto px-4 text-center text-muted-foreground space-y-3">
           <p>© {new Date().getFullYear()} {siteName}. {settings?.footer_text || tagline}</p>
+          <LegalLinks />
           {settings?.footer_links && settings.footer_links.length > 0 && (
             <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
               {settings.footer_links
