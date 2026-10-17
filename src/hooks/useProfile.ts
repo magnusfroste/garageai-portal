@@ -9,6 +9,8 @@ export const useProfile = () => {
 
   useEffect(() => {
     fetchProfile();
+    window.addEventListener("account-terms-accepted", fetchProfile);
+    return () => window.removeEventListener("account-terms-accepted", fetchProfile);
   }, []);
 
   const fetchProfile = async () => {

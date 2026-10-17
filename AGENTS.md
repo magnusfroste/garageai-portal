@@ -26,6 +26,8 @@
 
 ## Where logic lives
 
+- Account legal version/links and edge action guards share `_shared/accountTerms.ts`; own-user acceptance uses a protected RPC and signup trigger, with a SQL version mirror, so clients cannot forge timestamps or bypass new-action acceptance.
+
 - Smart plans in shared garageSmart; locked RPCs limit daily changes. Signup paths share BridgeInstallLine and StartingPaths to keep connection commands consistent.
 
 - Announcements use repository → service → hook → views; RLS enforces audience/window/admin access and the signed-in shell owns the bar, preventing public exposure.

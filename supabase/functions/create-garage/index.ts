@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { termsAccepted } from "../_shared/garageTerms.ts";
 import { CredentialError, issueGarageCredentials } from "../_shared/garageCredentials.ts";
 
+import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -20,8 +21,8 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
@@ -31,6 +32,7 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: "Unauthorized" }, 401);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    if (!await accountTermsAccepted(admin, user.id)) return json({ error: ACCOUNT_TERMS_REQUIRED, code: "terms_required" }, 403);
     const { data: isAdminRaw } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
     const isAdmin = isAdminRaw === true;
 

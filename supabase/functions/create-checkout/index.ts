@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
+import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -24,12 +25,15 @@ serve(async (req) => {
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
+    const termsClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+    if (!await accountTermsAccepted(termsClient, user.id)) return new Response(JSON.stringify({ error: ACCOUNT_TERMS_REQUIRED, code: "terms_required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const { pack } = await req.json();
     const selectedPack = CREDIT_PACKS[pack];
     if (!selectedPack) throw new Error(`Invalid pack: ${pack}`);

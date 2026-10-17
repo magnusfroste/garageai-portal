@@ -16,6 +16,8 @@ import { lovable } from "@/integrations/lovable/index";
 
 import { t } from "@/i18n";
 import { authReturnService } from "@/models/services/authReturnService";
+import { ACCOUNT_TERMS_VERSION } from "@/models/services/accountTermsService";
+import { AccountTermsCheckbox } from "@/views/Account/components/AccountTermsCheckbox";
 const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email too long"),
   password: z.string().min(8, "Password must be at least 8 characters").max(100, "Password too long"),
@@ -35,6 +37,8 @@ const Auth = () => {
   const intent = onboardingService.readUrlIntent(location.search);
   const params = new URLSearchParams(location.search);
   const initialTab = params.get("mode") === "signup" || !!intent ? "signup" : "signin";
+  const [tab, setTab] = useState(initialTab);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const starterCredit = Number(settings?.starting_credit_usd ?? 0);
   const heading = intent === "operator"
     ? t("Create an account and offer your GPU")
@@ -66,6 +70,7 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) { toast.error(t("Please accept the Terms and Privacy policy.")); return; }
     setIsLoading(true);
     try {
       const validated = authSchema.parse({ email, password, fullName });
@@ -74,7 +79,7 @@ const Auth = () => {
         email: validated.email,
         password: validated.password,
         options: {
-          data: { full_name: validated.fullName || "", signup_intent: intent },
+          data: { full_name: validated.fullName || "", signup_intent: intent, account_terms_accepted: true, account_terms_version: ACCOUNT_TERMS_VERSION },
           emailRedirectTo: `${window.location.origin}/auth${authReturnService.query(location.search)}`,
         },
       });
@@ -95,6 +100,7 @@ const Auth = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (tab === "signup" && !acceptedTerms) { toast.error(t("Please accept the Terms and Privacy policy.")); return; }
     setIsLoading(true);
     try {
       if (intent) onboardingService.storeIntent(intent);
@@ -150,7 +156,8 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button type="button" variant="outline" className="w-full mb-4" onClick={handleGoogleSignIn} disabled={isLoading}>
+            {tab === "signup" && !checkInbox && <div className="mb-4"><AccountTermsCheckbox id="signup-account-terms" checked={acceptedTerms} onChange={setAcceptedTerms} disabled={isLoading} /></div>}
+            <Button type="button" variant="outline" className="w-full mb-4" onClick={handleGoogleSignIn} disabled={isLoading || (tab === "signup" && !acceptedTerms)}>
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/>
                 <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/>
@@ -168,7 +175,7 @@ const Auth = () => {
                 <h2 className="text-xl font-semibold">{t("Check your inbox")}</h2>
                 <p className="text-sm text-muted-foreground">{t("Open the confirmation link we sent to {email} to finish creating your account.", { email })}</p>
               </div>
-            ) : <Tabs defaultValue={initialTab} className="w-full">
+            ) : <Tabs value={tab} onValueChange={setTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin">{t("Sign in")}</TabsTrigger>
                 <TabsTrigger value="signup">{t("Create account")}</TabsTrigger>
@@ -212,7 +219,7 @@ const Auth = () => {
                        <li>{t("• No credit card required")}</li>
                     </ul>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full" disabled={isLoading || !acceptedTerms}>
                     {isLoading ? t("Creating account...") : t("Create account")}
                   </Button>
                 </form>

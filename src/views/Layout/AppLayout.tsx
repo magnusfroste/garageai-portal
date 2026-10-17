@@ -23,6 +23,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { AccountTermsBanner } from "@/views/Account/components/AccountTermsBanner";
+import { ACCOUNT_TERMS_URL, ACCOUNT_PRIVACY_URL } from "@/models/services/accountTermsService";
 const formatBalance = (n: number) => `$${n.toFixed(2)}`;
 
 export const AppLayout = () => {
@@ -91,6 +93,9 @@ const SignedInLayout = () => {
                   </DropdownMenuItem>
                   <LanguageMenu />
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><a href={ACCOUNT_TERMS_URL} target="_blank" rel="noopener noreferrer">{t("Terms")}</a></DropdownMenuItem>
+                  <DropdownMenuItem asChild><a href={ACCOUNT_PRIVACY_URL} target="_blank" rel="noopener noreferrer">{t("Privacy")}</a></DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
                     <LogOut className="w-4 h-4 mr-2" />
                     {t("Sign out")}
@@ -100,6 +105,7 @@ const SignedInLayout = () => {
             </div>
           </header>
           <AnnouncementBar />
+          <AccountTermsBanner />
           <main className="flex-1 overflow-auto">
             <Outlet />
           </main>

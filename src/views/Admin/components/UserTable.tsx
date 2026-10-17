@@ -11,6 +11,7 @@ import {
 import { Pencil } from "lucide-react";
 import { format } from "date-fns";
 
+import { t } from "@/i18n";
 interface UserTableProps {
   users: AdminUser[];
   onEdit: (user: AdminUser) => void;
@@ -29,6 +30,7 @@ export const UserTable = ({ users, onEdit, isUpdating }: UserTableProps) => {
             <TableHead>Spend</TableHead>
             <TableHead>Remaining</TableHead>
             <TableHead>Registered</TableHead>
+            <TableHead>{t("Terms version")}</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -69,6 +71,7 @@ export const UserTable = ({ users, onEdit, isUpdating }: UserTableProps) => {
                 <TableCell className="text-muted-foreground text-sm">
                   {format(new Date(user.created_at), "yyyy-MM-dd")}
                 </TableCell>
+                <TableCell className="text-xs">{user.terms_version || "—"}</TableCell>
                 <TableCell className="text-right space-y-1">
                   <div className="flex items-center justify-end gap-2">
                     {user.litellm_user_id && (
@@ -91,7 +94,7 @@ export const UserTable = ({ users, onEdit, isUpdating }: UserTableProps) => {
           })}
           {users.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 No users found
               </TableCell>
             </TableRow>

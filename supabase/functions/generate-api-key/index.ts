@@ -4,6 +4,7 @@ import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 import { internalAlias } from "../_shared/internalTraffic.ts";
 import { ensureLiteLLMUser } from "../_shared/litellmUsers.ts";
 
+import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 interface GenerateKeyRequest {
   keyName: string;
   models?: string[];
@@ -139,6 +140,7 @@ serve(async (req: Request) => {
       return respondWithError(401, 'unauthorized', 'Invalid authentication token');
     }
 
+    if (!await accountTermsAccepted(supabase, user.id)) return respondWithError(403, "terms_required", ACCOUNT_TERMS_REQUIRED);
     const body = await req.json() as Partial<GenerateKeyRequest>;
     if (!body.keyName?.trim()) {
       return respondWithError(400, 'invalid_input', 'Key name is required');
