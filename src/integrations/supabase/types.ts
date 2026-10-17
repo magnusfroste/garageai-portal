@@ -1734,6 +1734,7 @@ export type Database = {
         }[]
       }
       operator_garage_overview: { Args: { _garage_id: string }; Returns: Json }
+      prune_onboarding_events: { Args: never; Returns: number }
       record_bridge_release:
         | {
             Args: { p_checked_at: string; p_tag: string; p_version: string }
