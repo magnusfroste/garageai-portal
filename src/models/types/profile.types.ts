@@ -8,6 +8,7 @@ export interface Profile {
   preferred_language: "en" | "sv";
   terms_version: string | null;
   terms_accepted_at: string | null;
+  chat_sync: boolean;
 }
 
 export interface ProfileUpdateData {

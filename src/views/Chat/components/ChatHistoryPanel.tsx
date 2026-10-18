@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { MoreHorizontal, Pencil, SquarePen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { t } from "@/i18n";
 import { groupByBucket, type HistoryBucket } from "@/models/services/chatService";
 import type { Conversation } from "../types";
+import type { ChatSyncState } from "../hooks/useChatSync";
 
 interface Props {
   conversations: Conversation[];
@@ -15,7 +17,39 @@ interface Props {
   onNew: () => void;
   onRename: (id: string, title: string) => void;
   onDelete: (id: string) => void;
+  syncState: ChatSyncState;
+  onEnableSync: () => void;
+  onDisableSync: (deleteServer: boolean) => void;
 }
+
+/** Sync opt-in at the top of the history panel; turning it off asks what to do with account-stored chats. */
+const SyncToggle = ({ syncState, onEnableSync, onDisableSync }: Pick<Props, "syncState" | "onEnableSync" | "onDisableSync">) => {
+  const [confirming, setConfirming] = useState(false);
+  const on = syncState === "on" || syncState === "prompt";
+  if (confirming) {
+    return (
+      <div className="space-y-2 rounded-md border border-border bg-background p-2">
+        <p className="text-xs text-muted-foreground">{t("Delete the chats saved in your account? They stay on this device.")}</p>
+        <div className="flex gap-1.5">
+          <Button size="sm" variant="destructive" className="h-7 flex-1 text-xs" onClick={() => { setConfirming(false); onDisableSync(true); }}>{t("Delete")}</Button>
+          <Button size="sm" variant="outline" className="h-7 flex-1 text-xs" onClick={() => { setConfirming(false); onDisableSync(false); }}>{t("Keep")}</Button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <label className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 hover:bg-muted/60">
+      <Checkbox
+        checked={on}
+        disabled={syncState === "loading" || syncState === "prompt"}
+        onCheckedChange={(v) => { if (v) onEnableSync(); else setConfirming(true); }}
+        className="mt-0.5"
+        aria-label={t("Save my chats to my account (to use them on other devices)")}
+      />
+      <span className="text-xs leading-4 text-muted-foreground">{t("Save my chats to my account (to use them on other devices)")}</span>
+    </label>
+  );
+};
 
 const LABELS: Record<HistoryBucket, string> = { today: "Today", yesterday: "Yesterday", earlier: "Earlier" };
 
@@ -60,11 +94,12 @@ const PanelBody = (p: Props) => {
   const groups = groupByBucket(p.conversations);
   return (
     <div className="flex h-full flex-col">
-      <div className="p-2">
+      <div className="space-y-1 p-2">
         <Button variant="ghost" className="w-full justify-start gap-2" onClick={p.onNew}>
           <SquarePen className="h-4 w-4" /> {t("New chat")}
           <kbd className="ml-auto text-[10px] text-muted-foreground">⌘K</kbd>
         </Button>
+        <SyncToggle syncState={p.syncState} onEnableSync={p.onEnableSync} onDisableSync={p.onDisableSync} />
       </div>
       <nav className="flex-1 space-y-4 overflow-y-auto px-2 pb-4" aria-label={t("Chat history")}>
         {p.conversations.length === 0 && <p className="px-2 text-xs text-muted-foreground">{t("No conversations yet")}</p>}
