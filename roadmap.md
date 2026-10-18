@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Pass saved Auto priority into gateway routing params, add English/Swedish note; 18 tests passed and live /model/info verified integer orders 1/2/3 after normal reconciliation, without changing saved entries/prices
+
 - [x] Add account terms storage, own-user acceptance and signup recording; protect key/payment/garage actions
 - [x] Add signup checkbox, persistent app banner, legal links and admin terms column in English/Swedish
 - [x] Add daily twelve-month onboarding retention; focused tests and fixture browser signup/banner checks; deployed changed functions

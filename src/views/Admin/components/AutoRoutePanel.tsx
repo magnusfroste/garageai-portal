@@ -98,6 +98,7 @@ export const AutoRoutePanel = () => {
               {v.warnings.map((w) => <p key={w} className="flex items-center gap-1 text-xs text-warning"><AlertTriangle className="h-3 w-3" />{t(WARN[w])}</p>)}
             </div>
           ))}
+          <p className="text-xs text-muted-foreground">{t("Auto tries entry 1 first; the next entry only when the ones before it are down or busy.")}</p>
           <div className="flex flex-wrap gap-2 pt-2">
             <Select value={pick} onValueChange={setPick}>
               <SelectTrigger className="w-full sm:w-96"><SelectValue placeholder={t("Add a model")} /></SelectTrigger>
