@@ -1,7 +1,7 @@
 // Garage routing: LiteLLM deployments must exist ONLY for sellable garage models.
 import { assignPoolWeights } from "./poolPricing.ts";
 import { modelTierPrice, type ModelPrices } from './modelPrices.ts';
-import { deploymentBody } from "./deploymentBody.ts";
+import { deploymentBody, deploymentOrderMatches } from "./deploymentBody.ts";
 import { isProbeDeployment, isStaleProbe } from "./probeDeployments.ts";
 // Desired state = garages table + latest acceptance/probe tests + curated_models admin choices.
 // reconcileGarageRouting compares it with LiteLLM /model/info and adds/removes deployments idempotently.
