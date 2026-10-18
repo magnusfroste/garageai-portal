@@ -53,9 +53,9 @@ const CreateKey = ({ onCreated, compact }: { onCreated: () => Promise<unknown>; 
   );
 };
 
-export const ChatKeyPicker = ({ keys, selected, onSelect, onCreated, isAdmin, disabled }: Props) => {
+export const ChatKeyPicker = ({ keys, selected, onSelect, onCreated, disabled }: Props) => {
   const active = keys.filter((k) => k.is_active);
-  if (active.length === 0 && !isAdmin) return <CreateKey onCreated={onCreated} />;
+  if (active.length === 0) return <CreateKey onCreated={onCreated} />;
   return (
     <div className="flex items-center gap-0.5">
       <Select value={selected} onValueChange={onSelect} disabled={disabled}>
@@ -64,7 +64,6 @@ export const ChatKeyPicker = ({ keys, selected, onSelect, onCreated, isAdmin, di
           <SelectValue placeholder={t("Select key…")} />
         </SelectTrigger>
         <SelectContent align="end">
-          {isAdmin && <SelectItem value="__master__"><span className="text-xs">{t("Master key (admin)")}</span></SelectItem>}
           {active.map((k) => <SelectItem key={k.id} value={k.id}><span className="text-xs">{k.name}</span></SelectItem>)}
         </SelectContent>
       </Select>
