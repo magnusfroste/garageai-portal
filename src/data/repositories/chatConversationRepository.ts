@@ -52,4 +52,28 @@ export const chatConversationRepository = {
   async remove(id: string): Promise<void> {
     await supabase.from("chat_conversations").delete().eq("id", id);
   },
+
+  /** Insert or update a conversation with a client-chosen id (sync mirror of the local store). */
+  async upsert(c: Conversation): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    const { error } = await supabase
+      .from("chat_conversations")
+      .upsert({
+        id: c.id,
+        user_id: user.id,
+        title: c.title,
+        model: c.model,
+        messages: JSON.parse(JSON.stringify(c.messages)),
+        updated_at: new Date(c.updatedAt).toISOString(),
+      });
+    return !error;
+  },
+
+  /** Delete every conversation of the current user (sync opt-out with deletion). */
+  async clearAll(): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("chat_conversations").delete().eq("user_id", user.id);
+  },
 };
