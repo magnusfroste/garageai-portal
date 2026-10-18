@@ -100,7 +100,8 @@ describe("chatGateway", () => {
       bodies.push(JSON.parse(init.body));
       round++;
       if (round === 1) {
-        return sse([{ choices: [{ delta: { tool_calls: [{ index: 0, id: "c1", function: { name: "web_search", arguments: '{"query":"news"}' } } ] }] } }]) as any;
+        const toolCall = { index: 0, id: "c1", function: { name: "web_search", arguments: '{"query":"news"}' } };
+        return sse([{ choices: [{ delta: { tool_calls: [toolCall] } }] }]) as any;
       }
       return sse([{ choices: [{ delta: { content: "answer" } }] }]) as any;
     }) as any;
