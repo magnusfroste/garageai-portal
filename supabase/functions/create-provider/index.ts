@@ -59,7 +59,8 @@ Deno.serve(async (req) => {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 8000);
       try {
-        const res = await fetch(`${url}/models`, { redirect: "manual", signal: ctrl.signal, headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {} });
+        // Send both OpenAI-style Bearer and Anthropic-style x-api-key: Anthropic's /models only accepts the latter.
+        const res = await fetch(`${url}/models`, { redirect: "manual", signal: ctrl.signal, headers: apiKey ? { Authorization: `Bearer ${apiKey}`, "x-api-key": apiKey, "anthropic-version": "2023-06-01" } : {} });
         if (res.status >= 300 && res.status < 400) { await res.body?.cancel(); return bad("Endpoint redirected; redirects are not followed"); }
         if (!res.ok) { await res.body?.cancel(); return bad(`Endpoint returned HTTP ${res.status} for /models`); }
         const data = await res.json().catch(() => null) as { data?: Array<{ id?: unknown }> } | null;
