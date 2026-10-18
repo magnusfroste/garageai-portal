@@ -512,6 +512,13 @@
       "when": 1792280996708,
       "tag": "0072_account_terms_action_guards_retention",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1792283002501,
+      "tag": "0073_chat_sync_opt_in",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS chat_sync boolean NOT NULL DEFAULT false;
