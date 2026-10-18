@@ -11,6 +11,7 @@ export const sv: Record<string, string> = {
   "We have published our Terms and Privacy policy. Please accept them to keep using GarageAI.": "Vi har publicerat våra villkor och vår integritetspolicy. Acceptera dem för att fortsätta använda GarageAI.",
   "Please accept the Terms and Privacy policy in the banner above before continuing.": "Acceptera villkoren och integritetspolicyn i meddelandet ovan innan du fortsätter.",
   "Could not save acceptance. Please try again.": "Kunde inte spara godkännandet. Försök igen.",
+  "Is it safe to share from my computer?": "Är det säkert att dela från min dator?",
   "Bridge updates": "Bridge-uppdateringar",
   "Stable version": "Stabil version",
   "Make {version} stable": "Gör {version} stabil",
