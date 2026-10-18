@@ -1,9 +1,8 @@
-import { PROMPT_FUNCTION_REGION, regionalFunctionUrl } from "@/data/edgeRegion";
 import { useState, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { t } from "@/i18n";
 import { messageCostUsd, tokensPerSecond } from "@/models/services/chatService";
+import { getChatKeyValue, streamChat } from "@/models/services/chatGateway";
 import type { ModelInfo } from "@/models/types/model.types";
 import type { ChatAnswerMeta, ChatMessage, ChatSearchInfo } from "../types";
 
@@ -13,7 +12,8 @@ interface RunOptions {
   history: ChatMessage[];
   model: ModelInfo | undefined;
   modelId: string;
-  apiKeyId?: string;
+  /** The user's own API key id; its value is fetched once and kept in memory. */
+  apiKeyId: string;
   systemPrompt?: string;
   webSearch?: boolean;
 }
@@ -66,101 +66,64 @@ export const useChatStream = (setMessagesFor: SetFor) => {
     };
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error(t("You must be signed in")); return; }
+      const keyValue = await getChatKeyValue(o.apiKeyId);
 
-      const body: Record<string, unknown> = {
-        messages: o.history.map(({ role, content }) => ({ role, content })),
-        model: o.modelId,
-      };
-      if (o.webSearch) body.web_search = true;
-      if (o.apiKeyId) body.api_key_id = o.apiKeyId;
-      if (o.systemPrompt) body.system_prompt = o.systemPrompt;
-
-      const resp = await fetch(regionalFunctionUrl("chat-playground"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}`, "x-region": PROMPT_FUNCTION_REGION },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-
-      if (!resp.ok || !resp.body) {
-        const err = await resp.json().catch(() => ({ error: "" }));
-        toast.error(err.error || t("Error: {status}", { status: resp.status }));
-        setMessagesFor(o.convId, (prev) => (prev[prev.length - 1]?.content ? prev : prev.slice(0, -1)));
-        return;
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
       let content = "";
       let reasoning = "";
       let search: ChatSearchInfo | undefined;
-      let done = false;
       let pendingFlush = false;
       const flush = () => {
         pendingFlush = false;
         patch({ content, reasoning: reasoning || undefined, search });
       };
 
-      while (!done) {
-        const { done: rd, value } = await reader.read();
-        if (rd) break;
-        buf += decoder.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = buf.indexOf("\n")) !== -1) {
-          let line = buf.slice(0, nl);
-          buf = buf.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") { done = true; break; }
-          let evt: any;
-          try { evt = JSON.parse(json); } catch { continue; }
-
-          if (evt.garageai) {
-            const g = evt.garageai;
-            const s: ChatSearchInfo = search ?? { queries: [], sources: [] };
-            if (g.type === "meta") { garage = g.garage ?? null; continue; }
-            if (g.type === "search") search = { ...s, queries: [...s.queries, g.query || ""], status: t("Searching: {q}…", { q: g.query ?? "" }) };
-            else if (g.type === "found") search = { ...s, status: t("Found {n} sources", { n: g.count ?? 0 }) };
-            else if (g.type === "sources") search = { queries: g.queries || s.queries, sources: g.sources || [] };
-            else if (g.type === "error") toast.error(g.message || t("Web search failed"));
-            flush();
-            continue;
-          }
-
-          if (evt.usage) {
+      await streamChat(
+        {
+          keyValue,
+          model: o.modelId,
+          messages: o.history.map(({ role, content }) => ({ role, content })),
+          systemPrompt: o.systemPrompt,
+          webSearch: o.webSearch,
+          signal: controller.signal,
+        },
+        {
+          onGarage: (g) => { garage = g; },
+          onUsage: (u) => {
             // Web search may run several rounds; sum them.
-            usage.prompt += evt.usage.prompt_tokens ?? 0;
-            usage.completion += evt.usage.completion_tokens ?? 0;
+            usage.prompt += u.prompt_tokens ?? 0;
+            usage.completion += u.completion_tokens ?? 0;
             sawUsage = true;
-          }
-          const delta = evt.choices?.[0]?.delta;
-          if (!delta) continue;
-          const c = (delta.content as string | undefined) ?? "";
-          const r = (delta.reasoning_content as string | undefined) ?? (delta.reasoning as string | undefined) ?? "";
-          const now = performance.now();
-          if (r) {
-            reasoning += r;
-            reasoningStart ??= now;
-            firstTokenAt ??= now;
-            setIsReasoning(true);
-          }
-          if (c) {
+          },
+          onSearchStatus: (s) => {
+            const cur: ChatSearchInfo = search ?? { queries: [], sources: [] };
+            search = s.type === "search"
+              ? { ...cur, queries: [...cur.queries, s.query], status: t("Searching: {q}…", { q: s.query }) }
+              : { ...cur, status: t("Found {n} sources", { n: s.count ?? 0 }) };
+            flush();
+          },
+          onSources: (sources, queries) => {
+            search = { queries: queries.length ? queries : (search?.queries ?? []), sources };
+            flush();
+          },
+          onContent: (c) => {
+            const now = performance.now();
             if (reasoningStart != null && reasoningEnd == null) reasoningEnd = now;
             content += c;
             firstTokenAt ??= now;
             setIsReasoning(false);
-          }
-          if ((r || c) && !pendingFlush) {
-            // Batch updates per animation frame for smooth streaming.
-            pendingFlush = true;
-            requestAnimationFrame(flush);
-          }
-        }
-      }
+            if (!pendingFlush) { pendingFlush = true; requestAnimationFrame(flush); }
+          },
+          onReasoning: (r) => {
+            const now = performance.now();
+            reasoning += r;
+            reasoningStart ??= now;
+            firstTokenAt ??= now;
+            setIsReasoning(true);
+            if (!pendingFlush) { pendingFlush = true; requestAnimationFrame(flush); }
+          },
+        },
+      );
+
       flush();
       if (search) search = { ...search, status: undefined };
       patch({ content, reasoning: reasoning || undefined, search, meta: finishMeta() });
@@ -169,8 +132,13 @@ export const useChatStream = (setMessagesFor: SetFor) => {
         patch({ meta: finishMeta() });
         return;
       }
-      console.error("Chat stream error:", e instanceof Error ? e.name : "unknown");
-      toast.error(t("Could not connect to the model"));
+      if (e instanceof Error && e.message === "key_unavailable") {
+        toast.error(t("The selected API key could not be loaded"));
+      } else {
+        console.error("Chat stream error:", e instanceof Error ? e.name : "unknown");
+        toast.error(t("Could not connect to the model"));
+      }
+      setMessagesFor(o.convId, (prev) => (prev[prev.length - 1]?.content ? prev : prev.slice(0, -1)));
     } finally {
       abortRef.current = null;
       streamingRef.current = false;
