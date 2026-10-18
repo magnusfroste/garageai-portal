@@ -16,7 +16,6 @@ interface Props {
   selected: string;
   onSelect: (id: string) => void;
   onCreated: () => Promise<unknown>;
-  isAdmin?: boolean;
   disabled?: boolean;
 }
 

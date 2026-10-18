@@ -6,7 +6,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { adminRepository } from "@/data/repositories/adminRepository";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { useToolSupport } from "@/hooks/useToolSupport";
 import { apiModelName } from "@/models/services/modelDedup";
@@ -22,6 +21,7 @@ import { ChatComposer, type ChatComposerHandle } from "./components/ChatComposer
 import { ChatSystemPrompt, DEFAULT_SYSTEM_PROMPT } from "./components/ChatSystemPrompt";
 import { useChatStream } from "./hooks/useChatStream";
 import { useChatConversations } from "./hooks/useChatConversations";
+import { useChatSync } from "./hooks/useChatSync";
 import { useWebSearchPreference } from "./hooks/useWebSearchPreference";
 import { useChatPreferences } from "./hooks/useChatPreferences";
 import { useAutoScroll } from "./hooks/useAutoScroll";
@@ -70,16 +70,15 @@ export const ChatPage = () => {
     },
     staleTime: 30_000,
   });
-  const { data: isAdmin } = useQuery({ queryKey: ["is-admin"], queryFn: () => adminRepository.checkIsAdmin() });
 
-  // Key: last used → first active → master (admins).
+  // Key: last used → first active. Everyone uses one of their own keys.
   useEffect(() => {
     const active = apiKeys.filter((k) => k.is_active);
-    if (selectedKeyId && (selectedKeyId === "__master__" ? isAdmin : active.some((k) => k.id === selectedKeyId))) return;
-    const remembered = prefs.lastKey && (prefs.lastKey === "__master__" ? isAdmin : active.some((k) => k.id === prefs.lastKey));
-    const next = remembered ? prefs.lastKey : active[0]?.id ?? (isAdmin ? "__master__" : "");
+    if (selectedKeyId && active.some((k) => k.id === selectedKeyId)) return;
+    const remembered = prefs.lastKey && active.some((k) => k.id === prefs.lastKey);
+    const next = remembered ? prefs.lastKey : active[0]?.id ?? "";
     if (next !== selectedKeyId) setSelectedKeyId(next);
-  }, [apiKeys, isAdmin, selectedKeyId, prefs.lastKey]);
+  }, [apiKeys, selectedKeyId, prefs.lastKey]);
 
   // Model: ?model= (kept even if unhealthy) → last used if healthy → default if
   // healthy → first healthy pool model → first healthy → first.
@@ -95,12 +94,22 @@ export const ChatPage = () => {
   const chooseModel = (id: string) => { setSelectedModel(id); prefs.rememberModel(id); };
   const chooseKey = (id: string) => { setSelectedKeyId(id); prefs.rememberKey(id); };
 
-  const convs = useChatConversations();
+  const sync = useChatSync();
+  const convs = useChatConversations(sync.syncEnabled);
   const messages = convs.activeConversation?.messages ?? [];
   const { supportsTools } = useToolSupport();
   const webSearchAvailable = !!selectedModel && supportsTools(selectedModel);
   const [webSearch, toggleWebSearch] = useWebSearchPreference();
   const { isStreaming, isReasoning, run, stopStreaming } = useChatStream(convs.setMessagesFor);
+
+  // When sync is on, pull account conversations into the local list once.
+  const mergedRef = useRef(false);
+  useEffect(() => {
+    if (sync.state === "on" && convs.loaded && !mergedRef.current) {
+      mergedRef.current = true;
+      convs.mergeFromAccount();
+    }
+  }, [sync.state, convs.loaded, convs.mergeFromAccount]);
 
   const lastLen = messages[messages.length - 1]?.content.length ?? 0;
   const scroll = useAutoScroll(`${messages.length}:${lastLen}:${messages[messages.length - 1]?.reasoning?.length ?? 0}`);
@@ -110,7 +119,7 @@ export const ChatPage = () => {
     convId, history,
     modelId: selectedModel,
     model: modelInfos.find((m) => m.id === selectedModel),
-    apiKeyId: keyId === "__master__" ? undefined : keyId,
+    apiKeyId: keyId,
     systemPrompt,
     webSearch: webSearch && webSearchAvailable,
   }), [run, selectedModel, modelInfos, selectedKeyId, systemPrompt, webSearch, webSearchAvailable]);
@@ -122,7 +131,7 @@ export const ChatPage = () => {
     setSendError(null);
     try {
       let keyId = selectedKeyId;
-      if (!keyId && !isAdmin) {
+      if (!keyId) {
         try {
           await apiKeyService.createKey({ keyName: "Chat", models: [] });
           const refreshed = await refetchKeys();
@@ -139,7 +148,7 @@ export const ChatPage = () => {
       scroll.scrollToBottom(false);
       await startRun(id, [...messages, { role: "user", content: text }], keyId);
     } finally { sending.current = false; }
-  }, [isStreaming, canSend, selectedKeyId, isAdmin, refetchKeys, convs, selectedModel, messages, startRun, scroll]);
+  }, [isStreaming, canSend, selectedKeyId, refetchKeys, convs, selectedModel, messages, startRun, scroll]);
 
   const handleRegenerate = useCallback(() => {
     if (isStreaming || !convs.activeId) return;
@@ -168,6 +177,10 @@ export const ChatPage = () => {
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [newChat, isStreaming, stopStreaming]);
+
+  const privacyLine = sync.syncEnabled
+    ? t("Messages go straight to the EU gateway and the garage; your chats are saved in your account.")
+    : t("Messages go straight to the EU gateway and the garage; not stored by GarageAI.");
 
   const empty = messages.length === 0;
   const composerEl = (
@@ -198,6 +211,9 @@ export const ChatPage = () => {
         onNew={newChat}
         onRename={convs.renameConversation}
         onDelete={convs.deleteConversation}
+        syncState={sync.state}
+        onEnableSync={sync.enable}
+        onDisableSync={sync.disable}
       />
 
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
@@ -228,18 +244,28 @@ export const ChatPage = () => {
               <PopoverContent align="end" className="w-64 space-y-2">
                 <p className="text-sm font-medium">{t("Chat settings")}</p>
                 <p className="text-xs text-muted-foreground">{t("Usage from this chat is billed through this API key.")}</p>
-                <ChatKeyPicker keys={apiKeys} selected={selectedKeyId} onSelect={chooseKey} onCreated={refetchKeys} isAdmin={!!isAdmin} disabled={isStreaming} />
+                <ChatKeyPicker keys={apiKeys} selected={selectedKeyId} onSelect={chooseKey} onCreated={refetchKeys} disabled={isStreaming} />
               </PopoverContent>
             </Popover>
           </div>
         </header>
+
+        {sync.state === "prompt" && (
+          <div className="shrink-0 border-b border-border/50 bg-muted/40 px-4 py-3">
+            <p className="text-sm">{t("Your chats are saved in your account. Keep saving them there (sync on), or move them to this device only?")}</p>
+            <div className="mt-2 flex gap-2">
+              <Button size="sm" onClick={sync.keepSync}>{t("Keep saving to my account")}</Button>
+              <Button size="sm" variant="outline" onClick={sync.moveToDevice}>{t("Move to this device only")}</Button>
+            </div>
+          </div>
+        )}
 
         {empty ? (
           <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-4 pb-16">
             <div className="w-full max-w-[760px] space-y-6">
               <ChatEmptyState onPick={(p) => composer.current?.fill(p)} />
               {composerEl}
-              <p className="text-center text-[11px] text-muted-foreground">{t("Your chats are saved to your account (delete anytime). The gateway does not store your prompts, and garages must not store them under the operator terms. Requests are processed in the EU.")}</p>
+              <p className="text-center text-[11px] text-muted-foreground">{privacyLine}</p>
             </div>
           </div>
         ) : (
@@ -259,7 +285,7 @@ export const ChatPage = () => {
             <div className="shrink-0 px-4 pb-4 pt-1">
               <div className="mx-auto w-full max-w-[760px]">
                 {composerEl}
-                <p className="mt-2 text-center text-[11px] text-muted-foreground">{t("Your chats are saved to your account (delete anytime). The gateway does not store your prompts, and garages must not store them under the operator terms. Requests are processed in the EU.")}</p>
+                <p className="mt-2 text-center text-[11px] text-muted-foreground">{privacyLine}</p>
               </div>
             </div>
           </>
