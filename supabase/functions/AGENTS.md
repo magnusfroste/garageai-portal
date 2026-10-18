@@ -1,4 +1,5 @@
 # Edge function rules
+- Chat is privacy-first: the browser calls the EU gateway directly; `chat-key-value` returns a key's value only to its signed-in owner, and `web-search` receives only a query string, never messages. Chat history is local by default; `chat_conversations` is written only when the user opts in to sync.
 - Reconcile LiteLLM deployments from database status and tests on every sync; only sellable models get routes, acceptance probes use temporary private routes.
 - Models dropped after missed heartbeats keep offer/prices in `garage_model_memory`, restored by `syncInventory`, so re-links never reset sales.
 - Classify internal keys before usage aggregation; customer aggregates alone feed demand and owner/public counters, while internal aggregates stay admin-only, preventing test-driven recommendations.
