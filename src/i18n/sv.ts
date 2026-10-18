@@ -849,6 +849,7 @@ export const sv: Record<string, string> = {
   "Prices cannot be negative": "Priser kan inte vara negativa",
   "Cache read cannot exceed the input price": "Cacheläsning kan inte överstiga indatapriset",
   "Order": "Ordning",
+  "Auto tries entry 1 first; the next entry only when the ones before it are down or busy.": "Auto provar post 1 först; nästa post används bara när de tidigare är nere eller upptagna.",
   "House models first, then garages with a good grade, then an external provider as the last fallback.": "Husets modeller först, sedan garage med bra betyg, sist en extern leverantör som reserv.",
   "No entries yet.": "Inga poster ännu.",
   "Move up": "Flytta upp",

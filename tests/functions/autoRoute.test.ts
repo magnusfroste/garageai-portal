@@ -1,5 +1,31 @@
 import { expect, test } from "bun:test";
 import { autoCatalogRow, garageOfDeploymentId, parseAutoSettings, planAutoDeployments, type BaseDeployment } from "../../supabase/functions/_shared/autoRoute";
+import { deploymentBody, deploymentOrderMatches, type DeploymentBodySpec } from "../../supabase/functions/_shared/deploymentBody";
+
+const autoSpec: DeploymentBodySpec = {
+  id: "auto__a__m__pool", route: "garageai/auto", model: "m", apiBase: "http://runtime/v1", apiKey: null,
+  keyFp: "fingerprint", input: 0.3, output: 1.2, cacheRead: 0.03, tier: "auto", order: 1, weight: 500,
+  garage: { name: "a", operator_id: null, runtime: "ollama" },
+};
+
+test("auto registration sends integer order 1 in routing params without changing other fields", () => {
+  const body = deploymentBody(autoSpec);
+  const { order, ...params } = body.litellm_params;
+  expect(order).toBe(1);
+  expect(Number.isInteger(order)).toBe(true);
+  expect(params).toEqual(deploymentBody({ ...autoSpec, order: undefined }).litellm_params);
+  expect(body.model_info.order).toBe(1);
+  expect(body.model_info.id).toBe("auto__a__m__pool");
+});
+
+test("reconciliation replaces missing or changed routing order, even when metadata already matches", () => {
+  expect(deploymentOrderMatches(1, {}, { order: 1 })).toBe(false);
+  expect(deploymentOrderMatches(2, { order: 1 }, { order: 2 })).toBe(false);
+  const reordered = deploymentBody({ ...autoSpec, order: 2 });
+  expect(reordered.litellm_params.order).toBe(2);
+  expect(deploymentOrderMatches(2, reordered.litellm_params, reordered.model_info)).toBe(true);
+  expect(deploymentOrderMatches(undefined, {}, {})).toBe(true);
+});
 
 const base = (id: string, garage: string, maxInput: number | null, tools: boolean | null): BaseDeployment =>
   ({ id, garage, inputPerM: 0.2, outputPerM: 0.8, cacheReadPerM: 0.05, maxInput, supportsTools: tools });
