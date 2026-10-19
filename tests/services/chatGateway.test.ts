@@ -20,7 +20,7 @@ mock.module("@/integrations/supabase/client", () => ({
   },
 }));
 
-const { GATEWAY_CHAT_URL, getChatKeyValue, runWebSearch, streamChat } = await import("@/models/services/chatGateway");
+const { GATEWAY_CHAT_URL, GatewayHttpError, runWebSearch, streamChat } = await import("@/models/services/chatGateway");
 
 const sse = (chunks: unknown[]) =>
   new Response(
@@ -68,7 +68,7 @@ describe("chatGateway", () => {
     expect(GATEWAY_CHAT_URL).not.toContain("supabase");
     expect(ev.contents.join("")).toBe("hej");
     // No chat payload went through any edge function.
-    expect(invokeCalls.filter((c) => c.fn !== "chat-key-value" && c.fn !== "web-search")).toEqual([]);
+    expect(invokeCalls.filter((c) => c.fn !== "web-search")).toEqual([]);
   });
 
   it("sends the key as a bearer token to the gateway", async () => {
@@ -121,9 +121,11 @@ describe("chatGateway", () => {
     expect(ev.contents.join("")).toBe("answer");
   });
 
-  it("caches the key value in memory (one chat-key-value call per key)", async () => {
-    await getChatKeyValue("key-1");
-    await getChatKeyValue("key-1");
-    expect(invokeCalls.filter((c) => c.fn === "chat-key-value")).toHaveLength(1);
+  it("throws a 401 GatewayHttpError when the key no longer works", async () => {
+    globalThis.fetch = mock(async () => new Response(JSON.stringify({ error: { message: "Invalid key" } }), { status: 401 })) as any;
+    const err = await streamChat({ keyValue: "sk-old", model: "m", messages: [{ role: "user", content: "hi" }], signal: new AbortController().signal }, events()).catch((e) => e);
+    expect(err).toBeInstanceOf(GatewayHttpError);
+    expect(err.status).toBe(401);
+    expect(invokeCalls.some((c) => c.fn === "chat-key-value")).toBe(false);
   });
 });
