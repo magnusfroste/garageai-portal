@@ -1,9 +1,10 @@
-import { chatStartFailedMessage } from "@/models/services/credentialErrors";
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { t } from "@/i18n";
 import { messageCostUsd, tokensPerSecond } from "@/models/services/chatService";
-import { getChatKeyValue, streamChat } from "@/models/services/chatGateway";
+import { GatewayHttpError, streamChat } from "@/models/services/chatGateway";
+import { chatKeyService } from "@/models/services/chatKeyService";
+import { keyCreateFailedMessage } from "@/models/services/credentialErrors";
 import type { ModelInfo } from "@/models/types/model.types";
 import type { ChatAnswerMeta, ChatMessage, ChatSearchInfo } from "../types";
 
@@ -13,8 +14,8 @@ interface RunOptions {
   history: ChatMessage[];
   model: ModelInfo | undefined;
   modelId: string;
-  /** The user's own API key id; its value is fetched once and kept in memory. */
-  apiKeyId: string;
+  /** Signed-in user; the chat uses this browser's own key for them. */
+  userId: string;
   systemPrompt?: string;
   webSearch?: boolean;
 }
@@ -67,7 +68,9 @@ export const useChatStream = (setMessagesFor: SetFor) => {
     };
 
     try {
-      const keyValue = await getChatKeyValue(o.apiKeyId);
+      let keyValue: string;
+      try { keyValue = (await chatKeyService.get(o.userId)).key; }
+      catch { throw new Error("key_unavailable"); }
 
       let content = "";
       let reasoning = "";
@@ -78,9 +81,10 @@ export const useChatStream = (setMessagesFor: SetFor) => {
         patch({ content, reasoning: reasoning || undefined, search });
       };
 
-      await streamChat(
+      let sent = false;
+      const send = (key: string) => streamChat(
         {
-          keyValue,
+          keyValue: key,
           model: o.modelId,
           messages: o.history.map(({ role, content }) => ({ role, content })),
           systemPrompt: o.systemPrompt,
@@ -124,6 +128,16 @@ export const useChatStream = (setMessagesFor: SetFor) => {
           },
         },
       );
+      try {
+        await send(keyValue);
+      } catch (e) {
+        // Stored key revoked or expired: create a new one silently and retry once.
+        if (!(e instanceof GatewayHttpError && e.status === 401) || sent) throw e;
+        sent = true;
+        try { keyValue = (await chatKeyService.renew(o.userId)).key; }
+        catch { throw new Error("key_unavailable"); }
+        await send(keyValue);
+      }
 
       flush();
       if (search) search = { ...search, status: undefined };
@@ -134,7 +148,7 @@ export const useChatStream = (setMessagesFor: SetFor) => {
         return;
       }
       if (e instanceof Error && e.message === "key_unavailable") {
-        toast.error(chatStartFailedMessage());
+        toast.error(keyCreateFailedMessage());
       } else {
         console.error("Chat stream error:", e instanceof Error ? e.name : "unknown");
         toast.error(t("Could not connect to the model"));

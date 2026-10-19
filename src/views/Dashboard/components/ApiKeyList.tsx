@@ -7,7 +7,9 @@ import { KeyCreationDialog } from "./KeyCreationDialog";
 
 interface ApiKeyListProps {
   apiKeys: ApiKey[];
-  onCopy: (text: string) => void;
+  thisBrowserId?: string | null;
+  onRotate?: (keyId: string) => void;
+  onRename?: (keyId: string, name: string) => Promise<boolean>;
   onCreateKey: (name: string, models: string[]) => Promise<boolean>;
   isCreatingKey: boolean;
   canCreateMore: boolean;
@@ -18,7 +20,9 @@ interface ApiKeyListProps {
 
 export const ApiKeyList = ({
   apiKeys,
-  onCopy,
+  thisBrowserId,
+  onRotate,
+  onRename,
   onCreateKey,
   isCreatingKey,
   canCreateMore,
@@ -65,9 +69,11 @@ export const ApiKeyList = ({
               <ApiKeyCard
                 key={key.id}
                 apiKey={key}
-                onCopy={onCopy}
+                thisBrowser={!!thisBrowserId && key.id === thisBrowserId}
                 onRevoke={onRevoke}
-                isRevoking={isRevoking}
+                onRotate={onRotate}
+                onRename={onRename}
+                busy={isRevoking}
               />
             ))}
           </div>

@@ -85,11 +85,14 @@ export type Database = {
       api_keys: {
         Row: {
           created_at: string
+          device_label: string | null
           expires_at: string | null
           id: string
           internal: boolean
           is_active: boolean
+          key_last4: string | null
           key_value: string
+          kind: string
           litellm_alias: string | null
           litellm_token: string | null
           name: string
@@ -100,11 +103,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          device_label?: string | null
           expires_at?: string | null
           id?: string
           internal?: boolean
           is_active?: boolean
+          key_last4?: string | null
           key_value: string
+          kind?: string
           litellm_alias?: string | null
           litellm_token?: string | null
           name: string
@@ -115,11 +121,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          device_label?: string | null
           expires_at?: string | null
           id?: string
           internal?: boolean
           is_active?: boolean
+          key_last4?: string | null
           key_value?: string
+          kind?: string
           litellm_alias?: string | null
           litellm_token?: string | null
           name?: string
@@ -1438,6 +1447,7 @@ export type Database = {
           company: string | null
           connect_page_seen_at: string | null
           created_at: string
+          default_key_at: string | null
           email: string
           full_name: string | null
           id: string
@@ -1456,6 +1466,7 @@ export type Database = {
           company?: string | null
           connect_page_seen_at?: string | null
           created_at?: string
+          default_key_at?: string | null
           email: string
           full_name?: string | null
           id: string
@@ -1474,6 +1485,7 @@ export type Database = {
           company?: string | null
           connect_page_seen_at?: string | null
           created_at?: string
+          default_key_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
@@ -1764,6 +1776,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      rename_api_key: {
+        Args: { _id: string; _name: string }
+        Returns: undefined
+      }
       request_managed_model: {
         Args: { _action: string; _garage_id: string; _model: string }
         Returns: undefined
@@ -1809,6 +1825,13 @@ export type Database = {
           model: string
           requests_14d: number
           requests_7d: number
+        }[]
+      }
+      stale_chat_keys: {
+        Args: { _days?: number }
+        Returns: {
+          id: string
+          litellm_token: string
         }[]
       }
       verify_cron_secret: { Args: { secret: string }; Returns: boolean }
