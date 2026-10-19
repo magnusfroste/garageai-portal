@@ -329,12 +329,54 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_payment_reversals: {
+        Row: {
+          charge_id: string
+          charged_minor: number
+          disputed_minor: number
+          refunded_minor: number
+          reversed_credits: number
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          charge_id: string
+          charged_minor: number
+          disputed_minor?: number
+          refunded_minor?: number
+          reversed_credits?: number
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          charge_id?: string
+          charged_minor?: number
+          disputed_minor?: number
+          refunded_minor?: number
+          reversed_credits?: number
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_payment_reversals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "credit_transactions"
+            referencedColumns: ["stripe_session_id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           amount_usd: number
           created_at: string
           credits_added: number
           id: string
+          original_session_id: string | null
+          reason: string | null
+          stripe_charge_id: string | null
+          stripe_event_id: string | null
           stripe_session_id: string | null
           user_id: string
         }
@@ -343,6 +385,10 @@ export type Database = {
           created_at?: string
           credits_added: number
           id?: string
+          original_session_id?: string | null
+          reason?: string | null
+          stripe_charge_id?: string | null
+          stripe_event_id?: string | null
           stripe_session_id?: string | null
           user_id: string
         }
@@ -351,6 +397,10 @@ export type Database = {
           created_at?: string
           credits_added?: number
           id?: string
+          original_session_id?: string | null
+          reason?: string | null
+          stripe_charge_id?: string | null
+          stripe_event_id?: string | null
           stripe_session_id?: string | null
           user_id?: string
         }
@@ -1593,6 +1643,22 @@ export type Database = {
     Functions: {
       accept_account_terms: { Args: { _version: string }; Returns: undefined }
       account_terms_version: { Args: never; Returns: string }
+      apply_credit_reversal: {
+        Args: {
+          _charge_id: string
+          _charged_minor: number
+          _disputed_minor: number
+          _event_id: string
+          _reason: string
+          _refunded_minor: number
+          _session_id: string
+        }
+        Returns: {
+          already_processed: boolean
+          credits_delta: number
+          user_id: string
+        }[]
+      }
       apply_managed_model_cancel: {
         Args: { _garage_id: string; _model: string }
         Returns: undefined

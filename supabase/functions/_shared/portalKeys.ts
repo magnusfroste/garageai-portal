@@ -5,6 +5,7 @@ import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { internalAlias } from "./internalTraffic.ts";
 import { ensureLiteLLMUser } from "./litellmUsers.ts";
 import { litellmKeyAlias } from "./keyAlias.ts";
+import { keyLimits } from "./keyLimits.ts";
 
 export type KeyKind = "user" | "default" | "chat";
 
@@ -47,12 +48,11 @@ export async function createPortalKey(admin: any, input: CreateKeyInput): Promis
   if (error || !profile) throw new Error("Profile not found");
   const base = await getProxyBaseUrl(admin);
   const ensured = await ensureLiteLLMUser(admin, profile);
-  const { data: rpm } = await admin.from("admin_settings").select("value").eq("key", "key_rpm_limit").maybeSingle();
   const internal = internalAlias(input.name);
   let alias = litellmKeyAlias(input.userId, input.name);
   // No per-key max_budget: the user's budget is the single cap.
   const body = () => ({
-    key_alias: alias, user_id: ensured.userId, rpm_limit: Math.max(1, Number(rpm?.value ?? 60)),
+    key_alias: alias, user_id: ensured.userId, ...keyLimits(input.kind),
     metadata: { internal, kind: input.kind },
     ...(input.models?.length ? { models: input.models } : {}),
   });
