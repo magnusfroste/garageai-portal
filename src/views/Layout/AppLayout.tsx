@@ -5,6 +5,8 @@ import { useSession } from "@/hooks/useSession";
 import { useAuth } from "@/hooks/useAuth";
 import { useLitellmUser } from "@/hooks/useLitellmUser";
 import { useProfile } from "@/hooks/useProfile";
+import { useDefaultKey } from "@/hooks/useDefaultKey";
+import { ShowKeyOnceDialog } from "@/views/Dashboard/components/ShowKeyOnceDialog";
 import { useUserBudget } from "@/hooks/useUserBudget";
 import { AppSidebar } from "./AppSidebar";
 import { GlobalSearch } from "./GlobalSearch";
@@ -40,6 +42,7 @@ const SignedInLayout = () => {
   const { profile } = useProfile();
   const { budget } = useUserBudget();
   useLitellmUser();
+  const defaultKey = useDefaultKey(profile);
   useLanguagePreference(profile?.preferred_language);
 
   useEffect(() => {
@@ -106,6 +109,7 @@ const SignedInLayout = () => {
           </header>
           <AnnouncementBar />
           <AccountTermsBanner />
+          <ShowKeyOnceDialog title={t("Your API key")} keyValue={defaultKey.created?.key ?? null} onClose={defaultKey.dismiss} />
           <main className="flex-1 overflow-auto">
             <Outlet />
           </main>

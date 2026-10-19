@@ -12,6 +12,8 @@ import { useModelCatalog } from "@/hooks/useModelCatalog";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { CommandBlock } from "@/views/Garages/components/GarageShared";
 import { t } from "@/i18n";
+import { ShowKeyOnceDialog } from "@/views/Dashboard/components/ShowKeyOnceDialog";
+import { chatKeyService } from "@/models/services/chatKeyService";
 
 export const KeysPage = () => {
   const { models } = useModelCatalog();
@@ -20,7 +22,10 @@ export const KeysPage = () => {
   const { profile, loading: profileLoading } = useProfile();
   const [revoking, setRevoking] = useState(false);
   const { apiKeys, loading: keysLoading, isError, refetch } = useDashboardData();
-  const { createKey, isCreatingKey, copyToClipboard } = useKeyManagement();
+  const { createKey, rotateKey, renameKey, revokeKey, isCreatingKey } = useKeyManagement();
+  const [shown, setShown] = useState<{ title: string; key: string; oldId?: string } | null>(null);
+  const [thisBrowserId, setThisBrowserId] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => data.user && setThisBrowserId(chatKeyService.currentId(data.user.id))); }, []);
   const syncRan = useRef(false);
 
   // Auto-sync keys with LiteLLM on page load
@@ -55,32 +60,33 @@ export const KeysPage = () => {
   }, [keysLoading, refetch]);
 
   const handleCreateKey = async (name: string, models: string[]) => {
-    const success = await createKey(name, models);
-    if (success) await refetch();
-    return success;
+    const created = await createKey(name, models);
+    if (!created) return false;
+    setShown({ title: t("Your new key \"{name}\"", { name: created.name }), key: created.key });
+    await refetch();
+    return true;
   };
 
   const handleRevoke = async (keyId: string) => {
     setRevoking(true);
+    try { if (await revokeKey(keyId)) await refetch(); }
+    finally { setRevoking(false); }
+  };
+
+  const handleRotate = async (keyId: string) => {
+    setRevoking(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase.functions.invoke('revoke-key', {
-        body: { keyId },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-
-      if (error) throw error;
-
-      toast.success(`Key "${data.name}" has been revoked`);
+      const created = await rotateKey(keyId);
+      if (!created) return;
+      setShown({ title: t("New key for \"{name}\"", { name: created.name }), key: created.key, oldId: keyId });
       await refetch();
-    } catch (err) {
-      console.error("Revoke error:", err);
-      toast.error("Failed to revoke key");
-    } finally {
-      setRevoking(false);
-    }
+    } finally { setRevoking(false); }
+  };
+
+  const revokeOld = async () => {
+    if (!shown?.oldId) return;
+    const ok = await revokeKey(shown.oldId);
+    if (ok) { setShown((s) => (s ? { ...s, oldId: undefined } : s)); await refetch(); }
   };
 
   const canCreateMore = true;
@@ -117,13 +123,21 @@ export const KeysPage = () => {
       {isError && <div className="text-sm text-destructive">{t("Could not load API keys.")} <Button variant="link" onClick={refetch}>{t("Try again")}</Button></div>}
       <ApiKeyList
         apiKeys={activeKeys}
-        onCopy={copyToClipboard}
+        thisBrowserId={thisBrowserId}
+        onRotate={handleRotate}
+        onRename={async (id, name) => { const ok = await renameKey(id, name); if (ok) await refetch(); return ok; }}
         onCreateKey={handleCreateKey}
         isCreatingKey={isCreatingKey}
         canCreateMore={canCreateMore}
         remainingKeys={remainingKeys}
         onRevoke={handleRevoke}
         isRevoking={revoking}
+      />
+      <ShowKeyOnceDialog
+        title={shown?.title ?? ""}
+        keyValue={shown?.key ?? null}
+        onClose={() => setShown(null)}
+        footer={shown?.oldId ? <Button variant="outline" onClick={revokeOld}>{t("Revoke the old key")}</Button> : undefined}
       />
     </div>
   );

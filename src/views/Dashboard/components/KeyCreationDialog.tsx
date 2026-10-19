@@ -44,14 +44,14 @@ export const KeyCreationDialog = ({
       <DialogTrigger asChild>
         <Button className="glow" disabled={!canCreateMore}>
           <Plus className="w-4 h-4 mr-2" />
-          Create New Key
+          {t("Create New Key")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New API Key</DialogTitle>
+          <DialogTitle>{t("Create New API Key")}</DialogTitle>
           <DialogDescription>
-            Create a new API key to get started.
+            {t("Create a new API key to get started.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -67,7 +67,7 @@ export const KeyCreationDialog = ({
         {canCreateMore && (
           <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="keyName">Key Name</Label>
+            <Label htmlFor="keyName">{t("Key Name")}</Label>
             <Input
               id="keyName"
               placeholder="my-api-key"
@@ -76,14 +76,14 @@ export const KeyCreationDialog = ({
             />
           </div>
           <div className="text-sm text-muted-foreground">
-            The key grants access to all available models.
+            {t("The key grants access to all available models.")}
           </div>
             <Button
               onClick={handleCreate}
               disabled={isCreating}
               className="w-full"
             >
-              {isCreating ? "Creating..." : "Create Key"}
+              {isCreating ? t("Creating…") : t("Create Key")}
             </Button>
           </div>
         )}
