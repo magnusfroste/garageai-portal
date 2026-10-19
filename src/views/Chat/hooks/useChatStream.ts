@@ -129,6 +129,16 @@ export const useChatStream = (setMessagesFor: SetFor) => {
           },
         },
       );
+      try {
+        await send(keyValue);
+      } catch (e) {
+        // Stored key revoked or expired: create a new one silently and retry once.
+        if (!(e instanceof GatewayHttpError && e.status === 401) || sent) throw e;
+        sent = true;
+        try { keyValue = (await chatKeyService.renew(o.userId)).key; }
+        catch { throw new Error("key_unavailable"); }
+        await send(keyValue);
+      }
 
       flush();
       if (search) search = { ...search, status: undefined };
@@ -139,7 +149,7 @@ export const useChatStream = (setMessagesFor: SetFor) => {
         return;
       }
       if (e instanceof Error && e.message === "key_unavailable") {
-        toast.error(chatStartFailedMessage());
+        toast.error(keyCreateFailedMessage());
       } else {
         console.error("Chat stream error:", e instanceof Error ? e.name : "unknown");
         toast.error(t("Could not connect to the model"));

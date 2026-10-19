@@ -1,8 +1,5 @@
-import { keyCreateFailedMessage } from "@/models/services/credentialErrors";
-import { ACCOUNT_TERMS_REQUIRED } from "@/models/services/accountTermsService";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, Menu, PanelLeft, SlidersHorizontal, SquarePen } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -18,7 +15,6 @@ import { ChatMessageList } from "./components/ChatMessageList";
 import { ChatEmptyState } from "./components/ChatEmptyState";
 import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
 import { ChatModelPicker } from "./components/ChatModelPicker";
-import { ChatKeyPicker } from "./components/ChatKeyPicker";
 import { ChatComposer, type ChatComposerHandle } from "./components/ChatComposer";
 import { ChatSystemPrompt, DEFAULT_SYSTEM_PROMPT } from "./components/ChatSystemPrompt";
 import { useChatStream } from "./hooks/useChatStream";
@@ -28,7 +24,6 @@ import { useWebSearchPreference } from "./hooks/useWebSearchPreference";
 import { useChatPreferences } from "./hooks/useChatPreferences";
 import { useAutoScroll } from "./hooks/useAutoScroll";
 import type { ChatMessage } from "./types";
-import { apiKeyService } from "@/models/services/apiKeyService";
 
 export const ChatPage = () => {
   const { checkAuth } = useAuth();
@@ -36,7 +31,8 @@ export const ChatPage = () => {
   const requestedModel = searchParams.get("model");
   const prefs = useChatPreferences();
   const [selectedModel, setSelectedModel] = useState("");
-  const [selectedKeyId, setSelectedKeyId] = useState("");
+  const [userId, setUserId] = useState("");
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? "")); }, []);
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
   const [panelOpen, setPanelOpen] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -61,27 +57,6 @@ export const ChatPage = () => {
     is_default: m.is_default,
   }) as ModelInfo), [models]);
 
-  const { data: apiKeys = [], refetch: refetchKeys } = useQuery({
-    queryKey: ["user-api-keys"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
-      const { data, error } = await supabase.from("api_keys").select("id, name, is_active").eq("user_id", user.id).order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 30_000,
-  });
-
-  // Key: last used → first active. Everyone uses one of their own keys.
-  useEffect(() => {
-    const active = apiKeys.filter((k) => k.is_active);
-    if (selectedKeyId && active.some((k) => k.id === selectedKeyId)) return;
-    const remembered = prefs.lastKey && active.some((k) => k.id === prefs.lastKey);
-    const next = remembered ? prefs.lastKey : active[0]?.id ?? "";
-    if (next !== selectedKeyId) setSelectedKeyId(next);
-  }, [apiKeys, selectedKeyId, prefs.lastKey]);
-
   // Model: ?model= (kept even if unhealthy) → last used if healthy → default if
   // healthy → first healthy pool model → first healthy → first.
   useEffect(() => {
@@ -94,7 +69,6 @@ export const ChatPage = () => {
   const selectedOffline = !!selectedModelInfo && selectedModelInfo.status !== "healthy";
 
   const chooseModel = (id: string) => { setSelectedModel(id); prefs.rememberModel(id); };
-  const chooseKey = (id: string) => { setSelectedKeyId(id); prefs.rememberKey(id); };
 
   const sync = useChatSync();
   const convs = useChatConversations(sync.syncEnabled);
@@ -116,15 +90,15 @@ export const ChatPage = () => {
   const lastLen = messages[messages.length - 1]?.content.length ?? 0;
   const scroll = useAutoScroll(`${messages.length}:${lastLen}:${messages[messages.length - 1]?.reasoning?.length ?? 0}`);
 
-  const canSend = !!selectedModel;
-  const startRun = useCallback((convId: string, history: ChatMessage[], keyId = selectedKeyId) => run({
+  const canSend = !!selectedModel && !!userId;
+  const startRun = useCallback((convId: string, history: ChatMessage[]) => run({
     convId, history,
     modelId: selectedModel,
     model: modelInfos.find((m) => m.id === selectedModel),
-    apiKeyId: keyId,
+    userId,
     systemPrompt,
     webSearch: webSearch && webSearchAvailable,
-  }), [run, selectedModel, modelInfos, selectedKeyId, systemPrompt, webSearch, webSearchAvailable]);
+  }), [run, selectedModel, modelInfos, userId, systemPrompt, webSearch, webSearchAvailable]);
 
   const sending = useRef(false);
   const handleSend = useCallback(async (text: string) => {
@@ -132,25 +106,12 @@ export const ChatPage = () => {
     sending.current = true;
     setSendError(null);
     try {
-      let keyId = selectedKeyId;
-      if (!keyId) {
-        try {
-          await apiKeyService.createKey({ keyName: "Chat", models: [] });
-          const refreshed = await refetchKeys();
-          keyId = refreshed.data?.find((key) => key.is_active && key.name === "Chat")?.id ?? "";
-          if (!keyId) throw new Error(t("The Chat API key could not be loaded."));
-          chooseKey(keyId);
-        } catch (error) {
-          setSendError(error instanceof Error && error.message === t(ACCOUNT_TERMS_REQUIRED) ? error.message : keyCreateFailedMessage());
-          return;
-        }
-      }
       const id = convs.activeId || (await convs.createConversation(selectedModel));
       if (!id) return;
       scroll.scrollToBottom(false);
-      await startRun(id, [...messages, { role: "user", content: text }], keyId);
+      await startRun(id, [...messages, { role: "user", content: text }]);
     } finally { sending.current = false; }
-  }, [isStreaming, canSend, selectedKeyId, refetchKeys, convs, selectedModel, messages, startRun, scroll]);
+  }, [isStreaming, canSend, convs, selectedModel, messages, startRun, scroll]);
 
   const handleRegenerate = useCallback(() => {
     if (isStreaming || !convs.activeId) return;
@@ -245,8 +206,7 @@ export const ChatPage = () => {
               </PopoverTrigger>
               <PopoverContent align="end" className="w-64 space-y-2">
                 <p className="text-sm font-medium">{t("Chat settings")}</p>
-                <p className="text-xs text-muted-foreground">{t("Usage from this chat is billed through this API key.")}</p>
-                <ChatKeyPicker keys={apiKeys} selected={selectedKeyId} onSelect={chooseKey} onCreated={refetchKeys} disabled={isStreaming} />
+                <p className="text-xs text-muted-foreground">{t("This browser has its own chat key. You can see and revoke it on the Dashboard under API keys.")}</p>
               </PopoverContent>
             </Popover>
           </div>
