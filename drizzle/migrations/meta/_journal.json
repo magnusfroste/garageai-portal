@@ -547,6 +547,13 @@
       "when": 1792397435956,
       "tag": "0077_credit_reversals_and_key_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1792397550897,
+      "tag": "0078_key_delete_via_gateway_only",
+      "breakpoints": true
     }
   ]
 }

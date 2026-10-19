@@ -17,7 +17,7 @@ export const useUserBudget = () => {
       const data = await userBudgetRepository.fetchBudget();
       if (!mounted.current) return;
       setBudget(data);
-      if (data.budget_pending) retry.current = setTimeout(() => { void fetchBudget(); }, 3000);
+      if (data.budget_pending) retry.current = setTimeout(() => { void fetchBudget(); }, data.retry_after_ms ?? 3000);
     } catch (error) {
       console.error("Error fetching user budget:", error);
     } finally {

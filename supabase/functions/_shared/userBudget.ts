@@ -7,5 +7,6 @@ export function resolveUserBudget(profile: { starting_credit_usd?: number | null
   const spend = Number(info?.spend ?? 0);
   return { max_budget: maxBudget, spend, budget_remaining: maxBudget - spend,
     purchased_credits_usd: profile.purchased_credits_usd ?? 0,
-    litellm_user_id: profile.litellm_user_id ?? null, budget_pending: pending };
+    litellm_user_id: profile.litellm_user_id ?? null, budget_pending: pending,
+    retry_after_ms: pending ? BUDGET_RETRY_MS : null };
 }
