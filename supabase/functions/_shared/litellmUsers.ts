@@ -17,11 +17,12 @@ export async function ensureLiteLLMUser(admin: SupabaseClient, profile: { id: st
     info = await fetch(infoUrl, { headers: headers(key) });
   }
   let userId = profile.id;
-  if (info.ok) {
-    const body = await info.json();
-    userId = body?.user_info?.user_id || body?.user_id || profile.id;
+  // Some gateway versions answer 200 with an empty user_info for unknown users: treat as not found.
+  const infoBody = info.ok ? await info.json().catch(() => ({})) : (await info.text().catch(() => ""), null);
+  const foundId = infoBody?.user_info?.user_id || infoBody?.user_id;
+  if (foundId) {
+    userId = foundId;
   } else {
-    await info.text().catch(() => "");
     const created = await fetch(`${base}/user/new`, { method: "POST", headers: headers(key), body: JSON.stringify({ user_id: profile.id, user_email: profile.email, max_budget: budget, user_role: "internal_user" }) });
     const body = await created.json().catch(() => ({}));
     if (created.status === 409) {

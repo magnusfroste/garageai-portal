@@ -1,4 +1,5 @@
-export const internalAlias = (alias: unknown): boolean => typeof alias === "string" && /^(test|probe|ops)/i.test(alias);
+// Matches plain names and the internal "<uid8>-<slug>-<rand>" gateway aliases.
+export const internalAlias = (alias: unknown): boolean => typeof alias === "string" && /^([0-9a-f]{8}-)?(test|probe|ops)/i.test(alias);
 const object = (value: unknown): Record<string, unknown> => {
   if (typeof value === "string") { try { return object(JSON.parse(value)); } catch { return {}; } }
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
