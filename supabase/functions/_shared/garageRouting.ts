@@ -2,6 +2,8 @@
 import { assignPoolWeights } from "./poolPricing.ts";
 import { modelTierPrice, type ModelPrices } from './modelPrices.ts';
 import { deploymentBody, deploymentOrderMatches } from "./deploymentBody.ts";
+import { modelIdError } from "./modelValidation.ts";
+export { modelIdError, MODEL_ID_RE } from "./modelValidation.ts";
 import { isProbeDeployment, isStaleProbe } from "./probeDeployments.ts";
 // Desired state = garages table + latest acceptance/probe tests + curated_models admin choices.
 // reconcileGarageRouting compares it with LiteLLM /model/info and adds/removes deployments idempotently.
@@ -344,26 +346,6 @@ export async function withProbeDeployments<T>(
 }
 
 // ---------- model id validation ----------
-
-const RESERVED_PREFIXES = ["gpt-", "chatgpt-", "o1", "o3", "o4-", "claude-", "gemini-", "grok-"];
-export const MODEL_ID_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
-
-/** Returns an error message for a model id an operator must not register, else null. */
-export function modelIdError(model: string): string | null {
-  if (!MODEL_ID_RE.test(model)) return `model id "${model}" must match ^[A-Za-z0-9._:/-]{1,128}$`;
-  const lower = model.toLowerCase();
-  if (lower.startsWith("garage/")) return `model id "${model}" may not start with "garage/" (reserved for garage-specific routes)`;
-  if (lower.startsWith("probe/")) return `model id "${model}" may not start with "probe/" (reserved)`;
-  // Check the last path segment too, so "openai/gpt-4o" is also rejected.
-  const tail = lower.split("/").pop() || lower;
-  // gpt-oss* are OpenAI's open-weight models — the one allowed exception to the gpt- ban.
-  const isGptOss = lower.startsWith("gpt-oss") || tail.startsWith("gpt-oss");
-  for (const p of RESERVED_PREFIXES) {
-    if (isGptOss && p === "gpt-") continue;
-    if (lower.startsWith(p) || tail.startsWith(p)) return `model id "${model}" uses a reserved proprietary model name (${p}…)`;
-  }
-  return null;
-}
 
 // Unit-style self check: runs once per cold start, throws loudly if the rules regress.
 (function selfCheck() {

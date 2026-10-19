@@ -82,7 +82,8 @@ Deno.serve(async (req) => {
     try { endpointUrl = await validateEndpointUrl(body.endpoint_url, { allowPort, blockedHosts: await blockedHosts(admin), blockedDomains: [...GARAGE_DOMAINS] }); } catch (e) { return bad((e as Error).message); }
     const models = body.models;
     if (!Array.isArray(models) || models.length < 1 || models.length > 20 || !models.every((m) => typeof m === "string" && MODEL_RE.test(m))) return bad("models must be 1-20 valid model ids");
-    for (const m of models as string[]) { const err = modelIdError(m); if (err) return bad(err); }
+    // getCaller has already required an admin; vendor originals are valid here.
+    for (const m of models as string[]) { const err = modelIdError(m, true); if (err) return bad(err); }
     const prices: Record<string, number> = {};
     const p = (body.prices && typeof body.prices === "object") ? body.prices as Record<string, unknown> : {};
     for (const k of PRICE_KEYS) {

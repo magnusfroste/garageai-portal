@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Allow original vendor models in admin endpoint providers and aliases; retain garage restrictions, verify tests and deploy compatible functions
+
 - [x] Pass saved Auto priority into gateway routing params, add English/Swedish note; 18 tests passed and live /model/info verified integer orders 1/2/3 after normal reconciliation, without changing saved entries/prices
 
 - [x] Add account terms storage, own-user acceptance and signup recording; protect key/payment/garage actions
