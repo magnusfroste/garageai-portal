@@ -23,7 +23,7 @@ export async function ensureLiteLLMUser(admin: SupabaseClient, profile: { id: st
   if (foundId) {
     userId = foundId;
   } else {
-    const created = await fetch(`${base}/user/new`, { method: "POST", headers: headers(key), body: JSON.stringify({ user_id: profile.id, user_email: profile.email, max_budget: budget, user_role: "internal_user" }) });
+    const created = await fetch(`${base}/user/new`, { method: "POST", headers: headers(key), body: JSON.stringify({ user_id: profile.id, user_email: profile.email, max_budget: budget, user_role: "internal_user", auto_create_key: false }) });
     const body = await created.json().catch(() => ({}));
     if (created.status === 409) {
       const retryUrl = new URL(`${base}/user/info`);

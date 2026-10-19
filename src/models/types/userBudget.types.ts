@@ -1,4 +1,5 @@
 export interface UserBudget {
+  budget_pending?: boolean;
   max_budget: number;
   spend: number;
   budget_remaining: number;
