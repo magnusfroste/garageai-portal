@@ -11,3 +11,6 @@
 - Ops-test managed-model requests go through `managed-models-ops` (gateway key) and the shared `apply_managed_model_request`/`apply_managed_model_cancel` SQL path, limited to admin-owned garages, so nightly tests use the exact Add/Remove/Cancel rules and never touch operator machines.
 - Create every gateway key only through `_shared/portalKeys.createPortalKey`: internal unique alias `<uid8>-<slug>-<rand4>`, value returned once, portal keeps only last 4 + hashed token (`litellm_token`, used for revoke/info), because keys must be show-once and aliases globally unique.
 - gateway-targets lists paused garages with `paused: true`, `routed: false` and their tunnel fields so the hub keeps the peer; routing exclusion lives only in `isGatewayTarget`/syncModels.
+- Key creation/backfill share `_shared/keyLimits`; gateway user creation disables implicit keys, bounding per-key concurrency without creating unmanaged credentials.
+- Stripe reversals use current charge/dispute state and an event-idempotent, locked ledger RPC; gateway reconciliation retries even on duplicate events, preventing unpaid credits and overlapping reversals.
+- Missing initial gateway budgets fall back to profile credit with a pending flag; the balance hook retries pending results rather than caching a false zero.
