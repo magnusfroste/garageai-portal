@@ -1046,4 +1046,10 @@ export const sv: Record<string, string> = {
   "The key grants access to all available models.": "Nyckeln ger tillgång till alla tillgängliga modeller.",
   "Create Key": "Skapa nyckel",
   "Keys": "Nycklar",
+  "paused in the portal": "pausad i portalen",
+  "paused on the machine": "pausad på datorn",
+  "Couldn't save your chat setting. Please try again.": "Det gick inte att spara chattinställningen. Försök igen.",
+  "Off: chats stay only in this browser. On: they are also stored in your GarageAI account.": "Av: chattarna finns bara i den här webbläsaren. På: de sparas även i ditt GarageAI-konto.",
+  "Delete the chats saved in your account?": "Radera chattarna som sparats i ditt konto?",
+  "Change": "Ändra",
 };

@@ -17,7 +17,7 @@ export type ParsedState = { kind: "serving" } | { kind: "state"; state: AgentSta
 export function parseAgentState(raw: unknown): ParsedState {
   if (raw === undefined || raw === null) return { kind: "serving" };
   if (!isObj(raw)) return { kind: "ignored", error: "agent.state is not an object" };
-  if (raw.kind === "serving") return { kind: "serving" };
+  if (raw.kind === "serving" || raw.kind === "available") return { kind: "serving" };
   if (typeof raw.kind !== "string" || !KINDS.has(raw.kind)) return { kind: "ignored", error: "agent.state.kind invalid" };
   const reason = optStr(raw.reason, REASON_MAX), since = optIso(raw.since), until = optIso(raw.until);
   if (reason === undefined || since === undefined || until === undefined) return { kind: "ignored", error: "agent.state fields invalid" };
@@ -75,4 +75,16 @@ export function splitReturnModels(models: string[], latest: Map<string, { passed
     (t?.passed && offered.has(m) ? testAfter : testFirst).push(m);
   }
   return { testFirst, testAfter };
+}
+
+/** Bridge's `garageai resume` also lifts a portal pause the operator set themselves (never a GarageAI pause):
+ * when Bridge now reports serving and either it was in a planned state before, or it reports agent.resumed_at after the pause. */
+export function resumeClearsPortalPause(
+  garage: { paused_at?: string | null; paused_by_admin?: boolean | null },
+  prev: AgentState | null, next: AgentState | null, resumedAt: unknown,
+): boolean {
+  if (!garage.paused_at || garage.paused_by_admin || next) return false;
+  if (prev) return true;
+  const at = typeof resumedAt === "string" ? Date.parse(resumedAt) : NaN;
+  return Number.isFinite(at) && at >= Date.parse(garage.paused_at);
 }

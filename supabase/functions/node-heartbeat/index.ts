@@ -4,7 +4,7 @@ import { syncModels } from "../_shared/syncModels.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts, applyInventoryMisses } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
-import { parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, modelsToTestOnReturn, type AgentState } from "../_shared/agentState.ts";
+import { parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, modelsToTestOnReturn, resumeClearsPortalPause, type AgentState } from "../_shared/agentState.ts";
 import { heartbeatBridgeFields, parseBridgeUpdate, updateErrorVersion } from "../_shared/bridgeUpdate.ts";
 import { parseAgentModels, applyReports, pendingOffers, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
 import { parseMachineId, claimMachineId } from "../_shared/bridgeLink.ts";
@@ -48,6 +48,12 @@ Deno.serve(async (req) => {
     const machinePatch = claimMachineId(garage.machine_id, machineId); // { machine_id, last_machine_id } | { last_machine_id }
     const firstModels = !garage.first_models_at && payload.models.length > 0 ? { first_models_at: now } : {};
     await admin.from("garages").update({ last_heartbeat_at: now, ...machinePatch, ...firstModels, agent_state: agentState, ...(parsedNodes.nodes ? { agent_nodes: parsedNodes.nodes } : {}), ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
+    let portalResumed = false;
+    if (resumeClearsPortalPause(garage, prevState, agentState, agentRaw.resumed_at)) {
+      const { error: resumeErr } = await admin.from("garages").update({ paused_at: null, paused_reason: null }).eq("id", garage.id).eq("paused_by_admin", false);
+      if (resumeErr) console.warn("[node-heartbeat] portal resume", garage.name, resumeErr.message);
+      else { portalResumed = true; garage.paused_at = null; console.log("[node-heartbeat] garageai resume cleared portal pause", garage.name); }
+    }
     // Bridge release runs on our own garages drive auto promotion (RPC ignores non-admin, non-canary garages).
     if (parsedAgent.agent?.version) {
       const errVer = updateErrorVersion(parsedAgent.agent.version, bridge.bridge_stable, parsedAgent.agent.update?.last_error);
@@ -118,7 +124,7 @@ Deno.serve(async (req) => {
     const removed = [...previous].filter((model) => !current.has(model));
     const contextChanges = await changedContexts(admin, garage.id, payload.contexts ?? {});
     const contextChanged = Object.keys(contextChanges).some((m) => previous.has(m));
-    const changed = transition === "return" || offerNow.length > 0 || added.length > 0 || removedRows.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
+    const changed = transition === "return" || portalResumed || offerNow.length > 0 || added.length > 0 || removedRows.length > 0 || removed.length > 0 || garage.runtime !== payload.runtime || garage.port !== payload.port || contextChanged;
 
     if (!changed) {
       if (garage.status === "offline") {

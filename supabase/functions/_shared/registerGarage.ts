@@ -5,7 +5,7 @@ import { resolveGaragePeer } from "./tunnel.ts";
 import { runAndStoreAcceptanceTests, type AcceptanceResult } from "./acceptanceTest.ts";
 import { syncModels } from "./syncModels.ts";
 import { suggestPrice } from "./poolPricing.ts";
-import { normaliseModelId } from "./modelIdentity.ts";
+import { normaliseModelId, RUNTIME_RECOMMENDED } from "./modelIdentity.ts";
 import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
 import { linkSummary, type LinkSummary } from "./linkSummary.ts";
 import { syncInventory, storeContexts, CONTEXT_MIN, CONTEXT_MAX, CONTEXTS_MAX_ENTRIES } from "./garageModels.ts";
@@ -107,7 +107,7 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   try {
     const { data: cm } = await admin.from("curated_models").select("model_name");
     const known = new Set(((cm || []) as Array<{ model_name: string | null }>).map((r) => r.model_name).filter(Boolean));
-    summary = linkSummary(payload.models, offered, (m) => known.has(normaliseModelId(m)), acceptance);
+    summary = linkSummary(payload.models, offered, (m) => { const n = normaliseModelId(m); return known.has(n) || RUNTIME_RECOMMENDED.has(n); }, acceptance);
   } catch { summary = linkSummary(payload.models, offered, () => true, acceptance); }
   return { api_base: apiBase, models: payload.models, acceptance, catalog_synced: catalogSynced, summary };
 }
