@@ -107,7 +107,7 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   try {
     const { data: cm } = await admin.from("curated_models").select("model_name");
     const known = new Set(((cm || []) as Array<{ model_name: string | null }>).map((r) => r.model_name).filter(Boolean));
-    summary = linkSummary(payload.models, offered, (m) => known.has(normaliseModelId(m)), acceptance);
+    summary = linkSummary(payload.models, offered, (m) => { const n = normaliseModelId(m); return known.has(n) || RUNTIME_RECOMMENDED.has(n); }, acceptance);
   } catch { summary = linkSummary(payload.models, offered, () => true, acceptance); }
   return { api_base: apiBase, models: payload.models, acceptance, catalog_synced: catalogSynced, summary };
 }
