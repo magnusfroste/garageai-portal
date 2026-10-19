@@ -2,7 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Chat requests go straight from the browser to the EU gateway. Prompts never
 // pass through GarageAI servers. The only server calls are: fetching the
-// selected key's value once per session, and web-search queries (query only).
+// creation of this browser's chat key (stored only in the browser), and
+// web-search queries (query only). Key values are never read from the portal.
 export const GATEWAY_CHAT_URL = "https://llm.garageai.eu/v1/chat/completions";
 
 const MAX_SEARCH_ROUNDS = 3;
@@ -20,20 +21,9 @@ const SEARCH_SYSTEM =
   "You have access to the web_search tool. Use it when the question needs current or factual information. " +
   "Sources are numbered. Cite them as [1], [2], and so on, using the same numbers as the search results. Answer in the user's language.";
 
-// ---- Key value: fetched once per session, kept only in memory ----
-const keyCache = new Map<string, string>();
-
-export async function getChatKeyValue(keyId: string): Promise<string> {
-  const cached = keyCache.get(keyId);
-  if (cached) return cached;
-  const { data, error } = await supabase.functions.invoke("chat-key-value", { body: { key_id: keyId } });
-  if (error || !data?.key_value) throw new Error("key_unavailable");
-  keyCache.set(keyId, data.key_value as string);
-  return data.key_value as string;
-}
-
-export function forgetChatKeyValue(keyId: string): void {
-  keyCache.delete(keyId);
+/** Gateway HTTP failure; status 401 means the chat key no longer works. */
+export class GatewayHttpError extends Error {
+  constructor(public status: number, message: string) { super(message); this.name = "GatewayHttpError"; }
 }
 
 // ---- Web search: only the query string leaves the browser ----
@@ -78,7 +68,7 @@ async function streamOneRound(
   });
   if (!res.ok || !res.body) {
     const err = await res.json().catch(() => ({ error: "" }));
-    throw new Error(err?.error?.message || err?.error || `HTTP ${res.status}`);
+    throw new GatewayHttpError(res.status, String(err?.error?.message || err?.error || `HTTP ${res.status}`));
   }
   ev.onGarage(garageFromResponse(res));
 

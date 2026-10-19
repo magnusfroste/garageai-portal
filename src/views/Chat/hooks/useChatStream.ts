@@ -3,7 +3,9 @@ import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { t } from "@/i18n";
 import { messageCostUsd, tokensPerSecond } from "@/models/services/chatService";
-import { getChatKeyValue, streamChat } from "@/models/services/chatGateway";
+import { GatewayHttpError, streamChat } from "@/models/services/chatGateway";
+import { chatKeyService } from "@/models/services/chatKeyService";
+import { keyCreateFailedMessage } from "@/models/services/credentialErrors";
 import type { ModelInfo } from "@/models/types/model.types";
 import type { ChatAnswerMeta, ChatMessage, ChatSearchInfo } from "../types";
 
@@ -13,8 +15,8 @@ interface RunOptions {
   history: ChatMessage[];
   model: ModelInfo | undefined;
   modelId: string;
-  /** The user's own API key id; its value is fetched once and kept in memory. */
-  apiKeyId: string;
+  /** Signed-in user; the chat uses this browser's own key for them. */
+  userId: string;
   systemPrompt?: string;
   webSearch?: boolean;
 }
@@ -67,7 +69,9 @@ export const useChatStream = (setMessagesFor: SetFor) => {
     };
 
     try {
-      const keyValue = await getChatKeyValue(o.apiKeyId);
+      let keyValue: string;
+      try { keyValue = (await chatKeyService.get(o.userId)).key; }
+      catch { throw new Error("key_unavailable"); }
 
       let content = "";
       let reasoning = "";
@@ -78,9 +82,10 @@ export const useChatStream = (setMessagesFor: SetFor) => {
         patch({ content, reasoning: reasoning || undefined, search });
       };
 
-      await streamChat(
+      let sent = false;
+      const send = (key: string) => streamChat(
         {
-          keyValue,
+          keyValue: key,
           model: o.modelId,
           messages: o.history.map(({ role, content }) => ({ role, content })),
           systemPrompt: o.systemPrompt,
