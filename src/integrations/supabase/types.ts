@@ -1444,6 +1444,7 @@ export type Database = {
       profiles: {
         Row: {
           chat_sync: boolean
+          chat_sync_answered_at: string | null
           company: string | null
           connect_page_seen_at: string | null
           created_at: string
@@ -1463,6 +1464,7 @@ export type Database = {
         }
         Insert: {
           chat_sync?: boolean
+          chat_sync_answered_at?: string | null
           company?: string | null
           connect_page_seen_at?: string | null
           created_at?: string
@@ -1482,6 +1484,7 @@ export type Database = {
         }
         Update: {
           chat_sync?: boolean
+          chat_sync_answered_at?: string | null
           company?: string | null
           connect_page_seen_at?: string | null
           created_at?: string
@@ -1793,6 +1796,7 @@ export type Database = {
         }
         Returns: Json
       }
+      set_chat_sync: { Args: { _on: boolean }; Returns: Json }
       set_garage_canary: {
         Args: { _canary: boolean; _garage_id: string }
         Returns: undefined
