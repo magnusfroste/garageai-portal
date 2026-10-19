@@ -1,5 +1,6 @@
 // Read-only business aggregates for the gateway Operations Center. Auth: x-gateway-key (like gateway-targets).
 // Returns counts and sums only: never e-mails, names, keys, Stripe ids or other personal data.
+import { buyerFunnel, FUNNEL_DAYS } from "../_shared/buyerFunnel.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
@@ -167,6 +168,34 @@ async function bridgeVersions(admin: SupabaseClient) {
   return bridgeVersionsSummary(setting.data?.value, garages.data ?? [], update.data?.value);
 }
 
+async function sha256Hex(s: string) {
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Last-30-day buyer funnel; first successful request comes from customer hourly stats (internal keys excluded). */
+// deno-lint-ignore no-explicit-any
+async function buyers30d(admin: any) {
+  const since = new Date(Date.now() - FUNNEL_DAYS * 24 * H).toISOString();
+  const { data: profs } = await admin.from("profiles").select("id, created_at, terms_accepted_at").gte("created_at", since);
+  const ids = ((profs || []) as Array<{ id: string }>).map((p) => p.id);
+  if (!ids.length) return buyerFunnel([]);
+  const { data: keys } = await admin.from("api_keys").select("user_id, created_at, litellm_token, internal").in("user_id", ids).eq("internal", false);
+  const firstKey = new Map<string, string>(), tokenOwner = new Map<string, string>();
+  for (const k of (keys || []) as Array<{ user_id: string; created_at: string; litellm_token: string | null }>) {
+    if (!firstKey.has(k.user_id) || k.created_at < firstKey.get(k.user_id)!) firstKey.set(k.user_id, k.created_at);
+    if (k.litellm_token) tokenOwner.set(await sha256Hex(k.litellm_token), k.user_id);
+  }
+  const firstReq = new Map<string, string>();
+  const { data: stats } = await admin.from("customer_garage_model_stats_hourly").select("hour, requests, failures, api_keys").gte("hour", since).order("hour", { ascending: true }).limit(20000);
+  for (const r of (stats || []) as Array<{ hour: string; requests: number; failures: number; api_keys: string[] }>) {
+    if (Number(r.requests) <= Number(r.failures)) continue;
+    for (const h of r.api_keys || []) { const u = tokenOwner.get(h); if (u && !firstReq.has(u)) firstReq.set(u, r.hour); }
+  }
+  return buyerFunnel(((profs || []) as Array<{ id: string; created_at: string; terms_accepted_at: string | null }>).map((p) => ({
+    id: p.id, created_at: p.created_at, terms_accepted_at: p.terms_accepted_at, first_key_at: firstKey.get(p.id) ?? null, first_request_at: firstReq.get(p.id) ?? null,
+  })));
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "GET") return gatewayJson({ error: "Method not allowed" }, 405);
   if (!(await isGatewayAuthorized(req))) return gatewayJson({ error: "Unauthorized" }, 401);
@@ -176,7 +205,7 @@ Deno.serve(async (req) => {
     const now = Date.now(), d1 = new Date(now - 24 * H).toISOString(), d7 = new Date(now - 7 * 24 * H).toISOString();
     const base = await timed(getProxyBaseUrl(admin), null as string | null);
 
-    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel, auto, versions] = await Promise.all([
+    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel, auto, versions, buyerFunnel30d] = await Promise.all([
       admin.from("profiles").select("id, created_at, litellm_user_id, starting_credit_usd, purchased_credits_usd"),
       admin.from("api_keys").select("user_id, key_value, litellm_token"),
       admin.from("chat_conversations").select("user_id, updated_at").gte("updated_at", d7),
@@ -184,7 +213,7 @@ Deno.serve(async (req) => {
       base ? timed(keySpend(base, master, 1), null) : Promise.resolve(null),
       base ? timed(keySpend(base, master, 7), null) : Promise.resolve(null),
       timed(pendingCheckouts(), null),
-      operators(admin), onboarding(admin), adminActivity(admin), timed(onboardingFunnel(admin), null), timed(autoSummary(admin, base, master), null), timed(bridgeVersions(admin), null),
+      operators(admin), onboarding(admin), adminActivity(admin), timed(onboardingFunnel(admin), null), timed(autoSummary(admin, base, master), null), timed(bridgeVersions(admin), null), timed(buyers30d(admin), null),
     ]);
     const profiles = (profilesRes.data || []) as Array<{ id: string; created_at: string; litellm_user_id: string | null; starting_credit_usd: number; purchased_credits_usd: number }>;
     const keyOwner = new Map<string, string>();
@@ -220,6 +249,7 @@ Deno.serve(async (req) => {
         active_24h: spend1 ? active1.size : null,
         low_credit: low,
       },
+      buyer_funnel: buyerFunnel30d,
       credits: { topups_24h: sum(d1), topups_7d: sum(d7), outstanding_balance_usd: outstanding == null ? null : round(outstanding) },
       stripe: { last_webhook_at: null, last_topup_at: tx[0]?.created_at ?? null, failed_webhooks_24h: null, pending_checkouts: pending },
       operators: ops,
