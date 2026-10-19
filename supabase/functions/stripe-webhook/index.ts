@@ -37,7 +37,8 @@ serve(async (req) => {
       const reversal = await resolveStripeReversal(stripe, event);
       if (reversal) {
         // Delivery order is not guaranteed; establish the original grant before reversing it.
-        await grantCheckoutCredits(admin, reversal);
+        // Never briefly raise a disputed account's gateway budget before the debit.
+        await grantCheckoutCredits(admin, reversal, false);
         await reverseCheckoutCredits(admin, reversal);
       }
     }
