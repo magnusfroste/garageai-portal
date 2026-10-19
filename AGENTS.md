@@ -1,6 +1,6 @@
 # Project architecture
 
-- Subdirectories have their own `AGENTS.md`; read it before changing files there.
+- Read subdirectory `AGENTS.md` before edits; backend provider rules live there.
 - Public garage cards/headers use shared public service/header, aggregate RPCs and canonical identities, never runtime ids.
 - Flow: repositories → services/models → hooks → views.
 - Derive admin garage status, attention, filtering and sorting in the shared presentation service, so all admin views agree.

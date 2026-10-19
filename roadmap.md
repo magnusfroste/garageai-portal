@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Allow original vendor models in admin endpoint providers and aliases; retain garage restrictions, verify tests and deploy compatible functions
+- [x] Allow original vendor models in admin endpoint providers and aliases; retain garage restrictions; native Anthropic adapter shared by probes/routes; 42 tests pass, compatible functions deployed and authenticated live validation checked without writes
+- [ ] Verify a real Anthropic provider save and paid response — requires provider credential and an explicitly selected available model; no provider/account records changed during validation
 
 - [x] Pass saved Auto priority into gateway routing params, add English/Swedish note; 18 tests passed and live /model/info verified integer orders 1/2/3 after normal reconciliation, without changing saved entries/prices
 
