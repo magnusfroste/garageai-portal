@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Credit hardening: shared key limits and live non-internal backfill; refund/dispute accounting; rename-only key permissions; no implicit gateway keys; initial-balance retry; tests and compatible deployment (no plaintext wipe)
+- [x] Credit hardening: shared key limits, 27-key verified backfill (4 internal excluded), atomic refund/dispute ledger and Stripe subscriptions, rename-only permissions, no implicit gateway keys, initial-balance fallback/retry; 34 tests and rollback SQL passed; no plaintext wipe
+- [ ] Verify initial balance in a real signed-in signup flow — blocked: requester has no matching account/session
 
 - [x] Allow original vendor models in admin endpoint providers and aliases; retain garage restrictions; native Anthropic adapter shared by probes/routes; 42 tests pass, compatible functions deployed and authenticated live validation checked without writes
 - [ ] Verify a real Anthropic provider save and paid response — requires provider credential and an explicitly selected available model; no provider/account records changed during validation
