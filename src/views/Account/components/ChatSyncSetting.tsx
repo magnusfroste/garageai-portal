@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useChatSync } from "@/views/Chat/hooks/useChatSync";
@@ -8,6 +8,7 @@ import { t } from "@/i18n";
 export const ChatSyncSetting = () => {
   const sync = useChatSync();
   const [confirming, setConfirming] = useState(false);
+  useEffect(() => { if (window.location.hash === "#chat-sync") document.getElementById("chat-sync")?.scrollIntoView({ block: "start" }); }, []);
   const on = sync.state === "on";
   return (
     <section id="chat-sync" className="scroll-mt-16 rounded-lg border border-border p-4 space-y-2">
