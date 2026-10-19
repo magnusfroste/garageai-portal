@@ -1,3 +1,4 @@
+import { ACCOUNT_TERMS_REQUIRED } from "@/models/services/accountTermsService";
 import { checkoutFailedMessage } from "@/models/services/credentialErrors";
 import { t } from "@/i18n";
 import { useState, useEffect, useRef } from "react";
