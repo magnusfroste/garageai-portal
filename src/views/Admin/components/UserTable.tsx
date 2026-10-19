@@ -31,6 +31,7 @@ export const UserTable = ({ users, onEdit, isUpdating }: UserTableProps) => {
             <TableHead>Remaining</TableHead>
             <TableHead>Registered</TableHead>
             <TableHead>{t("Terms version")}</TableHead>
+            <TableHead>{t("Keys")}</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -72,6 +73,7 @@ export const UserTable = ({ users, onEdit, isUpdating }: UserTableProps) => {
                   {format(new Date(user.created_at), "yyyy-MM-dd")}
                 </TableCell>
                 <TableCell className="text-xs">{user.terms_version || "—"}</TableCell>
+                <TableCell className="text-xs tabular-nums">{user.api_key_count ?? 0}</TableCell>
                 <TableCell className="text-right space-y-1">
                   <div className="flex items-center justify-end gap-2">
                     {user.litellm_user_id && (

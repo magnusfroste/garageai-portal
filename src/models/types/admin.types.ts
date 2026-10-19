@@ -10,6 +10,7 @@ export interface AdminUser {
   } | null;
   created_at: string;
   terms_version: string | null;
+  api_key_count?: number;
 }
 
 export interface UpdateUserPayload {

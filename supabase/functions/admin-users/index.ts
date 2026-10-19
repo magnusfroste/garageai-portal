@@ -70,7 +70,7 @@ serve(async (req: Request) => {
     // Get API key counts per user
     const { data: keyCounts, error: keyError } = await supabase
       .from("api_keys")
-      .select("user_id");
+      .select("user_id").eq("is_active", true).is("revoked_at", null);
 
     if (keyError) {
       console.error("Error fetching key counts:", keyError);
