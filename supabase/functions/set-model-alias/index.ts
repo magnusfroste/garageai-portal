@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
           ? "private model name must be a safe slug (a-z, 0-9, . _ -, optional creator/)"
           : "canonical must be <creator>/<model>, matching ^[a-z0-9.-]+/[a-z0-9._-]+$" }, 400);
       }
-      const err = modelIdError(canonical);
+      const err = modelIdError(canonical, true);
       if (err) return json({ error: err }, 400);
     }
     const { data: garage } = await admin.from("garages").select("id, connection_type").eq("name", name).maybeSingle();
