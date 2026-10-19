@@ -1,4 +1,3 @@
-import { chatStartFailedMessage } from "@/models/services/credentialErrors";
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { t } from "@/i18n";

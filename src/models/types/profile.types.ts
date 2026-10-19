@@ -9,6 +9,7 @@ export interface Profile {
   terms_version: string | null;
   terms_accepted_at: string | null;
   chat_sync: boolean;
+  default_key_at: string | null;
 }
 
 export interface ProfileUpdateData {

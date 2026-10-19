@@ -5,7 +5,7 @@ export class ProfileRepository {
   async findById(userId: string): Promise<Profile | null> {
     const { data, error } = await supabase
       .from("profiles")
-      .select("full_name, email, company, purchased_credits_usd, signup_intent, onboarding_done, preferred_language, terms_version, terms_accepted_at, chat_sync")
+      .select("full_name, email, company, purchased_credits_usd, signup_intent, onboarding_done, preferred_language, terms_version, terms_accepted_at, chat_sync, default_key_at")
       .eq("id", userId)
       .single();
 
