@@ -1,3 +1,5 @@
+import { keyCreateFailedMessage } from "@/models/services/credentialErrors";
+import { ACCOUNT_TERMS_REQUIRED } from "@/models/services/accountTermsService";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -139,7 +141,7 @@ export const ChatPage = () => {
           if (!keyId) throw new Error(t("The Chat API key could not be loaded."));
           chooseKey(keyId);
         } catch (error) {
-          setSendError(error instanceof Error ? error.message : t("We couldn't create your Chat API key. Try again or create one under API keys."));
+          setSendError(error instanceof Error && error.message === t(ACCOUNT_TERMS_REQUIRED) ? error.message : keyCreateFailedMessage());
           return;
         }
       }

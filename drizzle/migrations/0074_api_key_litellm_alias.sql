@@ -1,0 +1,2 @@
+ALTER TABLE public.api_keys ADD COLUMN IF NOT EXISTS litellm_alias text;
+CREATE UNIQUE INDEX IF NOT EXISTS api_keys_litellm_alias_key ON public.api_keys (litellm_alias) WHERE litellm_alias IS NOT NULL;

@@ -90,6 +90,7 @@ export type Database = {
           internal: boolean
           is_active: boolean
           key_value: string
+          litellm_alias: string | null
           litellm_token: string | null
           name: string
           revoked_at: string | null
@@ -104,6 +105,7 @@ export type Database = {
           internal?: boolean
           is_active?: boolean
           key_value: string
+          litellm_alias?: string | null
           litellm_token?: string | null
           name: string
           revoked_at?: string | null
@@ -118,6 +120,7 @@ export type Database = {
           internal?: boolean
           is_active?: boolean
           key_value?: string
+          litellm_alias?: string | null
           litellm_token?: string | null
           name?: string
           revoked_at?: string | null

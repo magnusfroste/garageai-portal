@@ -257,8 +257,8 @@ serve(async (req) => {
 
     const response: KeyUsageResponse = {
       info: {
-        key_name: keyInfo.key_name || keyInfo.key_alias || apiKeyData.name,
-        key_alias: keyInfo.key_alias || apiKeyData.name,
+        key_name: apiKeyData.name,
+        key_alias: apiKeyData.name, // internal gateway alias is never shown
         spend,
         max_budget: maxBudget,
         budget_remaining: maxBudget ? maxBudget - spend : 0,

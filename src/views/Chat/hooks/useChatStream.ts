@@ -1,3 +1,4 @@
+import { chatStartFailedMessage } from "@/models/services/credentialErrors";
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { t } from "@/i18n";
@@ -133,7 +134,7 @@ export const useChatStream = (setMessagesFor: SetFor) => {
         return;
       }
       if (e instanceof Error && e.message === "key_unavailable") {
-        toast.error(t("The selected API key could not be loaded"));
+        toast.error(chatStartFailedMessage());
       } else {
         console.error("Chat stream error:", e instanceof Error ? e.name : "unknown");
         toast.error(t("Could not connect to the model"));
