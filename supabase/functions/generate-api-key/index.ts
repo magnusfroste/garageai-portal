@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 import { internalAlias } from "../_shared/internalTraffic.ts";
 import { ensureLiteLLMUser } from "../_shared/litellmUsers.ts";
+import { litellmKeyAlias } from "../_shared/keyAlias.ts";
 
 import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 interface GenerateKeyRequest {
@@ -45,6 +46,7 @@ const respondWithError = (status: number, code: string, message: string): Respon
 async function createLiteLLMKey(
   base: string,
   keyName: string,
+  keyAlias: string,
   masterKey: string,
   litellmUserId: string,
   models?: string[],
@@ -67,7 +69,7 @@ async function createLiteLLMKey(
     rpm_limit?: number;
     metadata: { internal: boolean };
   } = {
-    key_alias: keyName,
+    key_alias: keyAlias,
     metadata: { internal: internalAlias(keyName) },
     user_id: litellmUserId,
     rpm_limit: rpmLimit,
@@ -96,7 +98,10 @@ async function createLiteLLMKey(
   console.log('LiteLLM API response:', { status: response.status, key_alias: data?.key_alias });
   
   if (!response.ok) {
-    throw new Error(data.error || `LiteLLM API error: ${response.status}`);
+    const detail = typeof data?.error === 'string' ? data.error : JSON.stringify(data?.error ?? data?.detail ?? '').slice(0, 300);
+    const err = new Error(`LiteLLM key/generate ${response.status}: ${detail}`) as Error & { aliasTaken?: boolean };
+    err.aliasTaken = /alias/i.test(detail) && /exist/i.test(detail);
+    throw err;
   }
 
   return data;
@@ -166,15 +171,17 @@ serve(async (req: Request) => {
       const ensured = await ensureLiteLLMUser(supabase, profile);
       const { data: rpmSetting } = await supabase.from('admin_settings').select('value').eq('key', 'key_rpm_limit').maybeSingle();
       const rpmLimit = Math.max(1, Number(rpmSetting?.value ?? 60));
-      const liteLLMResponse = await createLiteLLMKey(
-        proxyBase,
-        body.keyName,
-        LITELLM_MASTER_KEY,
-        ensured.userId,
-        body.models,
-        undefined,
-        rpmLimit,
-      );
+      // Internal alias is unique across all users; the portal keeps the typed name.
+      let keyAlias = litellmKeyAlias(user.id, body.keyName);
+      const attempt = () => createLiteLLMKey(proxyBase, body.keyName!, keyAlias, LITELLM_MASTER_KEY, ensured.userId, body.models, undefined, rpmLimit);
+      let liteLLMResponse;
+      try {
+        liteLLMResponse = await attempt();
+      } catch (e) {
+        if (!(e as { aliasTaken?: boolean }).aliasTaken) throw e;
+        keyAlias = litellmKeyAlias(user.id, body.keyName);
+        liteLLMResponse = await attempt();
+      }
       
       console.log('LiteLLM response structure:', {
         hasKey: !!liteLLMResponse.key,
@@ -191,6 +198,7 @@ serve(async (req: Request) => {
           internal: internalAlias(body.keyName),
           key_value: liteLLMResponse.key,
           litellm_token: liteLLMResponse.token || null,
+          litellm_alias: keyAlias,
           expires_at: null,
           trial_credits_usd: Number(profile.starting_credit_usd || 0),
           used_credits_usd: 0,
@@ -207,7 +215,7 @@ serve(async (req: Request) => {
           details: dbError.details,
           hint: dbError.hint,
           orphanedKey: {
-            key_alias: body.keyName,
+            key_alias: keyAlias,
             user_id: user.id,
             litellm_token: liteLLMResponse.token
           }
@@ -237,13 +245,12 @@ serve(async (req: Request) => {
       });
     } catch (error) {
       console.error('Error creating LiteLLM key:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Failed to generate API key';
-      return respondWithError(500, 'litellm_error', errorMsg);
+      // Details stay in the logs; the client shows a plain message.
+      return respondWithError(502, 'key_create_failed', 'Your key could not be created right now.');
     }
 
   } catch (error) {
     console.error('Error in generate-api-key function:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    return respondWithError(500, 'internal_error', errorMessage);
+    return respondWithError(500, 'key_create_failed', 'Your key could not be created right now.');
   }
 });
