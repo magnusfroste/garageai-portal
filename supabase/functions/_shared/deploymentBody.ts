@@ -1,4 +1,5 @@
 // Pure: the exact /model/new body for a garage deployment (no runtime imports, so tests can load it).
+import { providerUpstream } from "./providerProtocol.ts";
 /** Placeholder sent to runtimes without auth (e.g. Ollama); the openai provider needs some key. */
 export const NO_KEY = "garage-node";
 export interface DeploymentBodySpec {
@@ -15,7 +16,7 @@ export const deploymentOrderMatches = (order: number | undefined, params?: { ord
 export function deploymentBody(s: DeploymentBodySpec) {
   return {
       model_name: s.route,
-      litellm_params: { model: `openai/${s.model}`, api_base: s.apiBase, api_key: s.apiKey || NO_KEY, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6, cache_read_input_token_cost: s.cacheRead / 1e6,
+      litellm_params: { ...providerUpstream(s.model, s.apiBase, s.garage.connection_type), api_key: s.apiKey || NO_KEY, input_cost_per_token: s.input / 1e6, output_cost_per_token: s.output / 1e6, cache_read_input_token_cost: s.cacheRead / 1e6,
         ...(s.tier === "pool" && s.weight != null ? { weight: s.weight } : {}),
         ...(s.order != null ? { order: s.order } : {}) },
       model_info: { id: s.id, mode: "chat", garage: s.garage.name, operator_id: s.garage.operator_id, runtime: s.garage.runtime, garage_tier: s.tier, connection_type: s.garage.connection_type || "mesh", key_fingerprint: s.keyFp, cache_read_input_token_cost: s.cacheRead / 1e6,

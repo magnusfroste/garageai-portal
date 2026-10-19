@@ -2,6 +2,7 @@
 import { assignPoolWeights } from "./poolPricing.ts";
 import { modelTierPrice, type ModelPrices } from './modelPrices.ts';
 import { deploymentBody, deploymentOrderMatches } from "./deploymentBody.ts";
+import { providerUpstream } from "./providerProtocol.ts";
 import { modelIdError } from "./modelValidation.ts";
 export { modelIdError, MODEL_ID_RE } from "./modelValidation.ts";
 import { isProbeDeployment, isStaleProbe } from "./probeDeployments.ts";
@@ -187,7 +188,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     for (const m of missing) {
       let ctx = fromRuntime.get(m);
       if (!ctx) for (const d of deps) {
-        if (d.model_info?.garage === g.name && d.litellm_params?.model === `openai/${m}`) { const n = Number(d.model_info?.max_input_tokens); if (Number.isFinite(n) && n > 0) { ctx = n; break; } }
+        if (d.model_info?.garage === g.name && d.litellm_params?.model === providerUpstream(m, apiBase ?? "", g.connection_type).model) { const n = Number(d.model_info?.max_input_tokens); if (Number.isFinite(n) && n > 0) { ctx = n; break; } }
       }
       if (!ctx) continue;
       const cur = ids.get(`${g.id}::${m}`);
@@ -271,8 +272,9 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     const cost = Number(d.model_info?.input_cost_per_token ?? d.litellm_params?.input_cost_per_token ?? NaN);
     const outputCost = Number(d.model_info?.output_cost_per_token ?? d.litellm_params?.output_cost_per_token ?? NaN);
     const cacheCost = Number(d.model_info?.cache_read_input_token_cost ?? d.litellm_params?.cache_read_input_token_cost ?? NaN);
+    const upstream = want ? providerUpstream(want.model, want.apiBase, want.garage.connection_type) : null;
     // Compare exactly what addDeployment writes; the key via its fingerprint (missing marker = stale, rewrite once).
-    const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== `openai/${want.model}` || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== want.apiBase || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12
+    const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== upstream?.model || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== upstream?.api_base || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12
       || !Number.isFinite(cacheCost) || Math.abs(cacheCost - want.cacheRead / 1e6) > 1e-12
       || !deploymentOrderMatches(want.order, d.litellm_params, d.model_info)
       || (want.tier === "pool" && want.weight != null && Number(d.litellm_params?.weight) !== want.weight)
