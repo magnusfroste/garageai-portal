@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { ArrowDown, Menu, PanelLeft, SlidersHorizontal, SquarePen } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -227,7 +227,7 @@ export const ChatPage = () => {
             <div className="w-full max-w-[760px] space-y-6">
               <ChatEmptyState onPick={(p) => composer.current?.fill(p)} />
               {composerEl}
-              <p className="text-center text-[11px] text-muted-foreground">{privacyLine}</p>
+              <p className="text-center text-[11px] text-muted-foreground">{privacyLine} <Link to="/dashboard/account#chat-sync" className="underline underline-offset-2 hover:text-foreground">{t("Change")}</Link></p>
             </div>
           </div>
         ) : (
@@ -247,7 +247,7 @@ export const ChatPage = () => {
             <div className="shrink-0 px-4 pb-4 pt-1">
               <div className="mx-auto w-full max-w-[760px]">
                 {composerEl}
-                <p className="mt-2 text-center text-[11px] text-muted-foreground">{privacyLine}</p>
+                <p className="mt-2 text-center text-[11px] text-muted-foreground">{privacyLine} <Link to="/dashboard/account#chat-sync" className="underline underline-offset-2 hover:text-foreground">{t("Change")}</Link></p>
               </div>
             </div>
           </>
