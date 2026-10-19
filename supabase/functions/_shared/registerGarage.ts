@@ -5,7 +5,7 @@ import { resolveGaragePeer } from "./tunnel.ts";
 import { runAndStoreAcceptanceTests, type AcceptanceResult } from "./acceptanceTest.ts";
 import { syncModels } from "./syncModels.ts";
 import { suggestPrice } from "./poolPricing.ts";
-import { normaliseModelId } from "./modelIdentity.ts";
+import { normaliseModelId, RUNTIME_RECOMMENDED } from "./modelIdentity.ts";
 import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
 import { linkSummary, type LinkSummary } from "./linkSummary.ts";
 import { syncInventory, storeContexts, CONTEXT_MIN, CONTEXT_MAX, CONTEXTS_MAX_ENTRIES } from "./garageModels.ts";
