@@ -1,3 +1,4 @@
+import { checkoutFailedMessage } from "@/models/services/credentialErrors";
 import { t } from "@/i18n";
 import { useState, useEffect, useRef } from "react";
 import { Loader2, TrendingUp, TrendingDown, Wallet } from "lucide-react";
@@ -99,7 +100,7 @@ export const CreditsPage = () => {
       }
     } catch (err) {
       console.error("Checkout error:", err);
-      toast.error(err instanceof Error ? err.message : t("Failed to start checkout"));
+      toast.error(err instanceof Error && err.message === t(ACCOUNT_TERMS_REQUIRED) ? err.message : checkoutFailedMessage());
     } finally {
       setLoadingPack(null);
     }

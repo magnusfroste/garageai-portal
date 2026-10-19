@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiKeyService } from "@/models/services/apiKeyService";
 import { t } from "@/i18n";
+import { keyCreateFailedMessage } from "@/models/services/credentialErrors";
 import { ACCOUNT_TERMS_REQUIRED } from "@/models/services/accountTermsService";
 
 export interface ChatKeyOption { id: string; name: string; is_active: boolean }
@@ -31,7 +32,7 @@ const CreateKey = ({ onCreated, compact }: { onCreated: () => Promise<unknown>; 
       toast.success(t("API key created"));
       setOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error && error.message === t(ACCOUNT_TERMS_REQUIRED) ? error.message : t("Couldn't create API key"));
+      toast.error(error instanceof Error && error.message === t(ACCOUNT_TERMS_REQUIRED) ? error.message : keyCreateFailedMessage());
     } finally {
       setBusy(false);
     }

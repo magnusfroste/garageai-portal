@@ -1013,4 +1013,7 @@ export const sv: Record<string, string> = {
   "Internal test traffic": "Intern testtrafik",
   "Internal keys": "Interna nycklar",
   "{r} requests · {tk} tokens": "{r} förfrågningar · {tk} tokens",
+  "Your key could not be created right now. Try again in a minute; if it keeps failing, write to hello@garageai.eu.": "Din nyckel kunde inte skapas just nu. Försök igen om en minut; om det fortsätter, skriv till hello@garageai.eu.",
+  "The chat could not start right now. Try again in a minute; if it keeps failing, write to hello@garageai.eu.": "Chatten kunde inte starta just nu. Försök igen om en minut; om det fortsätter, skriv till hello@garageai.eu.",
+  "Checkout could not start right now. Try again in a minute; if it keeps failing, write to hello@garageai.eu.": "Betalningen kunde inte starta just nu. Försök igen om en minut; om det fortsätter, skriv till hello@garageai.eu.",
 };

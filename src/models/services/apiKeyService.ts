@@ -3,6 +3,7 @@ import { apiKeyRepository } from "@/data/repositories/apiKeyRepository";
 import { ApiKey, CreateApiKeyDto } from "@/models/types/apiKey.types";
 
 import { accountTermsService } from "./accountTermsService";
+import { keyCreateFailedMessage } from "./credentialErrors";
 export class ApiKeyService {
   async getKeysForCurrentUser(): Promise<ApiKey[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -26,7 +27,7 @@ export class ApiKeyService {
       },
     });
 
-    if (error) throw error;
+    if (error) throw new Error(keyCreateFailedMessage());
   }
 
 }

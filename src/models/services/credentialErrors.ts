@@ -14,3 +14,13 @@ export function limitMessage(code: string): string | null {
 
 export const garageLimitMessage = () =>
   t("You have {n} garages. Remove one under My garages, or connect this machine as one of them").replace("{n}", String(MAX_GARAGES));
+
+/** Plain message when an API key cannot be created (never a raw function error). */
+export const keyCreateFailedMessage = () =>
+  t("Your key could not be created right now. Try again in a minute; if it keeps failing, write to hello@garageai.eu.");
+/** Plain message when the chat cannot start. */
+export const chatStartFailedMessage = () =>
+  t("The chat could not start right now. Try again in a minute; if it keeps failing, write to hello@garageai.eu.");
+/** Plain message when checkout cannot start. */
+export const checkoutFailedMessage = () =>
+  t("Checkout could not start right now. Try again in a minute; if it keeps failing, write to hello@garageai.eu.");
