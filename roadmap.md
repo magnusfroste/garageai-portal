@@ -1,6 +1,8 @@
 # Roadmap
 
-- [ ] My machine: heartbeat-owned free private deployments, owner visibility control, public exclusions, owner chat picker and API copy; migrate, test live, deploy and publish together
+- [x] My machine: heartbeat-owned free private deployments, owner visibility control, public exclusions, owner chat picker and API copy; migration 0079 applied, functions deployed, 93 tests passed; live 12 free private routes, paused retention and owner/other request checks verified; publish requested
+- [ ] My machine signed-in visibility save/readback — blocked: requester has no matching auth account and explicit-account session approval is unavailable; desktop/mobile owner fixtures verified
+- [ ] Gateway /v1/models listing — existing gateway returns 422 for both temporary owner and other keys; private owner requests return 200, other requests 404; portal picker uses protected owner reads independently
 
 - [x] Credit hardening: shared key limits, 27-key verified backfill (4 internal excluded), atomic refund/dispute ledger and Stripe subscriptions, rename-only permissions, no implicit gateway keys, initial-balance fallback/retry; 34 tests and rollback SQL passed; no plaintext wipe
 - [ ] Verify initial balance in a real signed-in signup flow — blocked: requester has no matching account/session
