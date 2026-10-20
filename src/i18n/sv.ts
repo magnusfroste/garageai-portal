@@ -414,6 +414,8 @@ export const sv: Record<string, string> = {
   "No models found": "Inga modeller hittades",
   "Pool – we pick the best available garage": "Pool – vi väljer det bästa tillgängliga garaget",
   "Specific garage": "Specifikt garage",
+  "Your machine": "Din dator",
+  "{g} · your machine": "{g} · din dator",
   "API key": "API-nyckel",
   "Select key…": "Välj nyckel…",
   "Master key (admin)": "Huvudnyckel (admin)",
