@@ -935,7 +935,6 @@ export const sv: Record<string, string> = {
   "Memory unknown: run garageai connect again so Bridge reports this machine.": "Minnet är okänt: kör garageai connect igen så rapporterar Bridge datorn.",
   "No models to add right now.": "Inga modeller att lägga till just nu.",
   "What should my garage offer?": "Vad ska mitt garage erbjuda?",
-  "Your machine": "Din dator",
   "Memory unknown": "Minnet okänt",
   "Runs models up to about {b}B parameters well (Q4).": "Kör modeller upp till cirka {b}B parametrar bra (Q4).",
   "Run garageai connect again so Bridge reports this machine.": "Kör garageai connect igen så rapporterar Bridge datorn.",
