@@ -47,7 +47,7 @@ export function groupByBucket<T extends { updatedAt: number }>(items: T[]): Reco
 export function orderChatModels<T extends Pick<ModelInfo, "id" | "model_name" | "garage_tier">>(models: T[]): { pool: T[]; garage: T[] } {
   const byName = (a: T, b: T) => (a.model_name || a.id).localeCompare(b.model_name || b.id);
   return {
-    pool: models.filter((m) => m.garage_tier !== "dedicated").sort((a, b) => Number(b.garage_tier === "auto") - Number(a.garage_tier === "auto") || byName(a, b)),
+    pool: models.filter((m) => m.garage_tier !== "dedicated" && m.garage_tier !== 'private' && !m.id.startsWith('mine/')).sort((a, b) => Number(b.garage_tier === "auto") - Number(a.garage_tier === "auto") || byName(a, b)),
     garage: models.filter((m) => m.garage_tier === "dedicated").sort(byName),
   };
 }

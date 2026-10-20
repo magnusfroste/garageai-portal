@@ -1200,6 +1200,7 @@ export type Database = {
           tunnel_ip: string | null
           tunnel_public_key: string | null
           updated_at: string
+          visibility: string
         }
         Insert: {
           agent?: Json | null
@@ -1259,6 +1260,7 @@ export type Database = {
           tunnel_ip?: string | null
           tunnel_public_key?: string | null
           updated_at?: string
+          visibility?: string
         }
         Update: {
           agent?: Json | null
@@ -1318,6 +1320,7 @@ export type Database = {
           tunnel_ip?: string | null
           tunnel_public_key?: string | null
           updated_at?: string
+          visibility?: string
         }
         Relationships: []
       }
@@ -1799,6 +1802,7 @@ export type Database = {
       }
       mark_connect_page_seen: { Args: never; Returns: undefined }
       mark_offer_page_seen: { Args: { _garage_id: string }; Returns: undefined }
+      market_garage_visible: { Args: { _name: string }; Returns: boolean }
       model_demand: {
         Args: never
         Returns: {
@@ -1873,6 +1877,10 @@ export type Database = {
       }
       set_garage_smart: {
         Args: { _disk_gb?: number; _garage_id: string; _smart: boolean }
+        Returns: undefined
+      }
+      set_machine_visibility: {
+        Args: { _garage_id: string; _visibility: string }
         Returns: undefined
       }
       set_operator_model_prices: {

@@ -1,5 +1,7 @@
-import { describe, it, expect } from "bun:test";
-import { modelsToRetest, isModelSellable, deploymentId, type RoutingGarage } from "../../supabase/functions/_shared/garageRouting";
+import { describe, it, expect, mock } from "bun:test";
+mock.module('https://esm.sh/@supabase/supabase-js@2.45.0', () => ({ createClient: () => null }));
+const { modelsToRetest, isModelSellable, deploymentId } = await import('../../supabase/functions/_shared/garageRouting');
+import type { RoutingGarage } from '../../supabase/functions/_shared/garageRouting';
 import { inventoryMisses } from "../../supabase/functions/_shared/garageModels";
 
 const now = Date.parse("2026-10-13T11:50:00Z");

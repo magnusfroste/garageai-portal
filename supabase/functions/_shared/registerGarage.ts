@@ -9,7 +9,7 @@ import { normaliseModelId, RUNTIME_RECOMMENDED } from "./modelIdentity.ts";
 import { ALLOWED_GARAGE_PORTS } from "./garageConfig.ts";
 import { linkSummary, type LinkSummary } from "./linkSummary.ts";
 import { syncInventory, storeContexts, CONTEXT_MIN, CONTEXT_MAX, CONTEXTS_MAX_ENTRIES } from "./garageModels.ts";
-import { modelIdError, storeRuntimeKey, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
+import { modelIdError, storeRuntimeKey, withProbeDeployments, reconcilePrivateGarage, type RoutingGarage } from "./garageRouting.ts";
 
 const MODEL_RE = /^[A-Za-z0-9._:/-]{1,128}$/;
 const sanitize = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
@@ -82,6 +82,8 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   await storeContexts(admin, garage.id, payload.contexts ?? {});
   const testModels = (opts.testOnly ?? payload.models).filter((m) => offered.has(m));
   const routingGarage = { ...garage, api_host: garage.api_host, mesh_ip: peer.ip, port: payload.port, runtime: payload.runtime, models: payload.models, status: "pending", disabled: false, last_heartbeat_at: null, connection_type: garage.connection_type || "mesh", endpoint_url: garage.endpoint_url ?? null } as RoutingGarage;
+  // Owner use is available before any market acceptance probe starts.
+  await reconcilePrivateGarage(admin, routingGarage, payload.contexts);
   const acceptance = testModels.length
     ? await withProbeDeployments(admin, routingGarage, testModels, (base, key, routeFor) => runAndStoreAcceptanceTests(admin, base, key, garage, testModels, routeFor))
     : [];

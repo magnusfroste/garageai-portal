@@ -128,4 +128,13 @@ describe("chatGateway", () => {
     expect(err.status).toBe(401);
     expect(invokeCalls.some((c) => c.fn === "chat-key-value")).toBe(false);
   });
+  it('preserves the plain gateway message for a private-machine 503 without retrying', async () => {
+    let calls = 0;
+    globalThis.fetch = mock(async () => { calls++; return Response.json({ error: { message: 'Your machine is asleep. Wake it and try again.' } }, { status: 503 }); }) as typeof fetch;
+    const err = await streamChat({ keyValue: 'test-key', model: 'mine/garage-m4/ibm-granite/granite-4.1-3b', messages: [{ role: 'user', content: 'hi' }], signal: new AbortController().signal }, events()).catch(e => e);
+    expect(err).toBeInstanceOf(GatewayHttpError);
+    expect(err.status).toBe(503);
+    expect(err.message).toBe('Your machine is asleep. Wake it and try again.');
+    expect(calls).toBe(1);
+  });
 });

@@ -17,7 +17,7 @@
 - Grant purchased credits through one idempotent shared claim path; total budget = starting credit + purchased credits.
 - Read signup starter credit from the public default-budget setting, never translated branding; signup profiles use it with zero fallback.
 - Share the browser-link connection view across current and former wizard URLs; advanced token renewal requests no setup key, so portal connection stays independent of legacy scripts.
-- Treat gateway health reports (L1 tunnel, L2 /v1/models) as the primary routing signal where present; heartbeats carry inventory only, and only `garage_models.offered` models route.
+- Gateway health owns live availability. Market routes require offers/tests; owner `mine/` routes use heartbeat inventory independently of market visibility/pause, with shared private planning and gateway access checks.
 - Audit garage price changes with an atomic database trigger, then reconcile both token prices; statements always sum recorded request spend to keep historical rates.
 - Single-garage views use owner-scoped aggregates; recorded spend is never repriced. Shared modelPrices resolves model overrides before routing.
 - Keep garage_models.model as the runtime id (sent upstream, never shown to buyers) and canonical_model as the catalogue/pool name: OpenRouter-style `<creator>/<model>` from the org/family tables in `modelIdentity.ts` (SQL mirror `normalise_model_id`), mesh names normalised by the DB trigger, model pages use a splat route (names contain `/`), only admins may alias endpoint-provider models, deployment ids derive from the runtime id.

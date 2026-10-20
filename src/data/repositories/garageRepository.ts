@@ -3,6 +3,7 @@ import { FunctionRegion } from "@supabase/supabase-js";
 import type { GarageCredentials } from "@/models/services/garageCommand";
 
 export interface GarageRow {
+  visibility?: 'market' | 'private';
   smart?: boolean;
   smart_disk_gb?: number;
   agent?: import("@/models/services/agentReport").AgentReport | null;
@@ -143,7 +144,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, paused_by_admin, canary, location_display, terms_accepted_at, terms_version, agent, agent_at, machine_id, machine_hostname, last_machine_id, transport, tunnel_ip, smart, smart_disk_gb, agent_state")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, paused_by_admin, canary, location_display, terms_accepted_at, terms_version, agent, agent_at, machine_id, machine_hostname, last_machine_id, transport, tunnel_ip, smart, smart_disk_gb, agent_state, visibility")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -203,6 +204,8 @@ export const garageRepository = {
   },
   setPaused: (name: string, paused: boolean, opts: { model?: string; reason?: string } = {}) =>
     invoke<{ ok: boolean; paused: boolean; routing_synced: boolean }>("set-garage-paused", { name, paused, ...opts }),
+  setVisibility: (garage_id: string, visibility: 'market' | 'private') =>
+    invoke<{ ok: boolean; visibility: 'market' | 'private' }>('set-machine-visibility', { garage_id, visibility }),
 
   async setLocationDisplay(garageId: string, mode: "country" | "region" | "hidden") {
     const { error } = await supabase.rpc("set_garage_location_display", { _garage_id: garageId, _mode: mode });

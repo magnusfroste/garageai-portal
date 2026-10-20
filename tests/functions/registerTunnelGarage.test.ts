@@ -29,7 +29,7 @@ test("registerGarage: a tunnel garage registers end to end on the internal gatew
     const url = String(input);
     calls.push(url);
     if (url.includes("api.garageai.eu")) return new Response("forbidden", { status: 403 }); // public host blocks admin routes
-    if (url.includes("/model/info")) return Response.json({ data: [] });
+    if (url.includes("/model/info")) return Response.json({ data: [], total_pages: 1 });
     if (url.includes("/chat/completions")) return Response.json({ choices: [{ message: { content: "OK" } }], usage: { completion_tokens: 2 } });
     return Response.json({});
   }) as typeof fetch;

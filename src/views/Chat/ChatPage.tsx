@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
+import { useMyMachines } from '@/hooks/useMyMachines';
 import { useToolSupport } from "@/hooks/useToolSupport";
 import { apiModelName } from "@/models/services/modelDedup";
 import { pickChatModel } from "@/models/services/chatModelChoice";
@@ -42,7 +43,8 @@ export const ChatPage = () => {
   useEffect(() => { checkAuth(); }, []);
 
   const { models } = useCuratedModels(true);
-  const modelInfos: ModelInfo[] = useMemo(() => models.map((m) => ({
+  const machines = useMyMachines();
+  const modelInfos: ModelInfo[] = useMemo(() => [...machines.models, ...models.map((m) => ({
     id: apiModelName(m),
     model_name: apiModelName(m),
     provider: m.provider,
@@ -55,7 +57,7 @@ export const ChatPage = () => {
     garage: m.garage,
     garage_tier: m.garage_tier,
     is_default: m.is_default,
-  }) as ModelInfo), [models]);
+  }) as ModelInfo)], [models, machines.models]);
 
   // Model: ?model= (kept even if unhealthy) → last used if healthy → default if
   // healthy → first healthy pool model → first healthy → first.
@@ -193,7 +195,7 @@ export const ChatPage = () => {
             </Button>
           )}
           <div className="flex min-w-0 flex-col">
-            <ChatModelPicker models={modelInfos} selected={selectedModel} onSelect={chooseModel} disabled={isStreaming} />
+            <ChatModelPicker models={modelInfos} selected={selectedModel} userId={userId} onSelect={chooseModel} disabled={isStreaming} />
             {selectedModelInfo?.garage_tier === "auto" && <span className="-mt-1 px-2 text-[11px] text-muted-foreground">{t("picks the best available model for you")}</span>}
           </div>
           {selectedOffline && (

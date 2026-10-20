@@ -6,6 +6,8 @@ import { providerUpstream } from "./providerProtocol.ts";
 import { modelIdError } from "./modelValidation.ts";
 export { modelIdError, MODEL_ID_RE } from "./modelValidation.ts";
 import { isProbeDeployment, isStaleProbe } from "./probeDeployments.ts";
+import { isPrivateDeployment, privateRoute, privateDeploymentId, hasPrivateMachine, allowsMarket } from './privateMachines.ts';
+import { readGatewayDeployments } from './gatewayDeployments.ts';
 // Desired state = garages table + latest acceptance/probe tests + curated_models admin choices.
 // reconcileGarageRouting compares it with LiteLLM /model/info and adds/removes deployments idempotently.
 // Tests never use sellable routes: they run through short-lived, unguessable "probe" deployments.
@@ -48,6 +50,7 @@ export interface RoutingGarage {
   connection_type?: string | null; endpoint_url?: string | null; paused_at?: string | null;
   /** Bridge lifecycle state; set = planned absence, out of routing. */
   agent_state?: unknown;
+  visibility?: 'market' | 'private';
   dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number;
   pool_input_cost_per_million: number; pool_output_cost_per_million: number;
   pool_cache_read_cost_per_million?: number | null; dedicated_cache_read_cost_per_million?: number | null;
@@ -151,7 +154,7 @@ export const hasGatewaySignal = (g: Pick<RoutingGarage, "last_gateway_check_at">
 export const gatewayHealthy = (g: Pick<RoutingGarage, "runtime_ok" | "mesh_connected">) => g.runtime_ok === true && g.mesh_connected !== false;
 
 export function isModelSellable(g: RoutingGarage, model: string, test: { passed: boolean; tested_at: number } | undefined, now = Date.now()) {
-  if (g.disabled || g.paused_at || g.agent_state || !apiBaseFor(g)) return false;
+  if (g.disabled || !allowsMarket(g) || g.paused_at || g.agent_state || !apiBaseFor(g)) return false;
   if (!test?.passed) return false;
   if (hasGatewaySignal(g)) return gatewayHealthy(g) && now - test.tested_at <= GATEWAY_TEST_MAX_AGE_MS;
   if (g.status !== "online") return false;
@@ -159,24 +162,21 @@ export function isModelSellable(g: RoutingGarage, model: string, test: { passed:
   return now - test.tested_at <= NO_HEARTBEAT_TEST_MAX_AGE_MS;
 }
 
-export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connection_type, endpoint_url, port, runtime, models, status, disabled, last_heartbeat_at, last_gateway_check_at, runtime_ok, mesh_connected, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, paused_at, agent_state";
+export const GARAGE_SELECT = "id, name, operator_id, api_host, mesh_ip, connection_type, endpoint_url, port, runtime, models, status, disabled, last_heartbeat_at, last_gateway_check_at, runtime_ok, mesh_connected, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_input_cost_per_million, pool_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, paused_at, agent_state, visibility";
 
 /**
  * Makes LiteLLM garage deployments equal the desired set.
  * `enabledTiers` = deployment ids whose curated row is enabled (admin/failed_test/garage-disabled rows are not).
  */
-export async function reconcileGarageRouting(admin: SupabaseClient, garages: RoutingGarage[], sellable: Set<string>, enabledTiers: Set<string>, identities?: ModelIdentity) {
+export async function reconcileGarageRouting(admin: SupabaseClient, garages: RoutingGarage[], sellable: Set<string>, enabledTiers: Set<string>, identities?: ModelIdentity, privateOnly = false) {
   const ids = identities ?? await modelIdentities(admin, garages.map((g) => g.id));
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const base = await getProxyBaseUrl(admin);
   const keys = await runtimeKeys(admin, garages.map((g) => g.id));
 
-  const infoRes = await fetch(`${base}/model/info`, { headers: litellmHeaders(masterKey) });
-  if (!infoRes.ok) throw new Error(`LiteLLM /model/info failed (${infoRes.status})`);
-  const info = await infoRes.json();
   type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; weight?: number | null; order?: number | null }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; max_input_tokens?: number | null; max_output_tokens?: number | null; max_tokens?: number | null; order?: number | null } };
-  const deps = (info?.data || []) as Dep[];
+  const deps = await readGatewayDeployments<Dep>(base, masterKey);
 
   // Context length per garage model: stored value → runtime /v1/models (reachable endpoint providers) → what LiteLLM already reports.
   const learned: Array<{ garage_id: string; model: string; context_length: number }> = [];
@@ -223,8 +223,15 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     const apiBase = apiBaseFor(g);
     if (!apiBase) continue;
     for (const model of g.models || []) {
-      if (!sellable.has(`${g.name}::${model}`)) continue;
       const ident = identityOf(ids, g.id, model);
+      if (hasPrivateMachine(g)) {
+        const spec = await buildDeploymentSpec(g, keys, {
+          id: privateDeploymentId(g.name, model), route: privateRoute(g.name, ident.canonical), model,
+          tier: 'private', input: 0, output: 0, cacheRead: 0, limits: tokenLimits(ident.context),
+        });
+        if (spec) desired.set(spec.id, spec);
+      }
+      if (privateOnly || !allowsMarket(g) || !sellable.has(`${g.name}::${model}`)) continue;
       for (const tier of ["dedicated", "pool"] as const) {
         if (tier === "pool" && ident.private) continue; // provider-private models are never pooled
         // Deployment id stays derived from the runtime id so aliases can change without new ids.
@@ -247,9 +254,10 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   // Whole-pool recompute every sync: desired holds only routed (healthy, unpaused) members at current prices.
   assignPoolWeights(desired.values());
 
-  const auto = await loadAutoPlan(admin, garages, desired);
+  const auto = privateOnly ? { settings: parseAutoSettings(null), plan: [] as AutoPlanItem[], anyEntryHealthy: false } : await loadAutoPlan(admin, garages, desired);
   for (const item of auto.plan) {
-    const b = desired.get(item.base.id)!;
+    const b = desired.get(item.base.id);
+    if (!b || b.tier === 'private') continue;
     desired.set(item.id, { ...b, id: item.id, route: auto.settings.public_name, tier: AUTO_TIER, input: item.input, output: item.output, cacheRead: item.cacheRead, order: item.order });
   }
 
@@ -259,6 +267,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   for (const d of deps) {
     const id = d.model_info?.id;
     if (!id || !d.model_info?.garage) continue;
+    if (privateOnly && (!isPrivateDeployment(d) || !garages.some(g => g.name === d.model_info?.garage))) continue;
     if (isProbeDeployment(d)) {
       // Covers tests killed before their finally block ran.
       if (isStaleProbe(id, now)) if (await deleteDeployment(base, masterKey, id)) removed.push(id);
@@ -277,6 +286,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     const drift = want && (d.model_name !== want.route || d.litellm_params?.model !== upstream?.model || d.model_info?.key_fingerprint !== want.keyFp || d.litellm_params?.api_base !== upstream?.api_base || !Number.isFinite(cost) || Math.abs(cost - want.input / 1e6) > 1e-12 || !Number.isFinite(outputCost) || Math.abs(outputCost - want.output / 1e6) > 1e-12
       || !Number.isFinite(cacheCost) || Math.abs(cacheCost - want.cacheRead / 1e6) > 1e-12
       || !deploymentOrderMatches(want.order, d.litellm_params, d.model_info)
+      || (want.tier === 'private' && (d.model_info?.garage_tier !== 'private' || (d.model_info as { operator_id?: string; connection_type?: string }).operator_id !== want.garage.operator_id || (d.model_info as { connection_type?: string }).connection_type !== 'mesh'))
       || (want.tier === "pool" && want.weight != null && Number(d.litellm_params?.weight) !== want.weight)
       || (!!want.limits && (Number(d.model_info?.max_input_tokens) !== want.limits.maxInput || Number(d.model_info?.max_output_tokens) !== want.limits.maxOutput || Number(d.model_info?.max_tokens) !== want.limits.maxInput)));
     if (!want || drift) {
@@ -290,7 +300,17 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
     catch (e) { console.error("[routing] add failed", e instanceof Error ? e.message : "unknown"); }
   }
   if (added.length || removed.length) console.log("[routing] reconciled", { added, removed });
-  return { added, removed, routes: new Map([...desired].filter(([, d]) => d.tier !== AUTO_TIER).map(([id, d]) => [id, d.route])), auto };
+  return { added, removed, routes: new Map([...desired].filter(([, d]) => d.tier !== AUTO_TIER && d.tier !== 'private').map(([id, d]) => [id, d.route])), auto };
+}
+
+/** Immediate heartbeat reconciliation without acceptance tests or changes to market routes. */
+export async function reconcilePrivateGarage(admin: SupabaseClient, garage: RoutingGarage, contexts: Record<string, number> = {}) {
+  const identities = await modelIdentities(admin, [garage.id]);
+  for (const [model, context] of Object.entries(contexts)) {
+    const ident = identityOf(identities, garage.id, model);
+    identities.set(`${garage.id}::${model}`, { ...ident, context });
+  }
+  return reconcileGarageRouting(admin, [garage], new Set(), new Set(), identities, true);
 }
 
 /** Reads the auto list + settings and plans auto deployments on top of the normal desired set. */

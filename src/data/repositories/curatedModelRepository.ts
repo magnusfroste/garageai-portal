@@ -22,7 +22,10 @@ export class CuratedModelRepository {
       .order("id");
 
     if (error) throw error;
-    return ((data || []) as unknown as CuratedModel[]).filter((m) => !isProbeModel(m));
+    const { data: garages, error: visibilityError } = await supabase.rpc('garage_public_locations');
+    if (visibilityError) throw visibilityError;
+    const market = new Set((garages ?? []).map(g => g.garage_name));
+    return ((data || []) as unknown as CuratedModel[]).filter((m) => !isProbeModel(m) && m.garage_tier !== 'private' && !(m.model_name || m.id).startsWith('mine/') && (!m.garage || m.garage_tier === 'auto' || market.has(m.garage)));
   }
 
   async toggleEnabled(id: string, enabled: boolean): Promise<void> {
