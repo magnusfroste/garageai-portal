@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] My machine: heartbeat-owned free private deployments, owner visibility control, public exclusions, owner chat picker and API copy; migrate, test live, deploy and publish together
+
 - [x] Credit hardening: shared key limits, 27-key verified backfill (4 internal excluded), atomic refund/dispute ledger and Stripe subscriptions, rename-only permissions, no implicit gateway keys, initial-balance fallback/retry; 34 tests and rollback SQL passed; no plaintext wipe
 - [ ] Verify initial balance in a real signed-in signup flow — blocked: requester has no matching account/session
 

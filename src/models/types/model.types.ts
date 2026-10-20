@@ -10,6 +10,9 @@ export interface ModelInfo {
   status: "healthy" | "unhealthy" | "unknown";
   garage?: string | null;
   garage_tier?: string | null;
+  operator_id?: string | null;
+  display_name?: string;
+  machine_state?: { kind: 'awake' | 'asleep' | 'not_answering'; since?: string | null };
 }
 
 export interface AvailableModelsResponse {

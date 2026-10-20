@@ -17,6 +17,7 @@ import {myGarageStatus,runtimeStatKey} from '@/models/services/myGaragePresentat
 import type {GarageRow} from '@/data/repositories/garageRepository';
 import {ManagedModelsSection} from './components/ManagedModels';
 import {MyGarageDetails} from './components/MyGarageDetails';
+import {MyMachineAccess} from './components/MyMachineAccess';
 import {GarageTermsBanner} from './components/GarageTermsBanner';
 import {t} from '@/i18n';
 import {toast} from 'sonner';
@@ -73,7 +74,8 @@ function GaragePage({garage:g,onDone}:{garage:GarageRow;onDone:()=>void}){
    {(events.data??[]).slice(0,noticeCount).map(e=><p key={e.id} className="text-xs text-muted-foreground">{e.action==='pull'?(e.reason.requests_7d!=null?t('We requested {model} for {garage}: {n} requests/day ({r7} requests from {keys} API keys in 7 days), {garages} garages were not enough.',{model:e.model,garage:g.name,n:e.reason.requests_per_day??0,r7:e.reason.requests_7d,keys:e.reason.distinct_keys_7d??0,garages:e.reason.healthy_garages??0}):t('We requested {model} for {garage}: {n} requests/day, {garages} garages were not enough.',{model:e.model,garage:g.name,n:e.reason.requests_per_day??0,garages:e.reason.healthy_garages??0})):t('We requested removal of {model} from {garage}: no requests in 14 days.',{model:e.model,garage:g.name})}</p>)}
    {(events.data?.length??0)>noticeCount&&<Button size="sm" variant="link" className="px-0" onClick={()=>setNoticeCount(events.data?.length??1)}>{t('All Smart activity')}</Button>}
   </section>
-  <MyGarageDetails garage={g} models={models} managed={managed} onDone={onDone}/>
+   <MyMachineAccess garage={g} models={models} onDone={onDone}/>
+   <MyGarageDetails garage={g} models={models} managed={managed} onDone={onDone}/>
   {!g.terms_accepted_at&&<GarageTermsBanner garages={[g]} onAccepted={onDone}/>}
  </>;
 }

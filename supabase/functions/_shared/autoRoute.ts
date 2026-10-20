@@ -76,6 +76,7 @@ export function autoCatalogRow(settings: AutoSettings, plan: AutoPlanItem[], any
 
 /** Garage + model part of a LiteLLM deployment id; auto ids credit the entry's own garage. */
 export function garageOfDeploymentId(modelId: string): { garage: string; model: string } | null {
+  if (modelId.endsWith('__private') || modelId.startsWith('mine/')) return null; // owner usage is not market revenue/quality
   const id = modelId.startsWith(AUTO_ID_PREFIX) ? modelId.slice(AUTO_ID_PREFIX.length) : modelId;
   const sep = id.indexOf("__");
   if (sep <= 0) return null;

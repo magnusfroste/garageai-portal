@@ -8,6 +8,7 @@ import { offeredByGarage, pausedModels } from "./garageModels.ts";
 import { updateMeasuredCountries } from "./garageLocation.ts";
 import { AUTO_CATALOG_ID, AUTO_TIER, autoCatalogRow } from "./autoRoute.ts";
 import { isProbeDeployment, isProbeName } from "./probeDeployments.ts";
+import { isPrivateDeployment } from './privateMachines.ts';
 import { GARAGE_SELECT, modelIdentities, identityOf, gatewayHealthy, deploymentId, isModelSellable, latestTests, reconcileGarageRouting, type RoutingGarage } from "./garageRouting.ts";
 
 interface LiteLLMModelInfo {
@@ -75,7 +76,7 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   if (!modelsRes.ok) throw new Error(`LiteLLM /model/info failed with status ${modelsRes.status}`);
   const data = await modelsRes.json();
   // Probe deployments (acceptance tests) never become catalogue rows.
-  const rawModels: LiteLLMModelInfo[] = ((data.data || []) as LiteLLMModelInfo[]).filter((m) => !isProbeDeployment(m));
+  const rawModels: LiteLLMModelInfo[] = ((data.data || []) as LiteLLMModelInfo[]).filter((m) => !isProbeDeployment(m) && !isPrivateDeployment(m));
   const now = new Date().toISOString();
 
   const { data: existing } = await admin

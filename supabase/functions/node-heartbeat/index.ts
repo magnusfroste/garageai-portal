@@ -4,10 +4,12 @@ import { syncModels } from "../_shared/syncModels.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts, applyInventoryMisses } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
-import { parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, modelsToTestOnReturn, resumeClearsPortalPause, type AgentState } from "../_shared/agentState.ts";
+import { parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, splitReturnModels, resumeClearsPortalPause, type AgentState } from "../_shared/agentState.ts";
 import { heartbeatBridgeFields, parseBridgeUpdate, updateErrorVersion } from "../_shared/bridgeUpdate.ts";
 import { parseAgentModels, applyReports, pendingOffers, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
 import { parseMachineId, claimMachineId } from "../_shared/bridgeLink.ts";
+import { reconcilePrivateGarage, storeRuntimeKey, GARAGE_SELECT, withProbeDeployments, type RoutingGarage } from '../_shared/garageRouting.ts';
+import { runAndStoreAcceptanceTests } from '../_shared/acceptanceTest.ts';
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -47,7 +49,11 @@ Deno.serve(async (req) => {
     const machineId = parseMachineId(body.machine_id); // a set machine_id never changes here; claim on first use only
     const machinePatch = claimMachineId(garage.machine_id, machineId); // { machine_id, last_machine_id } | { last_machine_id }
     const firstModels = !garage.first_models_at && payload.models.length > 0 ? { first_models_at: now } : {};
-    await admin.from("garages").update({ last_heartbeat_at: now, ...machinePatch, ...firstModels, agent_state: agentState, ...(parsedNodes.nodes ? { agent_nodes: parsedNodes.nodes } : {}), ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
+    const inventoryPatch = { models: payload.models, runtime: payload.runtime, port: payload.port };
+    const { error: heartbeatError } = await admin.from("garages").update({ ...inventoryPatch, last_heartbeat_at: now, ...machinePatch, ...firstModels, agent_state: agentState, ...(parsedNodes.nodes ? { agent_nodes: parsedNodes.nodes } : {}), ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
+    if (heartbeatError) throw heartbeatError;
+    await storeRuntimeKey(admin, garage.id, payload.runtime_api_key);
+    await reconcilePrivateGarage(admin, { ...garage, ...inventoryPatch, mesh_ip: garage.transport === 'tunnel' ? garage.tunnel_ip : garage.mesh_ip } as RoutingGarage, payload.contexts);
     let portalResumed = false;
     if (resumeClearsPortalPause(garage, prevState, agentState, agentRaw.resumed_at)) {
       const { error: resumeErr } = await admin.from("garages").update({ paused_at: null, paused_reason: null }).eq("id", garage.id).eq("paused_by_admin", false);

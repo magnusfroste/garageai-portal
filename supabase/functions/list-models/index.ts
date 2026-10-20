@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { isProbeDeployment } from "../_shared/probeDeployments.ts";
+import { isPrivateDeployment } from '../_shared/privateMachines.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 
@@ -69,7 +70,7 @@ serve(async (req: Request) => {
     }
 
     const data = await modelsRes.json();
-    const rawModels: LiteLLMModelInfo[] = ((data.data || []) as LiteLLMModelInfo[]).filter((m) => !isProbeDeployment(m));
+    const rawModels: LiteLLMModelInfo[] = ((data.data || []) as LiteLLMModelInfo[]).filter((m) => !isProbeDeployment(m) && !isPrivateDeployment(m));
 
     const models = rawModels.map((m) => {
       const info = m.model_info || {};

@@ -59,7 +59,7 @@ export const useChatStream = (setMessagesFor: SetFor) => {
       const u = sawUsage ? { ...usage } : undefined;
       return {
         model: o.modelId,
-        garage: garage ?? (o.model?.garage_tier === "dedicated" ? o.model.garage ?? null : null),
+        garage: garage ?? (o.model?.garage_tier === "dedicated" || o.model?.garage_tier === 'private' ? o.model.garage ?? null : null),
         usage: u,
         costUsd: messageCostUsd(o.model, u),
         tokensPerSecond: tokensPerSecond(u?.completion, firstTokenAt, end),
@@ -149,6 +149,8 @@ export const useChatStream = (setMessagesFor: SetFor) => {
       }
       if (e instanceof Error && e.message === "key_unavailable") {
         toast.error(keyCreateFailedMessage());
+      } else if (e instanceof GatewayHttpError && e.status === 503 && o.modelId.startsWith('mine/')) {
+        toast.error(e.message || t('Your machine is not answering right now.'));
       } else {
         console.error("Chat stream error:", e instanceof Error ? e.name : "unknown");
         toast.error(t("Could not connect to the model"));

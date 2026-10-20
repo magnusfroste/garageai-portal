@@ -18,7 +18,7 @@ export async function fingerprint(value: string): Promise<string> {
 
 /** Identities and aliases come from trusted server-side key records, never the buyer payload. */
 export function countsAsDemand(row: Record<string, unknown>, identities: ReadonlySet<string>): boolean {
-  return !taggedInternal(row) && !(typeof row.api_key === "string" && identities.has(row.api_key));
+  return !String(row.model ?? '').startsWith('mine/') && !String(row.model_group ?? '').startsWith('mine/') && !String(row.model_id ?? '').endsWith('__private') && !taggedInternal(row) && !(typeof row.api_key === "string" && identities.has(row.api_key));
 }
 
 export async function loadInternalIdentities(admin: any, base: string, master: string, rows: Record<string, unknown>[]): Promise<Set<string>> {

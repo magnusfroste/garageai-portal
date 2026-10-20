@@ -19,9 +19,11 @@ interface Props {
   selected: string;
   onSelect: (id: string) => void;
   disabled?: boolean;
+  userId?: string;
 }
 
 const label = (m: ModelInfo) => {
+  if (m.garage_tier === 'private') return m.display_name ?? m.id;
   if (m.garage_tier === "dedicated" && m.garage) {
     const prefix = `garage/${m.garage}/`;
     const base = (m.model_name || m.id).startsWith(prefix) ? (m.model_name || m.id).slice(prefix.length) : m.model_name || m.id;
@@ -30,7 +32,7 @@ const label = (m: ModelInfo) => {
   return m.model_name || m.id;
 };
 
-export const ChatModelPicker = ({ models, selected, onSelect, disabled }: Props) => {
+export const ChatModelPicker = ({ models, selected, onSelect, disabled, userId }: Props) => {
   const [open, setOpen] = useState(false);
   const { gradeOf, poolSummary } = useModelGarageGrades();
   const { supportsTools } = useToolSupport();
@@ -38,6 +40,8 @@ export const ChatModelPicker = ({ models, selected, onSelect, disabled }: Props)
   const flag = (g?: string | null) => (g ? locationLabel(locations.get(g))?.flag ?? "" : "");
   const { pool, garage } = orderChatModels(models);
   const current = models.find((m) => m.id === selected);
+  const machines = models.filter(m => m.garage_tier === 'private' && !!userId && m.operator_id === userId);
+  const machineStateLabel = (m: ModelInfo) => m.machine_state?.kind === 'awake' ? t('awake') : m.machine_state?.kind === 'not_answering' ? t('not answering') : m.machine_state?.since ? t('asleep since {time}', { time: new Date(m.machine_state.since).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }) : t('asleep');
 
   const item = (m: ModelInfo) => (
     <CommandItem
@@ -49,9 +53,9 @@ export const ChatModelPicker = ({ models, selected, onSelect, disabled }: Props)
       <Check className={cn("h-3.5 w-3.5 shrink-0", m.id === selected ? "opacity-100" : "opacity-0")} />
       <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", m.status === "healthy" ? "bg-primary" : m.status === "unhealthy" ? "bg-destructive" : "bg-muted-foreground")} />
       <span className="min-w-0 flex-1 truncate font-mono text-xs" title={m.garage_tier === "auto" ? t("Always answers: the best available model from a curated list (fails over automatically)") : undefined}>{label(m)}</span>
-      {m.garage_tier === "dedicated" ? (
+      {m.garage_tier === 'private' ? <span className="shrink-0 text-[10px] text-muted-foreground">{machineStateLabel(m)}</span> : m.garage_tier === "dedicated" ? (
         <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
-          {flag(m.garage) && <span aria-hidden>{flag(m.garage)}</span>}{m.garage}{gradeOf(m.garage) && <GradeBadge grade={gradeOf(m.garage)!} />}
+          {flag(m.garage) && <span aria-hidden>{flag(m.garage)}</span>}{m.garage}{(() => { const grade = gradeOf(m.garage); return grade ? <GradeBadge grade={grade} /> : null; })()}
         </span>
       ) : (() => {
         const p = poolSummary(m.model_name || m.id);
@@ -75,6 +79,7 @@ export const ChatModelPicker = ({ models, selected, onSelect, disabled }: Props)
           <CommandInput placeholder={t("Search models…")} />
           <CommandList className="max-h-[360px]">
             <CommandEmpty>{t("No models found")}</CommandEmpty>
+            {machines.length > 0 && <CommandGroup heading={t('Your machines')}>{machines.map(item)}</CommandGroup>}
             {pool.length > 0 && <CommandGroup heading={t("Pool – we pick the best available garage")}>{pool.map(item)}</CommandGroup>}
             {garage.length > 0 && <CommandGroup heading={t("Specific garage")}>{garage.map(item)}</CommandGroup>}
           </CommandList>
