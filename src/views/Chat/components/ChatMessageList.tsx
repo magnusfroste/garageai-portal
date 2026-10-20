@@ -64,9 +64,10 @@ const Sources = ({ search }: { search: ChatSearchInfo }) => (
 
 const Footer = ({ meta }: { meta: ChatAnswerMeta }) => {
   const nf = new Intl.NumberFormat(locale());
-  const isPool = !!meta.model && !meta.model.startsWith("garage/");
+  const isMine = !!meta.model?.startsWith("mine/");
+  const isPool = !!meta.model && !isMine && !meta.model.startsWith("garage/");
   const parts: string[] = [];
-  if (meta.garage) parts.push(isPool ? t("Pool → {g}", { g: meta.garage }) : meta.garage);
+  if (meta.garage) parts.push(isPool ? t("Pool → {g}", { g: meta.garage }) : isMine ? t("{g} · your machine", { g: meta.garage }) : meta.garage);
   else if (isPool) parts.push(t("Pool"));
   if (meta.usage) parts.push(t("{in} in · {out} out", { in: nf.format(meta.usage.prompt), out: nf.format(meta.usage.completion) }));
   const cost = formatCost(meta.costUsd);

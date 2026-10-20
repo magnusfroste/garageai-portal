@@ -5,9 +5,9 @@ import { t } from "@/i18n";export interface GarageToolSupport {
   supports_tools: boolean;
 }
 
-/** Mirrors the chat backend: "garage/<g>/<m>" checks that garage; a pool name checks any garage serving it. */
+/** Mirrors the chat backend: "garage/<g>/<m>" and "mine/<g>/<m>" check that garage; a pool name checks any garage serving it. */
 export const modelSupportsTools = (rows: GarageToolSupport[], modelId: string): boolean => {
-  const m = modelId.match(/^garage\/([^/]+)\/(.+)$/);
+  const m = modelId.match(/^(?:garage|mine)\/([^/]+)\/(.+)$/);
   if (m) return rows.some((r) => r.garage_name === m[1] && r.model === m[2] && r.supports_tools);
   return rows.some((r) => r.model === modelId && r.supports_tools);
 };
