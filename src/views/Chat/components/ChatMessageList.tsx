@@ -143,9 +143,11 @@ interface Props {
   isReasoning: boolean;
   onRegenerate: () => void;
   onEdit: (index: number, text: string) => void;
+  /** Catalogue display name lookup for the served-model footer label. */
+  modelDisplayName?: (id: string) => string | undefined;
 }
 
-export const ChatMessageList = ({ messages, isStreaming, isReasoning, onRegenerate, onEdit }: Props) => (
+export const ChatMessageList = ({ messages, isStreaming, isReasoning, onRegenerate, onEdit, modelDisplayName }: Props) => (
   <div className="mx-auto w-full max-w-[760px] space-y-6 px-4 pb-6 pt-6">
     {messages.map((msg, i) => {
       if (msg.role === "user") return <UserMessage key={i} msg={msg} disabled={isStreaming} onEdit={(text) => onEdit(i, text)} />;
@@ -156,10 +158,10 @@ export const ChatMessageList = ({ messages, isStreaming, isReasoning, onRegenera
           {live && msg.search?.status && (
             <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground"><Globe className="h-3.5 w-3.5 animate-pulse text-primary" /> {msg.search.status}</div>
           )}
+          {!live && msg.search && <SearchLine search={msg.search} />}
           {msg.reasoning && <Reasoning text={msg.reasoning} live={live && isReasoning} ms={msg.meta?.reasoningMs} />}
           {msg.content ? <MarkdownContent content={msg.content} /> : live && !isReasoning && <Dots />}
           {live && msg.content && <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse bg-primary align-middle" />}
-          {!live && msg.search && (msg.search.queries.length > 0 || msg.search.sources.length > 0) && <Sources search={msg.search} />}
           {!live && (
             <div className="mt-2 flex min-h-[28px] items-center gap-1">
               {msg.content && <CopyIconButton text={msg.content} />}
@@ -168,7 +170,7 @@ export const ChatMessageList = ({ messages, isStreaming, isReasoning, onRegenera
                   <RotateCcw className="h-3.5 w-3.5" />
                 </button>
               )}
-              {msg.meta && <span className="ml-1 min-w-0"><Footer meta={msg.meta} /></span>}
+              {msg.meta && <span className="ml-1 min-w-0"><Footer meta={msg.meta} displayName={modelDisplayName} /></span>}
             </div>
           )}
         </div>
