@@ -13,8 +13,8 @@ BEGIN
   SELECT id INTO other FROM auth.users WHERE id <> owner LIMIT 1;
   IF other IS NULL THEN RAISE EXCEPTION 'A second user is required for this test'; END IF;
 
-  INSERT INTO public.garage_model_tests (garage_id, model, supports_tools, tested_at)
-  VALUES (g, 'fixture/mine-tools', true, now());
+  INSERT INTO public.garage_model_tests (garage_id, model, passed, supports_tools, tested_at)
+  VALUES (g, 'fixture/mine-tools', true, true, now());
 
   -- Owner sees the private garage's row.
   EXECUTE format('SET LOCAL request.jwt.claims = %L', json_build_object('sub', owner, 'role', 'authenticated')::text);
