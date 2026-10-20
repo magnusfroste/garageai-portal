@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Globe, Pencil, RotateCcw, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { t, locale } from "@/i18n";
-import { formatCost } from "@/models/services/chatService";
+import { formatCost, searchSummary, servedModelLabel } from "@/models/services/chatService";
 import { CopyIconButton, MarkdownContent } from "./MarkdownContent";
 import type { ChatAnswerMeta, ChatMessage, ChatSearchInfo } from "../types";
 
@@ -44,29 +44,44 @@ const Reasoning = ({ text, live, ms }: { text: string; live: boolean; ms?: numbe
   );
 };
 
-const Sources = ({ search }: { search: ChatSearchInfo }) => (
-  <div className="mt-4 space-y-1 text-xs text-muted-foreground">
-    {search.queries.length > 0 && (
-      <p className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> {t("Searched:")} {search.queries.map((q) => `"${q}"`).join(", ")}</p>
-    )}
-    {search.sources.length > 0 && (
-      <ol className="space-y-0.5">
-        {search.sources.map((s) => (
-          <li key={s.n} className="truncate">
-            <span className="mr-1 text-foreground/70">[{s.n}]</span>
-            <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{s.title || s.url}</a>
-          </li>
-        ))}
-      </ol>
-    )}
-  </div>
-);
+/** Compact, expandable search line shown above the answer: "Searched: "q" · 5 sources". */
+const SearchLine = ({ search }: { search: ChatSearchInfo }) => {
+  const [open, setOpen] = useState(false);
+  const sum = searchSummary(search);
+  if (!sum) return null;
+  return (
+    <div className="mb-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <Globe className="h-3.5 w-3.5" />
+        {t("Searched: {q} · {n} sources", { q: sum.queries.map((q) => `"${q}"`).join(", "), n: sum.count })}
+        {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </button>
+      {open && search.sources.length > 0 && (
+        <ol className="mt-1 space-y-0.5 pl-5 text-xs text-muted-foreground">
+          {search.sources.map((s) => (
+            <li key={s.n} className="truncate">
+              <span className="mr-1 text-foreground/70">[{s.n}]</span>
+              <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{s.title || s.url}</a>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+};
 
-const Footer = ({ meta }: { meta: ChatAnswerMeta }) => {
+const Footer = ({ meta, displayName }: { meta: ChatAnswerMeta; displayName?: (id: string) => string | undefined }) => {
   const nf = new Intl.NumberFormat(locale());
   const isMine = !!meta.model?.startsWith("mine/");
   const isPool = !!meta.model && !isMine && !meta.model.startsWith("garage/");
   const parts: string[] = [];
+  const served = servedModelLabel(meta, displayName);
+  if (served) parts.push(t("auto → {m}", { m: served }));
   if (meta.garage) parts.push(isPool ? t("Pool → {g}", { g: meta.garage }) : isMine ? t("{g} · your machine", { g: meta.garage }) : meta.garage);
   else if (isPool) parts.push(t("Pool"));
   if (meta.usage) parts.push(t("{in} in · {out} out", { in: nf.format(meta.usage.prompt), out: nf.format(meta.usage.completion) }));
