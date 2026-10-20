@@ -128,6 +128,21 @@ describe("chatGateway", () => {
     expect(err.status).toBe(401);
     expect(invokeCalls.some((c) => c.fn === "chat-key-value")).toBe(false);
   });
+  it("reports the served model from streamed chunks", async () => {
+    globalThis.fetch = mock(async () => sse([
+      { model: "deepseek/deepseek-v4.1-flash", choices: [{ delta: { content: "hej" } }] },
+      { model: "deepseek/deepseek-v4.1-flash", choices: [{ delta: { content: "!" } }] },
+    ])) as any;
+    const served: string[] = [];
+    const ev = { ...events(), onServedModel: (m: string) => served.push(m) };
+    await streamChat(
+      { keyValue: "sk-test", model: "garageai/auto", messages: [{ role: "user", content: "hi" }], signal: new AbortController().signal },
+      ev,
+    );
+    expect(served[0]).toBe("deepseek/deepseek-v4.1-flash");
+    expect(ev.contents.join("")).toBe("hej!");
+  });
+
   it('preserves the plain gateway message for a private-machine 503 without retrying', async () => {
     let calls = 0;
     globalThis.fetch = mock(async () => { calls++; return Response.json({ error: { message: 'Your machine is asleep. Wake it and try again.' } }, { status: 503 }); }) as typeof fetch;

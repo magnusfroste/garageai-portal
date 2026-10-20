@@ -53,12 +53,14 @@ export const useChatStream = (setMessagesFor: SetFor) => {
     const usage = { prompt: 0, completion: 0 };
     let sawUsage = false;
     let garage: string | null = null;
+    let servedModel: string | null = null;
 
     const finishMeta = (): ChatAnswerMeta => {
       const end = performance.now();
       const u = sawUsage ? { ...usage } : undefined;
       return {
         model: o.modelId,
+        servedModel: servedModel && servedModel !== o.modelId ? servedModel : undefined,
         garage: garage ?? (o.model?.garage_tier === "dedicated" || o.model?.garage_tier === 'private' ? o.model.garage ?? null : null),
         usage: u,
         costUsd: messageCostUsd(o.model, u),
@@ -93,6 +95,7 @@ export const useChatStream = (setMessagesFor: SetFor) => {
         },
         {
           onGarage: (g) => { garage = g; },
+          onServedModel: (m) => { servedModel = m; },
           onUsage: (u) => {
             // Web search may run several rounds; sum them.
             usage.prompt += u.prompt_tokens ?? 0;

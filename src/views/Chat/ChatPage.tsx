@@ -146,6 +146,13 @@ export const ChatPage = () => {
   const privacyLine = sync.syncEnabled
     ? t("Messages go straight to the EU gateway and the garage; your chats are saved in your account.")
     : t("Messages go straight to the EU gateway and the garage; not stored by GarageAI.");
+  const mineSearchLine = selectedModelInfo?.garage_tier === "private" && webSearch && webSearchAvailable
+    ? t("Searches send the search words (not your conversation) to GarageAI's search server in Sweden.")
+    : null;
+  const modelDisplayName = useCallback((id: string) => {
+    const m = models.find((x) => apiModelName(x) === id) as { display_name?: string | null } | undefined;
+    return m?.display_name ?? undefined;
+  }, [models]);
 
   const empty = messages.length === 0;
   const composerEl = (
@@ -230,12 +237,13 @@ export const ChatPage = () => {
               <ChatEmptyState onPick={(p) => composer.current?.fill(p)} />
               {composerEl}
               <p className="text-center text-[11px] text-muted-foreground">{privacyLine} <Link to="/dashboard/account#chat-sync" className="underline underline-offset-2 hover:text-foreground">{t("Change")}</Link></p>
+              {mineSearchLine && <p className="text-center text-[11px] text-muted-foreground">{mineSearchLine}</p>}
             </div>
           </div>
         ) : (
           <>
             <div ref={scroll.ref} onScroll={scroll.onScroll} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden [overflow-anchor:none]">
-              <ChatMessageList messages={messages} isStreaming={isStreaming} isReasoning={isReasoning} onRegenerate={handleRegenerate} onEdit={handleEdit} />
+              <ChatMessageList messages={messages} isStreaming={isStreaming} isReasoning={isReasoning} onRegenerate={handleRegenerate} onEdit={handleEdit} modelDisplayName={modelDisplayName} />
             </div>
             {!scroll.atBottom && (
               <Button
@@ -250,6 +258,7 @@ export const ChatPage = () => {
               <div className="mx-auto w-full max-w-[760px]">
                 {composerEl}
                 <p className="mt-2 text-center text-[11px] text-muted-foreground">{privacyLine} <Link to="/dashboard/account#chat-sync" className="underline underline-offset-2 hover:text-foreground">{t("Change")}</Link></p>
+                {mineSearchLine && <p className="mt-1 text-center text-[11px] text-muted-foreground">{mineSearchLine}</p>}
               </div>
             </div>
           </>
