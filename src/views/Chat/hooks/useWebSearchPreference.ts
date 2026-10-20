@@ -3,16 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 const keyFor = (userId: string) => `garageai:chat:web-search:${userId}`;
 
-/** "Webbsök" toggle, remembered per user on this device. */
+/** Default is on: only an explicit "0" (user turned it off) disables search. */
+export const webSearchEnabled = (stored: string | null): boolean => stored !== "0";
+
+/** "Webbsök" toggle, remembered per user on this device. Defaults to on. */
 export const useWebSearchPreference = (): [boolean, () => void] => {
   const [userId, setUserId] = useState<string | null>(null);
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(true);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       const id = data.user?.id ?? null;
       setUserId(id);
-      if (id) setEnabled(localStorage.getItem(keyFor(id)) === "1");
+      if (id) setEnabled(webSearchEnabled(localStorage.getItem(keyFor(id))));
     });
   }, []);
 

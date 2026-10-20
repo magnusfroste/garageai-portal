@@ -9,6 +9,8 @@ export interface ChatAnswerMeta {
   model?: string;
   /** Garage that actually served the answer, from the deployment id. */
   garage?: string | null;
+  /** Catalogue name of the model that served the answer, when the gateway names it. */
+  servedModel?: string;
   usage?: ChatUsage;
   costUsd?: number | null;
   tokensPerSecond?: number | null;

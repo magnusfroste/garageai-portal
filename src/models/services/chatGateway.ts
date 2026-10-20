@@ -41,6 +41,8 @@ export interface GatewayStreamEvents {
   onReasoning: (text: string) => void;
   onUsage: (usage: { prompt_tokens?: number; completion_tokens?: number }) => void;
   onGarage: (garage: string | null) => void;
+  /** Catalogue name of the model that actually served the answer (gateway PR #197). */
+  onServedModel?: (model: string) => void;
   onSearchStatus: (status: { type: "search" | "found"; query: string; count?: number }) => void;
   onSources: (sources: Array<{ n: number; title: string; url: string }>, queries: string[]) => void;
 }
@@ -93,6 +95,7 @@ async function streamOneRound(
       let evt: any;
       try { evt = JSON.parse(payload); } catch { continue; }
       if (evt.usage) ev.onUsage(evt.usage);
+      if (typeof evt.model === "string" && evt.model) ev.onServedModel?.(evt.model);
       const delta = evt.choices?.[0]?.delta;
       if (!delta) continue;
       if (delta.tool_calls) {
