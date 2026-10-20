@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { ArrowUp, Globe, Square } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowUp, Check, Plus, Square } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { t } from "@/i18n";
@@ -56,27 +56,27 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
           className="block max-h-[9.5rem] overflow-y-auto w-full resize-none bg-transparent px-5 pt-4 text-[15px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         <div className="flex items-center gap-1 px-3 pb-3 pt-2">
-          {onToggleWebSearch && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>
-                  <Button
-                    type="button" size="sm" variant="ghost"
-                    aria-pressed={!!webSearch && webSearchAvailable}
-                    disabled={!webSearchAvailable}
-                    onClick={onToggleWebSearch}
-                    className={cn("h-8 gap-1.5 rounded-full px-3 text-xs", webSearch && webSearchAvailable && "bg-primary/15 text-primary hover:bg-primary/20 hover:text-primary")}
-                  >
-                    <Globe className="h-4 w-4" /> {t("Web search")}
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs text-xs">
-                {webSearchAvailable
-                  ? t("Let the model search the web and cite sources. The search query is sent to GarageAI's search server.")
-                  : t("This model does not support tools")}
-              </TooltipContent>
-            </Tooltip>
+          {onToggleWebSearch && webSearchAvailable && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-full" aria-label={t("Options")} title={t("Options")}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-64 p-1">
+                <button
+                  type="button"
+                  onClick={onToggleWebSearch}
+                  aria-pressed={!!webSearch}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                >
+                  <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border", webSearch && "border-primary bg-primary text-primary-foreground")}>
+                    {webSearch && <Check className="h-3 w-3" />}
+                  </span>
+                  {t("Search the web when needed")}
+                </button>
+              </PopoverContent>
+            </Popover>
           )}
           {children}
           <div className="ml-auto">
