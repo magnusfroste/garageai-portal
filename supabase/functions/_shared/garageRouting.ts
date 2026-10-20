@@ -7,6 +7,7 @@ import { modelIdError } from "./modelValidation.ts";
 export { modelIdError, MODEL_ID_RE } from "./modelValidation.ts";
 import { isProbeDeployment, isStaleProbe } from "./probeDeployments.ts";
 import { isPrivateDeployment, privateRoute, privateDeploymentId, hasPrivateMachine, allowsMarket } from './privateMachines.ts';
+import { readGatewayDeployments } from './gatewayDeployments.ts';
 // Desired state = garages table + latest acceptance/probe tests + curated_models admin choices.
 // reconcileGarageRouting compares it with LiteLLM /model/info and adds/removes deployments idempotently.
 // Tests never use sellable routes: they run through short-lived, unguessable "probe" deployments.
@@ -174,11 +175,8 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   const base = await getProxyBaseUrl(admin);
   const keys = await runtimeKeys(admin, garages.map((g) => g.id));
 
-  const infoRes = await fetch(`${base}/model/info`, { headers: litellmHeaders(masterKey) });
-  if (!infoRes.ok) throw new Error(`LiteLLM /model/info failed (${infoRes.status})`);
-  const info = await infoRes.json();
   type Dep = { model_name: string; litellm_params?: { model?: string; api_base?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; weight?: number | null; order?: number | null }; model_info?: { id?: string; garage?: string; garage_tier?: string; key_fingerprint?: string; input_cost_per_token?: number; output_cost_per_token?: number; cache_read_input_token_cost?: number | null; max_input_tokens?: number | null; max_output_tokens?: number | null; max_tokens?: number | null; order?: number | null } };
-  const deps = (info?.data || []) as Dep[];
+  const deps = await readGatewayDeployments<Dep>(base, masterKey);
 
   // Context length per garage model: stored value → runtime /v1/models (reachable endpoint providers) → what LiteLLM already reports.
   const learned: Array<{ garage_id: string; model: string; context_length: number }> = [];

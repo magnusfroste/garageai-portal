@@ -2,6 +2,7 @@
 // Ledger tables (hourly stats, price history) are kept; they carry garage_name and no FK.
 import { corsHeaders, json, getCaller } from "../_shared/garageAuth.ts";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
+import { readGatewayDeployments } from '../_shared/gatewayDeployments.ts';
 import { syncModels } from "../_shared/syncModels.ts";
 import { getNetbirdApiUrl, netbirdHeaders } from "../_shared/netbirdConfig.ts";
 
@@ -75,10 +76,8 @@ Deno.serve(async (req) => {
     if (MASTER_KEY) {
       const litellm = await getProxyBaseUrl(admin);
       const headers = { Authorization: `Bearer ${MASTER_KEY}`, "Content-Type": "application/json" };
-      const infoRes = await fetch(`${litellm}/model/info`, { headers });
-      if (!infoRes.ok) { await infoRes.text(); throw new Error(`LiteLLM /model/info failed with status ${infoRes.status}`); }
-      const info = await infoRes.json();
-      for (const d of (info?.data || []) as Array<{ model_info?: { id?: string } }>) {
+      const deployments = await readGatewayDeployments<{ model_info?: { id?: string } }>(litellm, MASTER_KEY);
+      for (const d of deployments) {
         const id = d.model_info?.id;
         if (id && id.startsWith(`${name}__`)) {
           const r = await fetch(`${litellm}/model/delete`, { method: "POST", headers, body: JSON.stringify({ id }) });

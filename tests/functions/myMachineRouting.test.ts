@@ -23,7 +23,8 @@ function gateway() {
   const deps = new Map<string, any>();
   globalThis.fetch = mock(async (url: any, init: any) => {
     const body = init?.body ? JSON.parse(init.body) : null;
-    if (String(url).endsWith('/model/info')) return Response.json({ data: [...deps.values()] });
+    if (String(url).includes('/v2/model/info')) return Response.json({ data: [...deps.values()], total_pages: 1 });
+    if (String(url).endsWith('/model/info')) return Response.json({ data: [...deps.values()].filter(d => !isPrivateDeployment(d)) });
     if (String(url).endsWith('/model/new')) deps.set(body.model_info.id, body);
     if (String(url).endsWith('/model/delete')) deps.delete(body.id);
     return Response.json({});
@@ -46,6 +47,8 @@ describe('My machine routing', () => {
     const deps = gateway();
     await reconcileGarageRouting(admin() as never, [{ ...g, paused_at: '2026-10-20T20:00:00Z' }] as never, new Set(), new Set());
     expect([...deps.values()].map(d => d.model_name)).toEqual(['mine/garage-m4/ibm-granite/granite-4.1-3b']);
+    await reconcileGarageRouting(admin() as never, [{ ...g, paused_at: '2026-10-20T20:00:00Z' }] as never, new Set(), new Set());
+    expect(deps.size).toBe(1);
   });
   it('Only me removes existing market deployments even when sellable and enabled', async () => {
     const deps = gateway();
