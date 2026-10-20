@@ -1,6 +1,22 @@
 import type { ModelInfo } from "@/models/types/model.types";
+import { machineModelLabel } from "./myMachineService";
 
 /** Pure chat helpers: cost, speed, history grouping and model ordering. */
+
+/** "auto → DeepSeek V4.1 Flash" when the gateway named the served model; null otherwise. */
+export function servedModelLabel(
+  meta: { model?: string; servedModel?: string },
+  displayName?: (id: string) => string | undefined,
+): string | null {
+  if (meta.model !== "garageai/auto" || !meta.servedModel || meta.servedModel === meta.model) return null;
+  return displayName?.(meta.servedModel) ?? machineModelLabel(meta.servedModel);
+}
+
+/** Compact search line parts: one entry per query plus the total source count. */
+export function searchSummary(search: { queries: string[]; sources: unknown[] }): { queries: string[]; count: number } | null {
+  if (!search.queries.length && !search.sources.length) return null;
+  return { queries: search.queries, count: search.sources.length };
+}
 
 export function messageCostUsd(
   model: Pick<ModelInfo, "input_cost_per_million" | "output_cost_per_million"> | undefined,
