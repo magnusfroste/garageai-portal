@@ -1984,6 +1984,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_support_availability: {
+        Args: { _away_until?: string; _mode: string }
+        Returns: undefined
+      }
       signup_welcome_eligible: { Args: { _user_id: string }; Returns: boolean }
       smart_model_demand: {
         Args: never
@@ -2002,6 +2006,7 @@ export type Database = {
           litellm_token: string
         }[]
       }
+      support_availability: { Args: never; Returns: Json }
       support_claim_prompt: { Args: never; Returns: boolean }
       support_diagnostics: { Args: never; Returns: Json }
       support_founder_avatar: { Args: never; Returns: string }
