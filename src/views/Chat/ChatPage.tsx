@@ -9,7 +9,7 @@ import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { useMyMachines } from '@/hooks/useMyMachines';
 import { useToolSupport } from "@/hooks/useToolSupport";
 import { apiModelName } from "@/models/services/modelDedup";
-import { pickChatModel } from "@/models/services/chatModelChoice";
+import { pickChatModel, chatMachineFallback } from "@/models/services/chatModelChoice";
 import type { ModelInfo } from "@/models/types/model.types";
 import { t } from "@/i18n";
 import { ChatMessageList } from "./components/ChatMessageList";
@@ -30,9 +30,10 @@ export const ChatPage = () => {
   const { checkAuth } = useAuth();
   const [searchParams] = useSearchParams();
   const requestedModel = searchParams.get("model");
-  const prefs = useChatPreferences();
   const [selectedModel, setSelectedModel] = useState("");
   const [userId, setUserId] = useState("");
+  const prefs = useChatPreferences(userId);
+  const [fallbackMachine, setFallbackMachine] = useState<ModelInfo | null>(null);
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? "")); }, []);
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -42,7 +43,7 @@ export const ChatPage = () => {
 
   useEffect(() => { checkAuth(); }, []);
 
-  const { models } = useCuratedModels(true);
+  const { models, isLoading: modelsLoading } = useCuratedModels(true);
   const machines = useMyMachines();
   const modelInfos: ModelInfo[] = useMemo(() => [...machines.models, ...models.map((m) => ({
     id: apiModelName(m),
@@ -59,18 +60,22 @@ export const ChatPage = () => {
     is_default: m.is_default,
   }) as ModelInfo)], [models, machines.models]);
 
-  // Model: ?model= (kept even if unhealthy) → last used if healthy → default if
-  // healthy → first healthy pool model → first healthy → first.
+  // Wait for account preferences and both lists, so Auto cannot win a load race.
   useEffect(() => {
+    if (modelsLoading || machines.isLoading || !prefs.loaded) return;
     if (!modelInfos.length || (selectedModel && modelInfos.some((m) => m.id === selectedModel))) return;
     const pick = pickChatModel(modelInfos, requestedModel, prefs.lastModel);
-    if (pick) setSelectedModel(pick.id);
-  }, [modelInfos, selectedModel, requestedModel, prefs.lastModel]);
+    if (pick) {
+      setSelectedModel(pick.id);
+      const fallback = chatMachineFallback(modelInfos, requestedModel, prefs.lastModel);
+      setFallbackMachine(modelInfos.find(m => m.id === fallback?.id) ?? null);
+    }
+  }, [modelInfos, selectedModel, requestedModel, prefs.lastModel, prefs.loaded, modelsLoading, machines.isLoading]);
 
   const selectedModelInfo = modelInfos.find((m) => m.id === selectedModel);
   const selectedOffline = !!selectedModelInfo && selectedModelInfo.status !== "healthy";
 
-  const chooseModel = (id: string) => { setSelectedModel(id); prefs.rememberModel(id); };
+  const chooseModel = (id: string) => { setSelectedModel(id); setFallbackMachine(null); prefs.rememberModel(id); };
 
   const sync = useChatSync();
   const convs = useChatConversations(sync.syncEnabled);
@@ -156,6 +161,11 @@ export const ChatPage = () => {
 
   const empty = messages.length === 0;
   const composerEl = (
+    <>
+    {fallbackMachine && <p className="mb-2 text-xs text-muted-foreground">
+      {t("Your machine ({machine}) is asleep, so this chat uses auto.", { machine: fallbackMachine.garage ?? fallbackMachine.provider })}{" "}
+      <Button variant="link" className="h-auto p-0 text-xs" disabled={isStreaming} onClick={() => chooseModel(fallbackMachine.id)}>{t("Switch back")}</Button>
+    </p>}
     <ChatComposer
       ref={composer}
       onSend={handleSend}
@@ -169,6 +179,7 @@ export const ChatPage = () => {
     >
       <ChatSystemPrompt systemPrompt={systemPrompt} onChangeSystemPrompt={setSystemPrompt} disabled={isStreaming} />
     </ChatComposer>
+    </>
   );
 
   return (

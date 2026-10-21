@@ -26,7 +26,7 @@ export function ownMachineModels(garages: GarageRow[], rows: GarageModelRow[], u
       const canonical = row?.canonical_model ?? normaliseModelId(runtime);
       const id = privateRoute(g.name, canonical);
       unique.set(id, { id, model_name: id, provider: g.name, garage: g.name, garage_tier: 'private',
-        operator_id: g.operator_id, machine_state: state, display_name: `${g.name} · ${machineModelLabel(canonical)}`,
+        operator_id: g.operator_id, machine_state: state, last_heartbeat_at: g.last_heartbeat_at, display_name: `${g.name} · ${machineModelLabel(canonical)}`,
         max_input_tokens: row?.context_length ?? null, max_output_tokens: null,
         input_cost_per_million: 0, output_cost_per_million: 0, mode: 'chat', status: state.kind === 'awake' ? 'healthy' : 'unhealthy' });
     }
