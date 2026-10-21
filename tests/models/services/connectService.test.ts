@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { bridgeInstallCommand, bridgeNetbirdCommand, bridgeProgress, detectOs } from "../../../src/models/services/connectService";
+import { bridgeInstallCommand, bridgeNetbirdCommand, bridgeProgress, bridgeRuntimeInstallCommand, detectOs } from "../../../src/models/services/connectService";
 import { entryFor } from "../../../supabase/functions/_shared/bridgeLink";
 import type { OnboardingEvent } from "../../../src/models/types/onboarding.types";
 
@@ -17,6 +17,22 @@ test("the plain command is the tunnel; the NetBird fallback appends --tunnel net
   expect(bridgeInstallCommand("windows")).toBe("irm https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.ps1 | iex; garageai connect");
   expect(bridgeNetbirdCommand("linux")).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect --tunnel netbird");
   expect(bridgeNetbirdCommand("windows")).toBe("irm https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.ps1 | iex; garageai connect --tunnel netbird");
+});
+
+test("the no-engine line installs Bridge, then Xyntetik Runner, then connects", () => {
+  expect(bridgeRuntimeInstallCommand("linux")).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- runtime install && garageai connect");
+  expect(bridgeRuntimeInstallCommand("macos")).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- runtime install && garageai connect");
+  expect(bridgeRuntimeInstallCommand("windows")).toBe("irm https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.ps1 | iex; garageai runtime install; garageai connect");
+  expect(bridgeRuntimeInstallCommand()).toBe(bridgeRuntimeInstallCommand("linux"));
+});
+
+test("the no-engine line follows bridgeInstallCommand for every OS", () => {
+  for (const os of ["macos", "linux", "windows"] as const) {
+    const base = bridgeInstallCommand(os);
+    const cmd = bridgeRuntimeInstallCommand(os);
+    expect(cmd.startsWith(base.slice(0, base.indexOf("connect")))).toBe(true);
+    expect(cmd).toMatch(/runtime install( &&|; )garageai connect$/);
+  }
 });
 
 let n = 0;
