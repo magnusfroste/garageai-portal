@@ -1,0 +1,30 @@
+BEGIN;
+CREATE TEMP TABLE support_mode_fixture AS SELECT id FROM public.profiles WHERE NOT public.has_role(id,'admin') ORDER BY created_at LIMIT 1;
+GRANT SELECT ON support_mode_fixture TO authenticated;
+SELECT set_config('request.jwt.claim.sub',(SELECT user_id::text FROM public.user_roles WHERE role='admin' LIMIT 1),true);
+SET LOCAL ROLE authenticated;
+SELECT public.set_support_availability('off');
+DO $$ DECLARE rejected boolean:=false; BEGIN
+ BEGIN PERFORM public.support_send('Off must reject new thread'); EXCEPTION WHEN OTHERS THEN IF SQLERRM NOT LIKE 'Support chat is currently off%' THEN RAISE; END IF; rejected:=true; END;
+ IF NOT rejected THEN RAISE EXCEPTION 'Off allowed new thread'; END IF;
+ IF public.support_claim_prompt() THEN RAISE EXCEPTION 'Off allowed bubble'; END IF;
+END $$;
+SELECT public.set_support_availability('away',(now() AT TIME ZONE 'UTC')::date+10);
+DO $$ BEGIN IF public.support_availability()->>'mode'<>'away' OR public.support_claim_prompt() THEN RAISE EXCEPTION 'Away behavior invalid'; END IF; END $$;
+RESET ROLE;
+UPDATE public.admin_settings SET value=jsonb_build_object('mode','away','away_until',(now() AT TIME ZONE 'UTC')::date-1) WHERE key='support_chat';
+SET LOCAL ROLE authenticated;
+DO $$ BEGIN IF public.support_availability()->>'mode'<>'on' THEN RAISE EXCEPTION 'Away never expired'; END IF; END $$;
+RESET ROLE;
+SELECT set_config('request.jwt.claim.sub',(SELECT id::text FROM support_mode_fixture),true);
+SET LOCAL ROLE authenticated;
+DO $$ DECLARE rejected boolean:=false; BEGIN
+ BEGIN PERFORM public.set_support_availability('off'); EXCEPTION WHEN OTHERS THEN rejected:=true; END;
+ IF NOT rejected THEN RAISE EXCEPTION 'Nonadmin changed mode'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.admin_settings WHERE key='support_chat') THEN RAISE EXCEPTION 'User cannot read availability'; END IF;
+END $$;
+RESET ROLE;
+SET LOCAL ROLE service_role;
+DO $$ DECLARE s jsonb; BEGIN s:=public.support_stats(); IF s->>'mode'<>'on' OR NOT s ? 'away_until' THEN RAISE EXCEPTION 'Ops mode missing'; END IF; END $$;
+RESET ROLE;
+ROLLBACK;
