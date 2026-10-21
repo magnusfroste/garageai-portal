@@ -25,7 +25,7 @@
 
 ## Where logic lives
 
-- Support uses protected database RPCs for sending, reading receipts and daily prompt claims; repository → service → hook → signed-in shell/inbox. Diagnostic context is allowlisted and secret-redacted before storage; ops reads only aggregate support statistics, never messages or identities.
+- Support uses protected database RPCs for sending, reading receipts, availability and daily prompt claims; repository → service → hook → signed-in shell/inbox. Derive effective availability from the settings date at read time (no expiry cron); database insert triggers enforce Off. Diagnostic context is allowlisted and secret-redacted before storage; ops reads only aggregate support statistics, never messages or identities.
 
 - Account legal version/links and edge action guards share `_shared/accountTerms.ts`; own-user acceptance uses a protected RPC and signup trigger, with a SQL version mirror, so clients cannot forge timestamps or bypass new-action acceptance.
 

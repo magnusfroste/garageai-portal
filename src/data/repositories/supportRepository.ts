@@ -2,6 +2,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { SupportContext, SupportDiagnostics, SupportMessage, SupportStatus, SupportTag, SupportThread } from '@/models/types/support.types';
 
 export const supportRepository = {
+  async availability() { const {data,error}=await supabase.from('admin_settings').select('value').eq('key','support_chat').maybeSingle(); if(error) throw error; return data?.value; },
+  async setAvailability(mode:string,awayUntil:string|null) { const {error}=await supabase.rpc('set_support_availability',{_mode:mode,_away_until:awayUntil ?? undefined}); if(error) throw error; },
   async threads(userId?: string) {
     let q = supabase.from('support_threads').select('*').order('created_at',{ascending:false});
     if(userId) q=q.eq('user_id',userId);

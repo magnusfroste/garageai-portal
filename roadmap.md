@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Support availability: admin On/Away/Off setting, automatic UTC date expiry, Account read-only access, server Off guard and ops mode; English/Swedish, 95 tests and live rollback security checks passed, browser fixtures verified; publication requested
+
 - [x] Ask Magnus: protected threads/messages, safe context and daily limits; signed-in dock/mobile/chat entry, stuck signals, admin inbox, anonymous ops statistics, Swedish; 92 related tests and live rollback security tests; ops deployed and verified
 - [ ] Ask Magnus real signed-in end-to-end verification — blocked: no matching requester account and explicit Magnus session approval unavailable; desktop/mobile/chat/inbox fixture send/readback verified
 - [ ] Ask Magnus privacy policy row — blocked: website source is in separate GitHub repository www/src/legal/privacy.md; exact additive patch prepared in docs/privacy-support.patch, cannot publish that external website here

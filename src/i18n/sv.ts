@@ -1,6 +1,13 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
   "Ask Magnus": "Fråga Magnus",
+  "Support chat": "Supportchatt",
+  "Away until": "Borta till",
+  "Magnus is away until {date}. You can still write; he answers when he is back.": "Magnus är borta till {date}. Du kan ändå skriva; han svarar när han är tillbaka.",
+  "Support chat is currently off. You can still read existing replies from Account.": "Supportchatten är avstängd just nu. Du kan fortfarande läsa tidigare svar under Konto.",
+  "Read support replies": "Läs supportsvar",
+  "Could not save support availability. Please try again.": "Kunde inte spara supportens tillgänglighet. Försök igen.",
+  "Could not load support availability.": "Kunde inte läsa in supportens tillgänglighet.",
   "Support": "Support",
   "Page": "Sida",
   "Step": "Steg",

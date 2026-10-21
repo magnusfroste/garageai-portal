@@ -575,6 +575,20 @@
       "when": 1792619425021,
       "tag": "0081_ask_magnus_support",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1792620246559,
+      "tag": "0082_support_availability",
+      "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1792620290480,
+      "tag": "0083_support_off_trigger_guard",
+      "breakpoints": true
     }
   ]
 }

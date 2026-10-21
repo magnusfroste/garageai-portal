@@ -5,6 +5,7 @@ import { DailySpendChart } from "./components/DailySpendChart";
 import { useAccountData } from "./hooks/useAccountData";
 import { Shield } from "lucide-react";
 import { ChatSyncSetting } from "./components/ChatSyncSetting";
+import { AccountSupportButton } from "@/views/Support/SupportProvider";
 
 export const AccountPage = () => {
   const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
@@ -31,6 +32,7 @@ export const AccountPage = () => {
       <ProfileSection profile={profile} onUpdated={refetchProfile} />
 
       <ChatSyncSetting />
+      <AccountSupportButton />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ModelSpendChart data={modelSpendTotals} loading={usageLoading} />
