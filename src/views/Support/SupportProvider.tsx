@@ -24,20 +24,23 @@ export function SupportProvider({children}:{children:React.ReactNode}) {
   const [lastError,setLastError]=useState(''); const [repeated,setRepeated]=useState(false);const [waitingSince,setWaitingSince]=useState<number|null>(null); const [now,setNow]=useState(Date.now());
   const [actionError,setActionError]=useState<string|null>(null);
   const errors=useRef(new Map<string,number>());const seenToast=useRef(new Map<string|number,string>());const claiming=useRef(false);
+  const interacted=useRef(false);
   const diagnostics=useQuery({queryKey:['support-diagnostics',uid],enabled:!!uid,queryFn:supportRepository.diagnostics,refetchInterval:60_000});
   const avatar=useQuery({queryKey:['support-avatar',uid],enabled:!!uid,queryFn:supportRepository.avatar,staleTime:300_000});
   const header=pathname.startsWith('/dashboard/chat'); const unread=support.threads.some(t=>supportUnread(t));
-  useEffect(()=>{setBubble(false);setExpanded(false);setLastError('');setRepeated(false);errors.current.clear();seenToast.current.clear();},[uid]);
+  useEffect(()=>{setBubble(false);setExpanded(false);setLastError('');setRepeated(false);interacted.current=false;errors.current.clear();seenToast.current.clear();},[uid]);
   useEffect(()=>{
     const onError=(e:Event)=>{const text=(e as CustomEvent<string>).detail;if(!text)return;setLastError(text);const n=(errors.current.get(text)??0)+1;errors.current.set(text,n);if(n>=2)setRepeated(true);};
     const onWait=(e:Event)=>setWaitingSince((e as CustomEvent<number|null>).detail);
+    const onInteraction=()=>{interacted.current=true;};
+    window.addEventListener('pointerdown',onInteraction);window.addEventListener('keydown',onInteraction);
     window.addEventListener(supportErrorEvent,onError);window.addEventListener('garageai:support-waiting',onWait);
     const timer=setInterval(()=>{setNow(Date.now());for(const v of toast.getHistory()){if('type' in v && v.type==='error' && typeof v.title==='string' && seenToast.current.get(v.id)!==v.title){seenToast.current.set(v.id,v.title);reportSupportError(v.title);}}},1000);
-    return ()=>{clearInterval(timer);window.removeEventListener(supportErrorEvent,onError);window.removeEventListener('garageai:support-waiting',onWait);};
+    return ()=>{clearInterval(timer);window.removeEventListener(supportErrorEvent,onError);window.removeEventListener('garageai:support-waiting',onWait);window.removeEventListener('pointerdown',onInteraction);window.removeEventListener('keydown',onInteraction);};
   },[]);
   const stuck=supportStuck(diagnostics.data,waitingSince,repeated,now);
   useEffect(()=>{
-    if(!uid || expanded || claiming.current || !stuck)return;
+    if(!uid || expanded || claiming.current || !stuck || !interacted.current)return;
     const key=`garageai:support-prompt:${uid}`;let day:string|null=null;try{day=localStorage.getItem(key);}catch{}
     if(!shouldPrompt(stuck,day,now))return; claiming.current=true;
     void supportRepository.claimPrompt().then(claimed=>{try{localStorage.setItem(key,new Date(now).toISOString().slice(0,10));}catch{}if(claimed)setBubble(true);}).catch(()=>{}).finally(()=>{claiming.current=false;});
