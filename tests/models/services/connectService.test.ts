@@ -31,7 +31,7 @@ test("the no-engine line follows bridgeInstallCommand for every OS", () => {
     const base = bridgeInstallCommand(os);
     const cmd = bridgeRuntimeInstallCommand(os);
     expect(cmd.startsWith(base.slice(0, base.indexOf("connect")))).toBe(true);
-    expect(cmd).toMatch(/runtime install( &&|; )garageai connect$/);
+    expect(cmd).toMatch(/runtime install\s*(&&|;)\s*garageai connect$/);
   }
 });
 
