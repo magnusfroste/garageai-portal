@@ -3,6 +3,13 @@ import type { GarageRow } from '@/data/repositories/garageRepository';
 
 export const SUPPORT_TAGS = ['onboarding','connect','models','billing','chat','other'] as const;
 export const SUPPORT_STATUSES = ['open','answered','closed'] as const;
+export type SupportMode = 'on' | 'away' | 'off';
+export function supportAvailability(value:unknown,now=Date.now()):{mode:SupportMode;away_until:string|null} {
+  const s=value as {mode?:unknown;away_until?:unknown}|null;
+  if(s?.mode==='off')return {mode:'off',away_until:null};
+  if(s?.mode==='away' && typeof s.away_until==='string' && /^\d{4}-\d{2}-\d{2}$/.test(s.away_until) && s.away_until>=new Date(now).toISOString().slice(0,10))return {mode:'away',away_until:s.away_until};
+  return {mode:'on',away_until:null};
+}
 export const supportUnread = (t: SupportThread, admin = false) => {
   const message = admin ? t.last_user_message_at : t.last_admin_message_at;
   const read = admin ? t.admin_read_at : t.user_read_at;
