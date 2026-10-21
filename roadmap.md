@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Chat model choice: remembered healthy choice before Auto, newest awake owner machine on first visit, quiet asleep fallback with Switch back; 103 related tests passed, desktop/mobile fixture picker/reload/override verified, publication requested
+- [ ] Chat choice real-account verification — blocked: no auth user matches requester; safe browser fixtures verified without account changes
+
 - [x] Support availability: admin On/Away/Off setting, automatic UTC date expiry, Account read-only access, server Off guard and ops mode; English/Swedish, 95 tests and live rollback security checks passed, browser fixtures verified; publication requested
 
 - [x] Ask Magnus: protected threads/messages, safe context and daily limits; signed-in dock/mobile/chat entry, stuck signals, admin inbox, anonymous ops statistics, Swedish; 92 related tests and live rollback security tests; ops deployed and verified

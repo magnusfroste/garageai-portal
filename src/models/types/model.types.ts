@@ -12,6 +12,7 @@ export interface ModelInfo {
   garage_tier?: string | null;
   operator_id?: string | null;
   display_name?: string;
+  last_heartbeat_at?: string | null;
   machine_state?: { kind: 'awake' | 'asleep' | 'not_answering'; since?: string | null };
 }
 
