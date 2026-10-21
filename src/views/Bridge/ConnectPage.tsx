@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useSession } from "@/hooks/useSession";
 import { connectRepository } from "@/data/repositories/connectRepository";
-import { bridgeInstallCommand, bridgeNetbirdCommand, detectOs, type ConnectOs } from "@/models/services/connectService";
+import { bridgeInstallCommand, bridgeNetbirdCommand, bridgeRuntimeInstallCommand, detectOs, type ConnectOs } from "@/models/services/connectService";
 import { t } from "@/i18n";
 
 import { LegalLinks } from "@/views/Account/components/AccountTermsCheckbox";
@@ -46,8 +46,14 @@ const ConnectPage = () => {
           <li>{t("Approve this computer in the browser.")}</li>
           <li>{t("Choose a model.")}</li>
         </ol>
-        <p className="text-muted-foreground">{t("About 5 minutes. You need: a Mac, Linux or Windows machine with a model running (Ollama, LM Studio, vLLM, llama.cpp…).")}</p>
-        <p className="text-muted-foreground">{t("No runtime yet? Bridge will soon install one for you.")}</p>
+        <p className="text-muted-foreground">{t("About 5 minutes. You need: a Mac, Linux or Windows machine with a model running (Ollama, LM Studio, vLLM, llama.cpp, Xyntetik Runner…).")}</p>
+        <Collapsible className="pt-1">
+          <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ChevronDown className="h-4 w-4" />{t("No AI engine on this computer yet?")}</CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 pt-2">
+            <p className="text-muted-foreground">{t("Bridge can install one: Xyntetik Runner, a one-file engine made in Sweden, with a model that fits your machine.")}</p>
+            <OneLine command={bridgeRuntimeInstallCommand(os)} onCopied={() => setWaiting(true)} />
+          </CollapsibleContent>
+        </Collapsible>
       </section>
       <Card>
         <CardContent className="space-y-4 p-4">
@@ -64,7 +70,7 @@ const ConnectPage = () => {
             <TabsContent value="windows" className="mt-3 space-y-2">
               <p className="text-sm text-muted-foreground">{t("Open PowerShell as Administrator (right-click → Run as administrator), then paste:")}</p>
               <OneLine command={bridgeInstallCommand(os)} onCopied={() => setWaiting(true)} />
-              <p className="text-sm text-muted-foreground">{t("Windows 10/11, PowerShell as Administrator. Ollama, LM Studio or llama.cpp.")}</p>
+              <p className="text-sm text-muted-foreground">{t("Windows 10/11, PowerShell as Administrator. Ollama, LM Studio, llama.cpp or Xyntetik Runner.")}</p>
             </TabsContent>
           </Tabs>
           <a href="https://www.garageai.eu/security" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"><Shield className="h-3.5 w-3.5" />{t("Is it safe to share from my computer?")}</a>
@@ -77,7 +83,7 @@ const ConnectPage = () => {
             </CollapsibleContent>
           </Collapsible>
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-            <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp…) with a model loaded.")}</li>
+            <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp, Xyntetik Runner) with a model loaded, or let Bridge install Xyntetik Runner (above).")}</li>
             <li>{t("After connecting, choose the models to offer under My garage.")}</li>
           </ul>
           {waiting && (
