@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
     const now = Date.now(), d1 = new Date(now - 24 * H).toISOString(), d7 = new Date(now - 7 * 24 * H).toISOString();
     const base = await timed(getProxyBaseUrl(admin), null as string | null);
 
-    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel, auto, versions, buyerFunnel30d] = await Promise.all([
+    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel, auto, versions, buyerFunnel30d, supportRes] = await Promise.all([
       admin.from("profiles").select("id, created_at, litellm_user_id, starting_credit_usd, purchased_credits_usd"),
       admin.from("api_keys").select("user_id, key_value, litellm_token"),
       admin.from("chat_conversations").select("user_id, updated_at").gte("updated_at", d7),
@@ -214,6 +214,7 @@ Deno.serve(async (req) => {
       base ? timed(keySpend(base, master, 7), null) : Promise.resolve(null),
       timed(pendingCheckouts(), null),
       operators(admin), onboarding(admin), adminActivity(admin), timed(onboardingFunnel(admin), null), timed(autoSummary(admin, base, master), null), timed(bridgeVersions(admin), null), timed(buyers30d(admin), null),
+      admin.rpc("support_stats"),
     ]);
     const profiles = (profilesRes.data || []) as Array<{ id: string; created_at: string; litellm_user_id: string | null; starting_credit_usd: number; purchased_credits_usd: number }>;
     const keyOwner = new Map<string, string>();
@@ -250,6 +251,7 @@ Deno.serve(async (req) => {
         low_credit: low,
       },
       buyer_funnel: buyerFunnel30d,
+      support: supportRes.error ? null : supportRes.data,
       credits: { topups_24h: sum(d1), topups_7d: sum(d7), outstanding_balance_usd: outstanding == null ? null : round(outstanding) },
       stripe: { last_webhook_at: null, last_topup_at: tx[0]?.created_at ?? null, failed_webhooks_24h: null, pending_checkouts: pending },
       operators: ops,

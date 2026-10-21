@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Ask Magnus: protected threads/messages, safe context and daily limits; signed-in dock/mobile/chat entry, stuck signals, admin inbox, anonymous ops statistics, privacy row, Swedish; tests and coordinated publication
+
 - [x] My machine: heartbeat-owned free private deployments, owner visibility control, public exclusions, owner chat picker and API copy; migration 0079 applied, functions deployed, 93 tests passed; live 12 free private routes, paused retention and owner/other request checks verified; publish requested
 - [ ] My machine signed-in visibility save/readback — blocked: requester has no matching auth account and explicit-account session approval is unavailable; desktop/mobile owner fixtures verified
 - [ ] Gateway /v1/models listing — existing gateway returns 422 for both temporary owner and other keys; private owner requests return 200, other requests 404; portal picker uses protected owner reads independently

@@ -25,6 +25,8 @@
 
 ## Where logic lives
 
+- Support uses protected database RPCs for sending, reading receipts and daily prompt claims; repository → service → hook → signed-in shell/inbox. Diagnostic context is allowlisted and secret-redacted before storage; ops reads only aggregate support statistics, never messages or identities.
+
 - Account legal version/links and edge action guards share `_shared/accountTerms.ts`; own-user acceptance uses a protected RPC and signup trigger, with a SQL version mirror, so clients cannot forge timestamps or bypass new-action acceptance.
 
 - Smart plans in shared garageSmart; locked RPCs limit daily changes. Signup paths share BridgeInstallLine and StartingPaths to keep connection commands consistent.
