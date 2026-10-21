@@ -29,6 +29,10 @@ const ConnectPage = () => {
   const [waiting, setWaiting] = useState(false);
 
   useEffect(() => { if (session) void connectRepository.markSeen(); }, [session]);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('garageai:support-waiting', { detail: waiting ? Date.now() : null }));
+    return () => { window.dispatchEvent(new CustomEvent('garageai:support-waiting', { detail: null })); };
+  }, [waiting]);
 
   if (loading) return null;
   if (!session) return <Navigate to={`/auth?next=${encodeURIComponent(location.pathname)}`} replace />;

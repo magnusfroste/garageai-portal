@@ -58,6 +58,7 @@ export const ADMIN: NavGroup = {
     { title: "Auto", url: "/dashboard/admin", tab: "auto", icon: Route },
     { title: "Revenue", url: "/dashboard/admin", tab: "revenue", icon: Wallet },
     { title: "Announcements", url: "/dashboard/admin", tab: "announcements", icon: Megaphone },
+    { title: "Support", url: "/dashboard/admin", tab: "support", icon: MessageSquare },
     { title: "Settings", url: "/dashboard/admin", tab: "settings", icon: Settings },
   ],
 };

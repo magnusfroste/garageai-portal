@@ -6,6 +6,8 @@ import { adminRepository } from "@/data/repositories/adminRepository";
 import { useMyGarages } from "@/hooks/useMyGarages";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { t } from "@/i18n";
+import { supportRepository } from "@/data/repositories/supportRepository";
+import { supportUnread } from "@/models/services/supportService";
 import {
   ADMIN, DEVELOPERS, EXPLORE, MY_GARAGES_ITEM, OFFER_GPU_ITEM, OVERVIEW, USE_AI,
   isItemActive, itemHref, type NavGroup, type NavItem,
@@ -36,6 +38,8 @@ export const AppSidebar = () => {
   });
 
   const hasGarages = garagesLoading || garages.length > 0;
+  const { data: supportThreads } = useQuery({queryKey:["support-threads","admin"],enabled:!!isAdmin,queryFn:()=>supportRepository.threads(),refetchInterval:15_000});
+  const supportCount = (supportThreads ?? []).filter(thread=>supportUnread(thread,true)).length;
   const myGarages: NavGroup = {
     id: "my-garages",
     label: "My garage",
@@ -48,6 +52,7 @@ export const AppSidebar = () => {
         <Link to={itemHref(i)} onClick={() => { if (isMobile) setOpenMobile(false); }}>
           <i.icon className="w-4 h-4" />
           <span>{t(i.title)}</span>
+          {i.tab === "support" && supportCount > 0 && <span className="ml-auto text-xs text-primary tabular-nums">{supportCount}</span>}
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>

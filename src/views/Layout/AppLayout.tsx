@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
 import { LanguageMenu } from "./LanguageMenu";
 import { AnnouncementBar } from "@/views/Announcements/AnnouncementBar";
+import { SupportProvider, SupportHeaderButton } from "@/views/Support/SupportProvider";
 import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import {
   DropdownMenu,
@@ -54,6 +55,7 @@ const SignedInLayout = () => {
     : profile?.email?.[0]?.toUpperCase() || "?";
 
   return (
+    <SupportProvider>
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
@@ -64,6 +66,7 @@ const SignedInLayout = () => {
               <GlobalSearch />
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <SupportHeaderButton />
               {budget && (
                 <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => navigate("/dashboard/credits")} title={t("Remaining balance")}>
                   <Wallet className="w-3.5 h-3.5 text-primary" />
@@ -116,5 +119,6 @@ const SignedInLayout = () => {
         </div>
       </div>
     </SidebarProvider>
+    </SupportProvider>
   );
 };

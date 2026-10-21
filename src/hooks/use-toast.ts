@@ -1,4 +1,5 @@
 import * as React from "react";
+import { reportSupportError } from "@/models/services/supportService";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
@@ -135,6 +136,7 @@ function dispatch(action: Action) {
 type Toast = Omit<ToasterToast, "id">;
 
 function toast({ ...props }: Toast) {
+  if (props.variant === "destructive") reportSupportError([props.title, props.description].filter(x=>typeof x==='string').join(' '));
   const id = genId();
 
   const update = (props: ToasterToast) =>

@@ -1,0 +1,10 @@
+--- a/www/src/legal/privacy.md
++++ b/www/src/legal/privacy.md
+@@ -30,6 +30,7 @@
+ | The public IP address and port the operator's tunnel connects from | Operators | Keeping the encrypted tunnel up | Contract | While the tunnel is up, in 30 days of operations data |
+ | Onboarding events: the steps of `garageai connect` and what went wrong | Operators | Helping operators get live, improving onboarding | Legitimate interest | 12 months |
+ | Earnings and, when payouts start, payout and tax details | Operators | Payouts; reporting to the tax authority where required | Contract; legal obligation | 7 years |
++| Support messages and their attached context (page, onboarding step, garage names, Bridge version and problem codes, last error, browser and OS) | Signed-in users who contact Magnus | Support and product improvement | Legitimate interest | Until 12 months after the thread is closed |
+ | Messages you send us | Everyone | Support | Legitimate interest | 2 years |
+ 
+ Bridge never reports prompts, answers, API keys, passwords or command lines.

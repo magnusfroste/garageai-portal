@@ -1583,6 +1583,95 @@ export type Database = {
           },
         ]
       }
+      support_messages: {
+        Row: {
+          body: string
+          context: Json | null
+          created_at: string
+          id: string
+          sender: string
+          thread_id: string
+        }
+        Insert: {
+          body: string
+          context?: Json | null
+          created_at?: string
+          id?: string
+          sender: string
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          context?: Json | null
+          created_at?: string
+          id?: string
+          sender?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "support_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_prompt_days: {
+        Row: {
+          day: string
+          user_id: string
+        }
+        Insert: {
+          day?: string
+          user_id: string
+        }
+        Update: {
+          day?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_threads: {
+        Row: {
+          admin_read_at: string | null
+          closed_at: string | null
+          created_at: string
+          id: string
+          last_admin_message_at: string | null
+          last_user_message_at: string | null
+          status: string
+          tag: string
+          user_id: string
+          user_read_at: string | null
+        }
+        Insert: {
+          admin_read_at?: string | null
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          last_admin_message_at?: string | null
+          last_user_message_at?: string | null
+          status?: string
+          tag?: string
+          user_id: string
+          user_read_at?: string | null
+        }
+        Update: {
+          admin_read_at?: string | null
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          last_admin_message_at?: string | null
+          last_user_message_at?: string | null
+          status?: string
+          tag?: string
+          user_id?: string
+          user_read_at?: string | null
+        }
+        Relationships: []
+      }
       token_usage: {
         Row: {
           api_key_id: string
@@ -1825,6 +1914,7 @@ export type Database = {
         }[]
       }
       operator_garage_overview: { Args: { _garage_id: string }; Returns: Json }
+      prune_closed_support: { Args: never; Returns: number }
       prune_onboarding_events: { Args: never; Returns: number }
       record_bridge_release:
         | {
@@ -1912,6 +2002,31 @@ export type Database = {
           litellm_token: string
         }[]
       }
+      support_claim_prompt: { Args: never; Returns: boolean }
+      support_diagnostics: { Args: never; Returns: Json }
+      support_founder_avatar: { Args: never; Returns: string }
+      support_manage: {
+        Args: {
+          _admin?: boolean
+          _read?: boolean
+          _status?: string
+          _tag?: string
+          _thread_id: string
+        }
+        Returns: undefined
+      }
+      support_safe_text: { Args: { _text: string }; Returns: string }
+      support_send: {
+        Args: {
+          _admin?: boolean
+          _body: string
+          _context?: Json
+          _tag?: string
+          _thread_id?: string
+        }
+        Returns: string
+      }
+      support_stats: { Args: never; Returns: Json }
       verify_cron_secret: { Args: { secret: string }; Returns: boolean }
     }
     Enums: {
