@@ -11,6 +11,18 @@ export const BRIDGE_NETBIRD_FLAG = " --tunnel netbird";
 export const bridgeInstallCommand = (os: ConnectOs = "linux"): string => (os === "windows" ? BRIDGE_ONE_LINE_WINDOWS : BRIDGE_ONE_LINE);
 export const bridgeNetbirdCommand = (os: ConnectOs = "linux"): string => bridgeInstallCommand(os) + BRIDGE_NETBIRD_FLAG;
 
+/**
+ * For a computer with no AI engine yet: install Bridge, then let Bridge install Xyntetik Runner
+ * (a one-file inference engine made in Sweden) with a model that fits the machine, then connect.
+ * Built from bridgeInstallCommand so a change to the install line changes both.
+ */
+export const bridgeRuntimeInstallCommand = (os: ConnectOs = "linux"): string => {
+  const base = bridgeInstallCommand(os);
+  return os === "windows"
+    ? base.replace(/; garageai connect$/, "; garageai runtime install; garageai connect")
+    : base.replace(/ connect$/, " runtime install && garageai connect");
+};
+
 export function detectOs(userAgent: string): ConnectOs {
   const ua = userAgent.toLowerCase();
   if (ua.includes("windows")) return "windows";
