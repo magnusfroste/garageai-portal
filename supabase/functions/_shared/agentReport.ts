@@ -1,7 +1,7 @@
 // Validates the optional Bridge `agent` object sent with node-heartbeat. Pure, no Deno imports (unit-tested).
 export type AgentSeverity = "error" | "warning" | "info";
 export interface AgentProblem { severity: AgentSeverity; code: string; message: string; fix?: string }
-export interface AgentMachine { load_pct?: number; mem_total_mb?: number; mem_free_mb?: number; disk_free_gb?: number; power?: 'ac' | 'battery' | ''; battery_pct?: number; user_active?: boolean; gpu_util_pct?: number; vram_used_mb?: number; vram_total_mb?: number }
+export interface AgentMachine { load_pct?: number; mem_total_mb?: number; mem_free_mb?: number; disk_free_gb?: number; power?: 'ac' | 'battery' | ''; battery_pct?: number; user_active?: boolean; gpu_util_pct?: number; gpu_power_w?: number; gpu_temp_c?: number; vram_used_mb?: number; vram_total_mb?: number }
 export interface AgentUpdate { last_check: string | null; last_update: string | null; last_error: string | null; auto: boolean }
 export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems: AgentProblem[]; update?: AgentUpdate; machine?: AgentMachine; [extra: string]: unknown }
 
@@ -55,9 +55,11 @@ export function parseAgent(raw: unknown): { agent: AgentReport | null; error?: s
   }
   if (isObj(raw.machine)) {
     const machine: AgentMachine = {};
-    for (const key of ['load_pct','mem_total_mb','mem_free_mb','disk_free_gb','battery_pct','gpu_util_pct','vram_used_mb','vram_total_mb'] as const) {
+    for (const key of ['load_pct','mem_total_mb','mem_free_mb','disk_free_gb','battery_pct','gpu_util_pct','vram_used_mb','vram_total_mb','gpu_power_w','gpu_temp_c'] as const) {
       const value = raw.machine[key];
-      if (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= (key.endsWith('_pct') ? 100 : 1e9)) machine[key] = value;
+      const integer = key === 'gpu_power_w' || key === 'gpu_temp_c';
+      const max = key === 'gpu_power_w' ? 5000 : key === 'gpu_temp_c' ? 200 : key.endsWith('_pct') ? 100 : 1e9;
+      if (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= max && (!integer || Number.isInteger(value))) machine[key] = value;
     }
     if (raw.machine.power === 'ac' || raw.machine.power === 'battery' || raw.machine.power === '') machine.power = raw.machine.power;
     if (typeof raw.machine.user_active === 'boolean') machine.user_active = raw.machine.user_active;

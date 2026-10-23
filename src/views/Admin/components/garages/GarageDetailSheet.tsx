@@ -53,7 +53,13 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
             <GarageHealthIndicators garage={garage} models={row.models} />
             <dl className="grid grid-cols-2 gap-3"><Field label={t("Last gateway check")} value={date(garage.last_gateway_check_at)} /><Field label={t("Last heartbeat")} value={provider ? t("Not applicable") : date(garage.last_heartbeat_at)} /></dl>
           </Section>
-          {garage.agent && <><Separator /><BridgeAgentSection agent={garage.agent} at={garage.agent_at ?? null} /></>}
+          {garage.agent && <><Separator /><BridgeAgentSection agent={garage.agent} at={garage.agent_at ?? null} />
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums text-muted-foreground">
+              {garage.agent.machine?.gpu_util_pct != null && <span>{t("GPU utilisation")}: {garage.agent.machine.gpu_util_pct}%</span>}
+              {garage.agent.machine?.gpu_power_w != null && <span>{t("GPU power")}: {garage.agent.machine.gpu_power_w} W{garage.agent.machine.gpu_temp_c != null && <> · {garage.agent.machine.gpu_temp_c} °C</>}</span>}
+              {garage.agent.machine?.gpu_power_w == null && garage.agent.machine?.gpu_temp_c != null && <span>{t("GPU temperature")}: {garage.agent.machine.gpu_temp_c} °C</span>}
+            </div>
+          </>}
           <AdminManagedModels garageId={garage.id} />
           <Separator />
           {!provider && <><Section icon={Rocket} title={t("Onboarding")}><GarageOnboardingSection garageId={garage.id} /></Section><Separator /></>}

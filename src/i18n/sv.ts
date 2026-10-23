@@ -1,5 +1,8 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
+  "GPU utilisation": "GPU-belastning",
+  "GPU power": "GPU-effekt",
+  "GPU temperature": "GPU-temperatur",
   "Your machine ({machine}) is asleep, so this chat uses auto.": "Din maskin ({machine}) sover, så den här chatten använder auto.",
   "Switch back": "Byt tillbaka",
   "Ask Magnus": "Fråga Magnus",
