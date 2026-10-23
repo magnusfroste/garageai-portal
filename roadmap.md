@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Preserve bounded GPU power/temperature heartbeat telemetry, display admin GPU power, test passthrough, deploy backend and publish frontend
+
 - [x] Chat model choice: remembered healthy choice before Auto, newest awake owner machine on first visit, quiet asleep fallback with Switch back; 103 related tests passed, desktop/mobile fixture picker/reload/override verified, publication requested
 - [ ] Chat choice real-account verification — blocked: no auth user matches requester; safe browser fixtures verified without account changes
 
