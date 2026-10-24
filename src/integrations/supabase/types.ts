@@ -612,6 +612,100 @@ export type Database = {
           },
         ]
       }
+      garage_energy_daily: {
+        Row: {
+          busy_wh: number | null
+          day: string
+          efficiency_tokens: number
+          efficiency_wh: number
+          garage_id: string
+          in_tokens: number | null
+          model: string
+          out_tokens: number | null
+          source: string
+          tokens_per_kwh: number | null
+          wh: number | null
+        }
+        Insert: {
+          busy_wh?: number | null
+          day: string
+          efficiency_tokens?: number
+          efficiency_wh?: number
+          garage_id: string
+          in_tokens?: number | null
+          model?: string
+          out_tokens?: number | null
+          source?: string
+          tokens_per_kwh?: number | null
+          wh?: number | null
+        }
+        Update: {
+          busy_wh?: number | null
+          day?: string
+          efficiency_tokens?: number
+          efficiency_wh?: number
+          garage_id?: string
+          in_tokens?: number | null
+          model?: string
+          out_tokens?: number | null
+          source?: string
+          tokens_per_kwh?: number | null
+          wh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_energy_daily_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      garage_energy_windows: {
+        Row: {
+          at: string
+          busy_wh: number | null
+          garage_id: string
+          in_tokens: number | null
+          models: Json
+          out_tokens: number | null
+          source: string | null
+          wh: number | null
+          window_min: number | null
+        }
+        Insert: {
+          at?: string
+          busy_wh?: number | null
+          garage_id: string
+          in_tokens?: number | null
+          models?: Json
+          out_tokens?: number | null
+          source?: string | null
+          wh?: number | null
+          window_min?: number | null
+        }
+        Update: {
+          at?: string
+          busy_wh?: number | null
+          garage_id?: string
+          in_tokens?: number | null
+          models?: Json
+          out_tokens?: number | null
+          source?: string | null
+          wh?: number | null
+          window_min?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_energy_windows_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_managed_models: {
         Row: {
           action: string
@@ -1793,6 +1887,7 @@ export type Database = {
           tokens: number
         }[]
       }
+      garage_energy_summary: { Args: { _garage_id: string }; Returns: Json }
       garage_offline_periods: {
         Args: { _limit?: number; _name: string }
         Returns: {
@@ -1803,6 +1898,13 @@ export type Database = {
         }[]
       }
       garage_profile: { Args: { _name: string }; Returns: Json }
+      garage_public_energy: {
+        Args: { _model: string }
+        Returns: {
+          garage_name: string
+          tokens_per_kwh: number
+        }[]
+      }
       garage_public_locations: {
         Args: never
         Returns: {
@@ -1915,6 +2017,7 @@ export type Database = {
       }
       operator_garage_overview: { Args: { _garage_id: string }; Returns: Json }
       prune_closed_support: { Args: never; Returns: number }
+      prune_garage_energy: { Args: never; Returns: number }
       prune_onboarding_events: { Args: never; Returns: number }
       record_bridge_release:
         | {
