@@ -4,6 +4,7 @@ import { syncModels } from "../_shared/syncModels.ts";
 import { toPublicResult } from "../_shared/acceptanceTest.ts";
 import { changedContexts, applyInventoryMisses } from "../_shared/garageModels.ts";
 import { parseAgent } from "../_shared/agentReport.ts";
+import { energyWindow } from "../_shared/agentEnergy.ts";
 import { parseAgentState, parseAgentNodes, nextAgentState, lifecycleTransition, splitReturnModels, resumeClearsPortalPause, type AgentState } from "../_shared/agentState.ts";
 import { heartbeatBridgeFields, parseBridgeUpdate, updateErrorVersion } from "../_shared/bridgeUpdate.ts";
 import { parseAgentModels, applyReports, pendingOffers, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
@@ -52,6 +53,10 @@ Deno.serve(async (req) => {
     const inventoryPatch = { models: payload.models, runtime: payload.runtime, port: payload.port };
     const { error: heartbeatError } = await admin.from("garages").update({ ...inventoryPatch, last_heartbeat_at: now, ...machinePatch, ...firstModels, agent_state: agentState, ...(parsedNodes.nodes ? { agent_nodes: parsedNodes.nodes } : {}), ...(parsedAgent.agent ? { agent: parsedAgent.agent, agent_at: now } : {}) }).eq("id", garage.id);
     if (heartbeatError) throw heartbeatError;
+    if (parsedAgent.agent?.energy) {
+      const { error: energyError } = await admin.from('garage_energy_windows').insert(energyWindow(garage.id, now, parsedAgent.agent.energy));
+      if (energyError) throw energyError;
+    }
     await storeRuntimeKey(admin, garage.id, payload.runtime_api_key);
     await reconcilePrivateGarage(admin, { ...garage, ...inventoryPatch, mesh_ip: garage.transport === 'tunnel' ? garage.tunnel_ip : garage.mesh_ip } as RoutingGarage, payload.contexts);
     let portalResumed = false;

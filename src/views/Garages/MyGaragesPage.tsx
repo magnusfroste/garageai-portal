@@ -21,6 +21,9 @@ import {MyMachineAccess} from './components/MyMachineAccess';
 import {GarageTermsBanner} from './components/GarageTermsBanner';
 import {t} from '@/i18n';
 import {toast} from 'sonner';
+import {useGarageEnergy} from '@/hooks/useGarageEnergy';
+import {modelEnergyEfficiency} from '@/models/services/garageEnergy';
+import {GarageEnergyToday} from './components/GarageEnergy';
 
 /** The operator's own Pause/Resume, next to the status line. Admin-paused garages get a contact link instead. */
 function PauseControl({g,onDone}:{g:GarageRow;onDone:()=>void}){
@@ -39,6 +42,7 @@ function GaragePage({garage:g,onDone}:{garage:GarageRow;onDone:()=>void}){
  const managed=useManagedModels([g.id]);
  const {models:catalog}=useModelCatalog();
  const {overview,events,smart}=useMyGarageOverview(g.id);
+ const energy=useGarageEnergy(g.id);
  const stats=overview.data;
  const status=myGarageStatus(g,models);
  const memory=g.agent?.machine?.mem_total_mb!=null?g.agent.machine.mem_total_mb/1000:managed.machines.get(g.id)?.memoryGb??null;
@@ -57,6 +61,7 @@ function GaragePage({garage:g,onDone}:{garage:GarageRow;onDone:()=>void}){
    {g.transport==='netbird'&&<p className="text-xs text-muted-foreground">{t('Transport')}: NetBird</p>}
   </section>
   <section aria-label={t('Is it earning?')} className="border-t border-border pt-5 space-y-4">
+   {energy.isError?<p className="text-xs text-destructive">{t('Could not load energy readings.')}</p>:<GarageEnergyToday energy={energy.data}/>}
    <h2 className="text-base font-medium">{t('Earnings')}</h2>
    {overview.isError?<p className="text-sm text-destructive">{t('Could not load earnings.')} <Button variant="link" size="sm" onClick={()=>overview.refetch()}>{t('Try again')}</Button></p>:<div className="grid grid-cols-3 gap-3">{[['Today',stats?.today],['This week',stats?.week],['Total',stats?.total]].map(([label,value])=><div key={String(label)}><p className="text-xs text-muted-foreground">{t(String(label))}</p><p className="mt-1 text-xl sm:text-2xl font-semibold tabular-nums">{money(value as number|undefined)}</p></div>)}</div>}
    <div className="flex justify-between gap-3 flex-wrap text-xs text-muted-foreground"><span>{t('Requests per day · 14 days')}</span>{stats?.response_ms!=null&&<span>{t('Answers in {s} s',{s:(stats.response_ms/1000).toFixed(1)})}</span>}</div>
@@ -68,8 +73,9 @@ function GaragePage({garage:g,onDone}:{garage:GarageRow;onDone:()=>void}){
     const cm=catalog.find(c=>c.name===m.canonical_model),pool=cm?.pool,member=pool?.members.find(p=>p.garage===g.name);
     const requests=stats?.models.filter(s=>s.model===m.model||s.model===runtimeStatKey(m.model)).reduce((n,s)=>n+s.requests,0)??0;
     const live=status.online&&m.offered&&m.installed&&m.status==='live'&&!m.paused_at;
-    return <div key={m.model} className="py-3 flex items-center gap-3"><div className="min-w-0 flex-1 space-y-1"><p className="text-sm font-medium break-words">{m.canonical_model}</p><p className="text-xs text-muted-foreground">{member&&pool?t('{share}% of the pool, {n} garages',{share:Math.round(member.share*100),n:pool.members.length}):t('Not in the pool')} · {t('{n} requests this week',{n:requests})}</p></div><span className={`text-xs shrink-0 ${live?'text-success-foreground':'text-muted-foreground'}`}>{live?t('Live'):m.status==='testing'?t('Testing...'):m.status==='failed'?t('Failed'):t('Not offered')}</span>{g.connection_type!=='endpoint'&&<Switch aria-label={`${t('Offer')} ${m.canonical_model}`} checked={m.offered} disabled={!!pending||g.disabled} onCheckedChange={async on=>{try{await setOffered(g.name,m.model,on);}catch(e){toast.error(e instanceof Error?e.message:t('Unknown error'));}}}/>}</div>;
+    return <div key={m.model} className="py-3 flex items-center gap-3"><div className="min-w-0 flex-1 space-y-1"><p className="text-sm font-medium break-words">{m.canonical_model}</p><p className="text-xs text-muted-foreground">{member&&pool?t('{share}% of the pool, {n} garages',{share:Math.round(member.share*100),n:pool.members.length}):t('Not in the pool')} · {t('{n} requests this week',{n:requests})}</p>{modelEnergyEfficiency(energy.data,m.model)&&<p className="text-xs text-muted-foreground tabular-nums">{modelEnergyEfficiency(energy.data,m.model)} · {t('Last 7 days')}</p>}</div><span className={`text-xs shrink-0 ${live?'text-success-foreground':'text-muted-foreground'}`}>{live?t('Live'):m.status==='testing'?t('Testing...'):m.status==='failed'?t('Failed'):t('Not offered')}</span>{g.connection_type!=='endpoint'&&<Switch aria-label={`${t('Offer')} ${m.canonical_model}`} checked={m.offered} disabled={!!pending||g.disabled} onCheckedChange={async on=>{try{await setOffered(g.name,m.model,on);}catch(e){toast.error(e instanceof Error?e.message:t('Unknown error'));}}}/>}</div>;
    })}</div>
+   <p className="text-xs text-muted-foreground">{t('Tokens per kWh while serving: higher is more efficient. Idle power is not counted against the model.')}</p>
    {g.connection_type!=='endpoint'&&<div className="flex items-start gap-3 border-t border-border pt-4"><Switch id={`smart-${g.id}`} checked={g.smart??false} disabled={smart.isPending||g.disabled} onCheckedChange={on=>smart.mutate({on,disk:g.smart_disk_gb??40})}/><div className="min-w-0"><label htmlFor={`smart-${g.id}`} className="text-sm font-medium cursor-pointer">{t('GarageAI manages my models')}</label><p className="text-xs text-muted-foreground mt-1 leading-relaxed">{t('We fetch models that are in demand and fit your machine, and tell you why. Uses up to {gb} GB of disk.',{gb:g.smart_disk_gb??40})}</p></div></div>}
    {(events.data??[]).slice(0,noticeCount).map(e=><p key={e.id} className="text-xs text-muted-foreground">{e.action==='pull'?(e.reason.requests_7d!=null?t('We requested {model} for {garage}: {n} requests/day ({r7} requests from {keys} API keys in 7 days), {garages} garages were not enough.',{model:e.model,garage:g.name,n:e.reason.requests_per_day??0,r7:e.reason.requests_7d,keys:e.reason.distinct_keys_7d??0,garages:e.reason.healthy_garages??0}):t('We requested {model} for {garage}: {n} requests/day, {garages} garages were not enough.',{model:e.model,garage:g.name,n:e.reason.requests_per_day??0,garages:e.reason.healthy_garages??0})):t('We requested removal of {model} from {garage}: no requests in 14 days.',{model:e.model,garage:g.name})}</p>)}
    {(events.data?.length??0)>noticeCount&&<Button size="sm" variant="link" className="px-0" onClick={()=>setNoticeCount(events.data?.length??1)}>{t('All Smart activity')}</Button>}

@@ -18,6 +18,8 @@ import { ManagedModelStatusList } from "@/views/Garages/components/ManagedModels
 import { useManagedModels } from "@/hooks/useManagedModels";
 import { machineMismatch, shortMachineId } from "@/models/services/bridgeLinkService";
 
+import { AdminGarageEnergy } from '@/views/Garages/components/GarageEnergy';
+
 const Section = ({ icon: Icon, title, children }: { icon: typeof Server; title: string; children: ReactNode }) => (
   <section className="space-y-3"><h3 className="flex items-center gap-2 text-sm font-semibold"><Icon className="h-4 w-4 text-primary" />{title}</h3>{children}</section>
 );
@@ -60,6 +62,7 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
               {garage.agent.machine?.gpu_power_w == null && garage.agent.machine?.gpu_temp_c != null && <span>{t("GPU temperature")}: {garage.agent.machine.gpu_temp_c} °C</span>}
             </div>
           </>}
+          {!provider && <AdminGarageEnergy id={garage.id} />}
           <AdminManagedModels garageId={garage.id} />
           <Separator />
           {!provider && <><Section icon={Rocket} title={t("Onboarding")}><GarageOnboardingSection garageId={garage.id} /></Section><Separator /></>}

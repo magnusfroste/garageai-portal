@@ -30,6 +30,9 @@ import { ModelSnippets } from "./components/ModelSnippets";
 import { cn } from "@/lib/utils";
 
 import { t } from "@/i18n";
+import { usePublicModelEnergy } from '@/hooks/useGarageEnergy';
+import { formatEnergyEfficiency } from '@/models/services/garageEnergy';
+
 type SortKey = "garage" | "grade" | "price" | "ttft" | "tps" | "availability" | "online";
 const GRADE_RANK = { Nytt: 0, D: 1, C: 2, B: 3, A: 4 } as const;
 const sortVal = (o: GarageOffer, k: SortKey): number | string => {
@@ -82,6 +85,8 @@ const ModelDetailPage = () => {
   const { settings } = useSiteSettings();
   const { session } = useSession();
   const m = findModelBySplat(models, splat);
+  const energy = usePublicModelEnergy(m?.name ?? '');
+  const energyOf = (garage: string) => formatEnergyEfficiency(energy.data?.find(e => e.garage_name === garage)?.tokens_per_kwh);
   const garages = m?.offers.map((o) => o.garage) ?? [];
   const daily = useDailyTokens(garages);
   const profiles = useQueries({
@@ -184,7 +189,7 @@ const ModelDetailPage = () => {
             <thead className="text-[11px] text-muted-foreground border-b border-border/50">
               <tr>
                 <Th k="garage">{t("Garage")}</Th><Th k="grade">{t("Grade")}</Th><Th k="price">{t("Price in / out")}</Th>
-                <Th k="ttft">Median TTFT</Th><Th k="tps">Median tok/s</Th><Th k="availability">{t("Availability")}</Th><Th k="online">Status</Th>
+                <Th k="ttft">Median TTFT</Th><Th k="tps">Median tok/s</Th><Th k="availability">{t("Availability")}</Th><th className="px-3 py-2 font-normal text-left">{t("Energy")}<div>{t("Last 7 days")}</div></th><Th k="online">Status</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
@@ -200,6 +205,7 @@ const ModelDetailPage = () => {
                   <td className="px-3 py-2 tabular-nums">{formatNumber(o.ttftMs, " ms")}</td>
                   <td className="px-3 py-2 tabular-nums">{o.tokensPerSecond == null ? "—" : String(o.tokensPerSecond)}</td>
                   <td className="px-3 py-2"><div className="flex items-center gap-2"><MiniBar days={profileOf(o.garage)} /><span className="text-xs tabular-nums">{formatPct(o.availability30d)} · {measuredLabel(o.sampleDays)}</span></div></td>
+                  <td className="px-3 py-2 tabular-nums whitespace-nowrap">{o.location?.is_endpoint ? t("datacenter") : energyOf(o.garage)}</td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1.5 text-xs">
                       <StatusDot tone={o.online ? "success" : "neutral"} />

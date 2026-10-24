@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Validate Bridge energy/update reports; migration 0084 stores windows and atomic daily totals; 90-day daily cleanup; owner/admin/public/ops displays; 38 heartbeat tests and live rollback storage/weighted-efficiency/RLS checks passed; garage-m1 live energy window verified; backend deployed and publication requested
+- [ ] Energy real signed-in owner/admin readback and gateway-authenticated ops response — blocked: requester has no matching auth account and no gateway session is available; public page and desktop/mobile summary fixtures verified
+
 - [x] Preserve integer GPU watts (0–5000) and temperature (0–200); 22 tests passed, 142 W / 61 °C admin desktop/mobile fixtures verified, live dgx-city heartbeat stored 13 W / 45 °C; node-heartbeat deployed, frontend publication requested. gateway-targets already forwards agent.machine; ops-summary does not forward machine telemetry.
 - [ ] GPU telemetry real signed-in admin verification — blocked: requester has no matching auth account; live heartbeat storage and admin desktop/mobile fixtures verified
 

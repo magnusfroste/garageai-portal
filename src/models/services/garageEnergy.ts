@@ -1,0 +1,3 @@
+export interface GarageEnergy { today: { wh: number | null; busy_wh: number | null; tokens_per_kwh: number | null; sources: Array<string | null> | null }; models: Array<{ model: string; canonical_model: string; tokens_per_kwh: number | null }> }
+export const formatEnergyEfficiency = (value: number | null | undefined) => value != null && value > 0 ? `${new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:1}).format(value)} tokens/kWh` : '';
+export const modelEnergyEfficiency = (energy: GarageEnergy | null | undefined, runtime: string) => formatEnergyEfficiency(energy?.models.find(m => m.model === runtime)?.tokens_per_kwh);

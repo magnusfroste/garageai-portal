@@ -589,6 +589,13 @@
       "when": 1792620290480,
       "tag": "0083_support_off_trigger_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1792835048583,
+      "tag": "0084_garage_energy_windows_daily",
+      "breakpoints": true
     }
   ]
 }

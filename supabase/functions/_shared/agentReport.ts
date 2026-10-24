@@ -1,9 +1,10 @@
 // Validates the optional Bridge `agent` object sent with node-heartbeat. Pure, no Deno imports (unit-tested).
+import { parseEnergy, type AgentEnergy } from './agentEnergy.ts';
 export type AgentSeverity = "error" | "warning" | "info";
 export interface AgentProblem { severity: AgentSeverity; code: string; message: string; fix?: string }
 export interface AgentMachine { load_pct?: number; mem_total_mb?: number; mem_free_mb?: number; disk_free_gb?: number; power?: 'ac' | 'battery' | ''; battery_pct?: number; user_active?: boolean; gpu_util_pct?: number; gpu_power_w?: number; gpu_temp_c?: number; vram_used_mb?: number; vram_total_mb?: number }
 export interface AgentUpdate { last_check: string | null; last_update: string | null; last_error: string | null; auto: boolean }
-export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems: AgentProblem[]; update?: AgentUpdate; machine?: AgentMachine; [extra: string]: unknown }
+export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems: AgentProblem[]; update?: AgentUpdate; energy?: AgentEnergy; machine?: AgentMachine; [extra: string]: unknown }
 
 export const AGENT_STRING_MAX = 64;
 export const AGENT_PROBLEMS_MAX = 20;
@@ -11,7 +12,7 @@ export const AGENT_MESSAGE_MAX = 300;
 export const AGENT_EXTRA_FIELD_MAX = 16_384;
 export const AGENT_EXTRAS_MAX = 32_768;
 // models is stored in garage_managed_models; the rest are validated individually.
-const KNOWN = new Set(["tool", "version", "os", "arch", "problems", "update", "machine", "models"]);
+const KNOWN = new Set(["tool", "version", "os", "arch", "problems", "update", "machine", "models", "energy"]);
 const SEVERITIES = new Set(["error", "warning", "info"]);
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -53,6 +54,8 @@ export function parseAgent(raw: unknown): { agent: AgentReport | null; error?: s
     if (lastCheck === undefined || lastUpdate === undefined || lastError === undefined) return { agent: null, error: "agent.update invalid" };
     out.update = { last_check: lastCheck, last_update: lastUpdate, last_error: lastError || null, auto: u.auto };
   }
+  const energy = parseEnergy(raw.energy);
+  if (energy) out.energy = energy;
   if (isObj(raw.machine)) {
     const machine: AgentMachine = {};
     for (const key of ['load_pct','mem_total_mb','mem_free_mb','disk_free_gb','battery_pct','gpu_util_pct','vram_used_mb','vram_total_mb','gpu_power_w','gpu_temp_c'] as const) {
