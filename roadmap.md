@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Validate Bridge energy/update reports, store 90-day windows with owner/admin isolation, aggregate busy-energy efficiency, show owner/admin/public/ops readings, test and publish together
+
 - [x] Preserve integer GPU watts (0–5000) and temperature (0–200); 22 tests passed, 142 W / 61 °C admin desktop/mobile fixtures verified, live dgx-city heartbeat stored 13 W / 45 °C; node-heartbeat deployed, frontend publication requested. gateway-targets already forwards agent.machine; ops-summary does not forward machine telemetry.
 - [ ] GPU telemetry real signed-in admin verification — blocked: requester has no matching auth account; live heartbeat storage and admin desktop/mobile fixtures verified
 
