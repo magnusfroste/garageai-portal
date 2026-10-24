@@ -13,14 +13,14 @@ SELECT v,now(),5,'nvidia-smi',3.21,1.05,12000,2400,'[{"model":"qwen3:4b","out_to
 DO $$ DECLARE ratio numeric; BEGIN
  IF (SELECT count(*) FROM public.garage_energy_windows WHERE garage_id=(SELECT v FROM energy_test_state WHERE k='garage'))<>1 THEN RAISE EXCEPTION 'Sample window not stored exactly once'; END IF;
  SELECT tokens_per_kwh INTO ratio FROM public.garage_energy_daily WHERE garage_id=(SELECT v FROM energy_test_state WHERE k='garage') AND model='qwen3:4b';
- IF abs(ratio-2400/(1.05/1000))>0.001 THEN RAISE EXCEPTION 'Daily ratio must use busy Wh'; END IF;
+ IF ratio IS NULL OR abs(ratio-2400/(1.05/1000))>0.001 THEN RAISE EXCEPTION 'Daily ratio must use busy Wh'; END IF;
 END $$;
 -- A second differently sized window must yield a ratio of sums, not average ratios.
 INSERT INTO public.garage_energy_windows(garage_id,at,wh,busy_wh,out_tokens,source,models)
 SELECT v,now()+interval '5 minutes',10,3,3000,'nvidia-smi','[{"model":"qwen3:4b","out_tokens":3000,"busy_wh":3}]' FROM energy_test_state WHERE k='garage';
 DO $$ DECLARE ratio numeric; BEGIN
  SELECT tokens_per_kwh INTO ratio FROM public.garage_energy_daily WHERE garage_id=(SELECT v FROM energy_test_state WHERE k='garage') AND model='qwen3:4b';
- IF abs(ratio-5400/(4.05/1000))>0.001 THEN RAISE EXCEPTION 'Daily weighted ratio incorrect'; END IF;
+ IF ratio IS NULL OR abs(ratio-5400/(4.05/1000))>0.001 THEN RAISE EXCEPTION 'Daily weighted ratio incorrect'; END IF;
 END $$;
 SELECT set_config('request.jwt.claim.sub',(SELECT v::text FROM energy_test_state WHERE k='owner'),true);
 SET LOCAL ROLE authenticated;
