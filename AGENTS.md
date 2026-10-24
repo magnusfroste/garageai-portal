@@ -23,6 +23,8 @@
 - Keep garage_models.model as the runtime id (sent upstream, never shown to buyers) and canonical_model as the catalogue/pool name: OpenRouter-style `<creator>/<model>` from the org/family tables in `modelIdentity.ts` (SQL mirror `normalise_model_id`), mesh names normalised by the DB trigger, model pages use a splat route (names contain `/`), only admins may alias endpoint-provider models, deployment ids derive from the runtime id.
 - Record connect-script progress only via the `onboarding-report` edge function (register-token auth, service-role insert, rate-limited, newest 200 kept); derive step states only in `onboardingProgress.ts`, so wizard, admin Supply and gateway agree.
 
+- Energy windows are service-written and atomically rolled into daily runtime-model totals by an insert trigger; protected summaries and a canonical-only public RPC compute efficiency from summed busy Wh, never average reported ratios.
+
 ## Where logic lives
 
 - Chat initial selection and unavailable-machine fallback derive only in chatModelChoice; wait for owner inventory and account-scoped device preferences before selecting, so asynchronous loading cannot force Auto.

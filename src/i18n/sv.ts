@@ -1,5 +1,10 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
+  "Energy": "Energi",
+  "Energy today": "Energi idag",
+  "datacenter": "datacenter",
+  "Could not load energy readings.": "Kunde inte läsa in energimätningar.",
+  "Tokens per kWh while serving: higher is more efficient. Idle power is not counted against the model.": "Tokens per kWh under körning: högre är mer effektivt. Tomgångseffekt räknas inte mot modellen.",
   "GPU utilisation": "GPU-belastning",
   "GPU power": "GPU-effekt",
   "GPU temperature": "GPU-temperatur",

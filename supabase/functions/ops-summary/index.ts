@@ -168,6 +168,16 @@ async function bridgeVersions(admin: SupabaseClient) {
   return bridgeVersionsSummary(setting.data?.value, garages.data ?? [], update.data?.value);
 }
 
+async function energySummary(admin: SupabaseClient) {
+  const {data,error} = await admin.from('garages').select('id,name').neq('connection_type','endpoint');
+  if (error) throw error;
+  return Promise.all((data ?? []).map(async g => {
+    const {data: energy,error: e} = await admin.rpc('garage_energy_summary',{_garage_id:g.id});
+    if (e) throw e;
+    return {garage:g.name,...(energy as Record<string,unknown>)};
+  }));
+}
+
 async function sha256Hex(s: string) {
   return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -205,7 +215,7 @@ Deno.serve(async (req) => {
     const now = Date.now(), d1 = new Date(now - 24 * H).toISOString(), d7 = new Date(now - 7 * 24 * H).toISOString();
     const base = await timed(getProxyBaseUrl(admin), null as string | null);
 
-    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel, auto, versions, buyerFunnel30d, supportRes] = await Promise.all([
+    const [profilesRes, keysRes, chatsRes, txRes, spend1, spend7, pending, ops, onb, activity, funnel, auto, versions, buyerFunnel30d, supportRes, energy] = await Promise.all([
       admin.from("profiles").select("id, created_at, litellm_user_id, starting_credit_usd, purchased_credits_usd"),
       admin.from("api_keys").select("user_id, key_value, litellm_token"),
       admin.from("chat_conversations").select("user_id, updated_at").gte("updated_at", d7),
@@ -214,7 +224,7 @@ Deno.serve(async (req) => {
       base ? timed(keySpend(base, master, 7), null) : Promise.resolve(null),
       timed(pendingCheckouts(), null),
       operators(admin), onboarding(admin), adminActivity(admin), timed(onboardingFunnel(admin), null), timed(autoSummary(admin, base, master), null), timed(bridgeVersions(admin), null), timed(buyers30d(admin), null),
-      admin.rpc("support_stats"),
+      admin.rpc("support_stats"), timed(energySummary(admin), null),
     ]);
     const profiles = (profilesRes.data || []) as Array<{ id: string; created_at: string; litellm_user_id: string | null; starting_credit_usd: number; purchased_credits_usd: number }>;
     const keyOwner = new Map<string, string>();
@@ -260,6 +270,7 @@ Deno.serve(async (req) => {
       admin_activity: activity,
       auto,
       bridge_versions: versions,
+      energy,
     });
   } catch (e) {
     console.error("[ops-summary] error", e instanceof Error ? e.message : "unknown");
