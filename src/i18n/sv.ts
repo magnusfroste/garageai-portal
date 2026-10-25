@@ -550,6 +550,7 @@ export const sv: Record<string, string> = {
   "Endpoint URL": "Endpoint-URL",
   "Fetching...": "Hämtar...",
   "Fetch models": "Hämta modeller",
+  "Add model ID": "Lägg till modell-id",
   "The endpoint returned no models": "Endpointen returnerade inga modeller",
   "Could not fetch models": "Kunde inte hämta modeller",
   "Lowercase letters, digits and dashes (2–41 chars).": "Små bokstäver, siffror och bindestreck (2–41 tecken).",

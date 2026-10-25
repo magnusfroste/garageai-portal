@@ -5,6 +5,7 @@
 - Flow: repositories → services/models → hooks → views.
 - Derive admin garage status, attention, filtering and sorting in the shared presentation service, so all admin views agree.
 - Keep metadata in site_settings; GarageAIMark/useId avoids clashes. Bridge version services own semver/pins; atomic RPCs preserve pins.
+- Manual provider model selection uses the shared model-ID validation with vendor names allowed; discovery remains optional because compatible chat APIs do not always expose a model list. Server admin authorization and acceptance tests remain authoritative.
 - Keep signup intent as profile metadata, never an authorization role; roles stay in `user_roles`.
 - Route initial node registration and changed heartbeats through the shared garage registration service, so cleanup and catalogue sync stay consistent.
 - Centralize runtime metadata, allowed ports and onboarding tool; resolve demand IDs by runtime to match install filters.

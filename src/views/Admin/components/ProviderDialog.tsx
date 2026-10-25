@@ -11,6 +11,8 @@ import { t } from "@/i18n";
 import { TermsCheckbox } from "@/views/Garages/components/TermsCheckbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { COUNTRY_CODES, countryName, flagEmoji } from "@/models/services/location";
+import { Plus } from "lucide-react";
+import { addProviderModel, validProviderModelId } from "@/models/services/providerModelSelection";
 
 const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 const PRICE_FIELDS: Array<[keyof ProviderPrices, string, string]> = [
@@ -32,13 +34,14 @@ export const ProviderDialog = ({ open, onOpenChange, onCreated }: Props) => {
   const [apiKey, setApiKey] = useState("");
   const [country, setCountry] = useState("");
   const [available, setAvailable] = useState<string[]>([]);
+  const [manualModel, setManualModel] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<"fetch" | "create" | null>(null);
   const [termsOk, setTermsOk] = useState(false);
   const [result, setResult] = useState<ProviderResult | null>(null);
 
-  const reset = () => { setName(""); setDisplayName(""); setUrl(""); setApiKey(""); setAvailable([]); setPicked(new Set()); setPrices({}); setResult(null); setTermsOk(false); };
+  const reset = () => { setName(""); setDisplayName(""); setUrl(""); setApiKey(""); setAvailable([]); setManualModel(""); setPicked(new Set()); setPrices({}); setResult(null); setTermsOk(false); };
   const close = (o: boolean) => { onOpenChange(o); if (!o) reset(); };
   const fail = (title: string, e: unknown) => toast({ title, description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
 
@@ -46,10 +49,18 @@ export const ProviderDialog = ({ open, onOpenChange, onCreated }: Props) => {
     setBusy("fetch");
     try {
       const res = await garageRepository.listProviderModels(url, apiKey);
-      setAvailable(res.models);
+      setAvailable((current) => Array.from(new Set([...current, ...res.models])));
       setUrl(res.endpoint_url);
       if (!res.models.length) toast({ title: t("The endpoint returned no models") });
     } catch (e) { fail(t("Could not fetch models"), e); } finally { setBusy(null); }
+  };
+
+  const addManualModel = () => {
+    if (!validProviderModelId(manualModel)) return;
+    const model = manualModel.trim();
+    setAvailable((current) => addProviderModel(current, model));
+    setPicked((current) => new Set([...current, model]));
+    setManualModel("");
   };
 
   const create = async () => {
@@ -98,6 +109,13 @@ export const ProviderDialog = ({ open, onOpenChange, onCreated }: Props) => {
             <Button variant="outline" className="w-full" onClick={fetchModels} disabled={!url || busy !== null}>
               {busy === "fetch" ? t("Fetching...") : t("Fetch models")}
             </Button>
+            <div className="space-y-1.5">
+              <Label htmlFor="pv-model">{t("Model ID")}</Label>
+              <div className="flex gap-2">
+                <Input id="pv-model" className="min-w-0 flex-1" value={manualModel} onChange={(e) => setManualModel(e.target.value)} placeholder="deepseek-ai/deepseek-v4.1-flash-1017" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addManualModel(); } }} />
+                <Button variant="outline" size="icon" className="shrink-0" onClick={addManualModel} disabled={busy !== null || !validProviderModelId(manualModel)} title={t("Add model ID")} aria-label={t("Add model ID")}><Plus className="h-4 w-4" /></Button>
+              </div>
+            </div>
             {available.length > 0 && (
               <div className="max-h-48 space-y-1.5 overflow-y-auto rounded border border-border/50 p-2">
                 {available.map((m) => (
