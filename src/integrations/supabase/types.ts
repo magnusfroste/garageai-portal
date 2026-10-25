@@ -1606,6 +1606,7 @@ export type Database = {
           signup_intent: string | null
           starting_credit_usd: number
           terms_accepted_at: string | null
+          terms_notice_dismissed_version: string | null
           terms_version: string | null
           updated_at: string
         }
@@ -1626,6 +1627,7 @@ export type Database = {
           signup_intent?: string | null
           starting_credit_usd?: number
           terms_accepted_at?: string | null
+          terms_notice_dismissed_version?: string | null
           terms_version?: string | null
           updated_at?: string
         }
@@ -1646,6 +1648,7 @@ export type Database = {
           signup_intent?: string | null
           starting_credit_usd?: number
           terms_accepted_at?: string | null
+          terms_notice_dismissed_version?: string | null
           terms_version?: string | null
           updated_at?: string
         }
@@ -1828,6 +1831,10 @@ export type Database = {
     }
     Functions: {
       accept_account_terms: { Args: { _version: string }; Returns: undefined }
+      account_terms_valid: {
+        Args: { _at?: string; _version: string }
+        Returns: boolean
+      }
       account_terms_version: { Args: never; Returns: string }
       apply_credit_reversal: {
         Args: {
@@ -1878,6 +1885,10 @@ export type Database = {
           credits_added: number
           total_budget: number
         }[]
+      }
+      dismiss_account_terms_notice: {
+        Args: { _version: string }
+        Returns: undefined
       }
       garage_daily_tokens: {
         Args: { _names: string[] }
