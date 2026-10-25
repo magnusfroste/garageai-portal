@@ -2,6 +2,16 @@ import { expect, test } from "bun:test";
 import postgres from "postgres";
 import { ACCOUNT_TERMS_VERSION } from "../../supabase/functions/_shared/accountTerms";
 
+const canWriteFixtures = async () => {
+  if (!process.env.SUPABASE_DB_URL) return false;
+  const sql = postgres(process.env.SUPABASE_DB_URL, { max: 1, connect_timeout: 5 });
+  try {
+    const [row] = await sql`select has_table_privilege(current_user, 'public.profiles', 'UPDATE') and pg_has_role(current_user, 'authenticated', 'MEMBER') as allowed`;
+    return row.allowed === true;
+  } finally { await sql.end({ timeout: 1 }); }
+};
+const privilegedFixturesAvailable = await canWriteFixtures();
+
 test.skipIf(!process.env.SUPABASE_DB_URL)("database current version matches the shared frontend/edge constant", async () => {
   const sql = postgres(process.env.SUPABASE_DB_URL ?? "", { max: 1, connect_timeout: 5, connection: { statement_timeout: 3000 } });
   try {
@@ -22,14 +32,22 @@ test.skipIf(!process.env.SUPABASE_DB_URL)("anonymous callers cannot execute acce
 test.skipIf(!process.env.SUPABASE_DB_URL)("database transition keeps legacy access until 9 November UTC", async () => {
   const sql = postgres(process.env.SUPABASE_DB_URL ?? "", { max: 1, connect_timeout: 5 });
   try {
-    const [row] = await sql`select public.account_terms_valid('2026-10-17', '2026-11-08 23:59:59+00') as before, public.account_terms_valid('2026-10-17', '2026-11-09 00:00:00+00') as after, public.account_terms_valid('2026-10-25', '2026-11-09 00:00:00+00') as current`;
-    expect(row.before).toBe(true);
-    expect(row.after).toBe(false);
-    expect(row.current).toBe(true);
+    // Evaluate the deployed SQL body with concrete inputs when the sandbox's
+    // read-only role cannot execute authenticated-only functions directly.
+    const [definition] = await sql`select prosrc from pg_proc where oid = 'public.account_terms_valid(text,timestamptz)'::regprocedure`;
+    const query = definition.prosrc.replaceAll('_version', '$1::text').replaceAll('_at', '$2::timestamptz');
+    for (const [version, at, expected] of [
+      ['2026-10-17', '2026-11-08 23:59:59+00', true],
+      ['2026-10-17', '2026-11-09 00:00:00+00', false],
+      ['2026-10-25', '2026-11-09 00:00:00+00', true],
+    ] as const) {
+      const [row] = await sql.unsafe(query, [version, at]);
+      expect(Object.values(row)[0]).toBe(expected);
+    }
   } finally { await sql.end({ timeout: 1 }); }
 });
 
-test.skipIf(!process.env.SUPABASE_DB_URL)("notice dismissal and acceptance are account-scoped and persisted", async () => {
+test.skipIf(!privilegedFixturesAvailable)("notice dismissal and acceptance are account-scoped and persisted", async () => {
   const sql = postgres(process.env.SUPABASE_DB_URL ?? "", { max: 1, connect_timeout: 5 });
   try {
     // Roll back all fixture changes, including acceptance timestamps.
