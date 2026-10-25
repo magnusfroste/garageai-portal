@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Update account terms to 2026-10-25; preserve legacy acceptance until 2026-11-09; dismissible English/Swedish notice and admin version display; tests and publish
+- [x] Update account terms to 2026-10-25; preserve legacy acceptance until 2026-11-09; persist dismissible English/Swedish notice; existing Admin Users accepted-version column retained; migration 0085 and six affected functions deployed; 21 tests passed, desktop/mobile notice fixtures verified; frontend publication requested
+- [ ] Terms transition real signed-in acceptance/dismissal readback — blocked: no requesting-user auth account; privileged rollback persistence test skipped on read-only sandbox connection
 
 - [x] Validate Bridge energy/update reports; migration 0084 stores windows and atomic daily totals; 90-day daily cleanup; owner/admin/public/ops displays; 38 heartbeat tests and live rollback storage/weighted-efficiency/RLS checks passed; garage-m1 live energy window verified; backend deployed and publication requested
 - [ ] Energy real signed-in owner/admin readback and gateway-authenticated ops response — blocked: requester has no matching auth account and no gateway session is available; public page and desktop/mobile summary fixtures verified
