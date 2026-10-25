@@ -8,6 +8,7 @@ export interface Profile {
   preferred_language: "en" | "sv";
   terms_version: string | null;
   terms_accepted_at: string | null;
+  terms_notice_dismissed_version?: string | null;
   chat_sync: boolean;
   default_key_at: string | null;
 }
