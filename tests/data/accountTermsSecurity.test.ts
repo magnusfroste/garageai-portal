@@ -35,7 +35,7 @@ test.skipIf(!process.env.SUPABASE_DB_URL)("database transition keeps legacy acce
     // Evaluate the deployed SQL body with concrete inputs when the sandbox's
     // read-only role cannot execute authenticated-only functions directly.
     const [definition] = await sql`select prosrc from pg_proc where oid = 'public.account_terms_valid(text,timestamptz)'::regprocedure`;
-    const query = definition.prosrc.replaceAll('_version', '$1::text').replaceAll('_at', '$2::timestamptz');
+    const query = definition.prosrc.replace(/\b_version\b/g, '$1::text').replace(/\b_at\b/g, '$2::timestamptz');
     for (const [version, at, expected] of [
       ['2026-10-17', '2026-11-08 23:59:59+00', true],
       ['2026-10-17', '2026-11-09 00:00:00+00', false],
