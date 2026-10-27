@@ -4,9 +4,11 @@ import { useCuratedModels } from "@/hooks/useCuratedModels";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { ConnectSection } from "./components/ConnectSection";
 import { AgenticToolsSection } from "./components/AgenticToolsSection";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { t } from "@/i18n";
 
 export const ApiPage = () => {
+  usePageTitle("Documentation – GarageAI");
   const { models } = useCuratedModels(true);
   const { settings } = useSiteSettings();
 

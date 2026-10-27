@@ -1,5 +1,6 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
+  "How pricing works →": "Så fungerar prissättningen →",
   "We updated our terms and privacy policy (version 2026-10-25). They apply to you from 9 November 2026.": "Vi har uppdaterat våra villkor och vår integritetspolicy (version 2026-10-25). De gäller för dig från den 9 november 2026.",
   "Read the terms": "Läs villkoren",
   "Accept now": "Acceptera nu",

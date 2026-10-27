@@ -18,6 +18,7 @@ import { t } from "@/i18n";
 import { authReturnService } from "@/models/services/authReturnService";
 import { ACCOUNT_TERMS_VERSION } from "@/models/services/accountTermsService";
 import { AccountTermsCheckbox } from "@/views/Account/components/AccountTermsCheckbox";
+import { usePageTitle } from "@/hooks/usePageTitle";
 const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email too long"),
   password: z.string().min(8, "Password must be at least 8 characters").max(100, "Password too long"),
@@ -25,6 +26,7 @@ const authSchema = z.object({
 });
 
 const Auth = () => {
+  usePageTitle("Sign in – GarageAI");
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);

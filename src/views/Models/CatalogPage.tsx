@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/ui/status-badge";
 import { useMemo } from "react";
 import { useEuOnly } from "@/hooks/useEuOnly";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Link, useSearchParams } from "react-router-dom";
 import { Cpu, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ const CatalogRow = ({ m, label }: { m: CatalogModel; label?: CatalogLabel }) => 
 };
 
 export const CatalogPage = () => {
+  usePageTitle("Models – GarageAI");
   const [params, setParams] = useSearchParams();
   const { euOnly, setEuOnly } = useEuOnly();
   const f = { ...filtersFromParams(params), euOnly };
@@ -90,6 +92,9 @@ export const CatalogPage = () => {
         <p className="text-sm text-muted-foreground">
           {t("Open models running in garages. Start with garageai/auto, or pick a model.")}
         </p>
+        <a href="https://www.garageai.eu/#pricing" className="inline-block text-xs text-muted-foreground underline-offset-4 hover:underline hover:text-foreground transition-colors">
+          {t("How pricing works →")}
+        </a>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
