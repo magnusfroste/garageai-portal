@@ -5,10 +5,9 @@ import { GarageAIMark } from "@/components/GarageAIMark";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 import { t, getLanguage, setLanguage } from "@/i18n";
-const LINKS = [
+export const LINKS = [
   { label: "Models", to: "/models" },
   { label: "Garages", to: "/garages" },
-  { label: "Pricing", to: "/models" },
   { label: "Documentation", to: "/api" },
 ];
 

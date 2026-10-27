@@ -11,8 +11,10 @@ import { useEuOnly } from "@/hooks/useEuOnly";
 import { filterSortGarages, type GarageSort } from "@/models/services/publicGarageService";
 import { PublicGarageHeader, OfferedModelChips } from "./components/PublicGarageHeader";
 import { t } from "@/i18n";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const GaragesListPage = () => {
+  usePageTitle("Garages – GarageAI");
   const query = usePublicGarages();
   const { euOnly, setEuOnly } = useEuOnly();
   const [params, setParams] = useSearchParams();
