@@ -5,7 +5,7 @@ import { termsAccepted } from "../_shared/garageTerms.ts";
 import { CredentialError, countOwnedGarages, issueGarageCredentials, loadGarageByName } from "../_shared/garageCredentials.ts";
 import { garageLimitReached } from "../_shared/garageCredentialRules.ts";
 
-import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
+import { accountTermsAccepted, ACCOUNT_TERMS_ERROR_CODE, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const action = body.action;
     if (action !== "lookup" && action !== "approve" && action !== "deny") return json({ error: "action must be lookup, approve or deny" }, 400);
 
-    if (action === "approve" && !await accountTermsAccepted(admin, user.id)) return json({ error: ACCOUNT_TERMS_REQUIRED, code: "terms_required" }, 403);
+    if (action === "approve" && !await accountTermsAccepted(admin, user.id)) return json({ error: ACCOUNT_TERMS_REQUIRED, code: ACCOUNT_TERMS_ERROR_CODE }, 403);
     const { data: link, error } = await admin.from("bridge_links").select(PUBLIC_FIELDS).eq("user_code", userCode).maybeSingle();
     if (error) throw error;
     const now = Date.now();

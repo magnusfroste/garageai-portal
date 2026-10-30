@@ -15,8 +15,9 @@ export const AccountTermsBanner = () => {
   if (loading || !profile || (updatedTerms ? !shouldShowAccountTermsNotice(profile) || dismissedVersion === ACCOUNT_TERMS_VERSION : hasCurrentAccountTerms(profile))) return null;
   const dismiss = async () => {
     setBusy(true); setError(false);
-    try { await accountTermsService.dismissNotice(); setDismissedVersion(ACCOUNT_TERMS_VERSION); await refetch(); }
-    catch { setError(true); }
+    setDismissedVersion(ACCOUNT_TERMS_VERSION);
+    try { await accountTermsService.dismissNotice(); }
+    catch { /* hiding for this visit does not depend on the record */ }
     finally { setBusy(false); }
   };
   const accept = async () => {

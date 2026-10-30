@@ -3,12 +3,13 @@ export const PREVIOUS_ACCOUNT_TERMS_VERSION = "2026-10-17";
 export const EXISTING_ACCOUNT_TERMS_EFFECTIVE_AT = "2026-11-09T00:00:00Z";
 export const ACCOUNT_TERMS_URL = "https://www.garageai.eu/terms";
 export const ACCOUNT_PRIVACY_URL = "https://www.garageai.eu/privacy";
-export const ACCOUNT_TERMS_REQUIRED = "Please accept the Terms and Privacy policy in the banner above before continuing.";
+export const ACCOUNT_TERMS_REQUIRED = "Please read and accept the Terms and Privacy policy to continue.";
+export const ACCOUNT_TERMS_ERROR_CODE = "terms_not_accepted";
 export const hasCurrentAccountTerms = (profile: { terms_version?: string | null } | null | undefined, at = new Date()) =>
   profile?.terms_version === ACCOUNT_TERMS_VERSION ||
   (profile?.terms_version === PREVIOUS_ACCOUNT_TERMS_VERSION && at.getTime() < Date.parse(EXISTING_ACCOUNT_TERMS_EFFECTIVE_AT));
 export const shouldShowAccountTermsNotice = (profile: { terms_version?: string | null; terms_notice_dismissed_version?: string | null } | null | undefined) =>
-  !!profile?.terms_version && profile.terms_version !== ACCOUNT_TERMS_VERSION && profile.terms_notice_dismissed_version !== ACCOUNT_TERMS_VERSION;
+  !!profile?.terms_version && profile.terms_version !== ACCOUNT_TERMS_VERSION;
 interface TermsReader {
   from(table: string): { select(columns: string): { eq(column: string, value: string): { maybeSingle(): PromiseLike<{ data: { terms_version: string | null } | null; error: unknown }> } } };
 }

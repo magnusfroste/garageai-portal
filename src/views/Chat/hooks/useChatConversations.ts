@@ -43,7 +43,6 @@ export const useChatConversations = (syncEnabled: boolean) => {
     let serverConvs: Conversation[];
     try { serverConvs = await repo.listAll(); }
     catch { toast.error(t("Couldn't load the chats saved in your account. Please reload."), { id: "chat-load-error" }); return; }
-    chatLocalStore.importAll(userId, serverConvs);
     setConversations((current) => mergeAccountChats(current, serverConvs));
   }, [userId]);
 

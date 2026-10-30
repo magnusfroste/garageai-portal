@@ -19,6 +19,7 @@ import { garageLimitMessage, limitMessage } from "@/models/services/credentialEr
 
 import { useProfile } from "@/hooks/useProfile";
 import { ACCOUNT_TERMS_REQUIRED, hasCurrentAccountTerms } from "@/models/services/accountTermsService";
+import { ReadAndAcceptButton } from "@/views/Account/components/TermsAcceptDialog";
 import { LegalLinks } from "@/views/Account/components/AccountTermsCheckbox";
 const ERRORS: Record<string, string> = {
   not_found: "This code was not found. Check it in your terminal.",
@@ -144,7 +145,7 @@ const BridgeLinkPage = () => {
               </Card>
 
               <div className="space-y-3">
-                {!hasCurrentAccountTerms(profile) && <p className="text-sm text-destructive">{t(ACCOUNT_TERMS_REQUIRED)}</p>}
+                {!hasCurrentAccountTerms(profile) && <div className="flex flex-wrap items-center gap-3"><p className="text-sm text-destructive">{t(ACCOUNT_TERMS_REQUIRED)}</p><ReadAndAcceptButton onAccepted={() => { if (link && !limitBlocksNew && GARAGE_NAME_RE.test(name) && (!needsTerms || terms) && (!conflict || replace)) onApprove(); }} /></div>}
                 <p className="text-sm">{t("Only approve if you started this on your own machine just now. Approving lets that machine sell inference as your garage.")}</p>
                 {(approve.isError || deny.isError) && <p className="text-sm text-danger-foreground">{errorText(approve.error ?? deny.error)}</p>}
                 <div className="flex gap-2">

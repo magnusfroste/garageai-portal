@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
+import { accountTermsAccepted, ACCOUNT_TERMS_ERROR_CODE, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 import { chatKeyName, createPortalKey } from "../_shared/portalKeys.ts";
 
 const corsHeaders = {
@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     if (!auth?.startsWith("Bearer ")) return fail(401, "unauthorized", "Missing or invalid authorization header");
     const { data: { user } } = await admin.auth.getUser(auth.slice(7));
     if (!user) return fail(401, "unauthorized", "Invalid authentication token");
-    if (!await accountTermsAccepted(admin, user.id)) return fail(403, "terms_required", ACCOUNT_TERMS_REQUIRED);
+    if (!await accountTermsAccepted(admin, user.id)) return fail(403, ACCOUNT_TERMS_ERROR_CODE, ACCOUNT_TERMS_REQUIRED);
 
     const body = await req.json().catch(() => ({})) as Record<string, unknown>;
     const kind = body.kind === "chat" ? "chat" : "user";
