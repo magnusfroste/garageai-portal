@@ -6,6 +6,11 @@ import { ingestUsageStats } from "../_shared/reliability.ts";
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
+const background = (work: Promise<unknown>) => {
+  const rt = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+  if (rt) rt.waitUntil(work); else work.catch(() => {});
+};
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   try {
@@ -14,7 +19,8 @@ Deno.serve(async (req) => {
     if (!secret) return json({ error: "Unauthorized" }, 401);
     const { data: ok, error } = await admin.rpc("verify_cron_secret", { secret });
     if (error || ok !== true) return json({ error: "Unauthorized" }, 401);
-    return json(await ingestUsageStats(admin));
+    background(ingestUsageStats(admin).catch((e) => console.error("[ingest-usage-stats] error:", e instanceof Error ? e.message : "unknown")));
+    return json({ accepted: true }, 202);
   } catch (e) {
     console.error("[ingest-usage-stats] error:", e instanceof Error ? e.message : "unknown");
     return json({ error: "Internal error" }, 500);

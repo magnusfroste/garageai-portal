@@ -1441,16 +1441,22 @@ export type Database = {
       }
       ingest_cursors: {
         Row: {
+          last_request_id: string | null
+          last_row_at: string | null
           name: string
           updated_at: string
           value: string
         }
         Insert: {
+          last_request_id?: string | null
+          last_row_at?: string | null
           name: string
           updated_at?: string
           value: string
         }
         Update: {
+          last_request_id?: string | null
+          last_row_at?: string | null
           name?: string
           updated_at?: string
           value?: string

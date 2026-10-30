@@ -603,6 +603,13 @@
       "when": 1792945210543,
       "tag": "0085_account_terms_october_transition",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1793384146335,
+      "tag": "0086_ingest_cursor_last_row",
+      "breakpoints": true
     }
   ]
 }

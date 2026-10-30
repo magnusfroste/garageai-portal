@@ -1,0 +1,2 @@
+ALTER TABLE public.ingest_cursors ADD COLUMN IF NOT EXISTS last_row_at timestamptz, ADD COLUMN IF NOT EXISTS last_request_id text;
+COMMENT ON COLUMN public.ingest_cursors.last_request_id IS 'Request id of the last spend-log row aggregated before the cursor (ties broken by request id).';
