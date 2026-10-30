@@ -293,23 +293,74 @@ async function ingestWindow(admin: SupabaseClient, ctx: IngestCtx, rows: SpendRo
     const { error } = await admin.from("internal_model_stats_hourly").upsert([...internalBuckets.values()], { onConflict: "garage_id,model,hour" });
     if (error) throw new Error("Internal statistics save failed");
   }
-  // Rebuild a complete day per run: never infer customer counts from a mixed hourly bucket.
-  const { data: replay } = await admin.from("ingest_cursors").select("value").eq("name", "customer_usage_replay").maybeSingle();
-  const replayFrom = replay?.value ? Date.parse(replay.value) : Math.floor((nowMs - 14 * 86400_000) / 86400_000) * 86400_000;
-  const replayTo = Math.min(replayFrom + 86400_000, Math.floor(nowMs / 86400_000) * 86400_000);
-  if (replayFrom < replayTo) {
-    const history = await fetchSpendLogs(base, masterKey, new Date(replayFrom), new Date(replayTo));
-    const historyInternal = await loadInternalIdentities(admin, base, masterKey, history.rows);
-    await aggregate(history.rows.filter(r => countsAsDemand(r, historyInternal)), true, replayFrom, replayTo);
-    const { error } = await admin.from("ingest_cursors").upsert({ name: "customer_usage_replay", value: new Date(replayTo).toISOString(), updated_at: new Date().toISOString() });
-    if (error) throw new Error("Customer replay cursor save failed");
-  }
-  await admin.from("ingest_cursors").upsert({ name: USAGE_CURSOR, value: new Date(toMs).toISOString(), updated_at: new Date().toISOString() });
+  // Customer buckets are rebuilt from whole hours in every window, so the former day-replay pass is no longer needed.
+  return { all, customer, internal_requests: [...internalBuckets.values()].reduce((n, b) => n + b.requests, 0) };
+}
 
-  return {
-    source, fetched: rows.length, ...all, customer, internal_requests: [...internalBuckets.values()].reduce((n,b)=>n+b.requests,0),
-    from: new Date(fromMs).toISOString(), to: new Date(toMs).toISOString(),
+const INGEST_BUDGET_MS = 90_000;
+
+/**
+ * Catches up in hour-aligned batches of at most BATCH_MAX rows, oldest first, saving the
+ * cursor after each batch. Stops when caught up or when the time budget is spent; the
+ * next run continues from the saved cursor.
+ */
+export async function ingestUsageStats(admin: SupabaseClient, opts: { budgetMs?: number } = {}) {
+  const started = Date.now();
+  const budget = opts.budgetMs ?? INGEST_BUDGET_MS;
+  const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
+  if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
+  const base = await getProxyBaseUrl(admin);
+  const { data: garages } = await admin.from("garages").select("id, name");
+  const garageIds = new Map(((garages || []) as Array<{ id: string; name: string }>).map((g) => [g.name, g.id]));
+  const ctx: IngestCtx = { base, masterKey, garageIds, rates: await deploymentRates(base, masterKey) };
+
+  const { data: cur } = await admin.from("ingest_cursors").select("value, last_request_id").eq("name", USAGE_CURSOR).maybeSingle();
+  const cursorBefore = floorHour(cur?.value ? Date.parse(cur.value) : Date.now() - 24 * HOUR_MS);
+  let cursor = cursorBefore;
+  let lastRequestId: string | null = (cur as { last_request_id?: string | null } | null)?.last_request_id ?? null;
+  let fetched = 0, batches = 0, span = MAX_WINDOW_MS, source = "";
+  const hours = new Set<number>();
+  const customerGarages: Record<string, number> = {};
+  let backlog = true;
+
+  while (Date.now() - started < budget) {
+    const liveMs = Date.now() - INGEST_LAG_MS;
+    if (liveMs <= cursor) { backlog = false; break; }
+    const toMs = windowEnd(cursor, span, liveMs);
+    const page = await fetchSpendLogs(base, masterKey, new Date(cursor), new Date(toMs), span <= HOUR_MS ? BATCH_MAX * 4 : BATCH_MAX);
+    source = page.source;
+    if (page.tooMany !== undefined) {
+      if (span <= HOUR_MS) throw new Error(`One hour holds ${page.tooMany} spend rows; cursor not advanced`);
+      span = shrinkSpan(span, page.tooMany); continue;
+    }
+    const rows = dedupeByRequestId(page.rows).filter((r) => { const t = parseTs(r.startTime); return t !== null && t >= cursor && t < toMs; });
+    const res = await ingestWindow(admin, ctx, rows, cursor, toMs);
+    for (const r of rows) hours.add(floorHour(parseTs(r.startTime)!));
+    for (const [g, n] of Object.entries(res.customer.aggregated)) customerGarages[g] = (customerGarages[g] || 0) + n;
+    fetched += rows.length; batches++;
+
+    const next = nextCursor(cursor, toMs);
+    const last = lastRowBefore(rows.map((r) => ({ start: parseTs(r.startTime)!, requestId: String(r.request_id ?? "") })), next);
+    if (last) lastRequestId = last.requestId;
+    const { error } = await admin.from("ingest_cursors").upsert({
+      name: USAGE_CURSOR, value: new Date(next).toISOString(), updated_at: new Date().toISOString(),
+      ...(last ? { last_row_at: new Date(last.start).toISOString(), last_request_id: last.requestId } : {}),
+    });
+    if (error) throw new Error(`Usage cursor save failed: ${error.message}`);
+    // An open (current) hour keeps the cursor in place; it is re-read whole next run.
+    if (next === cursor) { backlog = false; break; }
+    cursor = next;
+    if (toMs >= liveMs) { backlog = floorHour(liveMs) > cursor; if (!backlog) break; }
+    span = Math.min(MAX_WINDOW_MS, span * 2);
+  }
+
+  const summary = {
+    source, batches, fetched, hours_updated: hours.size,
+    cursor_before: new Date(cursorBefore).toISOString(), cursor_after: new Date(cursor).toISOString(),
+    last_request_id: lastRequestId, backlog, customer: customerGarages,
   };
+  console.log(`[usage] fetched=${fetched} batches=${batches} hours_updated=${hours.size} cursor ${summary.cursor_before} → ${summary.cursor_after} backlog=${backlog ? "yes" : "no"}`);
+  return summary;
 }
 
 // ---------- hourly probes ----------
