@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useSession } from "@/hooks/useSession";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,8 +33,9 @@ const formatBalance = (n: number) => `$${n.toFixed(2)}`;
 
 export const AppLayout = () => {
   const { session, loading } = useSession();
+  const location = useLocation();
   if (loading) return <p className="p-6 text-sm text-muted-foreground">{t("Checking your session…")}</p>;
-  if (!session) return <Navigate to="/auth" replace />;
+  if (!session) return <Navigate to={`/auth?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   return <SignedInLayout />;
 };
 

@@ -35,7 +35,7 @@ const ConnectPage = () => {
   }, [waiting]);
 
   if (loading) return null;
-  if (!session) return <Navigate to={`/auth?next=${encodeURIComponent(location.pathname)}`} replace />;
+  if (!session) return <Navigate to={`/auth?intent=operator&next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-8">

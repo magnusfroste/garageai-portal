@@ -1,20 +1,31 @@
-// Keeps "come back to this page" across sign-in, sign-up, e-mail confirmation and Google redirects.
+import { signupContinuation } from "./signupDestination";
+
+// Temporary sign-in state only; signup also stores the destination with the account.
 const KEY = "garageai_auth_next";
-const safe = (v: string | null | undefined) => (v && v.startsWith("/") && !v.startsWith("//") ? v : null);
 
 export const authReturnService = {
   remember(search: string) {
-    const next = safe(new URLSearchParams(search).get("next"));
-    if (next) window.localStorage.setItem(KEY, next);
+    const params = new URLSearchParams(search);
+    if (!params.has("next")) return;
+    const next = signupContinuation(search).destination;
+    if (next) window.sessionStorage.setItem(KEY, next);
+    else window.sessionStorage.removeItem(KEY);
+  },
+  peek(search: string) {
+    return signupContinuation(search, window.sessionStorage.getItem(KEY)).destination;
   },
   /** `?next=…` for the confirmation link, so a new tab also returns to the same page. */
   query(search: string) {
-    const next = safe(new URLSearchParams(search).get("next")) ?? safe(window.localStorage.getItem(KEY));
-    return next ? `?next=${encodeURIComponent(next)}` : "";
+    const continuation = signupContinuation(search, window.sessionStorage.getItem(KEY));
+    const params = new URLSearchParams();
+    if (continuation.destination) params.set("next", continuation.destination);
+    if (continuation.intent) params.set("intent", continuation.intent);
+    return params.size ? `?${params.toString()}` : "";
   },
   take(search: string): string | null {
-    const next = safe(new URLSearchParams(search).get("next")) ?? safe(window.localStorage.getItem(KEY));
-    window.localStorage.removeItem(KEY);
+    const next = this.peek(search);
+    window.sessionStorage.removeItem(KEY);
+    window.localStorage.removeItem(KEY); // discard obsolete, device-wide return state
     return next;
   },
 };

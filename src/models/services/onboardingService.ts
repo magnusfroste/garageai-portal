@@ -1,6 +1,8 @@
 import type { User } from "@supabase/supabase-js";
 import { profileService } from "@/models/services/profileService";
 import { isSignupIntent, type SignupIntent } from "@/models/types/onboarding.types";
+import { firstLoginContinuation } from "./signupDestination";
+import { profileRepository } from "@/data/repositories/profileRepository";
 
 const STORAGE_KEY = "garageai_signup_intent";
 
@@ -18,11 +20,15 @@ class OnboardingService {
     window.localStorage.removeItem(STORAGE_KEY);
   }
 
-  async routeAfterLogin(user: User): Promise<string> {
+  async routeAfterLogin(user: User, requested?: string | null, intent?: SignupIntent | null): Promise<string> {
     const profile = await profileService.getProfile(user.id);
-    if (!profile?.onboarding_done) return "/onboarding";
+    if (!profile) throw new Error("Account profile is not available yet");
+    const continuation = firstLoginContinuation(profile, user.user_metadata, requested, intent);
+    if (continuation.completeOnboarding) {
+      await profileRepository.updateOnboarding(user.id, { signup_intent: continuation.intent, onboarding_done: true });
+    }
     this.clearStoredIntent();
-    return "/dashboard";
+    return continuation.destination;
   }
 }
 
