@@ -21,6 +21,7 @@ import { ChatSystemPrompt, DEFAULT_SYSTEM_PROMPT } from "./components/ChatSystem
 import { useChatStream } from "./hooks/useChatStream";
 import { useChatConversations } from "./hooks/useChatConversations";
 import { useChatSync } from "./hooks/useChatSync";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useWebSearchPreference } from "./hooks/useWebSearchPreference";
 import { useChatPreferences } from "./hooks/useChatPreferences";
 import { useAutoScroll } from "./hooks/useAutoScroll";
@@ -88,7 +89,8 @@ export const ChatPage = () => {
   // When sync is on, pull account conversations into the local list once.
   const mergedRef = useRef(false);
   useEffect(() => {
-    if (sync.state === "on" && convs.loaded && !mergedRef.current) {
+    // "prompt" means the account has chats and sync still counts as on: show them too.
+    if ((sync.state === "on" || sync.state === "prompt") && convs.loaded && !mergedRef.current) {
       mergedRef.current = true;
       convs.mergeFromAccount();
     }
@@ -237,7 +239,21 @@ export const ChatPage = () => {
             <p className="text-sm">{t("Your chats are saved in your account. Keep saving them there (sync on), or move them to this device only?")}</p>
             <div className="mt-2 flex gap-2">
               <Button size="sm" onClick={sync.keepSync}>{t("Keep saving to my account")}</Button>
-              <Button size="sm" variant="outline" onClick={sync.moveToDevice}>{t("Move to this device only")}</Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" disabled={sync.saving || sync.accountChatCount === 0}>{t("Move to this device only")}</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{t("Move {n} conversations to this device?", { n: sync.accountChatCount })}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("They are copied to this browser first. Only when all of them are here are they removed from your account. If anything fails, nothing is removed.")}</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => { void sync.moveToDevice(); }}>{t("Move")}</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         )}
