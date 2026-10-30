@@ -185,24 +185,11 @@ async function deploymentRates(base: string, masterKey: string): Promise<Map<str
   return out;
 }
 
-export async function ingestUsageStats(admin: SupabaseClient) {
-  const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
-  if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
-  const base = await getProxyBaseUrl(admin);
+type IngestCtx = { base: string; masterKey: string; garageIds: Map<string, string>; rates: Map<string, Rates> };
 
-  const { data: garages } = await admin.from("garages").select("id, name");
-  const garageIds = new Map(((garages || []) as Array<{ id: string; name: string }>).map((g) => [g.name, g.id]));
-
-  const { data: cur } = await admin.from("ingest_cursors").select("value").eq("name", USAGE_CURSOR).maybeSingle();
-  const nowMs = Date.now();
-  const cursorMs = cur?.value ? Date.parse(cur.value) : nowMs - 24 * 3600_000;
-  const fromMs = floorHour(cursorMs); // re-aggregate every hour we touch
-  const toMs = nowMs - INGEST_LAG_MS;
-  if (toMs <= fromMs) return { fetched: 0, aggregated: {}, hours: 0, from: new Date(fromMs).toISOString(), to: new Date(toMs).toISOString() };
-
-  const { rows, source } = await fetchSpendLogs(base, masterKey, new Date(fromMs), new Date(toMs));
-  const rates = await deploymentRates(base, masterKey);
-
+/** Aggregates every row of [fromMs, toMs) and upserts whole hours (replace, never add). */
+async function ingestWindow(admin: SupabaseClient, ctx: IngestCtx, rows: SpendRow[], fromMs: number, toMs: number) {
+  const { base, masterKey, garageIds, rates } = ctx;
   const internal = await loadInternalIdentities(admin, base, masterKey, rows);
   const aggregate = async (rows: SpendRow[], customer: boolean, fromMs: number, toMs: number) => {
   type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number; lastRequest: number | null };
