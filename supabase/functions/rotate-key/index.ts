@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   if (!auth?.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
   const { data: { user } } = await admin.auth.getUser(auth.slice(7));
   if (!user) return json({ error: "unauthorized" }, 401);
-  if (!await accountTermsAccepted(admin, user.id)) return json({ error: "terms_required" }, 403);
+  if (!await accountTermsAccepted(admin, user.id)) return json({ error: ACCOUNT_TERMS_REQUIRED, code: ACCOUNT_TERMS_ERROR_CODE }, 403);
   const body = await req.json().catch(() => ({})) as { keyId?: unknown };
   if (typeof body.keyId !== "string") return json({ error: "invalid_input" }, 400);
   const { data: old } = await admin.from("api_keys").select("id, user_id, name, kind, device_label, is_active").eq("id", body.keyId).maybeSingle();

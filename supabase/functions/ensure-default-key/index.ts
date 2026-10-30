@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
   if (!auth?.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
   const { data: { user } } = await admin.auth.getUser(auth.slice(7));
   if (!user) return json({ error: "unauthorized" }, 401);
-  if (!await accountTermsAccepted(admin, user.id)) return json({ created: false, reason: "terms_required" });
+  if (!await accountTermsAccepted(admin, user.id)) return json({ created: false, reason: ACCOUNT_TERMS_ERROR_CODE });
 
   // Atomic claim: only one request can create the default key.
   const { data: claimed, error } = await admin.from("profiles").update({ default_key_at: new Date().toISOString() })

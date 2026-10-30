@@ -33,7 +33,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
     const termsClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
-    if (!await accountTermsAccepted(termsClient, user.id)) return new Response(JSON.stringify({ error: ACCOUNT_TERMS_REQUIRED, code: "terms_required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!await accountTermsAccepted(termsClient, user.id)) return new Response(JSON.stringify({ error: ACCOUNT_TERMS_REQUIRED, code: ACCOUNT_TERMS_ERROR_CODE }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const { pack } = await req.json();
     const selectedPack = CREDIT_PACKS[pack];
     if (!selectedPack) throw new Error(`Invalid pack: ${pack}`);

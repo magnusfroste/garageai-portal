@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: "Unauthorized" }, 401);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    if (!await accountTermsAccepted(admin, user.id)) return json({ error: ACCOUNT_TERMS_REQUIRED, code: "terms_required" }, 403);
+    if (!await accountTermsAccepted(admin, user.id)) return json({ error: ACCOUNT_TERMS_REQUIRED, code: ACCOUNT_TERMS_ERROR_CODE }, 403);
     const { data: isAdminRaw } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
     const isAdmin = isAdminRaw === true;
 
