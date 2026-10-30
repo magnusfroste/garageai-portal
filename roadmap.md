@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Remove gateway-to-model cache-read adoption; 33 pricing/routing tests pass (including clearing, input changes and non-creation); all 15 importing functions deployed. Read-only audit: six active tier overrides and one retained override; no overrides reset. Per-model original write time/actor are not recorded; latest row updates are not price-change timestamps.
+- [ ] Verify real-account cache-clear save and gateway readback — blocked: requires an approved price change; existing overrides intentionally untouched pending user/Magnus decisions.
+
 - [x] Update account terms to 2026-10-25; preserve legacy acceptance until 2026-11-09; persist dismissible English/Swedish notice; existing Admin Users accepted-version column retained; migration 0085 and six affected functions deployed; 21 tests passed, desktop/mobile notice fixtures verified; frontend publication requested
 - [ ] Terms transition real signed-in acceptance/dismissal readback — blocked: no requesting-user auth account; privileged rollback persistence test skipped on read-only sandbox connection
 

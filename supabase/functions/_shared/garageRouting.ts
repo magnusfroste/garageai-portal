@@ -198,25 +198,8 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
   }
   for (const l of learned) await admin.from("garage_models").update({ context_length: l.context_length }).eq("garage_id", l.garage_id).eq("model", l.model);
 
-  // Cache-read prices set directly in LiteLLM (no portal value at model or garage level) are adopted once as model overrides.
-  const depById = new Map(deps.flatMap(d => d.model_info?.id ? [[d.model_info.id,d] as const] : []));
-  for (const g of garages) for (const model of g.models || []) {
-    const cur = ids.get(`${g.id}::${model}`);
-    if (!cur) continue;
-    for (const tier of ["dedicated", "pool"] as const) {
-      const key = tier === "dedicated" ? "dedicatedCacheRead" : "poolCacheRead";
-      const garageValue = tier === "dedicated" ? g.dedicated_cache_read_cost_per_million : g.pool_cache_read_cost_per_million;
-      if (cur[key] != null || garageValue != null) continue;
-      const d = depById.get(deploymentId(g.name, model, tier));
-      const raw = d?.model_info?.cache_read_input_token_cost ?? d?.litellm_params?.cache_read_input_token_cost;
-      if (raw == null || !Number.isFinite(Number(raw))) continue;
-      const input = Number(modelTierPrice(tier,cur,g).input);
-      const perM = Math.round(Number(raw) * 1e6 * 1e9) / 1e9;
-      if (Math.abs(perM - input * CACHE_READ_DEFAULT_SHARE) < 1e-9) continue; // our own default, nothing to adopt
-      cur[key] = Math.min(Math.max(0, perM), input);
-      await admin.from("garage_models").update({ [`${tier}_cache_read_cost_per_million`]: cur[key] }).eq("garage_id", g.id).eq("model", model);
-    }
-  }
+  // Stored portal settings are authoritative. Gateway prices are comparison targets,
+  // never inputs or model overrides: a cleared override must stay null after sync.
 
   const desired = new Map<string, DeploymentSpec>();
   for (const g of garages) {

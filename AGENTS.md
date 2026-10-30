@@ -21,6 +21,7 @@
 - Gateway health owns live availability. Market routes require offers/tests; owner `mine/` routes use heartbeat inventory independently of market visibility/pause, with shared private planning and gateway access checks.
 - Audit garage price changes with an atomic database trigger, then reconcile both token prices; statements always sum recorded request spend to keep historical rates.
 - Single-garage views use owner-scoped aggregates; recorded spend is never repriced. Shared modelPrices resolves model overrides before routing.
+- Cache-read overrides are explicit portal inputs only; routing derives effective prices from stored model/garage settings on every sync and never persists gateway prices as overrides, preventing price feedback after clearing or input changes.
 - Keep garage_models.model as the runtime id (sent upstream, never shown to buyers) and canonical_model as the catalogue/pool name: OpenRouter-style `<creator>/<model>` from the org/family tables in `modelIdentity.ts` (SQL mirror `normalise_model_id`), mesh names normalised by the DB trigger, model pages use a splat route (names contain `/`), only admins may alias endpoint-provider models, deployment ids derive from the runtime id.
 - Record connect-script progress only via the `onboarding-report` edge function (register-token auth, service-role insert, rate-limited, newest 200 kept); derive step states only in `onboardingProgress.ts`, so wizard, admin Supply and gateway agree.
 
