@@ -299,6 +299,29 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_first_requests: {
+        Row: {
+          first_request_at: string
+          user_id: string
+        }
+        Insert: {
+          first_request_at: string
+          user_id: string
+        }
+        Update: {
+          first_request_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_first_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           created_at: string
