@@ -30,6 +30,8 @@
 
 ## Where logic lives
 
+- Buyer first-answer eligibility uses the account-scoped, service-written first-request marker checked against successful gateway logs; the signed-in layout alone owns the ephemeral default-key value and shares it with setup views, never browser storage.
+
 - Chat initial selection and unavailable-machine fallback derive only in chatModelChoice; wait for owner inventory and account-scoped device preferences before selecting, so asynchronous loading cannot force Auto.
 
 - Support uses protected database RPCs for sending, reading receipts, availability and daily prompt claims; repository → service → hook → signed-in shell/inbox. Derive effective availability from the settings date at read time (no expiry cron); database insert triggers enforce Off. Diagnostic context is allowlisted and secret-redacted before storage; ops reads only aggregate support statistics, never messages or identities.

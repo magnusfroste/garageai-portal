@@ -9,6 +9,9 @@ import { SetupChecklist } from "./components/SetupChecklist";
 import { BoughtEarnedChart } from "./components/BoughtEarnedChart";
 import { t } from "@/i18n";
 import { StartingPaths } from "@/views/Onboarding/StartingPaths";
+import { useBuyerFirstRequest } from "@/hooks/useBuyerFirstRequest";
+import { buyerNeedsFirstAnswer } from "@/models/services/buyerFirstAnswer";
+import { BuyerFirstAnswer } from "./components/BuyerFirstAnswer";
 
 const money = (v: number) => `$${v.toFixed(v > 0 && v < 1 ? 3 : 2)}`;
 
@@ -21,7 +24,8 @@ const Big = ({ label, value, to, link }: { label: string; value: string; to: str
 );
 
 export const DashboardActivity = () => {
-  const { loading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
+  const firstRequest = useBuyerFirstRequest(profile?.signup_intent === "buyer");
   const { apiKeys, loading: keysLoading } = useDashboardData();
   const { allLogs, dailyBreakdown, loading: usageLoading } = useAccountData();
   const earn = useMyEarnings();
@@ -38,13 +42,17 @@ export const DashboardActivity = () => {
   const used = usedThisWeek(dailyBreakdown);
   const series = boughtEarnedSeries(dailyBreakdown, earn.dailyEarned);
 
+  if (buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data)) return <div className="p-4 sm:p-6"><BuyerFirstAnswer /></div>;
+  if (profile?.signup_intent === "buyer" && firstRequest.isPending) return <p className="p-6 text-sm text-muted-foreground">{t("Loading dashboard...")}</p>;
+  if (profile?.signup_intent === "buyer" && firstRequest.isError) return <div className="p-6 text-sm">{t("Could not check your first request.")} <Link to="/dashboard/chat" className="text-primary underline">{t("Chat")}</Link></div>;
+
   return (
     <div className="p-4 sm:p-6 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">{t("Overview")}</h1>
       </div>
 
-      <SetupChecklist hasKey={apiKeys.some(k => k.is_active && !k.revoked_at)} hasRequest={allLogs.length > 0 || dailyBreakdown.some(d => d.api_requests > 0)} />
+      <SetupChecklist hasKey={apiKeys.some(k => k.is_active && !k.revoked_at)} hasRequest={!!firstRequest.data || allLogs.length > 0 || dailyBreakdown.some(d => d.api_requests > 0)} />
       {!apiKeys.length && !earn.loading && !earn.hasGarage && <StartingPaths />}
 
       <div className={`grid gap-6 ${earn.hasGarage ? "sm:grid-cols-2" : ""}`}>
@@ -53,6 +61,7 @@ export const DashboardActivity = () => {
       </div>
 
       {!usageLoading && series && <BoughtEarnedChart data={series} showEarned={earn.hasGarage} />}
+      {profile?.signup_intent === "buyer" && !!firstRequest.data && <BuyerFirstAnswer complete />}
     </div>
   );
 };

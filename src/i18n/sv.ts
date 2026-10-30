@@ -1,5 +1,16 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
+  "Your first answer": "Ditt första svar",
+  "Start with a short conversation.": "Börja med ett kort samtal.",
+  "Creating your API key…": "Skapar din API-nyckel…",
+  "Could not create your key. Please try again.": "Kunde inte skapa din nyckel. Försök igen.",
+  "Shown once. Keep it somewhere safe.": "Visas en gång. Spara den på en säker plats.",
+  "Try it now in Chat": "Prova nu i Chat",
+  "Your key was already shown once. You can still try Chat, or create a new key in API keys.": "Din nyckel har redan visats en gång. Du kan ändå prova Chat eller skapa en ny under API-nycklar.",
+  "Or use the API": "Eller använd API:et",
+  "It works": "Det fungerar",
+  "Could not check your first request.": "Kunde inte kontrollera din första förfrågan.",
+  "In one sentence, what can I do with an open AI model?": "Vad kan jag göra med en öppen AI-modell? Svara med en mening.",
   "How pricing works →": "Så fungerar prissättningen →",
   "We updated our terms and privacy policy (version 2026-10-25). They apply to you from 9 November 2026.": "Vi har uppdaterat våra villkor och vår integritetspolicy (version 2026-10-25). De gäller för dig från den 9 november 2026.",
   "Read the terms": "Läs villkoren",

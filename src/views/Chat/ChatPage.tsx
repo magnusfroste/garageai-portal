@@ -29,7 +29,7 @@ import type { ChatMessage } from "./types";
 
 export const ChatPage = () => {
   const { checkAuth } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedModel = searchParams.get("model");
   const [selectedModel, setSelectedModel] = useState("");
   const [userId, setUserId] = useState("");
@@ -100,6 +100,15 @@ export const ChatPage = () => {
   const scroll = useAutoScroll(`${messages.length}:${lastLen}:${messages[messages.length - 1]?.reasoning?.length ?? 0}`);
 
   const canSend = !!selectedModel && !!userId;
+  useEffect(() => {
+    const prompt = searchParams.get("prompt");
+    if (!prompt || !convs.loaded || !canSend || !composer.current) return;
+    convs.setActiveId(null);
+    composer.current.fill(prompt.slice(0, 2000));
+    const next = new URLSearchParams(searchParams);
+    next.delete("prompt");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, convs.loaded, canSend, setSearchParams]);
   const startRun = useCallback((convId: string, history: ChatMessage[]) => run({
     convId, history,
     modelId: selectedModel,
