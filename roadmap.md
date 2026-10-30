@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Preserve account-stored signup destinations/query strings through confirmation and first sign-in; infer buyer/garage intent, bypass path question only with destination, reject external redirects; test and publish.
+- [x] Preserve signup destinations in account auth metadata through confirmation and first sign-in; shared validation rejects external hosts, Bridge records operator intent, model entry goes to keys with buyer intent; 56 related tests passed, one unrelated persistence test skipped; fresh-device browser fixtures verified Bridge code, key step and generic path question; publication requested.
+- [ ] Signup real-email confirmation/readback — blocked: requester has no matching app account/session; account metadata submission and fresh-device continuation verified with isolated browser responses, hosted redirect allow-list verified read-only.
 
 - [x] Remove gateway-to-model cache-read adoption; 33 pricing/routing tests pass (including clearing, input changes and non-creation); all 15 importing functions deployed. Read-only audit: six active tier overrides and one retained override; no overrides reset. Per-model original write time/actor are not recorded; latest row updates are not price-change timestamps.
 - [ ] Verify real-account cache-clear save and gateway readback — blocked: requires an approved price change; existing overrides intentionally untouched pending user/Magnus decisions.
