@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test } from "bun:test";
 import { runWithTermsAcceptance, TermsNotAcceptedError } from "@/models/services/termsGate";
 
 test("a blocked action offers accept and continues after accepting", async () => {
