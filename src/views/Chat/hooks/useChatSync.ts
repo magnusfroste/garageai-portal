@@ -69,7 +69,7 @@ export const useChatSync = () => {
       removeFromAccount: (ids) => repo.removeMany(ids),
       saveSyncOff: async () => { await chatSyncRepository.set(false); },
     }).finally(() => setSaving(false));
-    if (!result.ok) {
+    if (result.ok === false) {
       toast.error(t("Couldn't move your chats. Nothing was deleted from your account."));
       if (result.reason === "delete_failed") setState("off");
       return false;
