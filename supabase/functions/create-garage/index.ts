@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { termsAccepted } from "../_shared/garageTerms.ts";
 import { CredentialError, issueGarageCredentials } from "../_shared/garageCredentials.ts";
 
-import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
+import { accountTermsAccepted, ACCOUNT_TERMS_ERROR_CODE, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":

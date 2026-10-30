@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { accountTermsAccepted } from "../_shared/accountTerms.ts";
+import { accountTermsAccepted, ACCOUNT_TERMS_ERROR_CODE, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 import { createPortalKey, type KeyKind } from "../_shared/portalKeys.ts";
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });

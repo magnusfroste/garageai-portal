@@ -5,7 +5,7 @@ import { termsAccepted } from "../_shared/garageTerms.ts";
 import { CredentialError, countOwnedGarages, issueGarageCredentials, loadGarageByName } from "../_shared/garageCredentials.ts";
 import { garageLimitReached } from "../_shared/garageCredentialRules.ts";
 
-import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
+import { accountTermsAccepted, ACCOUNT_TERMS_ERROR_CODE, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",

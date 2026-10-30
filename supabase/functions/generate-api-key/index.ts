@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { accountTermsAccepted, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
+import { accountTermsAccepted, ACCOUNT_TERMS_ERROR_CODE, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 import { chatKeyName, createPortalKey } from "../_shared/portalKeys.ts";
 
 const corsHeaders = {
