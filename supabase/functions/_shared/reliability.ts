@@ -109,29 +109,32 @@ const median = (xs: number[]): number | null => {
 
 type SpendRow = Record<string, unknown>;
 
-async function fetchSpendLogs(base: string, masterKey: string, from: Date, to: Date): Promise<{ rows: SpendRow[]; source: string }> {
+/** Spend logs of one window, or `tooMany` (with the row count) when it exceeds `max` rows. */
+async function fetchSpendLogs(base: string, masterKey: string, from: Date, to: Date, max: number): Promise<{ rows: SpendRow[]; source: string; tooMany?: number }> {
   const headers = { Authorization: `Bearer ${masterKey}` };
+  const range = `start_date=${encodeURIComponent(fmtLiteLLM(from))}&end_date=${encodeURIComponent(fmtLiteLLM(to))}`;
   // Paginated v2 endpoint first (newer LiteLLM), v1 summarize=false as fallback.
   const all: SpendRow[] = [];
   let v2ok = true;
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const url = `${base}/spend/logs/v2?start_date=${encodeURIComponent(fmtLiteLLM(from))}&end_date=${encodeURIComponent(fmtLiteLLM(to))}&page=${page}&page_size=100`;
-    const res = await fetch(url, { headers });
+  const pageCap = Math.ceil(max / PAGE_SIZE);
+  for (let page = 1; page <= pageCap; page++) {
+    const res = await fetch(`${base}/spend/logs/v2?${range}&page=${page}&page_size=${PAGE_SIZE}`, { headers, signal: AbortSignal.timeout(30_000) });
     if (!res.ok) { await res.text(); v2ok = false; break; }
     const body = await res.json();
+    const totalPages = Number(body?.total_pages ?? 1);
+    const total = Number(body?.total ?? totalPages * PAGE_SIZE);
+    if (page === 1 && total > max) return { rows: [], source: "v2", tooMany: total };
     const data = (body?.data ?? []) as SpendRow[];
     all.push(...data);
-    const totalPages = Number(body?.total_pages ?? 1);
-    if (page === MAX_PAGES && page < totalPages) throw new Error("Spend history page cap reached; cursor not advanced");
     if (!data.length || page >= totalPages) break;
   }
   if (v2ok) return { rows: all, source: "v2" };
 
-  const url = `${base}/spend/logs?start_date=${encodeURIComponent(fmtLiteLLM(from))}&end_date=${encodeURIComponent(fmtLiteLLM(to))}&summarize=false`;
-  const res = await fetch(url, { headers });
+  const res = await fetch(`${base}/spend/logs?${range}&summarize=false`, { headers, signal: AbortSignal.timeout(30_000) });
   if (!res.ok) throw new Error(`LiteLLM spend/logs status ${res.status}`);
   const body = await res.json();
   const rows = (Array.isArray(body) ? body : (body?.data ?? body?.response ?? [])) as SpendRow[];
+  if (rows.length > max) return { rows: [], source: "v1", tooMany: rows.length };
   return { rows, source: "v1" };
 }
 
