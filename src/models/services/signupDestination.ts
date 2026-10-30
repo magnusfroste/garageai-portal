@@ -41,6 +41,6 @@ export function firstLoginContinuation(
 ) {
   const destination = safeSignupDestination(requested) ?? (!profile.onboarding_done ? safeSignupDestination(metadata.signup_destination) : null);
   const choice = profile.signup_intent ?? destinationIntent(destination, intent ?? metadata.signup_intent);
-  return { destination: destination ?? (profile.onboarding_done ? "/dashboard" : "/onboarding"),
-    completeOnboarding: !!destination && !profile.onboarding_done, intent: choice };
+  return { destination: destination ?? (profile.onboarding_done || choice === "buyer" ? "/dashboard" : "/onboarding"),
+    completeOnboarding: (!!destination || choice === "buyer") && !profile.onboarding_done, intent: choice };
 }

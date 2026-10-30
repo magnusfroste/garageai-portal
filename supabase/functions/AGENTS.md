@@ -1,4 +1,5 @@
 # Edge function rules
+- Buyer first-request status queries successful gateway spend logs scoped to the authenticated account and persists only a timestamp; unavailable gateway data is an error, never evidence of no requests.
 - Validate model names in `_shared/modelValidation`: only authenticated admin endpoint-provider creation/aliasing allows vendor originals; internal route namespaces stay reserved, while garage registrations retain vendor-name restrictions.
 - Select native Anthropic routing only for its exact endpoint hostname in `_shared/providerProtocol`, shared by probes and deployment reconciliation, so garage and compatible-provider routing stay unchanged.
 - Chat is privacy-first: the browser calls the EU gateway directly; `chat-key-value` returns a key's value only to its signed-in owner, and `web-search` receives only a query string, never messages. Chat history is local by default; `chat_conversations` is written only when the user opts in to sync.

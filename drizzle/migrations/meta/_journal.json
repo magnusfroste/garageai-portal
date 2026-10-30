@@ -610,6 +610,13 @@
       "when": 1793384146335,
       "tag": "0086_ingest_cursor_last_row",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1793403000006,
+      "tag": "0087_buyer_first_request",
+      "breakpoints": true
     }
   ]
 }

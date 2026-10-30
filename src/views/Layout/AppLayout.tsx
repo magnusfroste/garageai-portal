@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLitellmUser } from "@/hooks/useLitellmUser";
 import { useProfile } from "@/hooks/useProfile";
 import { useDefaultKey } from "@/hooks/useDefaultKey";
+import { useBuyerFirstRequest } from "@/hooks/useBuyerFirstRequest";
 import { ShowKeyOnceDialog } from "@/views/Dashboard/components/ShowKeyOnceDialog";
 import { useUserBudget } from "@/hooks/useUserBudget";
 import { AppSidebar } from "./AppSidebar";
@@ -46,6 +47,9 @@ const SignedInLayout = () => {
   const { budget } = useUserBudget();
   useLitellmUser();
   const defaultKey = useDefaultKey(profile);
+  const location = useLocation();
+  const firstRequest = useBuyerFirstRequest(profile?.signup_intent === "buyer");
+  const inlineKey = profile?.signup_intent === "buyer" && !firstRequest.data && (location.pathname === "/dashboard" || (location.pathname === "/dashboard/keys" && !location.search.includes("manage=1")));
   useLanguagePreference(profile?.preferred_language);
 
   useEffect(() => {
@@ -113,10 +117,10 @@ const SignedInLayout = () => {
             </div>
           </header>
           <AnnouncementBar />
-          <AccountTermsBanner /><TermsAcceptDialog />
-          <ShowKeyOnceDialog title={t("Your API key")} keyValue={defaultKey.created?.key ?? null} onClose={defaultKey.dismiss} />
+          {!inlineKey && <AccountTermsBanner />}<TermsAcceptDialog />
+          <ShowKeyOnceDialog title={t("Your API key")} keyValue={inlineKey ? null : defaultKey.created?.key ?? null} onClose={defaultKey.dismiss} />
           <main className="flex-1 overflow-auto">
-            <Outlet />
+            <Outlet context={{ defaultKey }} />
           </main>
         </div>
       </div>

@@ -14,12 +14,18 @@ import { CommandBlock } from "@/views/Garages/components/GarageShared";
 import { t } from "@/i18n";
 import { ShowKeyOnceDialog } from "@/views/Dashboard/components/ShowKeyOnceDialog";
 import { chatKeyService } from "@/models/services/chatKeyService";
+import { useSearchParams } from "react-router-dom";
+import { useBuyerFirstRequest } from "@/hooks/useBuyerFirstRequest";
+import { buyerNeedsFirstAnswer } from "@/models/services/buyerFirstAnswer";
+import { BuyerFirstAnswer } from "@/views/Dashboard/components/BuyerFirstAnswer";
 
 export const KeysPage = () => {
   const { models } = useModelCatalog();
   const { models: curated } = useCuratedModels(true);
   const poolModel = curated.find((model) => model.is_default && model.garage_tier === "pool")?.model_name || models.find((model) => model.available && model.poolId)?.poolId || models.find((model) => model.poolId)?.poolId;
   const { profile, loading: profileLoading } = useProfile();
+  const [params] = useSearchParams();
+  const firstRequest = useBuyerFirstRequest(profile?.signup_intent === "buyer");
   const [revoking, setRevoking] = useState(false);
   const { apiKeys, loading: keysLoading, isError, refetch } = useDashboardData();
   const { createKey, rotateKey, renameKey, revokeKey, isCreatingKey } = useKeyManagement();
@@ -104,6 +110,8 @@ export const KeysPage = () => {
       </div>
     );
   }
+
+  if (!params.has("manage") && buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data)) return <div className="p-4 sm:p-6"><BuyerFirstAnswer /></div>;
 
   return (
     <div className="p-6 space-y-8">

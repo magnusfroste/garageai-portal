@@ -36,7 +36,7 @@ export const OnboardingPage = () => {
         <StartingPaths onChoose={async path => {
           if (saving) return;
           setSaving(true);
-          try { await profileService.completeOnboarding(path.includes("connect") ? "operator" : "buyer"); navigate(path, { replace: true }); }
+          try { const operator = path.includes("connect"); await profileService.completeOnboarding(operator ? "operator" : "buyer"); navigate(operator ? path : "/dashboard", { replace: true }); }
           catch { toast.error(t("Could not save your choice. Please try again.")); setSaving(false); }
         }} />
         <div className="flex justify-center">
