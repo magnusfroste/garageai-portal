@@ -13,6 +13,11 @@ const safe = async <T>(label: string, fn: () => Promise<T>) => {
   }
 };
 
+const background = (work: Promise<unknown>) => {
+  const rt = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+  if (rt) rt.waitUntil(work); else work.catch(() => {});
+};
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   try {
@@ -22,12 +27,18 @@ Deno.serve(async (req) => {
     const { data: ok, error } = await admin.rpc("verify_cron_secret", { secret });
     if (error || ok !== true) return json({ error: "Unauthorized" }, 401);
 
-    const result = await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
-    const samples = await safe("samples", () => recordStatusSamples(admin, result));
-    const usage = await safe("usage", () => ingestUsageStats(admin));
-    const probes = await safe("probes", () => runHourlyProbes(admin));
-    const { garageConnectivity: _c, netbirdOk: _n, ...syncSummary } = result;
-    return json({ ...syncSummary, samples, usage, probes });
+    // pg_net waits only 5 s: acknowledge now, do the work in the background.
+    background((async () => {
+      try {
+        const result = await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
+        await safe("samples", () => recordStatusSamples(admin, result));
+        await safe("usage", () => ingestUsageStats(admin));
+        await safe("probes", () => runHourlyProbes(admin));
+      } catch (e) {
+        console.error("[sync-models-cron] background error:", e instanceof Error ? e.message : "unknown");
+      }
+    })());
+    return json({ accepted: true }, 202);
   } catch (e) {
     console.error("[sync-models-cron] error:", e instanceof Error ? e.message : "unknown");
     return json({ error: "Internal error" }, 500);
