@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Preserve account-stored signup destinations/query strings through confirmation and first sign-in; infer buyer/garage intent, bypass path question only with destination, reject external redirects; test and publish.
+
 - [x] Remove gateway-to-model cache-read adoption; 33 pricing/routing tests pass (including clearing, input changes and non-creation); all 15 importing functions deployed. Read-only audit: six active tier overrides and one retained override; no overrides reset. Per-model original write time/actor are not recorded; latest row updates are not price-change timestamps.
 - [ ] Verify real-account cache-clear save and gateway readback — blocked: requires an approved price change; existing overrides intentionally untouched pending user/Magnus decisions.
 
