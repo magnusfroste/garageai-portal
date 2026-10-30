@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     if (error || !profile) throw new Error("profile_unavailable");
     const base = await getProxyBaseUrl(admin);
     const url = new URL(`${base}/spend/logs/v2`);
-    url.search = new URLSearchParams({ user_id: profile.litellm_user_id || user.id, start_date: profile.created_at, end_date: new Date().toISOString(), status_filter: "success", page: "1", page_size: "1", sort_by: "startTime", sort_order: "asc", exclude_internal_health_checks: "true" }).toString();
+    url.search = new URLSearchParams({ user_id: profile.litellm_user_id || user.id, start_date: profile.created_at.slice(0, 10), end_date: new Date(Date.now() + 86400000).toISOString().slice(0, 10), status_filter: "success", page: "1", page_size: "1", sort_by: "startTime", sort_order: "asc", exclude_internal_health_checks: "true" }).toString();
     const response = await fetch(url, { headers: { Authorization: `Bearer ${Deno.env.get("LITELLM_MASTER_KEY") ?? ""}` }, signal: AbortSignal.timeout(8000) });
     if (!response.ok) throw new Error("usage_unavailable");
     const body = await response.json();
