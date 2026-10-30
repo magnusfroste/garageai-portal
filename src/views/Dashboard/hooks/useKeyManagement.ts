@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { apiKeyService } from "@/models/services/apiKeyService";
 import { toast } from "sonner";
-import { ACCOUNT_TERMS_REQUIRED } from "@/models/services/accountTermsService";
+import { runWithTermsAcceptance, TermsNotAcceptedError } from "@/models/services/termsGate";
 import { t } from "@/i18n";
 import { keyCreateFailedMessage } from "@/models/services/credentialErrors";
 import type { CreatedApiKey } from "@/models/types/apiKey.types";
 
 const failure = (error: unknown) =>
-  error instanceof Error && error.message === t(ACCOUNT_TERMS_REQUIRED) ? error.message : keyCreateFailedMessage();
+  error instanceof TermsNotAcceptedError ? error.message : keyCreateFailedMessage();
 
 export const useKeyManagement = () => {
   const [isCreatingKey, setIsCreatingKey] = useState(false);
@@ -20,7 +20,7 @@ export const useKeyManagement = () => {
     }
     setIsCreatingKey(true);
     try {
-      return await apiKeyService.createKey({ keyName: name.trim(), models: models.length > 0 ? models : undefined });
+      return await runWithTermsAcceptance(() => apiKeyService.createKey({ keyName: name.trim(), models: models.length > 0 ? models : undefined }));
     } catch (error) {
       toast.error(failure(error));
       return null;
@@ -30,7 +30,7 @@ export const useKeyManagement = () => {
   };
 
   const rotateKey = async (keyId: string): Promise<CreatedApiKey | null> => {
-    try { return await apiKeyService.rotateKey(keyId); }
+    try { return await runWithTermsAcceptance(() => apiKeyService.rotateKey(keyId)); }
     catch (error) { toast.error(failure(error)); return null; }
   };
 

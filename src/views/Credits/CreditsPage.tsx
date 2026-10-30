@@ -1,4 +1,4 @@
-import { ACCOUNT_TERMS_REQUIRED } from "@/models/services/accountTermsService";
+import { runWithTermsAcceptance, TermsNotAcceptedError } from "@/models/services/termsGate";
 import { checkoutFailedMessage } from "@/models/services/credentialErrors";
 import { t } from "@/i18n";
 import { useState, useEffect, useRef } from "react";
@@ -90,18 +90,19 @@ export const CreditsPage = () => {
 
   const handleBuyCredits = async (pack: string) => {
     try {
-      await accountTermsService.requireAcceptance();
       setLoadingPack(pack);
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { pack },
+      const data = await runWithTermsAcceptance(async () => {
+        await accountTermsService.requireAcceptance();
+        const { data, error } = await supabase.functions.invoke("create-checkout", { body: { pack } });
+        if (error) throw error;
+        return data;
       });
-      if (error) throw error;
       if (data?.url) {
         window.open(data.url, "_blank");
       }
     } catch (err) {
       console.error("Checkout error:", err);
-      toast.error(err instanceof Error && err.message === t(ACCOUNT_TERMS_REQUIRED) ? err.message : checkoutFailedMessage());
+      toast.error(err instanceof TermsNotAcceptedError ? err.message : checkoutFailedMessage());
     } finally {
       setLoadingPack(null);
     }

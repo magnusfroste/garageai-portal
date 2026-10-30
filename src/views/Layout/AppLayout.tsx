@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { AccountTermsBanner } from "@/views/Account/components/AccountTermsBanner";
+import { TermsAcceptDialog } from "@/views/Account/components/TermsAcceptDialog";
 import { ACCOUNT_TERMS_URL, ACCOUNT_PRIVACY_URL } from "@/models/services/accountTermsService";
 const formatBalance = (n: number) => `$${n.toFixed(2)}`;
 
@@ -111,7 +112,7 @@ const SignedInLayout = () => {
             </div>
           </header>
           <AnnouncementBar />
-          <AccountTermsBanner />
+          <AccountTermsBanner /><TermsAcceptDialog />
           <ShowKeyOnceDialog title={t("Your API key")} keyValue={defaultKey.created?.key ?? null} onClose={defaultKey.dismiss} />
           <main className="flex-1 overflow-auto">
             <Outlet />

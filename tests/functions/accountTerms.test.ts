@@ -9,9 +9,9 @@ test("2026-10-17 retains full access until 9 November", () => expect(hasCurrentA
 test("2026-10-17 expires on 9 November UTC", () => expect(hasCurrentAccountTerms({ terms_version: "2026-10-17" }, new Date("2026-11-09T00:00:00Z"))).toBe(false));
 test("existing acceptance shows the new-version notice", () => expect(shouldShowAccountTermsNotice({ terms_version: "2026-10-17" })).toBe(true));
 test("accepting 2026-10-25 hides its notice", () => expect(shouldShowAccountTermsNotice({ terms_version: "2026-10-25" })).toBe(false));
-test("dismissing 2026-10-25 hides its notice without changing access", () => {
+test("dismissed but not accepted shows the notice again on reload", () => {
   const profile = { terms_version: "2026-10-17", terms_notice_dismissed_version: "2026-10-25" };
-  expect(shouldShowAccountTermsNotice(profile)).toBe(false);
+  expect(shouldShowAccountTermsNotice(profile)).toBe(true);
   expect(hasCurrentAccountTerms(profile, new Date("2026-11-08T23:59:59Z"))).toBe(true);
   expect(hasCurrentAccountTerms(profile, new Date("2026-11-09T00:00:00Z"))).toBe(false);
 });

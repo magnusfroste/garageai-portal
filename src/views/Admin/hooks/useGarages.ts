@@ -1,3 +1,4 @@
+import { runWithTermsAcceptance, isTermsRefusal } from "@/models/services/termsGate";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FunctionRegion } from "@supabase/supabase-js";
@@ -137,7 +138,11 @@ export const useGarages = () => {
     create_setup_key: boolean;
     terms_accepted?: boolean;
   }): Promise<CreateGarageResult> => {
-    const { data, error } = await supabase.functions.invoke("create-garage", { body: { ...body, source: "admin" } });
+    const { data, error } = await runWithTermsAcceptance(async () => {
+      const res = await supabase.functions.invoke("create-garage", { body: { ...body, source: "admin" } });
+      if (res.error && await isTermsRefusal(res.error)) throw res.error;
+      return res;
+    });
     if (error) throw new Error(error.message || "Failed to create garage");
     if (data?.error) throw new Error(data.error);
     queryClient.invalidateQueries({ queryKey: ["admin-garages"] });
