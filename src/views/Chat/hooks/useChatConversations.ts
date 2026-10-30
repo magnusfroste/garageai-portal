@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { chatLocalStore } from "@/data/repositories/chatLocalStore";
 import { chatConversationRepository as repo } from "@/data/repositories/chatConversationRepository";
 import { titleFromMessage } from "@/models/services/chatService";
+import { mergeAccountChats } from "@/models/services/chatSyncService";
 import { t } from "@/i18n";
 import type { Conversation, ChatMessage } from "../types";
 
@@ -39,13 +40,12 @@ export const useChatConversations = (syncEnabled: boolean) => {
   /** Pull account conversations into the local list (used when sync is on / kept on). */
   const mergeFromAccount = useCallback(async () => {
     if (!userId) return;
-    const serverConvs = await repo.list();
-    const missing = serverConvs.filter((sc) => !conversations.some((c) => c.id === sc.id));
-    if (missing.length) {
-      chatLocalStore.importAll(userId, missing);
-      setConversations(chatLocalStore.list(userId));
-    }
-  }, [userId, conversations]);
+    let serverConvs: Conversation[];
+    try { serverConvs = await repo.listAll(); }
+    catch { toast.error(t("Couldn't load the chats saved in your account. Please reload."), { id: "chat-load-error" }); return; }
+    chatLocalStore.importAll(userId, serverConvs);
+    setConversations((current) => mergeAccountChats(current, serverConvs));
+  }, [userId]);
 
   const setActiveId = useCallback((id: string | null) => {
     setActiveIdState(id);
