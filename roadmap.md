@@ -1,13 +1,15 @@
 # Roadmap
 
-- [ ] Reset exactly three approved cache overrides, audit the changes, verify dgx-city 0.035 and autoversio-south 0.060 after sync; preserve autoversio 0.006.
-- [ ] Buyer first-answer screen: inline terms, default show-once key, Auto Chat sample, key-filled examples, first-request completion, Swedish/mobile, tests and publish.
+- [x] Reset exactly three approved cache overrides and audit admin approval/reason; live Qwen pool/dedicated 0.060 and deliberate autoversio 0.006 verified after sync.
+- [ ] dgx-city paid cache 0.035 gateway readback — blocked: garage offline (runtime_ok false), paid routes absent; free mine route remains 0. Approved stored overrides are null and input is 0.14.
+- [x] Buyer first-answer: shared inline terms/default show-once key, Auto sample prefill, key-filled examples, successful account request marker, Swedish/mobile; 40 affected tests pass, build OK, desktop/mobile isolated acceptance/key/prefill/completion checks passed; backend deployed.
+- [ ] Buyer real-account acceptance/key/first-answer readback — blocked: requesting user has no matching auth session; verified isolated UI flow, gateway account filtering, anonymous refusal. Publish frontend after final checks.
 
 - [x] Preserve signup destinations in account auth metadata through confirmation and first sign-in; shared validation rejects external hosts, Bridge records operator intent, model entry goes to keys with buyer intent; 56 related tests passed, one unrelated persistence test skipped; fresh-device browser fixtures verified Bridge code, key step and generic path question; publication requested.
 - [ ] Signup real-email confirmation/readback — blocked: requester has no matching app account/session; account metadata submission and fresh-device continuation verified with isolated browser responses, hosted redirect allow-list verified read-only.
 
 - [x] Remove gateway-to-model cache-read adoption; 33 pricing/routing tests pass (including clearing, input changes and non-creation); all 15 importing functions deployed. Read-only audit: six active tier overrides and one retained override; no overrides reset. Per-model original write time/actor are not recorded; latest row updates are not price-change timestamps.
-- [ ] Verify real-account cache-clear save and gateway readback — blocked: requires an approved price change; existing overrides intentionally untouched pending user/Magnus decisions.
+- [x] Approved cache resets saved with history and autoversio-south gateway readback verified; dgx-city readback blocked by offline garage as above.
 
 - [x] Update account terms to 2026-10-25; preserve legacy acceptance until 2026-11-09; persist dismissible English/Swedish notice; existing Admin Users accepted-version column retained; migration 0085 and six affected functions deployed; 21 tests passed, desktop/mobile notice fixtures verified; frontend publication requested
 - [ ] Terms transition real signed-in acceptance/dismissal readback — blocked: no requesting-user auth account; privileged rollback persistence test skipped on read-only sandbox connection

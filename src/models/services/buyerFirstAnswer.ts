@@ -4,7 +4,7 @@ export const buyerNeedsFirstAnswer = (intent: string | null | undefined, firstRe
 export function firstAnswerExamples(key: string, prompt = FIRST_ANSWER_PROMPT) {
   const body = { model: FIRST_ANSWER_MODEL, messages: [{ role: "user", content: prompt }] };
   return {
-    curl: `curl https://api.garageai.eu/v1/chat/completions \\\n+  -H "Authorization: Bearer ${key}" \\\n+  -H "Content-Type: application/json" \\\n+  -d '${JSON.stringify(body).replace(/'/g, "'\\''")}'`,
+    curl: [`curl https://api.garageai.eu/v1/chat/completions`, `  -H "Authorization: Bearer ${key}"`, `  -H "Content-Type: application/json"`, `  -d '${JSON.stringify(body).replace(/'/g, "'\\''")}'`].join(" \\\n"),
     Python: `from openai import OpenAI\n\nclient = OpenAI(api_key=${JSON.stringify(key)}, base_url="https://api.garageai.eu/v1")\nresponse = client.chat.completions.create(\n    model="garageai/auto",\n    messages=[{"role": "user", "content": ${JSON.stringify(prompt)}}],\n)\nprint(response.choices[0].message.content)`,
     JavaScript: `import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: ${JSON.stringify(key)},\n  baseURL: "https://api.garageai.eu/v1",\n});\nconst response = await client.chat.completions.create(${JSON.stringify(body, null, 2)});\nconsole.log(response.choices[0].message.content);`,
   };

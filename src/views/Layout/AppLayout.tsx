@@ -117,7 +117,7 @@ const SignedInLayout = () => {
             </div>
           </header>
           <AnnouncementBar />
-          <AccountTermsBanner /><TermsAcceptDialog />
+          {!inlineKey && <AccountTermsBanner />}<TermsAcceptDialog />
           <ShowKeyOnceDialog title={t("Your API key")} keyValue={inlineKey ? null : defaultKey.created?.key ?? null} onClose={defaultKey.dismiss} />
           <main className="flex-1 overflow-auto">
             <Outlet context={{ defaultKey }} />
