@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { authReturnService } from "@/models/services/authReturnService";
 import { ACCOUNT_TERMS_VERSION } from "@/models/services/accountTermsService";
 import { AccountTermsCheckbox } from "@/views/Account/components/AccountTermsCheckbox";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { signupContinuation } from "@/models/services/signupDestination";
 const authSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email too long"),
   password: z.string().min(8, "Password must be at least 8 characters").max(100, "Password too long"),
@@ -36,7 +37,9 @@ const Auth = () => {
   const [checkInbox, setCheckInbox] = useState(false);
   const { settings } = useSiteSettings();
   const siteName = settings?.site_name || "GarageAI";
-  const intent = onboardingService.readUrlIntent(location.search);
+  const continuation = signupContinuation(location.search, authReturnService.peek(location.search));
+  const intent = continuation.intent;
+  const routing = useRef(false);
   const params = new URLSearchParams(location.search);
   const initialTab = params.get("mode") === "signup" || !!intent ? "signup" : "signin";
   const [tab, setTab] = useState(initialTab);
@@ -49,11 +52,18 @@ const Auth = () => {
       : t("Welcome");
 
   const routeSession = async (session: { user: Parameters<typeof onboardingService.routeAfterLogin>[0] }) => {
-    const destination = await onboardingService.routeAfterLogin(session.user);
-    if (destination === "/onboarding") { navigate(destination, { replace: true }); return; }
-    const next = authReturnService.take(location.search);
-    if (next) { navigate(next, { replace: true }); return; }
-    navigate(destination, { replace: true });
+    if (routing.current) return;
+    routing.current = true;
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user || user.id !== session.user.id) throw error ?? new Error("Not authenticated");
+      const destination = await onboardingService.routeAfterLogin(user, authReturnService.peek(location.search), intent);
+      authReturnService.take(location.search);
+      navigate(destination, { replace: true });
+    } catch {
+      routing.current = false;
+      toast.error(t("Could not save your choice. Please try again."));
+    }
   };
 
   useEffect(() => { authReturnService.remember(location.search); }, [location.search]);
@@ -64,7 +74,8 @@ const Auth = () => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) void routeSession(session);
+      // Auth callbacks must return before making another auth request.
+      if (session) setTimeout(() => void routeSession(session), 0);
     });
 
     return () => subscription.unsubscribe();
@@ -81,7 +92,7 @@ const Auth = () => {
         email: validated.email,
         password: validated.password,
         options: {
-          data: { full_name: validated.fullName || "", signup_intent: intent, account_terms_accepted: true, account_terms_version: ACCOUNT_TERMS_VERSION },
+          data: { full_name: validated.fullName || "", signup_intent: intent, signup_destination: continuation.destination, account_terms_accepted: true, account_terms_version: ACCOUNT_TERMS_VERSION },
           emailRedirectTo: `${window.location.origin}/auth${authReturnService.query(location.search)}`,
         },
       });
@@ -107,7 +118,7 @@ const Auth = () => {
     try {
       if (intent) onboardingService.storeIntent(intent);
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: authReturnService.query(location.search) ? `${window.location.origin}/auth` : window.location.origin,
+        redirect_uri: `${window.location.origin}/auth${authReturnService.query(location.search)}`,
       });
       if (result.error) {
         toast.error(t("Could not sign in with Google. Please try again."));

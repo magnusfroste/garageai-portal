@@ -58,7 +58,7 @@ const BridgeLinkPage = () => {
   useEffect(() => setReplace(false), [choice]);
 
   if (loading) return null;
-  if (!session) return <Navigate to={`/auth?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
+  if (!session) return <Navigate to={`/auth?intent=operator&next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
 
   const chosen = choice === "new" ? null : meshGarages.find((g) => g.id === choice) ?? null;
   const conflict = replacesOtherMachine(chosen?.machine_id, link?.machine_id);
