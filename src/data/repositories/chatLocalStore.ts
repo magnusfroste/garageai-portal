@@ -3,7 +3,7 @@ import type { ChatMessage, Conversation } from "@/views/Chat/types";
 // Local-first chat history: conversations live in this browser, per user id.
 // Nothing is written to the account unless the user turns on sync.
 const keyFor = (userId: string) => `garageai:chat:convs:${userId}`;
-const MAX_CONVERSATIONS = 100;
+const MAX_CONVERSATIONS = 1000;
 
 interface StoredConversation {
   id: string;
@@ -24,10 +24,11 @@ const readAll = (userId: string): StoredConversation[] => {
   }
 };
 
-const writeAll = (userId: string, convs: StoredConversation[]) => {
+const writeAll = (userId: string, convs: StoredConversation[]): boolean => {
   try {
     localStorage.setItem(keyFor(userId), JSON.stringify(convs.slice(0, MAX_CONVERSATIONS)));
-  } catch { /* storage full — keep going in memory */ }
+    return true;
+  } catch { return false; /* storage full — keep going in memory */ }
 };
 
 export const chatLocalStore = {
@@ -54,10 +55,16 @@ export const chatLocalStore = {
   },
 
   /** Bulk-import conversations (used when moving account chats to this device). */
-  importAll(userId: string, convs: Conversation[]): void {
+  /** Returns false when the browser refused to store them (e.g. storage full). */
+  importAll(userId: string, convs: Conversation[]): boolean {
     const existing = readAll(userId);
     const known = new Set(existing.map((c) => c.id));
     const incoming = convs.filter((c) => !known.has(c.id)).map((c) => ({ ...c }));
-    writeAll(userId, [...incoming, ...existing]);
+    return writeAll(userId, [...incoming, ...existing]);
+  },
+
+  /** Ids actually stored on this device right now (re-read from storage). */
+  storedIds(userId: string): Set<string> {
+    return new Set(readAll(userId).map((c) => c.id));
   },
 };

@@ -23,6 +23,45 @@ export const chatConversationRepository = {
     }));
   },
 
+  /** Every conversation in the account, paged; throws if any page fails so callers never mistake an error for "no chats". */
+  async listAll(): Promise<Conversation[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) return [];
+    const PAGE = 500;
+    const rows: Conversation[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from("chat_conversations")
+        .select("id, title, model, messages, created_at, updated_at")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      const page = data ?? [];
+      rows.push(...page.map((row) => ({
+        id: row.id,
+        title: row.title,
+        model: row.model || "",
+        messages: (row.messages as unknown as ChatMessage[]) || [],
+        createdAt: new Date(row.created_at).getTime(),
+        updatedAt: new Date(row.updated_at || row.created_at).getTime(),
+      })));
+      if (page.length < PAGE) return rows;
+    }
+  },
+
+  /** Delete exactly these conversations of the current user; throws on failure. */
+  async removeMany(ids: string[]): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not signed in");
+    for (let i = 0; i < ids.length; i += 200) {
+      const { error } = await supabase.from("chat_conversations").delete().eq("user_id", user.id).in("id", ids.slice(i, i + 200));
+      if (error) throw error;
+    }
+  },
+
   async create(model: string, title: string): Promise<Conversation | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
