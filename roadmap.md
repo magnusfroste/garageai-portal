@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Reset exactly three approved cache overrides, audit the changes, verify dgx-city 0.035 and autoversio-south 0.060 after sync; preserve autoversio 0.006.
+- [ ] Buyer first-answer screen: inline terms, default show-once key, Auto Chat sample, key-filled examples, first-request completion, Swedish/mobile, tests and publish.
+
 - [x] Preserve signup destinations in account auth metadata through confirmation and first sign-in; shared validation rejects external hosts, Bridge records operator intent, model entry goes to keys with buyer intent; 56 related tests passed, one unrelated persistence test skipped; fresh-device browser fixtures verified Bridge code, key step and generic path question; publication requested.
 - [ ] Signup real-email confirmation/readback — blocked: requester has no matching app account/session; account metadata submission and fresh-device continuation verified with isolated browser responses, hosted redirect allow-list verified read-only.
 
