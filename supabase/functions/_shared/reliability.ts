@@ -9,13 +9,14 @@ import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { runAndStoreAcceptanceTests } from "./acceptanceTest.ts";
 import { GARAGE_SELECT, apiBaseFor, gatewayHealthy, hasGatewaySignal, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 import { syncModels } from "./syncModels.ts";
+import { BATCH_MAX, HOUR_MS, MAX_WINDOW_MS, dedupeByRequestId, lastRowBefore, nextCursor, shrinkSpan, windowEnd } from "./usageBatch.ts";
 import type { SyncResult } from "./syncModels.ts";
 
 const HEARTBEAT_STALE_MS = 15 * 60 * 1000;
 const RETENTION_DAYS = 90;
 const USAGE_CURSOR = "garage_usage_stats";
 const INGEST_LAG_MS = 2 * 60 * 1000;
-const MAX_PAGES = 50;
+const PAGE_SIZE = 100;
 const PROBE_INTERVAL_MS = 60 * 60 * 1000;
 const MAX_PROBES_PER_RUN = 10;
 
