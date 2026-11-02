@@ -188,15 +188,12 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
                 <Terminal className="w-5 h-5 text-primary shrink-0" />
                 <h3 className="font-semibold text-foreground">{tool.name}</h3>
                 <Badge variant="secondary" className="text-[10px]">{tool.badge}</Badge>
-                {tool.name === "Claude Code" && (
-                  <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
-                    <Shield className="w-3 h-3 mr-1" />
-                    Our Pick
-                  </Badge>
-                )}
               </div>
 
               <p className="text-sm text-muted-foreground">{tool.description}</p>
+              {tool.note && (
+                <p className="text-xs text-muted-foreground/80">{tool.note}</p>
+              )}
 
               <ul className="grid gap-1.5 text-sm text-muted-foreground">
                 {tool.features.map((f, i) => (
