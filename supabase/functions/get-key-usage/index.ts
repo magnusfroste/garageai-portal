@@ -174,14 +174,17 @@ serve(async (req) => {
     const LITELLM_BASE = await getProxyBaseUrl(supabase);
 
     // Fetch key info, daily activity, and recent logs in parallel
+    const timed = async <T,>(label: string, p: Promise<T>): Promise<T> => { const t0 = Date.now(); try { return await p; } finally { timings[label] = Date.now() - t0; } };
+    const timings: Record<string, number> = {};
     const [keyInfoRes, dailyData, rawLogs, routeMap] = await Promise.all([
-      fetch(`${LITELLM_BASE}/key/info?key=${keyIdentifier}`, {
+      timed('key_info', fetch(`${LITELLM_BASE}/key/info?key=${keyIdentifier}`, {
         headers: { 'Authorization': `Bearer ${litellmMasterKey}` },
-      }),
-      fetchDailyActivity(LITELLM_BASE, keyIdentifier, litellmMasterKey),
-      fetchRecentLogs(LITELLM_BASE, keyIdentifier, litellmMasterKey, 50),
-      fetchRouteMap(LITELLM_BASE, litellmMasterKey),
+      })),
+      timed('daily', fetchDailyActivity(LITELLM_BASE, keyIdentifier, litellmMasterKey)),
+      timed('logs', fetchRecentLogs(LITELLM_BASE, keyIdentifier, litellmMasterKey, 50)),
+      timed('routes', fetchRouteMap(LITELLM_BASE, litellmMasterKey)),
     ]);
+    console.log('get-key-usage timings ms', JSON.stringify(timings));
     const publicNames = new Set(routeMap.values());
     const recentLogs = (rawLogs as Array<Record<string, unknown>>).map((log) => {
       const name = publicModelName(log.model_group, log.model, routeMap, publicNames);

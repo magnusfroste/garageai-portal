@@ -1,4 +1,5 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +8,16 @@ import { publicModelName } from "@/models/services/requestLogService";
 import { cn } from "@/lib/utils";
 import { t, locale } from "@/i18n";
 
+const PAGE = 50;
+
 export const RequestLogTable = ({ logs }: { logs: RequestLog[] }) => {
   const [open, setOpen] = useState<string | null>(null);
+  const [limit, setLimit] = useState(PAGE);
+  useEffect(() => setLimit(PAGE), [logs]);
+  const all = logs;
+  logs = all.slice(0, limit);
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -59,5 +67,7 @@ export const RequestLogTable = ({ logs }: { logs: RequestLog[] }) => {
         })}
       </TableBody>
     </Table>
+    {all.length > limit && <div className="flex justify-center pt-3"><Button variant="outline" size="sm" onClick={() => setLimit((n) => n + PAGE)}>{t("Show more ({n} left)", { n: (all.length - limit).toLocaleString() })}</Button></div>}
+    </>
   );
 };
