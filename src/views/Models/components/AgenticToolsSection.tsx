@@ -12,6 +12,8 @@ interface AgenticTool {
   description: string;
   features: string[];
   envVars: { key: string; value: string }[];
+  configFile?: { path: string; content: string };
+  pitfalls?: string[];
   link: { url: string; label: string };
 }
 
@@ -31,6 +33,45 @@ const tools: AgenticTool[] = [
       { key: "ANTHROPIC_MODEL", value: "{{model}}" },
     ],
     link: { url: "https://docs.anthropic.com/en/docs/claude-code", label: "Claude Code docs" },
+  },
+  {
+    name: "OpenCode",
+    badge: "Terminal",
+    description:
+      "Open-source coding agent for the terminal. It works with any OpenAI-compatible endpoint, but it needs GarageAI declared as a provider in opencode.json. Environment variables alone are not enough.",
+    features: [],
+    envVars: [{ key: "GARAGE_API_KEY", value: "<your key>" }],
+    configFile: {
+      path: "~/.config/opencode/opencode.json (or opencode.json in your project)",
+      content: `{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "garageai": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "GarageAI",
+      "options": {
+        "baseURL": "{{baseUrl}}",
+        "apiKey": "{env:GARAGE_API_KEY}"
+      },
+      "models": {
+        "garageai/auto": {
+          "name": "GarageAI auto",
+          "limit": { "context": 32768, "output": 4096 }
+        }
+      }
+    }
+  },
+  "model": "garageai/garageai/auto"
+}`,
+    },
+    pitfalls: [
+      "The base URL must end in /v1.",
+      "The model key must match a GarageAI model id exactly (see the model list). In OpenCode you then pick it as provider/model, so garageai/auto becomes garageai/garageai/auto.",
+      "Set limit.context: without it OpenCode cannot compact the conversation, and its long system prompt overflows smaller models.",
+      "Use auto or a model with the Tools badge: OpenCode is an agent and needs tool calling. Very small models (under ~8B) struggle with it.",
+      "Using /connect instead of the env var? Choose Other and enter garageai as the provider ID; it must match the key in opencode.json.",
+    ],
+    link: { url: "https://opencode.ai/docs/providers/", label: "OpenCode provider docs" },
   },
   {
     name: "Roo Code",
@@ -66,8 +107,13 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
   const { models } = useModelCatalog();
   const { models: curated } = useCuratedModels(true);
   const model = curated.find((m) => m.is_default && m.garage_tier === "pool")?.model_name || models.find((m) => m.available && m.poolId)?.poolId || models.find((m) => m.poolId)?.poolId || "<pool-model-id>";
+  // OpenCode needs the versioned endpoint, so keep /v1 here (unlike the env vars above).
+  const v1BaseUrl = (() => {
+    const trimmed = baseUrl.replace(/\/+$/, "");
+    return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
+  })();
   return (
-  <Card className="border-border/50 bg-card/60">
+   <Card className="border-border/50 bg-card/60">
     <CardHeader>
       <CardTitle className="flex items-center gap-2 text-lg">
         <Bot className="w-5 h-5 text-primary" />
@@ -78,7 +124,9 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
       </p>
     </CardHeader>
     <CardContent className="space-y-6">
-      {tools.map((tool) => (
+      {tools.map((tool) => {
+        const configContent = tool.configFile?.content.replace("{{baseUrl}}", v1BaseUrl) ?? "";
+        return (
         <div key={tool.name} className="rounded-lg border border-border/50 p-5 space-y-3">
           <div className="flex items-center gap-3">
             <Terminal className="w-5 h-5 text-primary shrink-0" />
@@ -103,6 +151,20 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
             ))}
           </ul>
 
+          {tool.configFile && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 break-all font-mono text-xs text-muted-foreground">
+                  {tool.configFile.path}
+                </span>
+                <CopyButton text={configContent} />
+              </div>
+              <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm whitespace-pre overflow-x-auto">
+                {configContent}
+              </div>
+            </div>
+          )}
+
           {tool.envVars.length > 0 && (
             <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm space-y-2">
               {tool.envVars.map((env) => {
@@ -119,6 +181,20 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
             </div>
           )}
 
+          {tool.pitfalls && tool.pitfalls.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Common pitfalls</p>
+              <ul className="grid gap-1 text-xs text-muted-foreground">
+                {tool.pitfalls.map((p, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-muted-foreground/60 mt-0.5">•</span>
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <a
             href={tool.link.url}
             target="_blank"
@@ -129,7 +205,8 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
-      ))}
+        );
+      })}
     </CardContent>
   </Card>
 );
