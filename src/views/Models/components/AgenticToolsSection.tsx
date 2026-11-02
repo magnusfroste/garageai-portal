@@ -13,6 +13,7 @@ interface AgenticTool {
   features: string[];
   envVars: { key: string; value: string }[];
   configFile?: { path: string; content: string };
+  commands?: { label: string; lines: string[] };
   pitfalls?: string[];
   link: { url: string; label: string };
 }
@@ -38,41 +39,50 @@ const tools: AgenticTool[] = [
     name: "OpenCode",
     badge: "Terminal",
     description:
-      "Open-source coding agent for the terminal. It works with any OpenAI-compatible endpoint, but it needs GarageAI declared as a provider in opencode.json. Environment variables alone are not enough.",
+      "Open-source coding agent for the terminal. OpenCode 2 needs GarageAI declared as a provider in opencode.json, and the API key must reach its background service (an export in your shell is not enough).",
     features: [],
-    envVars: [{ key: "GARAGE_API_KEY", value: "<your key>" }],
+    envVars: [],
     configFile: {
       path: "~/.config/opencode/opencode.json (or opencode.json in your project)",
       content: `{
   "$schema": "https://opencode.ai/config.json",
-  "provider": {
+  "providers": {
     "garageai": {
-      "npm": "@ai-sdk/openai-compatible",
       "name": "GarageAI",
-      "options": {
-        "baseURL": "{{baseUrl}}",
-        "apiKey": "{env:GARAGE_API_KEY}"
+      "env": ["GARAGE_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "{{baseUrl}}"
       },
       "models": {
-        "garageai/auto": {
+        "auto": {
+          "modelID": "garageai/auto",
           "name": "GarageAI auto",
           "limit": { "context": 32768, "output": 4096 }
         }
       }
     }
   },
-  "model": "garageai/garageai/auto"
+  "model": "garageai/auto"
 }`,
     },
+    commands: {
+      label: "Give the key to OpenCode's background service, then test:",
+      lines: [
+        "opencode service set env GARAGE_API_KEY <your key>",
+        "opencode service restart",
+        'opencode run -m garageai/auto "hello"',
+      ],
+    },
     pitfalls: [
-      '"Authentication Error, No api key passed in" means OpenCode sent no key: GARAGE_API_KEY is empty in the terminal you started opencode from. Run the export line in that same terminal (or add it to ~/.zshrc / ~/.bashrc and open a new terminal), then restart opencode. Check with: echo ${GARAGE_API_KEY:0:6}',
+      "\"Authentication Error, No api key passed in\": OpenCode 2 runs a background service that does not see keys you export in your shell, and opencode reload does not pass them on. Use opencode service set env (above) and restart the service. For a one-off test, opencode run --standalone uses your shell's environment.",
+      "OpenCode 2 uses \"providers\" (plural), \"package\" and \"settings\". The older \"provider\" / \"npm\" / \"options.apiKey\" format from OpenCode 1 guides is deprecated and drops the key.",
+      "\"Unsupported package\": the package must be @opencode/ai/providers/openai-compatible.",
       "The base URL must end in /v1.",
-      "The model key must match a GarageAI model id exactly (see the model list). In OpenCode you then pick it as provider/model, so garageai/auto becomes garageai/garageai/auto.",
-      "Set limit.context: without it OpenCode cannot compact the conversation, and its long system prompt overflows smaller models.",
-      "Use auto or a model with the Tools badge: OpenCode is an agent and needs tool calling. Very small models (under ~8B) struggle with it.",
-      "Using /connect instead of the env var? Choose Other and enter garageai as the provider ID; it must match the key in opencode.json.",
+      "To add another model, add an entry under models with a short key and modelID set to the exact GarageAI model id from the model list; you then pick it as garageai/<key>. Use auto or a model with the Tools badge: OpenCode is an agent and needs tool calling.",
+      "Keep limit.context: without it OpenCode cannot compact the conversation, and its long system prompt overflows smaller models.",
     ],
-    link: { url: "https://opencode.ai/docs/providers/", label: "OpenCode provider docs" },
+    link: { url: "https://opencode.ai/v2/docs/providers/", label: "OpenCode provider docs" },
   },
   {
     name: "Roo Code",
@@ -114,101 +124,115 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
     return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
   })();
   return (
-   <Card className="border-border/50 bg-card/60">
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2 text-lg">
-        <Bot className="w-5 h-5 text-primary" />
-        Agentic Coding Tools
-      </CardTitle>
-      <p className="text-sm text-muted-foreground mt-1">
-        {t("Encrypted in transit: TLS to our EU gateway and WireGuard to the garage. The gateway does not store your prompts or responses. Your prompt is processed on the operator's machine, so don't send sensitive data to the public pool yet.")}
-      </p>
-    </CardHeader>
-    <CardContent className="space-y-6">
-      {tools.map((tool) => {
-        const configContent = tool.configFile?.content.replace("{{baseUrl}}", v1BaseUrl) ?? "";
-        return (
-        <div key={tool.name} className="rounded-lg border border-border/50 p-5 space-y-3">
-          <div className="flex items-center gap-3">
-            <Terminal className="w-5 h-5 text-primary shrink-0" />
-            <h3 className="font-semibold text-foreground">{tool.name}</h3>
-            <Badge variant="secondary" className="text-[10px]">{tool.badge}</Badge>
-            {tool.name === "Claude Code" && (
-              <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
-                <Shield className="w-3 h-3 mr-1" />
-                Our Pick
-              </Badge>
-            )}
-          </div>
-
-          <p className="text-sm text-muted-foreground">{tool.description}</p>
-
-          <ul className="grid gap-1.5 text-sm text-muted-foreground">
-            {tool.features.map((f, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-
-          {tool.configFile && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="min-w-0 break-words font-mono text-xs text-muted-foreground">
-                  {tool.configFile.path}
-                </span>
-                <CopyButton text={configContent} />
+    <Card className="border-border/50 bg-card/60">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Bot className="w-5 h-5 text-primary" />
+          Agentic Coding Tools
+        </CardTitle>
+        <p className="text-sm text-muted-foreground mt-1">
+          {t("Encrypted in transit: TLS to our EU gateway and WireGuard to the garage. The gateway does not store your prompts or responses. Your prompt is processed on the operator's machine, so don't send sensitive data to the public pool yet.")}
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {tools.map((tool) => {
+          const configContent = tool.configFile?.content.replace("{{baseUrl}}", v1BaseUrl) ?? "";
+          return (
+            <div key={tool.name} className="rounded-lg border border-border/50 p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <Terminal className="w-5 h-5 text-primary shrink-0" />
+                <h3 className="font-semibold text-foreground">{tool.name}</h3>
+                <Badge variant="secondary" className="text-[10px]">{tool.badge}</Badge>
+                {tool.name === "Claude Code" && (
+                  <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
+                    <Shield className="w-3 h-3 mr-1" />
+                    Our Pick
+                  </Badge>
+                )}
               </div>
-              <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm whitespace-pre-wrap break-words">
-                {configContent}
-              </div>
-            </div>
-          )}
 
-          {tool.envVars.length > 0 && (
-            <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm space-y-2">
-              {tool.envVars.map((env) => {
-                const val = env.value.replace("{{baseUrl}}", baseUrl.replace(/\/v1\/?$/, "")).replace("{{model}}", model);
-                return (
-                  <div key={env.key} className="flex items-center justify-between gap-2">
-                    <span className="min-w-0 break-all">
-                      export {env.key}={val}
-                    </span>
-                    <CopyButton text={`export ${env.key}=${val}`} />
-                  </div>
-                );
-              })}
-            </div>
-          )}
+              <p className="text-sm text-muted-foreground">{tool.description}</p>
 
-          {tool.pitfalls && tool.pitfalls.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Common pitfalls</p>
-              <ul className="grid gap-1 text-xs text-muted-foreground">
-                {tool.pitfalls.map((p, i) => (
+              <ul className="grid gap-1.5 text-sm text-muted-foreground">
+                {tool.features.map((f, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="text-muted-foreground/60 mt-0.5">•</span>
-                    {p}
+                    <span className="text-primary mt-0.5">•</span>
+                    {f}
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
 
-          <a
-            href={tool.link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
-          >
-            {tool.link.label}
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        </div>
-        );
-      })}
-    </CardContent>
-  </Card>
-);
+              {tool.configFile && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 break-words font-mono text-xs text-muted-foreground">
+                      {tool.configFile.path}
+                    </span>
+                    <CopyButton text={configContent} />
+                  </div>
+                  <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm whitespace-pre-wrap break-words">
+                    {configContent}
+                  </div>
+                </div>
+              )}
+
+              {tool.commands && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">{tool.commands.label}</p>
+                  <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm space-y-2">
+                    {tool.commands.lines.map((line, i) => (
+                      <div key={i} className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 break-all">{line}</span>
+                        <CopyButton text={line} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {tool.envVars.length > 0 && (
+                <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm space-y-2">
+                  {tool.envVars.map((env) => {
+                    const val = env.value.replace("{{baseUrl}}", baseUrl.replace(/\/v1\/?$/, "")).replace("{{model}}", model);
+                    return (
+                      <div key={env.key} className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 break-all">
+                          export {env.key}={val}
+                        </span>
+                        <CopyButton text={`export ${env.key}=${val}`} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {tool.pitfalls && tool.pitfalls.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Common pitfalls</p>
+                  <ul className="grid gap-1 text-xs text-muted-foreground">
+                    {tool.pitfalls.map((p, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-muted-foreground/60 mt-0.5">•</span>
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <a
+                href={tool.link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                {tool.link.label}
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
 };
