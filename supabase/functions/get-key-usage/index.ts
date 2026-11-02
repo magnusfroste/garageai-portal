@@ -74,14 +74,25 @@ async function fetchDailyActivity(base: string, litellmToken: string, masterKey:
 }
 
 /**
- * /spend/logs filtered server-side by api_key for the recent-requests list.
- * Limited result set (small page) so this stays fast.
+ * Recent requests for one key: the paginated, date-bounded /spend/logs/v2
+ * (newest first, one small page) instead of the legacy unbounded scan.
+ * Falls back to the legacy endpoint only if v2 is unavailable.
  */
 async function fetchRecentLogs(base: string, litellmToken: string, masterKey: string, limit = 50) {
+  const headers = { 'Authorization': `Bearer ${masterKey}` };
+  const day = (d: number) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 10);
+  const v2 = new URLSearchParams({ api_key: litellmToken, start_date: day(-30), end_date: day(1), page: '1', page_size: String(limit), sort_by: 'startTime', sort_order: 'desc', exclude_internal_health_checks: 'true' });
+  try {
+    const r = await fetch(`${base}/spend/logs/v2?${v2}`, { headers, signal: AbortSignal.timeout(8000) });
+    if (r.ok) {
+      const body = await r.json();
+      const rows = body.data ?? body.response;
+      if (Array.isArray(rows)) return rows.filter((log: { api_key?: string }) => !log.api_key || log.api_key === litellmToken).slice(0, limit);
+    }
+    console.warn('spend/logs/v2 failed:', r.status);
+  } catch (e) { console.warn('spend/logs/v2 error:', e); }
   const url = `${base}/spend/logs?api_key=${encodeURIComponent(litellmToken)}&page_size=${limit}`;
-  const res = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${masterKey}` },
-  });
+  const res = await fetch(url, { headers });
   if (!res.ok) {
     console.warn('spend/logs failed:', res.status);
     return [];
