@@ -154,12 +154,12 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
           {tool.configFile && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="min-w-0 break-all font-mono text-xs text-muted-foreground">
+                <span className="min-w-0 break-words font-mono text-xs text-muted-foreground">
                   {tool.configFile.path}
                 </span>
                 <CopyButton text={configContent} />
               </div>
-              <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm whitespace-pre overflow-x-auto">
+              <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm whitespace-pre-wrap break-words">
                 {configContent}
               </div>
             </div>
