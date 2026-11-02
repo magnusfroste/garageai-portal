@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "./CopyButton";
 import { t } from "@/i18n";
+import { opencodeSetupCommand } from "@/models/services/opencodeSetup";
 import { useModelCatalog } from "@/hooks/useModelCatalog";
 import { useCuratedModels } from "@/hooks/useCuratedModels";
 
@@ -161,6 +162,16 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
                   </li>
                 ))}
               </ul>
+
+              {tool.name === "OpenCode" && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Fastest: create a key, then paste the OpenCode line shown with it.</p>
+                  <div className="bg-secondary/50 rounded-lg p-4 font-mono text-xs sm:text-sm flex items-start justify-between gap-2">
+                    <span className="min-w-0 break-all">{opencodeSetupCommand("<your key>")}</span>
+                    <CopyButton text={opencodeSetupCommand("<your key>")} />
+                  </div>
+                </div>
+              )}
 
               {tool.configFile && (
                 <div className="space-y-1.5">

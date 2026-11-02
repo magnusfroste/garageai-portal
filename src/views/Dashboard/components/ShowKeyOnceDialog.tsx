@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { t } from "@/i18n";
+import { OpencodeSetupSection } from "./OpencodeSetupSection";
 
 export const GATEWAY_BASE_URL = "https://llm.garageai.eu/v1";
 
@@ -36,6 +37,7 @@ export const ShowKeyOnceDialog = ({ title, keyValue, onClose, footer }: Props) =
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </Button>
         </div>
+        {keyValue && <OpencodeSetupSection keyValue={keyValue} />}
         <p className="text-sm text-muted-foreground">{t("You won't see it again; you can create more keys and rename this one on the Dashboard.")}</p>
         <DialogFooter className="gap-2">
           {footer}

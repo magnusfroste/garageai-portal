@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "providers": {
+    "garageai": {
+      "name": "GarageAI",
+      "env": ["GARAGE_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "https://api.garageai.eu/v1"
+      },
+      "models": {
+        "auto": {
+          "modelID": "garageai/auto",
+          "name": "GarageAI auto",
+          "limit": { "context": 32768, "output": 4096 }
+        }
+      }
+    }
+  },
+  "model": "garageai/auto"
+}
