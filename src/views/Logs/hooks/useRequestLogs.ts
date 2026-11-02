@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { useAllKeysUsage } from "@/hooks/useAllKeysUsage";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { requestLogRepository } from "@/data/repositories/requestLogRepository";
 import { requestDetails } from "@/models/services/requestLogService";
 
 export interface RequestLog {
@@ -19,32 +20,32 @@ export interface RequestLog {
 }
 
 export const useRequestLogs = () => {
-  const { data, isLoading, isError, refetch } = useAllKeysUsage();
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: ["request-logs"],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => requestLogRepository.fetchPage(pageParam),
+    getNextPageParam: (last, all) => (last.hasMore ? all.length + 1 : undefined),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  });
 
   const logs = useMemo<RequestLog[]>(() => {
-    if (!data) return [];
-    const all: RequestLog[] = [];
-    for (const entry of data) {
-      const spendLogs = entry.payload?.spend_logs || [];
-      for (const log of spendLogs) {
-        if (log.api_key === "litellm-internal-health-check") continue;
-        all.push({
-          request_id: log.request_id || crypto.randomUUID(),
-          startTime: log.startTime || "",
-          model: log.model_group || log.model || "unknown",
-          total_tokens: log.total_tokens || 0,
-          prompt_tokens: log.prompt_tokens || 0,
-          completion_tokens: log.completion_tokens || 0,
-          spend: log.spend || 0,
-          status: log.status || "unknown",
-          key_name: entry.keyName,
-          ...requestDetails(log),
-        });
-      }
-    }
+    const all: RequestLog[] = (data?.pages.flatMap((p) => p.logs) ?? []).map((log) => ({
+      request_id: log.request_id || crypto.randomUUID(),
+      startTime: log.startTime || "",
+      model: log.model_group || log.model || "unknown",
+      total_tokens: log.total_tokens || 0,
+      prompt_tokens: log.prompt_tokens || 0,
+      completion_tokens: log.completion_tokens || 0,
+      spend: log.spend || 0,
+      status: log.status || "unknown",
+      key_name: log.key_name || "—",
+      ...requestDetails(log),
+    }));
     all.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-    return all;
+    const seen = new Set<string>();
+    return all.filter((l) => (seen.has(l.request_id) ? false : (seen.add(l.request_id), true)));
   }, [data]);
 
-  return { logs, loading: isLoading, isError, refetch };
+  return { logs, loading: isLoading, isError, refetch, loadMore: () => fetchNextPage(), hasMore: !!hasNextPage, loadingMore: isFetchingNextPage };
 };

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 
 export const LogsPage = () => {
-  const { logs: requestLogs, loading: logsLoading, isError, refetch } = useRequestLogs();
+  const { logs: requestLogs, loading: logsLoading, isError, refetch, loadMore, hasMore, loadingMore } = useRequestLogs();
 
   const [search, setSearch] = useState("");
   const [modelFilter, setModelFilter] = useState("all");
@@ -139,7 +139,7 @@ export const LogsPage = () => {
           {t(requestLogs.length === 0 ? "No requests yet — send your first API request to see it here." : "No results match the filters")} {requestLogs.length === 0 ? <Button asChild variant="link"><Link to="/dashboard/api">{t("Send a request")}</Link></Button> : <Button variant="link" onClick={() => {setSearch("");setModelFilter("all");setKeyFilter("all");setStatusFilter("all");}}>{t("Clear filters")}</Button>}
         </p>
       ) : (
-        <RequestLogTable logs={filtered} />
+        <RequestLogTable logs={filtered} onLoadMore={loadMore} hasMore={hasMore} loadingMore={loadingMore} />
       )}
     </div>
   );
