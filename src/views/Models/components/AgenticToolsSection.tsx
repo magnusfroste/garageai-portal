@@ -65,6 +65,7 @@ const tools: AgenticTool[] = [
 }`,
     },
     pitfalls: [
+      '"Authentication Error, No api key passed in" means OpenCode sent no key: GARAGE_API_KEY is empty in the terminal you started opencode from. Run the export line in that same terminal (or add it to ~/.zshrc / ~/.bashrc and open a new terminal), then restart opencode. Check with: echo ${GARAGE_API_KEY:0:6}',
       "The base URL must end in /v1.",
       "The model key must match a GarageAI model id exactly (see the model list). In OpenCode you then pick it as provider/model, so garageai/auto becomes garageai/garageai/auto.",
       "Set limit.context: without it OpenCode cannot compact the conversation, and its long system prompt overflows smaller models.",
