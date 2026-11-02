@@ -29,16 +29,16 @@ Deno.serve(async (req) => {
     const day = (d: number) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 10);
     const t0 = Date.now();
     const routesP = fetchRouteMap(base, headers.Authorization.slice(7));
-    const rows: Array<Record<string, unknown>> = [];
-    for (let page = 1; rows.length < MAX_ROWS; page++) {
+    const fetchPage = async (page: number) => {
       const q = new URLSearchParams({ user_id: profile?.litellm_user_id || user.id, start_date: day(-30), end_date: day(1), page: String(page), page_size: String(PAGE), sort_by: 'startTime', sort_order: 'desc', exclude_internal_health_checks: 'true' });
       const r = await fetch(`${base}/spend/logs/v2?${q}`, { headers, signal: AbortSignal.timeout(10_000) });
       if (!r.ok) throw new Error(`spend/logs/v2 ${r.status}`);
       const body = await r.json();
-      const batch = (body.data ?? body.response ?? []) as Array<Record<string, unknown>>;
-      rows.push(...batch);
-      if (batch.length < PAGE) break;
-    }
+      return (body.data ?? body.response ?? []) as Array<Record<string, unknown>>;
+    };
+    // Pages fetched in parallel; ordering is preserved by page index.
+    const pages = await Promise.all(Array.from({ length: MAX_ROWS / PAGE }, (_, i) => fetchPage(i + 1)));
+    const rows = pages.flat();
     const routes = await routesP;
     const publicNames = new Set(routes.values());
     const spend_logs = rows
