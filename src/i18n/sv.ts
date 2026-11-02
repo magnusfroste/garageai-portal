@@ -692,6 +692,7 @@ export const sv: Record<string, string> = {
   "Could not load the catalogue.": "Kunde inte ladda katalogen.",
   "No models match — try a broader search.": "Inga modeller matchar — prova en bredare sökning.",
   "Clear filters": "Rensa filter",
+  "Show more ({n} left)": "Visa fler ({n} kvar)",
   "How we measure": "Så mäter vi",
   "Availability is the share of scheduled checks that find the garage ready to serve. Success rate is the share of real requests that succeed.": "Tillgänglighet är andelen schemalagda kontroller där garaget är redo. Framgångsgrad är andelen riktiga förfrågningar som lyckas.",
   "Speed is the median tokens per second. Slow responses lower the grade, but do not delist a garage.": "Hastighet är medianen tokens per sekund. Långsamma svar sänker betyget men avlistar inte garaget.",
