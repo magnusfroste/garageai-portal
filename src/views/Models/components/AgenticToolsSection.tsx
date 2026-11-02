@@ -1,4 +1,4 @@
-import { Bot, Shield, Terminal, ExternalLink } from "lucide-react";
+import { Bot, Terminal, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "./CopyButton";
@@ -11,6 +11,7 @@ interface AgenticTool {
   name: string;
   badge: string;
   description: string;
+  note?: string;
   features: string[];
   envVars: { key: string; value: string }[];
   configFile?: { path: string; content: string };
@@ -24,15 +25,27 @@ const tools: AgenticTool[] = [
     name: "Claude Code",
     badge: "Recommended",
     description:
-      "Anthropic's premier agentic coding tool. Claude Code runs directly in your terminal and understands your entire codebase — editing files, running commands, and iterating autonomously. Our top pick for agentic development.",
+      "Anthropic's premier agentic coding tool. Claude Code runs directly in your terminal and understands your entire codebase — editing files, running commands, and iterating autonomously.",
+    note:
+      "Anthropic does not officially support Claude Code with non-Claude models through a gateway; it works with GarageAI, but at your own risk.",
     features: [
       "Full codebase awareness with automatic context gathering",
       "Runs terminal commands, edits files, creates commits",
     ],
     envVars: [
       { key: "ANTHROPIC_BASE_URL", value: "{{baseUrl}}" },
-      { key: "ANTHROPIC_API_KEY", value: "$GARAGE_API_KEY" },
+      { key: "ANTHROPIC_AUTH_TOKEN", value: "$GARAGE_API_KEY" },
       { key: "ANTHROPIC_MODEL", value: "{{model}}" },
+      { key: "ANTHROPIC_DEFAULT_HAIKU_MODEL", value: "{{model}}" },
+      { key: "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS", value: "1" },
+    ],
+    pitfalls: [
+      "Use ANTHROPIC_AUTH_TOKEN, not ANTHROPIC_API_KEY: the API-key variable asks for approval once and is silently ignored if you declined it, and it clashes with a saved claude.ai login (run /logout if Claude Code warns about two credentials).",
+      "Set ANTHROPIC_DEFAULT_HAIKU_MODEL too: Claude Code runs background tasks such as session titles on a small Claude model name, which GarageAI does not serve, so those requests fail with \"Invalid model name\".",
+      "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1 stops Claude Code from sending pre-release fields that open models reject with a 400.",
+      "To keep the settings in every terminal, put the same variables in the env block of ~/.claude/settings.json (never in a project's .claude/settings.json, which is committed).",
+      "Claude Code assumes a very large context window. Open models have less, so in long sessions run /compact when answers start failing.",
+      "Run /status in Claude Code: the Anthropic base URL line should show the GarageAI address.",
     ],
     link: { url: "https://docs.anthropic.com/en/docs/claude-code", label: "Claude Code docs" },
   },
@@ -175,15 +188,12 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
                 <Terminal className="w-5 h-5 text-primary shrink-0" />
                 <h3 className="font-semibold text-foreground">{tool.name}</h3>
                 <Badge variant="secondary" className="text-[10px]">{tool.badge}</Badge>
-                {tool.name === "Claude Code" && (
-                  <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
-                    <Shield className="w-3 h-3 mr-1" />
-                    Our Pick
-                  </Badge>
-                )}
               </div>
 
               <p className="text-sm text-muted-foreground">{tool.description}</p>
+              {tool.note && (
+                <p className="text-xs text-muted-foreground/80">{tool.note}</p>
+              )}
 
               <ul className="grid gap-1.5 text-sm text-muted-foreground">
                 {tool.features.map((f, i) => (
