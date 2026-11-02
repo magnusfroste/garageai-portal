@@ -6,7 +6,6 @@ import { getProxyBaseUrl } from '../_shared/proxyConfig.ts';
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
-const MAX_ROWS = 500;
 const PAGE = 100;
 
 Deno.serve(async (req) => {
@@ -21,7 +20,7 @@ Deno.serve(async (req) => {
     if (error) throw error;
     const names = new Map<string, string>();
     for (const k of keys || []) { const id = k.litellm_token || k.key_value; if (id) names.set(id, k.name); }
-    if (!names.size) return json({ spend_logs: [] });
+    if (!names.size) return json({ spend_logs: [], has_more: false });
 
     const { data: profile } = await admin.from('profiles').select('litellm_user_id').eq('id', user.id).single();
     const base = await getProxyBaseUrl(admin);
@@ -36,21 +35,20 @@ Deno.serve(async (req) => {
       const body = await r.json();
       return (body.data ?? body.response ?? []) as Array<Record<string, unknown>>;
     };
-    // Pages fetched in parallel; ordering is preserved by page index.
-    const pages = await Promise.all(Array.from({ length: MAX_ROWS / PAGE }, (_, i) => fetchPage(i + 1)));
-    const rows = pages.flat();
+        const body = await req.json().catch(() => ({}));
+    const page = Math.min(50, Math.max(1, Math.floor(Number(body?.page) || 1)));
+    const rows = await fetchPage(page);
     const routes = await routesP;
     const publicNames = new Set(routes.values());
     const spend_logs = rows
       .filter((l) => names.has(String(l.api_key)))
-      .slice(0, MAX_ROWS)
       .map((l) => {
         const name = publicModelName(l.model_group, l.model, routes, publicNames);
         const { metadata: _m, messages: _x, response: _y, proxy_server_request: _p, api_key, ...rest } = l;
         return { ...rest, model: name, model_group: name, key_name: names.get(String(api_key)) };
       });
-    console.log('get-request-logs', JSON.stringify({ rows: rows.length, returned: spend_logs.length, ms: Date.now() - t0 }));
-    return json({ spend_logs });
+    console.log('get-request-logs', JSON.stringify({ page, rows: rows.length, returned: spend_logs.length, ms: Date.now() - t0 }));
+    return json({ spend_logs, has_more: rows.length === PAGE });
   } catch (e) {
     console.error('get-request-logs failed', e);
     return json({ error: 'logs_unavailable' }, 502);
