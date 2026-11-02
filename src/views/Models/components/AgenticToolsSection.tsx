@@ -150,7 +150,7 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
   const { models } = useModelCatalog();
   const { models: curated } = useCuratedModels(true);
   const model = curated.find((m) => m.is_default && m.garage_tier === "pool")?.model_name || models.find((m) => m.available && m.poolId)?.poolId || models.find((m) => m.poolId)?.poolId || "<pool-model-id>";
-  // OpenCode needs the versioned endpoint, so keep /v1 here (unlike the env vars above).
+  // OpenCode and Codex need the versioned endpoint, so keep /v1 here (unlike the env vars above).
   const v1BaseUrl = (() => {
     const trimmed = baseUrl.replace(/\/+$/, "");
     return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
