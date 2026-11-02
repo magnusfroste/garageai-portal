@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { requestLogRepository } from "@/data/repositories/requestLogRepository";
 import { requestDetails } from "@/models/services/requestLogService";
 
@@ -20,15 +20,17 @@ export interface RequestLog {
 }
 
 export const useRequestLogs = () => {
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["request-logs"],
-    queryFn: requestLogRepository.fetchRecent,
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) => requestLogRepository.fetchPage(pageParam),
+    getNextPageParam: (last, all) => (last.hasMore ? all.length + 1 : undefined),
     staleTime: 60_000,
     gcTime: 5 * 60_000,
   });
 
   const logs = useMemo<RequestLog[]>(() => {
-    const all: RequestLog[] = (data ?? []).map((log) => ({
+    const all: RequestLog[] = (data?.pages.flatMap((p) => p.logs) ?? []).map((log) => ({
       request_id: log.request_id || crypto.randomUUID(),
       startTime: log.startTime || "",
       model: log.model_group || log.model || "unknown",
@@ -41,8 +43,9 @@ export const useRequestLogs = () => {
       ...requestDetails(log),
     }));
     all.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-    return all;
+    const seen = new Set<string>();
+    return all.filter((l) => (seen.has(l.request_id) ? false : (seen.add(l.request_id), true)));
   }, [data]);
 
-  return { logs, loading: isLoading, isError, refetch };
+  return { logs, loading: isLoading, isError, refetch, loadMore: () => fetchNextPage(), hasMore: !!hasNextPage, loadingMore: isFetchingNextPage };
 };

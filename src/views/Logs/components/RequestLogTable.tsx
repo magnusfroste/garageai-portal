@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,10 +10,9 @@ import { t, locale } from "@/i18n";
 
 const PAGE = 50;
 
-export const RequestLogTable = ({ logs }: { logs: RequestLog[] }) => {
+export const RequestLogTable = ({ logs, onLoadMore, hasMore, loadingMore }: { logs: RequestLog[]; onLoadMore?: () => void; hasMore?: boolean; loadingMore?: boolean }) => {
   const [open, setOpen] = useState<string | null>(null);
   const [limit, setLimit] = useState(PAGE);
-  useEffect(() => setLimit(PAGE), [logs]);
   const all = logs;
   logs = all.slice(0, limit);
   return (
@@ -67,7 +66,7 @@ export const RequestLogTable = ({ logs }: { logs: RequestLog[] }) => {
         })}
       </TableBody>
     </Table>
-    {all.length > limit && <div className="flex justify-center pt-3"><Button variant="outline" size="sm" onClick={() => setLimit((n) => n + PAGE)}>{t("Show more ({n} left)", { n: (all.length - limit).toLocaleString() })}</Button></div>}
+    {(all.length > limit || hasMore) && <div className="flex justify-center pt-3"><Button variant="outline" size="sm" disabled={loadingMore} onClick={() => { setLimit((n) => n + PAGE); if (all.length <= limit + PAGE && hasMore) onLoadMore?.(); }}>{loadingMore ? t("Loading…") : t("Show older requests")}</Button></div>}
     </>
   );
 };
