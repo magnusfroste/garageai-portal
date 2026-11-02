@@ -8,6 +8,8 @@ export const sv: Record<string, string> = {
   "Try it now in Chat": "Prova nu i Chat",
   "Your key was already shown once. You can still try Chat, or create a new key in API keys.": "Din nyckel har redan visats en gång. Du kan ändå prova Chat eller skapa en ny under API-nycklar.",
   "Or use the API": "Eller använd API:et",
+  "Use with OpenCode (macOS/Linux)": "Använd med OpenCode (macOS/Linux)",
+  "Writes GarageAI into OpenCode's config (never overwrites yours), gives the key to OpenCode's background service and sends a test message. Windows: use the manual steps under Documentation → Agentic Coding Tools.": "Lägger in GarageAI i OpenCodes inställningar (skriver aldrig över dina), ger nyckeln till OpenCodes bakgrundstjänst och skickar ett testmeddelande. Windows: använd de manuella stegen under Dokumentation → Agentic Coding Tools.",
   "It works": "Det fungerar",
   "Could not check your first request.": "Kunde inte kontrollera din första förfrågan.",
   "In one sentence, what can I do with an open AI model?": "Vad kan jag göra med en öppen AI-modell? Svara med en mening.",
