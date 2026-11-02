@@ -86,6 +86,37 @@ const tools: AgenticTool[] = [
     link: { url: "https://opencode.ai/v2/docs/providers/", label: "OpenCode provider docs" },
   },
   {
+    name: "Codex",
+    badge: "Terminal",
+    description:
+      "OpenAI's open-source coding agent for the terminal. It talks the Responses API, which GarageAI supports: declare GarageAI as a model provider in your Codex config.",
+    features: [],
+    envVars: [],
+    configFile: {
+      path: "~/.codex/config.toml (your user config; a project .codex/config.toml cannot add providers)",
+      content: `model = "garageai/auto"
+model_provider = "garageai"
+
+[model_providers.garageai]
+name = "GarageAI"
+base_url = "{{baseUrl}}"
+env_key = "GARAGE_API_KEY"
+wire_api = "responses"`,
+    },
+    commands: {
+      label: "Set the key in your shell, then start Codex:",
+      lines: ["export GARAGE_API_KEY=<your key>", "codex"],
+    },
+    pitfalls: [
+      "Put model and model_provider above every [section] in config.toml; below a section TOML reads them as part of that section and Codex ignores them.",
+      "wire_api must be \"responses\": current Codex no longer speaks the older chat completions format.",
+      "The provider ID cannot be a built-in one such as openai; use garageai.",
+      "Codex reads the key from the shell it starts in, so export GARAGE_API_KEY in that terminal (or in ~/.zshrc / ~/.bashrc).",
+      "Use auto or a model with the Tools badge: Codex is an agent and needs tool calling.",
+    ],
+    link: { url: "https://learn.chatgpt.com/docs/config-file/config-advanced", label: "Codex provider docs" },
+  },
+  {
     name: "Roo Code",
     badge: "VS Code",
     description:
@@ -119,7 +150,7 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
   const { models } = useModelCatalog();
   const { models: curated } = useCuratedModels(true);
   const model = curated.find((m) => m.is_default && m.garage_tier === "pool")?.model_name || models.find((m) => m.available && m.poolId)?.poolId || models.find((m) => m.poolId)?.poolId || "<pool-model-id>";
-  // OpenCode needs the versioned endpoint, so keep /v1 here (unlike the env vars above).
+  // OpenCode and Codex need the versioned endpoint, so keep /v1 here (unlike the env vars above).
   const v1BaseUrl = (() => {
     const trimmed = baseUrl.replace(/\/+$/, "");
     return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
