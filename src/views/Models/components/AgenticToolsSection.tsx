@@ -12,6 +12,7 @@ interface AgenticTool {
   badge: string;
   description: string;
   note?: string;
+  tested?: string;
   features: string[];
   envVars: { key: string; value: string }[];
   configFile?: { path: string; content: string };
@@ -28,6 +29,8 @@ const tools: AgenticTool[] = [
       "Anthropic's premier agentic coding tool. Claude Code runs directly in your terminal and understands your entire codebase — editing files, running commands, and iterating autonomously.",
     note:
       "Anthropic does not officially support Claude Code with non-Claude models through a gateway; it works with GarageAI, but at your own risk.",
+    tested:
+      "Tested end to end with Claude Code 2.1.317 (file edits, shell commands) on 2026-11-03.",
     features: [
       "Full codebase awareness with automatic context gathering",
       "Runs terminal commands, edits files, creates commits",
@@ -46,6 +49,8 @@ const tools: AgenticTool[] = [
       "To keep the settings in every terminal, put the same variables in the env block of ~/.claude/settings.json (never in a project's .claude/settings.json, which is committed).",
       "Claude Code assumes a very large context window. Open models have less, so in long sessions run /compact when answers start failing.",
       "Run /status in Claude Code: the Anthropic base URL line should show the GarageAI address.",
+      "Claude Code warns that it doesn't recognize the model \"garageai/auto\" and assumes a 200k context window. That's harmless: every model behind garageai/auto has at least 256k context, so Claude Code compacts in time.",
+      "The cost Claude Code shows (/cost, total_cost_usd) is its own estimate at Claude prices, not what you pay. Your real usage is on your GarageAI dashboard.",
     ],
     link: { url: "https://docs.anthropic.com/en/docs/claude-code", label: "Claude Code docs" },
   },
@@ -193,6 +198,9 @@ export const AgenticToolsSection = ({ baseUrl }: { baseUrl: string }) => {
               <p className="text-sm text-muted-foreground">{tool.description}</p>
               {tool.note && (
                 <p className="text-xs text-muted-foreground/80">{tool.note}</p>
+              )}
+              {tool.tested && (
+                <p className="text-xs text-muted-foreground/80">{tool.tested}</p>
               )}
 
               <ul className="grid gap-1.5 text-sm text-muted-foreground">
