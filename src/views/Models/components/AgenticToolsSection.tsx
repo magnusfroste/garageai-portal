@@ -108,6 +108,7 @@ const tools: AgenticTool[] = [
     badge: "Terminal",
     description:
       "OpenAI's open-source coding agent for the terminal. It talks the Responses API, which GarageAI supports: declare GarageAI as a model provider in your Codex config.",
+    tested: "Tested end to end with Codex CLI 0.166.0 (file edits, shell commands) on 2026-11-03.",
     features: [],
     envVars: [],
     configFile: {
@@ -131,6 +132,8 @@ wire_api = "responses"`,
       "The provider ID cannot be a built-in one such as openai; use garageai.",
       "Codex reads the key from the shell it starts in, so export GARAGE_API_KEY in that terminal (or in ~/.zshrc / ~/.bashrc).",
       "Use auto or a model with the Tools badge: Codex is an agent and needs tool calling.",
+      "Codex prints \"Model metadata for garageai/auto not found\" at start. That's harmless: it only means Codex uses default settings for a model it doesn't know.",
+      "In scripts, run codex exec with stdin closed (codex exec \"…\" </dev/null). Otherwise it waits for more input and appears to hang.",
     ],
     link: { url: "https://learn.chatgpt.com/docs/config-file/config-advanced", label: "Codex provider docs" },
   },
