@@ -59,6 +59,8 @@ const tools: AgenticTool[] = [
     badge: "Terminal",
     description:
       "Open-source coding agent for the terminal. OpenCode 2 needs GarageAI declared as a provider in opencode.json, and the API key must reach its background service (an export in your shell is not enough).",
+    tested:
+      "Tested end to end with OpenCode 2.2.5 (one-paste line on a fresh install, file edits, shell commands) on 2026-11-04.",
     features: [],
     envVars: [],
     configFile: {
