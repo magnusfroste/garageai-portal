@@ -59,6 +59,8 @@ const tools: AgenticTool[] = [
     badge: "Terminal",
     description:
       "Open-source coding agent for the terminal. OpenCode 2 needs GarageAI declared as a provider in opencode.json, and the API key must reach its background service (an export in your shell is not enough).",
+    tested:
+      "Tested end to end with OpenCode 2.2.5 (one-paste line on a fresh install, file edits, shell commands) on 2026-11-04.",
     features: [],
     envVars: [],
     configFile: {
@@ -94,6 +96,7 @@ const tools: AgenticTool[] = [
       ],
     },
     pitfalls: [
+      'Make sure you run OpenCode 2 (opencode --version shows v2.x). The npm package opencode-ai is still the old version 1, which doesn\'t understand this config. Install version 2 with npm install -g @opencode/cli, brew install anomalyco/tap/opencode-v2, or curl -fsSL https://opencode.ai/v2/install | bash.',
       "\"Authentication Error, No api key passed in\": OpenCode 2 runs a background service that does not see keys you export in your shell, and opencode reload does not pass them on. Use opencode service set env (above) and restart the service. For a one-off test, opencode run --standalone uses your shell's environment.",
       "OpenCode 2 uses \"providers\" (plural), \"package\" and \"settings\". The older \"provider\" / \"npm\" / \"options.apiKey\" format from OpenCode 1 guides is deprecated and drops the key.",
       "\"Unsupported package\": the package must be @opencode/ai/providers/openai-compatible.",
