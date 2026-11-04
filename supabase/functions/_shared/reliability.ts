@@ -9,6 +9,7 @@ import { getProxyBaseUrl } from "./proxyConfig.ts";
 import { runAndStoreAcceptanceTests } from "./acceptanceTest.ts";
 import { GARAGE_SELECT, apiBaseFor, gatewayHealthy, hasGatewaySignal, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 import { syncModels } from "./syncModels.ts";
+import { statusFromSample } from "./garageStatusSync.ts";
 import { BATCH_MAX, HOUR_MS, MAX_WINDOW_MS, dedupeByRequestId, lastRowBefore, nextCursor, shrinkSpan, windowEnd } from "./usageBatch.ts";
 import type { SyncResult } from "./syncModels.ts";
 
@@ -54,6 +55,7 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
   const offered = await offeredByGarage(admin, (garages || []).map((g) => g.id));
   const rows: Array<{ garage_id: string; online: boolean; reason: string | null }> = [];
   let skipped = 0;
+  const statusUpdates: Array<{ id: string; status: string }> = [];
   for (const g of (garages || []) as GarageRow[]) {
     // Paused garages are not sampled: paused time never counts for or against reliability.
     if ((g as { paused_at?: string | null }).paused_at) { skipped++; continue; }
@@ -81,6 +83,12 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
     }
     if (!reason && !hasModels) reason = "no_models";
     rows.push({ garage_id: g.id, online: reason === null, reason });
+    const next = statusFromSample(g as { status: string; connection_type?: string }, reason);
+    if (next) statusUpdates.push({ id: g.id, status: next });
+  }
+  for (const u of statusUpdates) {
+    const { error: upErr } = await admin.from("garages").update({ status: u.status }).eq("id", u.id);
+    if (upErr) console.warn("[status-samples] status update failed", u.id, upErr.message);
   }
   if (rows.length) {
     const { error: insErr } = await admin.from("garage_status_samples").insert(rows);
