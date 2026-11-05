@@ -18,6 +18,7 @@ import { ManagedModelStatusList } from "@/views/Garages/components/ManagedModels
 import { useManagedModels } from "@/hooks/useManagedModels";
 import { machineMismatch, shortMachineId } from "@/models/services/bridgeLinkService";
 
+import { GarageEarningBuckets } from './GarageEarningBuckets';
 import { AdminGarageEnergy } from '@/views/Garages/components/GarageEnergy';
 
 const Section = ({ icon: Icon, title, children }: { icon: typeof Server; title: string; children: ReactNode }) => (
@@ -83,6 +84,7 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
           <Section icon={Coins} title={t("Pricing")}><dl className="grid grid-cols-2 gap-3"><Field label={t("Pool · tokens in")} value={`${usd(garage.pool_input_cost_per_million ?? 0)} / 1M`} /><Field label={t("Pool · tokens out")} value={`${usd(garage.pool_output_cost_per_million ?? 0)} / 1M`} /><Field label={t("Specific garage · tokens in")} value={`${usd(garage.dedicated_input_cost_per_million ?? 0)} / 1M`} /><Field label={t("Specific garage · tokens out")} value={`${usd(garage.dedicated_output_cost_per_million ?? 0)} / 1M`} /></dl></Section>
           <Separator />
           <Section icon={Clock3} title={t("Revenue this month")}>
+            <GarageEarningBuckets garageId={garage.id} />
             {row.revenue ? <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3"><Field label={t("Requests")} value={row.revenue.requests.toLocaleString()} /><Field label={t("Failures")} value={row.revenue.failures.toLocaleString()} /><Field label={t("Tokens in / out")} value={`${row.revenue.promptTokens.toLocaleString()} / ${row.revenue.completionTokens.toLocaleString()}`} /><Field label={t("Revenue") } value={usd(row.revenue.revenue)} /><Field label={t("Payable") } value={usd(row.revenue.payable)} /></dl> : <p className="text-sm text-muted-foreground">{t("No usage this month.")}</p>}
           </Section>
         </div>

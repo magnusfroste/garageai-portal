@@ -10,6 +10,7 @@ import { runAndStoreAcceptanceTests } from "./acceptanceTest.ts";
 import { GARAGE_SELECT, apiBaseFor, gatewayHealthy, hasGatewaySignal, withProbeDeployments, type RoutingGarage } from "./garageRouting.ts";
 import { syncModels } from "./syncModels.ts";
 import { statusFromSample } from "./garageStatusSync.ts";
+import { buyerOf, classifyRequest, loadBuyerDirectory, type BuyerDirectory, type EarningsBucket } from "./earningsBucket.ts";
 import { BATCH_MAX, HOUR_MS, MAX_WINDOW_MS, dedupeByRequestId, lastRowBefore, nextCursor, shrinkSpan, windowEnd } from "./usageBatch.ts";
 import type { SyncResult } from "./syncModels.ts";
 
@@ -194,15 +195,23 @@ async function deploymentRates(base: string, masterKey: string): Promise<Map<str
   return out;
 }
 
-type IngestCtx = { base: string; masterKey: string; garageIds: Map<string, string>; rates: Map<string, Rates> };
+type IngestCtx = { base: string; masterKey: string; garageIds: Map<string, string>; operators: Map<string, string | null>; rates: Map<string, Rates> };
+type Split = { payable: number; trial: number; own: number };
+const emptySplit = (): Split => ({ payable: 0, trial: 0, own: 0 });
+const r8 = (n: number) => Math.round(n * 1e8) / 1e8;
+const splitCols = (spend: Split, req: Split) => ({
+  payable_spend_usd: r8(spend.payable), trial_spend_usd: r8(spend.trial), own_spend_usd: r8(spend.own),
+  payable_requests: req.payable, trial_requests: req.trial, own_requests: req.own,
+});
 
 /** Aggregates every row of [fromMs, toMs) and upserts whole hours (replace, never add). */
 async function ingestWindow(admin: SupabaseClient, ctx: IngestCtx, rows: SpendRow[], fromMs: number, toMs: number) {
-  const { base, masterKey, garageIds, rates } = ctx;
+  const { base, masterKey, garageIds, rates, operators } = ctx;
   const internal = await loadInternalIdentities(admin, base, masterKey, rows);
+  const buyers: BuyerDirectory = await loadBuyerDirectory(admin);
   const aggregate = async (rows: SpendRow[], customer: boolean, fromMs: number, toMs: number) => {
-  type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number; lastRequest: number | null };
-  type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number; dedicatedPrompt: number; dedicatedTokens: number; cached: number; inSpend: number; cachedSpend: number; outSpend: number; keys: Set<string> };
+  type Bucket = { garage_id: string; hour: number; requests: number; failures: number; ttft: number[]; tps: number[]; tokens: number; prompt: number; spend: number; lastRequest: number | null; bSpend: Split; bReq: Split; buyers: Set<string> };
+  type MBucket = { garage_id: string; model: string; hour: number; requests: number; failures: number; prompt: number; tokens: number; spend: number; dedicatedPrompt: number; dedicatedTokens: number; cached: number; inSpend: number; cachedSpend: number; outSpend: number; keys: Set<string>; bSpend: Split; bReq: Split };
   const mbuckets = new Map<string, MBucket>();
   const buckets = new Map<string, Bucket>();
   const perGarage: Record<string, number> = {};
@@ -223,7 +232,7 @@ async function ingestWindow(admin: SupabaseClient, ctx: IngestCtx, rows: SpendRo
     const hour = floorHour(start);
     const key = `${gid}|${hour}`;
     let b = buckets.get(key);
-    if (!b) { b = { garage_id: gid, hour, requests: 0, failures: 0, ttft: [], tps: [], tokens: 0, prompt: 0, spend: 0, lastRequest:null }; buckets.set(key, b); }
+    if (!b) { b = { garage_id: gid, hour, requests: 0, failures: 0, ttft: [], tps: [], tokens: 0, prompt: 0, spend: 0, lastRequest:null, bSpend: emptySplit(), bReq: emptySplit(), buyers: new Set() }; buckets.set(key, b); }
     b.requests++;
     if (statusOf(r) === 'success') b.lastRequest = Math.max(b.lastRequest ?? 0,start);
     if (statusOf(r) !== "success") b.failures++;
@@ -232,13 +241,18 @@ async function ingestWindow(admin: SupabaseClient, ctx: IngestCtx, rows: SpendRo
     const promptTokens = Number(r.prompt_tokens ?? 0) || 0;
     const spend = Number(r.spend ?? 0) || 0;
     b.prompt += promptTokens; b.spend += spend;
+    const buyer = buyerOf(r, buyers);
+    const bucket: EarningsBucket = classifyRequest({ buyer, operator: operators.get(gid) ?? null, startMs: start, firstPurchaseMs: buyer ? buyers.firstPurchase.get(buyer) : undefined, internal: !countsAsDemand(r, internal) });
+    b.bSpend[bucket] += spend; b.bReq[bucket]++;
+    if (buyer) b.buyers.add(buyer);
     const model = parsed?.model || String(r.model ?? "unknown");
     const mkey = `${gid}|${model}|${hour}`;
     let mb = mbuckets.get(mkey);
-    if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0, dedicatedPrompt: 0, dedicatedTokens: 0, cached: 0, inSpend: 0, cachedSpend: 0, outSpend: 0, keys: new Set() }; mbuckets.set(mkey, mb); }
+    if (!mb) { mb = { garage_id: gid, model, hour, requests: 0, failures: 0, prompt: 0, tokens: 0, spend: 0, dedicatedPrompt: 0, dedicatedTokens: 0, cached: 0, inSpend: 0, cachedSpend: 0, outSpend: 0, keys: new Set(), bSpend: emptySplit(), bReq: emptySplit() }; mbuckets.set(mkey, mb); }
     if (typeof r.api_key === "string" && r.api_key) mb.keys.add(await fingerprint(r.api_key));
     mb.requests++; if (statusOf(r) !== "success") mb.failures++;
     mb.prompt += promptTokens; mb.tokens += completionTokens; mb.spend += spend;
+    mb.bSpend[bucket] += spend; mb.bReq[bucket]++;
     const cached = Math.min(promptTokens, cachedTokensOf(r));
     mb.cached += cached;
     const split = splitSpend(spend, promptTokens - cached, cached, completionTokens, rates.get(modelId));
@@ -265,6 +279,7 @@ async function ingestWindow(admin: SupabaseClient, ctx: IngestCtx, rows: SpendRo
       ttft_ms_p50: ttft === null ? null : Math.round(ttft),
       tokens_per_second_p50: tps === null ? null : Math.round(tps * 10) / 10,
       completion_tokens: b.tokens, prompt_tokens: b.prompt, spend_usd: Math.round(b.spend * 1e8) / 1e8,
+      ...splitCols(b.bSpend, b.bReq), buyer_users: [...b.buyers].sort(),
     };
   });
   if (upserts.length) {
@@ -276,7 +291,7 @@ async function ingestWindow(admin: SupabaseClient, ctx: IngestCtx, rows: SpendRo
     garage_id: b.garage_id, model: b.model, hour: new Date(b.hour).toISOString(), requests: b.requests, failures: b.failures,
     dedicated_prompt_tokens: b.dedicatedPrompt, dedicated_completion_tokens: b.dedicatedTokens, prompt_tokens: b.prompt, completion_tokens: b.tokens, spend_usd: Math.round(b.spend * 1e8) / 1e8,
     cached_prompt_tokens: b.cached, input_spend_usd: Math.round(b.inSpend * 1e8) / 1e8, cached_spend_usd: Math.round(b.cachedSpend * 1e8) / 1e8, output_spend_usd: Math.round(b.outSpend * 1e8) / 1e8,
-    api_keys: [...b.keys].sort(),
+    api_keys: [...b.keys].sort(), ...splitCols(b.bSpend, b.bReq),
   }));
   if (mUpserts.length) {
     const { error } = await admin.from(customer ? "customer_garage_model_stats_hourly" : "garage_model_stats_hourly").upsert(mUpserts, { onConflict: "garage_id,model,hour" });
@@ -319,9 +334,10 @@ export async function ingestUsageStats(admin: SupabaseClient, opts: { budgetMs?:
   const masterKey = Deno.env.get("LITELLM_MASTER_KEY");
   if (!masterKey) throw new Error("LITELLM_MASTER_KEY not configured");
   const base = await getProxyBaseUrl(admin);
-  const { data: garages } = await admin.from("garages").select("id, name");
+  const { data: garages } = await admin.from("garages").select("id, name, operator_id");
   const garageIds = new Map(((garages || []) as Array<{ id: string; name: string }>).map((g) => [g.name, g.id]));
-  const ctx: IngestCtx = { base, masterKey, garageIds, rates: await deploymentRates(base, masterKey) };
+  const operators = new Map(((garages || []) as Array<{ id: string; operator_id: string | null }>).map((g) => [g.id, g.operator_id]));
+  const ctx: IngestCtx = { base, masterKey, garageIds, operators, rates: await deploymentRates(base, masterKey) };
 
   const { data: cur } = await admin.from("ingest_cursors").select("value, last_request_id").eq("name", USAGE_CURSOR).maybeSingle();
   const cursorBefore = floorHour(cur?.value ? Date.parse(cur.value) : Date.now() - 24 * HOUR_MS);

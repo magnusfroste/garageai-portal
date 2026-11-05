@@ -617,6 +617,13 @@
       "when": 1793403000006,
       "tag": "0087_buyer_first_request",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1793898388194,
+      "tag": "0088_earnings_buckets",
+      "breakpoints": true
     }
   ]
 }
