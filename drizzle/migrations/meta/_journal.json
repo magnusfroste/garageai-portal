@@ -624,6 +624,13 @@
       "when": 1793898388194,
       "tag": "0088_earnings_buckets",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1793900303513,
+      "tag": "0089_payable_only_activity_estimate",
+      "breakpoints": true
     }
   ]
 }

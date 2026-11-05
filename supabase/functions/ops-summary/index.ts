@@ -59,7 +59,7 @@ async function pendingCheckouts(): Promise<number | null> {
 async function operators(admin: SupabaseClient) {
   const [{ data: garages }, { data: stats }] = await Promise.all([
     admin.from("garages").select("id, name, terms_accepted_at"),
-    admin.from("garage_model_stats_hourly").select("garage_id, garage_name, hour, spend_usd"),
+    admin.from("garage_model_stats_hourly").select("garage_id, garage_name, hour, payable_spend_usd"),
   ]);
   const now = Date.now();
   const by = new Map<string, { garage: string; earned_24h_usd: number; earned_7d_usd: number; earned_total_usd: number; terms_accepted: boolean }>();
@@ -68,10 +68,10 @@ async function operators(admin: SupabaseClient) {
     names.set(g.id, g.name);
     by.set(g.name, { garage: g.name, earned_24h_usd: 0, earned_7d_usd: 0, earned_total_usd: 0, terms_accepted: !!g.terms_accepted_at });
   }
-  for (const s of (stats || []) as Array<{ garage_id: string; garage_name: string | null; hour: string; spend_usd: number }>) {
+  for (const s of (stats || []) as Array<{ garage_id: string; garage_name: string | null; hour: string; payable_spend_usd: number }>) {
     const name = names.get(s.garage_id) ?? s.garage_name ?? s.garage_id;
     if (!by.has(name)) by.set(name, { garage: name, earned_24h_usd: 0, earned_7d_usd: 0, earned_total_usd: 0, terms_accepted: false });
-    const row = by.get(name)!, v = Number(s.spend_usd) || 0, age = now - new Date(s.hour).getTime();
+    const row = by.get(name)!, v = Number(s.payable_spend_usd) || 0, age = now - new Date(s.hour).getTime();
     row.earned_total_usd += v; if (age <= 7 * 24 * H) row.earned_7d_usd += v; if (age <= 24 * H) row.earned_24h_usd += v;
   }
   return [...by.values()].map((r) => ({ ...r, earned_24h_usd: round(r.earned_24h_usd), earned_7d_usd: round(r.earned_7d_usd), earned_total_usd: round(r.earned_total_usd) })).sort((a, b) => b.earned_7d_usd - a.earned_7d_usd);
