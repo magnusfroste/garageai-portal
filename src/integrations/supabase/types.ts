@@ -522,9 +522,15 @@ export type Database = {
           input_spend_usd: number
           model: string
           output_spend_usd: number
+          own_requests: number
+          own_spend_usd: number
+          payable_requests: number
+          payable_spend_usd: number
           prompt_tokens: number
           requests: number
           spend_usd: number
+          trial_requests: number
+          trial_spend_usd: number
         }
         Insert: {
           api_keys?: string[]
@@ -540,9 +546,15 @@ export type Database = {
           input_spend_usd?: number
           model: string
           output_spend_usd?: number
+          own_requests?: number
+          own_spend_usd?: number
+          payable_requests?: number
+          payable_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
+          trial_requests?: number
+          trial_spend_usd?: number
         }
         Update: {
           api_keys?: string[]
@@ -558,50 +570,77 @@ export type Database = {
           input_spend_usd?: number
           model?: string
           output_spend_usd?: number
+          own_requests?: number
+          own_spend_usd?: number
+          payable_requests?: number
+          payable_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
+          trial_requests?: number
+          trial_spend_usd?: number
         }
         Relationships: []
       }
       customer_garage_request_stats_hourly: {
         Row: {
+          buyer_users: string[]
           completion_tokens: number
           failures: number
           garage_id: string
           garage_name: string | null
           hour: string
           last_request_at: string | null
+          own_requests: number
+          own_spend_usd: number
+          payable_requests: number
+          payable_spend_usd: number
           prompt_tokens: number
           requests: number
           spend_usd: number
           tokens_per_second_p50: number | null
+          trial_requests: number
+          trial_spend_usd: number
           ttft_ms_p50: number | null
         }
         Insert: {
+          buyer_users?: string[]
           completion_tokens?: number
           failures?: number
           garage_id: string
           garage_name?: string | null
           hour: string
           last_request_at?: string | null
+          own_requests?: number
+          own_spend_usd?: number
+          payable_requests?: number
+          payable_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
           tokens_per_second_p50?: number | null
+          trial_requests?: number
+          trial_spend_usd?: number
           ttft_ms_p50?: number | null
         }
         Update: {
+          buyer_users?: string[]
           completion_tokens?: number
           failures?: number
           garage_id?: string
           garage_name?: string | null
           hour?: string
           last_request_at?: string | null
+          own_requests?: number
+          own_spend_usd?: number
+          payable_requests?: number
+          payable_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
           tokens_per_second_p50?: number | null
+          trial_requests?: number
+          trial_spend_usd?: number
           ttft_ms_p50?: number | null
         }
         Relationships: []
@@ -867,9 +906,15 @@ export type Database = {
           input_spend_usd: number
           model: string
           output_spend_usd: number
+          own_requests: number
+          own_spend_usd: number
+          payable_requests: number
+          payable_spend_usd: number
           prompt_tokens: number
           requests: number
           spend_usd: number
+          trial_requests: number
+          trial_spend_usd: number
         }
         Insert: {
           api_keys?: string[]
@@ -885,9 +930,15 @@ export type Database = {
           input_spend_usd?: number
           model: string
           output_spend_usd?: number
+          own_requests?: number
+          own_spend_usd?: number
+          payable_requests?: number
+          payable_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
+          trial_requests?: number
+          trial_spend_usd?: number
         }
         Update: {
           api_keys?: string[]
@@ -903,9 +954,15 @@ export type Database = {
           input_spend_usd?: number
           model?: string
           output_spend_usd?: number
+          own_requests?: number
+          own_spend_usd?: number
+          payable_requests?: number
+          payable_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
+          trial_requests?: number
+          trial_spend_usd?: number
         }
         Relationships: []
       }
@@ -1074,42 +1131,63 @@ export type Database = {
       }
       garage_request_stats_hourly: {
         Row: {
+          buyer_users: string[]
           completion_tokens: number
           failures: number
           garage_id: string
           garage_name: string | null
           hour: string
           last_request_at: string | null
+          own_requests: number
+          own_spend_usd: number
+          payable_requests: number
+          payable_spend_usd: number
           prompt_tokens: number
           requests: number
           spend_usd: number
           tokens_per_second_p50: number | null
+          trial_requests: number
+          trial_spend_usd: number
           ttft_ms_p50: number | null
         }
         Insert: {
+          buyer_users?: string[]
           completion_tokens?: number
           failures?: number
           garage_id: string
           garage_name?: string | null
           hour: string
           last_request_at?: string | null
+          own_requests?: number
+          own_spend_usd?: number
+          payable_requests?: number
+          payable_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
           tokens_per_second_p50?: number | null
+          trial_requests?: number
+          trial_spend_usd?: number
           ttft_ms_p50?: number | null
         }
         Update: {
+          buyer_users?: string[]
           completion_tokens?: number
           failures?: number
           garage_id?: string
           garage_name?: string | null
           hour?: string
           last_request_at?: string | null
+          own_requests?: number
+          own_spend_usd?: number
+          payable_requests?: number
+          payable_spend_usd?: number
           prompt_tokens?: number
           requests?: number
           spend_usd?: number
           tokens_per_second_p50?: number | null
+          trial_requests?: number
+          trial_spend_usd?: number
           ttft_ms_p50?: number | null
         }
         Relationships: []
@@ -1926,6 +2004,10 @@ export type Database = {
           garage_name: string
           tokens: number
         }[]
+      }
+      garage_earning_buckets: {
+        Args: { _from: string; _garage_id: string; _to: string }
+        Returns: Json
       }
       garage_energy_summary: { Args: { _garage_id: string }; Returns: Json }
       garage_offline_periods: {
