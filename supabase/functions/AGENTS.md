@@ -16,3 +16,4 @@
 - Stripe reversals use current charge/dispute state and an event-idempotent, locked ledger RPC; gateway reconciliation retries even on duplicate events, preventing unpaid credits and overlapping reversals.
 - Missing initial gateway budgets fall back to profile credit with a pending flag; the balance hook retries pending results rather than caching a false zero.
 - Ingest usage in hour-aligned batches of ≤5000 spend rows (`_shared/usageBatch.ts`), upserting whole hours and saving the cursor (hour boundary + last request id) after each batch; scheduled callers get an immediate 202 and the work runs via EdgeRuntime.waitUntil, because pg_net waits only 5 s.
+- Classify earnings only in `_shared/earningsBucket.ts` during usage ingestion (buyer resolved from api_keys token/alias; own = operator, payable = other buyer at/after first Stripe purchase, else trial); only payable earns, and time-based rules keep re-ingested hours stable.
