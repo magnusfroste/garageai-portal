@@ -179,18 +179,9 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
     const nonGarage = rows.filter((r) => !r.garage);
     const checks = await Promise.all(nonGarage.map(async (r) => ({ id: r.id, status: await checkModelHealth(base, r.model_name, authHeaders) })));
     const map = new Map(checks.map((c) => [c.id, c.status]));
-    for (const r of rows) if (!r.garage && map.has(r.id)) r.status = map.get(r.id)!;
+    for (const r of rows) { const status = map.get(r.id); if (!r.garage && status) r.status = status; }
   }
 
-  if (peerConnected !== null) {
-    for (const g of garageNames) {
-      if (disabledGarages.has(g) || !peerConnected.has(g)) continue;
-      // A connected garage keeps 'failed_test' until a retest passes.
-      const q = admin.from("garages").update({ status: peerConnected.get(g) ? "online" : "offline" }).eq("name", g);
-      const { error } = peerConnected.get(g) ? await q.neq("status", "failed_test") : await q;
-      if (error) console.warn(`Failed to update garage status for ${g}:`, error.message);
-    }
-  }
   for (const [garage, status] of heartbeatStatus) {
     if (status !== "unhealthy" || disabledGarages.has(garage) || gatewayGarages.has(garage)) continue;
     const { error } = await admin.from("garages").update({ status: "offline" }).eq("name", garage);

@@ -1,4 +1,4 @@
-// Bridge device-link poll. Credentials are returned exactly once. Never logs device codes, tokens or setup keys.
+// Bridge device-link poll. Credentials are returned exactly once. Never logs device codes or tokens.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { decidePoll, type LinkRow } from "../_shared/bridgeLink.ts";
 

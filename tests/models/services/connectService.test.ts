@@ -37,10 +37,10 @@ let n = 0;
 const ev = (step: string, status: OnboardingEvent["status"], message: string | null = null): OnboardingEvent =>
   ({ id: String(n), garage_id: "g", created_at: `2026-10-11T12:00:${String(n++).padStart(2, "0")}Z`, step, status, message, script_version: null, node_name: null, runtime: null, port: null, os: null, arch: null, gpu: null, memory_gb: null });
 
-test("progress maps events to the six steps", () => {
+test("historical six-step events map to five Bridge steps", () => {
   n = 0;
   const p = bridgeProgress([ev("3/6  Inference runtime", "failed", "old run"), ev("link", "done"), ev("1/6  NetBird client", "done"), ev("2/6  Join the mesh", "started"), ev("3/6  Inference runtime", "failed", "No runtime on 11434")]);
-  expect(p.steps.map((s) => s.state)).toEqual(["done", "done", "failed", "pending", "pending", "pending"]);
+  expect(p.steps.map((s) => s.state)).toEqual(["done", "failed", "pending", "pending", "pending"]);
   expect(p.failed?.message).toBe("No runtime on 11434");
   expect(p.live).toBe(false);
 });
