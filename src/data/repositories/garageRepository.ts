@@ -22,7 +22,6 @@ export interface GarageRow {
   runtime: string | null;
   port: number | null;
   models: string[];
-  mesh_ip: string | null;
   status: string;
   disabled: boolean;
   last_registered_at: string | null;
@@ -143,7 +142,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, paused_by_admin, canary, location_display, terms_accepted_at, terms_version, agent, agent_at, machine_id, machine_hostname, last_machine_id, transport, tunnel_ip, smart, smart_disk_gb, agent_state, visibility")
+      .select("id, name, operator_id, api_host, runtime, port, models, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, paused_by_admin, canary, location_display, terms_accepted_at, terms_version, agent, agent_at, machine_id, machine_hostname, last_machine_id, transport, tunnel_ip, smart, smart_disk_gb, agent_state, visibility")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;

@@ -20,7 +20,6 @@ export interface Garage {
   runtime: string | null;
   port: number | null;
   models: string[];
-  mesh_ip: string | null;
   status: string;
   disabled: boolean;
   last_registered_at: string | null;

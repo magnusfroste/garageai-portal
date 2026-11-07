@@ -18,7 +18,6 @@ const garage = (overrides: Partial<Garage> = {}): Garage => ({
   runtime: "ollama",
   port: 11434,
   models: [],
-  mesh_ip: null,
   status: "online",
   disabled: false,
   last_registered_at: "2026-10-07T20:00:00Z",

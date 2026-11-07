@@ -1,2 +1,2 @@
-// Country measurements arrive from the Bridge public-IP report at registration/link time.
-// Stored measurements are retained; no external peer service is queried.
+// NetBird was the only automatic measured-country refresh source.
+// Preserve stored measured_country; Bridge link public-IP country remains request metadata only.
