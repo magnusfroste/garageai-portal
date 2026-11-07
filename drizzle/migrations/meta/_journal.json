@@ -631,6 +631,13 @@
       "when": 1793900303513,
       "tag": "0089_payable_only_activity_estimate",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1794079418407,
+      "tag": "0090_bridge_only_transport",
+      "breakpoints": true
     }
   ]
 }
