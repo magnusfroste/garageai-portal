@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       if (energyError) throw energyError;
     }
     await storeRuntimeKey(admin, garage.id, payload.runtime_api_key);
-    await reconcilePrivateGarage(admin, { ...garage, ...inventoryPatch, mesh_ip: garage.transport === 'tunnel' ? garage.tunnel_ip : garage.mesh_ip } as RoutingGarage, payload.contexts);
+    await reconcilePrivateGarage(admin, { ...garage, ...inventoryPatch, mesh_ip: garage.tunnel_ip } as RoutingGarage, payload.contexts);
     let portalResumed = false;
     if (resumeClearsPortalPause(garage, prevState, agentState, agentRaw.resumed_at)) {
       const { error: resumeErr } = await admin.from("garages").update({ paused_at: null, paused_reason: null }).eq("id", garage.id).eq("paused_by_admin", false);

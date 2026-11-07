@@ -25,7 +25,7 @@ export const BridgeLiveProgress = ({ garageId }: { garageId: string }) => {
     refetchInterval: stop ? false : 3000,
   });
   const { steps, live, failed } = bridgeProgress(events.data ?? []);
-  if (live && steps[5].state === "done" && !stop) setStop(true);
+  if (live && steps[4].state === "done" && !stop) setStop(true);
   const tests = useQuery({
     queryKey: ["bridge-live-tests", garageId],
     enabled: live,

@@ -7,7 +7,7 @@
 - Models dropped after missed heartbeats keep offer/prices in `garage_model_memory`, restored by `syncInventory`, so re-links never reset sales.
 - Classify internal keys before usage aggregation; customer aggregates alone feed demand and owner/public counters, while internal aggregates stay admin-only, preventing test-driven recommendations.
 
-- Issue garage credentials (register token, setup key, old-peer cleanup) only via `_shared/garageCredentials.ts`; create-garage and the Bridge link share it, so both enforce the same limits.
+- Issue garage credentials (register token; tunnel identity via tunnel-assign) only via `_shared/garageCredentials.ts`; create-garage and the Bridge link share it, so both enforce the same limits.
 - Plan garageai/auto deployments only in `_shared/autoRoute.ts` on top of the normal desired set inside reconcileGarageRouting; auto ids are `auto__<curated id>` for attribution, and order is written/compared in both `litellm_params` and `model_info` so gateway priority follows admin changes.
 - Ops-test managed-model requests go through `managed-models-ops` (gateway key) and the shared `apply_managed_model_request`/`apply_managed_model_cancel` SQL path, limited to admin-owned garages, so nightly tests use the exact Add/Remove/Cancel rules and never touch operator machines.
 - Create every gateway key only through `_shared/portalKeys.createPortalKey`: internal unique alias `<uid8>-<slug>-<rand4>`, value returned once, portal keeps only last 4 + hashed token (`litellm_token`, used for revoke/info), because keys must be show-once and aliases globally unique.

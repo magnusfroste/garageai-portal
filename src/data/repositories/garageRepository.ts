@@ -11,7 +11,7 @@ export interface GarageRow {
   machine_id?: string | null;
   machine_hostname?: string | null;
   last_machine_id?: string | null;
-  transport?: "netbird" | "tunnel" | string | null;
+  transport?: "endpoint" | "tunnel" | string | null;
   tunnel_ip?: string | null;
   first_models_at?: string | null;
   offer_page_seen_at?: string | null;
@@ -23,7 +23,6 @@ export interface GarageRow {
   port: number | null;
   models: string[];
   mesh_ip: string | null;
-  netbird_peer_id: string | null;
   status: string;
   disabled: boolean;
   last_registered_at: string | null;
@@ -144,7 +143,7 @@ export const garageRepository = {
   async listOwn(userId: string): Promise<GarageRow[]> {
     const { data, error } = await supabase
       .from("garages")
-      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, paused_by_admin, canary, location_display, terms_accepted_at, terms_version, agent, agent_at, machine_id, machine_hostname, last_machine_id, transport, tunnel_ip, smart, smart_disk_gb, agent_state, visibility")
+      .select("id, name, operator_id, api_host, runtime, port, models, mesh_ip, status, disabled, last_registered_at, last_heartbeat_at, created_at, pool_input_cost_per_million, pool_output_cost_per_million, dedicated_input_cost_per_million, dedicated_output_cost_per_million, pool_cache_read_cost_per_million, dedicated_cache_read_cost_per_million, connection_type, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, paused_at, paused_reason, paused_by_admin, canary, location_display, terms_accepted_at, terms_version, agent, agent_at, machine_id, machine_hostname, last_machine_id, transport, tunnel_ip, smart, smart_disk_gb, agent_state, visibility")
       .eq("operator_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -168,7 +167,7 @@ export const garageRepository = {
     return latest;
   },
 
-  create: (body: { name: string; create_setup_key: boolean; terms_accepted?: boolean }) =>
+  create: (body: { name: string; terms_accepted?: boolean }) =>
     invoke<GarageCredentials>("create-garage", body),
 
   acceptTerms: (name: string) => invoke<{ ok: boolean }>("set-garage-terms", { name, terms_accepted: true }),
@@ -179,7 +178,7 @@ export const garageRepository = {
 
   /** Permanent: admins or the owning operator. Ledger rows are kept. */
   remove: (garage_id: string) =>
-    invoke<{ ok: boolean; litellm_removed: number; netbird_peer_deleted: boolean; netbird_group_deleted: boolean; rows_deleted: Record<string, number> }>("delete-garage", { garage_id }),
+    invoke<{ ok: boolean; litellm_removed: number; rows_deleted: Record<string, number> }>("delete-garage", { garage_id }),
 
   setDisabled: (name: string, disabled: boolean) =>
     invoke<{ ok: boolean; status: string }>("set-garage-disabled", { name, disabled }),

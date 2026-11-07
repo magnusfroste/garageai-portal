@@ -30,14 +30,13 @@ export const GarageProfileView = ({ profile }: { profile: GarageProfile }) => {
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Fact label={t("GPU")} value={gpus || "—"} />
         <Fact label={t("Memory (GB)")} value={profile.machine.memory_gb != null ? String(profile.machine.memory_gb) : "—"} />
-        <Fact label={t("NetBird connected")} value={`${yn(profile.netbird.connected)}${profile.netbird.mesh_ip ? ` · ${profile.netbird.mesh_ip}` : ""}`} />
         <Fact label={t("Firewall")} value={profile.firewall.tool ? `${profile.firewall.tool} · ${profile.firewall.active ? t("active") : t("inactive")}` : "—"} />
         <Fact label={t("Heartbeat")} value={`${t("installed")}: ${yn(profile.heartbeat.installed)} · ${t("active")}: ${yn(profile.heartbeat.active)}`} />
       </dl>
       {profile.runtimes.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
-            <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-2">{t("Port")}</th><th className="pr-2">{t("Kind")}</th><th className="pr-2">{t("Listens on")}</th><th className="pr-2">{t("Mesh-reachable")}</th><th>{t("Models")}</th></tr></thead>
+            <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-2">{t("Port")}</th><th className="pr-2">{t("Kind")}</th><th className="pr-2">{t("Listens on")}</th><th className="pr-2">{t("Reachable through the tunnel")}</th><th>{t("Models")}</th></tr></thead>
             <tbody>
               {profile.runtimes.map((r, i) => (
                 <tr key={i} className="border-t align-top">

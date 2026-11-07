@@ -1,5 +1,5 @@
 import { statusAfterHealth } from "../_shared/agentState.ts";
-// Gateway L1 (NetBird peer) / L2 (GET /v1/models) results -> garages columns -> routing within a minute.
+// Gateway L1 (Bridge tunnel up signal) / L2 (GET /v1/models) results -> garages columns -> routing within a minute.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
 import { GARAGE_SELECT, GATEWAY_TEST_MAX_AGE_MS, gatewayHealthy, modelsToRetest, withProbeDeployments, type RoutingGarage } from "../_shared/garageRouting.ts";

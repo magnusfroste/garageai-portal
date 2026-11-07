@@ -36,7 +36,6 @@ export interface SiteSettings {
 
   // API
   api_base_url: string;
-  netbird_api_url: string;
   /** SearXNG server used by chat web search. */
   searxng_url: string;
 
@@ -104,7 +103,6 @@ export const defaultSiteSettings: SiteSettings = {
   site_name: "GarageAI",
   tagline: "Open model access through an EU gateway",
   api_base_url: "",
-  netbird_api_url: "",
   searxng_url: "https://search.liteit.se",
   logo_url: "",
   favicon_url: "/favicon.png",

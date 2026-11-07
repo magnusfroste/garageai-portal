@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await admin.from("garages").select("id, connection_type").eq("name", name).maybeSingle();
     if (existing && existing.connection_type !== "endpoint") return bad("A garage with this name already exists");
-    const row = { name, display_name: displayName, connection_type: "endpoint", endpoint_url: endpointUrl, models: Array.from(new Set(models as string[])), status: "pending", runtime: "openai", port: 443, ...prices, ...termsFields(), ...(declared ? { declared_country: declared } : {}) };
+    const row = { name, display_name: displayName, connection_type: "endpoint", transport: "endpoint", endpoint_url: endpointUrl, models: Array.from(new Set(models as string[])), status: "pending", runtime: "openai", port: 443, ...prices, ...termsFields(), ...(declared ? { declared_country: declared } : {}) };
     const q = existing
       ? admin.from("garages").update(row).eq("id", existing.id).select("*").single()
       : admin.from("garages").insert(row).select("*").single();

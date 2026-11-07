@@ -21,7 +21,6 @@ export interface Garage {
   port: number | null;
   models: string[];
   mesh_ip: string | null;
-  netbird_peer_id: string | null;
   status: string;
   disabled: boolean;
   last_registered_at: string | null;
