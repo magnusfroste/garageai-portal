@@ -2,13 +2,17 @@
 // Falls back to LITELLM_BASE_URL env var. Trailing slashes are stripped.
 import { isPublicGatewayHost } from "./gatewayHostGuard.ts";
 export { isPublicGatewayHost };
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 let cached: { url: string; expires: number } | null = null;
 const TTL_MS = 60_000;
 
 
-export async function getProxyBaseUrl(client?: Pick<SupabaseClient, "from">): Promise<string> {
+export interface ProxySettingsReader {
+  from(table: string): { select(columns: string): { eq(column: string, value: string): { maybeSingle(): PromiseLike<{ data: unknown }> } } };
+}
+
+export async function getProxyBaseUrl(client?: ProxySettingsReader): Promise<string> {
   const now = Date.now();
   if (cached && cached.expires > now) return cached.url;
 
