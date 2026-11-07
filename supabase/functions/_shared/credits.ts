@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.108.2";
 import { ensureLiteLLMUser } from "./litellmUsers.ts";
 
 export async function grantCheckoutCredits(admin: SupabaseClient, input: { sessionId: string; userId: string; credits: number }, reconcileGateway = true) {

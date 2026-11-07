@@ -8,7 +8,7 @@ let cached: { url: string; expires: number } | null = null;
 const TTL_MS = 60_000;
 
 
-export async function getProxyBaseUrl(client?: SupabaseClient): Promise<string> {
+export async function getProxyBaseUrl(client?: Pick<SupabaseClient, "from">): Promise<string> {
   const now = Date.now();
   if (cached && cached.expires > now) return cached.url;
 

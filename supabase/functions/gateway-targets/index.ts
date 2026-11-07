@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { transportTargetFields, isTunnel } from "../_shared/tunnel.ts";
+import { transportTargetFields } from "../_shared/tunnel.ts";
 import { isGatewayTarget } from "../_shared/gatewayTargetFilter.ts";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
 
@@ -35,7 +35,8 @@ Deno.serve(async (req) => {
           const codes = (Array.isArray(p.problems) ? p.problems : [])
             .filter((x: any) => x && (x.severity === "error" || x.severity === "warning") && typeof x.code === "string")
             .map((x: any) => x.code as string);
-          latest.get(e.garage_id)!.problems = codes;
+          const event = latest.get(e.garage_id);
+          if (event) event.problems = codes;
         }
       }
     }
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
         return { garage: g.name, peer_id: null, host, port: 443, endpoint: true, url: g.endpoint_url, runtime_api_key: keys.get(g.id) ?? null, ...extra(g) };
       }
       const onboarding = latest.get(g.id);
-      return { garage: g.name, peer_id: isTunnel(g) ? null : g.host: isTunnel(g) ? g.tunnel_ip : (g.api_host || g.mesh_ip), port: g.port, runtime_api_key: keys.get(g.id) ?? null, ...extra(g), ...(onboarding ? { onboarding } : {}) };
+      return { garage: g.name, peer_id: null, host: g.tunnel_ip, port: g.port, runtime_api_key: keys.get(g.id) ?? null, ...extra(g), ...(onboarding ? { onboarding } : {}) };
     });
     return gatewayJson({ targets });
   } catch (e) {

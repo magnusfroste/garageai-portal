@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.108.2";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
 
 const headers = (key: string) => ({ Authorization: `Bearer ${key}`, "Content-Type": "application/json" });
