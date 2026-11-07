@@ -15,7 +15,7 @@ const round = (n: number) => Math.round(n * 100) / 100;
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
 
 async function timed<T>(p: Promise<T>, fallback: T): Promise<T> {
-  let t: number | undefined;
+  let t: ReturnType<typeof setTimeout> | undefined;
   try { return await Promise.race([p, new Promise<T>((r) => { t = setTimeout(() => r(fallback), BUDGET_MS); })]); }
   catch { return fallback; } finally { clearTimeout(t); }
 }

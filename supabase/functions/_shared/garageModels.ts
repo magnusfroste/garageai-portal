@@ -54,9 +54,9 @@ export async function offeredByGarage(admin: SupabaseClient, garageIds: string[]
   const map = new Map<string, Set<string>>();
   if (!garageIds.length) return map;
   const { data } = await admin.from("garage_models").select("garage_id, model, offered, installed, paused_at").in("garage_id", garageIds);
-  for (const r of (data || []) as Row[]) {
+  for (const r of (data || []) as Array<Omit<Row, "status"> & { paused_at: string | null }>) {
     if (!map.has(r.garage_id)) map.set(r.garage_id, new Set());
-    if (r.offered && r.installed && !(r as Row & { paused_at?: string | null }).paused_at) map.get(r.garage_id)!.add(r.model);
+    if (r.offered && r.installed && !r.paused_at) map.get(r.garage_id)?.add(r.model);
   }
   return map;
 }

@@ -20,7 +20,7 @@ export interface GarageRecord { id: string; name: string; operator_id: string | 
 
 export function validateGaragePayload(body: Record<string, unknown>, allowEmptyModels = false): GarageRegistrationPayload {
   const port = body.port;
-  if (typeof port !== "number" || !Number.isInteger(port) || !ALLOWED_GARAGE_PORTS.includes(port)) throw new Error(`port must be one of ${ALLOWED_GARAGE_PORTS.join(", ")}`);
+  if (typeof port !== "number" || !Number.isInteger(port) || !ALLOWED_GARAGE_PORTS.some((allowed) => allowed === port)) throw new Error(`port must be one of ${ALLOWED_GARAGE_PORTS.join(", ")}`);
   const models = body.models;
   const minimum = allowEmptyModels ? 0 : 1;
   if (!Array.isArray(models) || models.length < minimum || models.length > 20 || !models.every((model) => typeof model === "string" && MODEL_RE.test(model))) throw new Error(`models must be ${minimum}-20 strings matching ^[A-Za-z0-9._:/-]{1,128}$`);
