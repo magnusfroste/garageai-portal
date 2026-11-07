@@ -29,7 +29,8 @@ export async function getProxyBaseUrl(client?: ProxySettingsReader): Promise<str
         .select("value")
         .eq("key", "site_settings")
         .maybeSingle();
-      const settings = data?.value as Record<string, unknown> | null;
+      const row = data as { value?: unknown } | null;
+      const settings = row?.value as Record<string, unknown> | null;
       // Internal admin calls (model/new, /model/info, /user/*) must use the gateway's internal host:
       // the public API host (api_base_url, shown to buyers) blocks admin routes with 403.
       const internal = (settings?.internal_api_base_url as string | undefined)?.trim();

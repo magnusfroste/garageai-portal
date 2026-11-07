@@ -15,7 +15,7 @@ const bad = (msg: string) => json({ error: msg }, 400);
 // Hosts that are ours: a provider endpoint must never point back at the gateway.
 // Whole garageai.eu subtree is blocked via blockedDomains (see _shared/garageHosts.ts).
 async function blockedHosts(admin: Parameters<typeof getProxyBaseUrl>[0]) {
-  const hosts = [...GARAGE_EXTRA_HOSTS];
+  const hosts: string[] = [...GARAGE_EXTRA_HOSTS];
   try { hosts.push(new URL(await getProxyBaseUrl(admin)).hostname.toLowerCase()); } catch { /* ignore */ }
   try { hosts.push(new URL(Deno.env.get("SUPABASE_URL") || "").hostname.toLowerCase()); } catch { /* ignore */ }
   return hosts;

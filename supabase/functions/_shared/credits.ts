@@ -12,7 +12,7 @@ export async function grantCheckoutCredits(admin: SupabaseClient, input: { sessi
   const { data: profile, error } = await admin.from("profiles").select("id, email, litellm_user_id, starting_credit_usd, purchased_credits_usd").eq("id", input.userId).single();
   if (error) throw error;
   if (reconcileGateway) {
-    try { await ensureLiteLLMUser(admin, profile); }
+    try { await ensureLiteLLMUser(admin as unknown as Parameters<typeof ensureLiteLLMUser>[0], profile); }
     catch { throw new Error("Gateway credit budget update failed; retry required"); }
   }
   return { creditsAdded: Number(row.credits_added), alreadyProcessed: row.already_processed, totalBudget: Number(row.total_budget) };
@@ -31,6 +31,6 @@ export async function reverseCheckoutCredits(admin: SupabaseClient, input: { eve
   const { data: profile, error: profileError } = await admin.from("profiles")
     .select("id, email, litellm_user_id, starting_credit_usd, purchased_credits_usd").eq("id", row.user_id).single();
   if (profileError || !profile) throw new Error("Profile not found");
-  await ensureLiteLLMUser(admin, profile);
+  await ensureLiteLLMUser(admin as unknown as Parameters<typeof ensureLiteLLMUser>[0], profile);
   return row;
 }
