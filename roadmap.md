@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Remove NetBird code/UI, migrate transport defaults safely, clean approved legacy data, restore Stripe SDK, run full tests/security and publish.
+
 - [x] Reset exactly three approved cache overrides and audit admin approval/reason; live Qwen pool/dedicated 0.060 and deliberate autoversio 0.006 verified after sync.
 - [ ] dgx-city paid cache 0.035 gateway readback — blocked: garage offline (runtime_ok false), paid routes absent; free mine route remains 0. Approved stored overrides are null and input is 0.14.
 - [x] Buyer first-answer: shared inline terms/default show-once key, Auto sample prefill, key-filled examples, successful account request marker, Swedish/mobile; 40 affected tests pass, build OK, desktop/mobile isolated acceptance/key/prefill/completion checks passed; backend deployed.
