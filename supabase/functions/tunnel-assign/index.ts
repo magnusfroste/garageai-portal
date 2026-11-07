@@ -1,4 +1,4 @@
-// Assigns a Bridge tunnel address (or releases back to NetBird). Auth: the garage's register token.
+// Assigns a Bridge tunnel address. Auth: the garage's register token.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { lowestFreeTunnelIp, validTunnelKey, type TunnelHub } from "../_shared/tunnel.ts";
 
@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   try {
     const auth = req.headers.get("Authorization");
     if (!auth?.startsWith("Bearer ") || !auth.slice(7).trim()) return json({ error: "Unauthorized" }, 401);
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const admin = createClient((Deno.env.get("SUPABASE_URL") || ""), (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""));
     const { data: token } = await admin.from("garage_tokens").select("garage_id").eq("token_hash", await sha256Hex(auth.slice(7).trim())).is("revoked_at", null).maybeSingle();
     if (!token) return json({ error: "Unauthorized" }, 401);
     const { data: garage } = await admin.from("garages").select("id, name, disabled, connection_type, tunnel_ip, tunnel_public_key").eq("id", token.garage_id).maybeSingle();
@@ -23,12 +23,7 @@ Deno.serve(async (req) => {
     let body: Record<string, unknown>;
     try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
 
-    if (body.release === true) {
-      const { error } = await admin.from("garages").update({ transport: "netbird", tunnel_public_key: null }).eq("id", garage.id);
-      if (error) throw error;
-      await admin.from("onboarding_events").insert({ garage_id: garage.id, step: "tunnel", status: "done", message: "Back on NetBird" });
-      return json({ ok: true });
-    }
+    if (body.release !== undefined) return json({ error: "Tunnel release is not supported" }, 400);
 
     const key = body.tunnel_public_key;
     if (!validTunnelKey(key)) return json({ error: "tunnel_public_key must be base64 decoding to 32 bytes", code: "invalid_key" }, 400);

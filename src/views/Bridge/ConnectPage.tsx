@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useSession } from "@/hooks/useSession";
 import { connectRepository } from "@/data/repositories/connectRepository";
-import { bridgeInstallCommand, bridgeNetbirdCommand, bridgeRuntimeInstallCommand, detectOs, type ConnectOs } from "@/models/services/connectService";
+import { bridgeInstallCommand, bridgeRuntimeInstallCommand, detectOs, type ConnectOs } from "@/models/services/connectService";
 import { t } from "@/i18n";
 
 import { LegalLinks } from "@/views/Account/components/AccountTermsCheckbox";
@@ -80,12 +80,6 @@ const ConnectPage = () => {
           <a href="https://www.garageai.eu/security" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"><Shield className="h-3.5 w-3.5" />{t("Is it safe to share from my computer?")}</a>
           <p className="text-sm text-muted-foreground">{t("Bridge connects this computer to GarageAI through its own encrypted tunnel. Nothing to configure on your network, and your model runtime can stay on localhost.")}</p>
           <LegalLinks />
-          <Collapsible>
-            <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ChevronDown className="h-4 w-4" />{t("Network blocks UDP? Use NetBird instead")}</CollapsibleTrigger>
-            <CollapsibleContent className="pt-2">
-              <OneLine command={bridgeNetbirdCommand(os)} onCopied={() => setWaiting(true)} />
-            </CollapsibleContent>
-          </Collapsible>
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp, Xyntetik Runner) with a model loaded, or let Bridge install Xyntetik Runner (above).")}</li>
             <li>{t("After connecting, choose the models to offer under My garage.")}</li>

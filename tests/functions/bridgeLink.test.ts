@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { USER_CODE_RE, linkWantsSetupKey, claimMachineId, decidePoll, machineConflict, makeUserCode, normaliseUserCode, parseStartBody, type LinkRow } from "../../supabase/functions/_shared/bridgeLink";
-import { decideSetupKey, garageLimitReached, isSameMachineRelink, ownershipError } from "../../supabase/functions/_shared/garageCredentialRules";
+import { USER_CODE_RE, claimMachineId, decidePoll, machineConflict, makeUserCode, normaliseUserCode, parseStartBody, type LinkRow } from "../../supabase/functions/_shared/bridgeLink";
+import { garageLimitReached, isSameMachineRelink, ownershipError } from "../../supabase/functions/_shared/garageCredentialRules";
 
 test("user codes are ABCD-EFGH without I, O, 0 or 1", () => {
   for (let i = 0; i < 500; i++) {
@@ -26,7 +26,7 @@ test("poll: slow_down within 2 s", () => expect(decidePoll({ ...base, last_poll_
 test("poll: approved once, then picked_up", () => {
   const row: LinkRow = { ...base, status: "approved", garage: { id: "g", name: "m2" }, credentials: { register_token: "grg_x", setup_key: null, register_url: "r", management_url: "m" } };
   const d = decidePoll(row, now);
-  expect(d.body).toEqual({ status: "approved", garage: { id: "g", name: "m2" }, register_url: "r", register_token: "grg_x", setup_key: null, management_url: "m" });
+  expect(d.body).toEqual({ status: "approved", garage: { id: "g", name: "m2" }, register_url: "r", register_token: "grg_x" });
   expect(d.patch).toMatchObject({ status: "picked_up", credentials: null });
   expect(decidePoll({ ...row, ...d.patch } as LinkRow, now + 3000).body).toEqual({ status: "picked_up" });
 });
@@ -43,13 +43,6 @@ test("approve: same or unknown machine is fine", () => {
   expect(machineConflict(null, "mac-b", false)).toBe("ok");
 });
 
-test("create-garage rules unchanged: operators always get a setup key unless they opt out with a peer", () => {
-  expect(decideSetupKey(undefined, false, true)).toBe(true);
-  expect(decideSetupKey(false, false, true)).toBe(false);
-  expect(decideSetupKey(false, false, false)).toBe(true);
-  expect(decideSetupKey(false, true, false)).toBe(false);
-  expect(decideSetupKey(undefined, true, true)).toBe(true);
-});
 test("create-garage rules unchanged: ownership, 5-garage limit and 10 per day", () => {
   expect(ownershipError({ operator_id: "other" }, "me", false, 0, 0)?.status).toBe(409);
   expect(ownershipError({ operator_id: "me", disabled: true }, "me", false, 0, 0)?.status).toBe(403);
@@ -85,16 +78,13 @@ test("garage limit: 5 garages blocks a new one for operators, not admins", () =>
   expect(garageLimitReached(5, true)).toBe(false);
 });
 
-test("start: transport defaults to netbird, accepts tunnel, rejects others", () => {
-  expect(parseStartBody({}).fields?.transport).toBe("netbird");
+test("start defaults to tunnel and rejects retired and endpoint transports", () => {
+  expect(parseStartBody({}).fields?.transport).toBe("tunnel");
   expect(parseStartBody({ transport: "tunnel" }).fields?.transport).toBe("tunnel");
-  expect(parseStartBody({ transport: "wg" }).error).toBeTruthy();
+  expect(parseStartBody({ transport: "netbird" }).error).toBeTruthy();
+  expect(parseStartBody({ transport: "endpoint" }).error).toBeTruthy();
 });
-test("approve: tunnel links never get a setup key, netbird links keep today's rule", () => {
-  expect(linkWantsSetupKey("tunnel", false, "ok")).toBe(false);
-  expect(linkWantsSetupKey("tunnel", true, "replace")).toBe(false);
-  expect(linkWantsSetupKey("netbird", false, "ok")).toBe(true);
-  expect(linkWantsSetupKey("netbird", true, "ok")).toBe(false);
-  expect(linkWantsSetupKey("netbird", true, "replace")).toBe(true);
-  expect(linkWantsSetupKey(null, false, "ok")).toBe(true);
+test("poll ignores historical setup and management credentials", () => {
+  const d = decidePoll({ ...base, status: "approved", garage: {id: "g", name: "m2"}, credentials: {register_token: "grg_x", register_url: "r", setup_key: "old", management_url: "old"} }, now);
+  expect(d.body).toEqual({status: "approved", garage: {id: "g", name: "m2"}, register_token: "grg_x", register_url: "r"});
 });

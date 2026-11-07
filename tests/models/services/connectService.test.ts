@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { bridgeInstallCommand, bridgeNetbirdCommand, bridgeProgress, bridgeRuntimeInstallCommand, detectOs } from "../../../src/models/services/connectService";
+import { bridgeInstallCommand, bridgeProgress, bridgeRuntimeInstallCommand, detectOs } from "../../../src/models/services/connectService";
 import { entryFor } from "../../../supabase/functions/_shared/bridgeLink";
 import type { OnboardingEvent } from "../../../src/models/types/onboarding.types";
 
@@ -10,13 +10,11 @@ test("OS detection picks the right tab", () => {
   expect(detectOs("")).toBe("linux");
 });
 
-test("the plain command is the tunnel; the NetBird fallback appends --tunnel netbird", () => {
+test("Bridge install commands use only the tunnel", () => {
   expect(bridgeInstallCommand()).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
   expect(bridgeInstallCommand("macos")).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
   expect(bridgeInstallCommand("linux")).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect");
   expect(bridgeInstallCommand("windows")).toBe("irm https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.ps1 | iex; garageai connect");
-  expect(bridgeNetbirdCommand("linux")).toBe("curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect --tunnel netbird");
-  expect(bridgeNetbirdCommand("windows")).toBe("irm https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.ps1 | iex; garageai connect --tunnel netbird");
 });
 
 test("the no-engine line installs Bridge, then Xyntetik Runner, then connects", () => {
@@ -39,10 +37,10 @@ let n = 0;
 const ev = (step: string, status: OnboardingEvent["status"], message: string | null = null): OnboardingEvent =>
   ({ id: String(n), garage_id: "g", created_at: `2026-10-11T12:00:${String(n++).padStart(2, "0")}Z`, step, status, message, script_version: null, node_name: null, runtime: null, port: null, os: null, arch: null, gpu: null, memory_gb: null });
 
-test("progress maps events to the six steps", () => {
+test("historical six-step events map to five Bridge steps", () => {
   n = 0;
   const p = bridgeProgress([ev("3/6  Inference runtime", "failed", "old run"), ev("link", "done"), ev("1/6  NetBird client", "done"), ev("2/6  Join the mesh", "started"), ev("3/6  Inference runtime", "failed", "No runtime on 11434")]);
-  expect(p.steps.map((s) => s.state)).toEqual(["done", "done", "failed", "pending", "pending", "pending"]);
+  expect(p.steps.map((s) => s.state)).toEqual(["done", "failed", "pending", "pending", "pending"]);
   expect(p.failed?.message).toBe("No runtime on 11434");
   expect(p.live).toBe(false);
 });
@@ -52,7 +50,7 @@ test("register done means live; keyword steps map too", () => {
   const p = bridgeProgress([ev("link", "done"), ev("register", "done"), ev("heartbeat", "started")]);
   expect(p.live).toBe(true);
   expect(p.steps[0].state).toBe("done");
-  expect(p.steps[5].state).toBe("running");
+  expect(p.steps[4].state).toBe("running");
 });
 
 test("entry is web only when /connect was seen within 60 minutes before approval", () => {
@@ -60,4 +58,9 @@ test("entry is web only when /connect was seen within 60 minutes before approval
   expect(entryFor("2026-10-11T11:30:00Z", at)).toBe("web");
   expect(entryFor("2026-10-11T10:59:00Z", at)).toBe("terminal");
   expect(entryFor(null, at)).toBe("terminal");
+});
+
+test("five-step Bridge events complete normally", () => {
+ const p = bridgeProgress([ev("link", "done"), ev("1/5 Bridge tunnel", "done"), ev("2/5 Runtime", "done"), ev("3/5 Reachable through the tunnel", "done"), ev("4/5 Models", "done"), ev("5/5 Linked", "done")]);
+ expect(p.steps.length).toBe(5); expect(p.live).toBe(true); expect(p.steps.every(s => s.state === "done")).toBe(true);
 });

@@ -1,9 +1,12 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getProxyBaseUrl } from "./proxyConfig.ts";
+import { getProxyBaseUrl, type ProxySettingsReader } from "./proxyConfig.ts";
+
+interface UserSettingsClient extends ProxySettingsReader {
+  from(table: string): ReturnType<ProxySettingsReader["from"]> & { update(values: { litellm_user_id: string }): { eq(column: string, value: string): PromiseLike<unknown> } };
+}
 
 const headers = (key: string) => ({ Authorization: `Bearer ${key}`, "Content-Type": "application/json" });
 
-export async function ensureLiteLLMUser(admin: SupabaseClient, profile: { id: string; email?: string | null; litellm_user_id?: string | null; starting_credit_usd?: number; purchased_credits_usd?: number }) {
+export async function ensureLiteLLMUser(admin: UserSettingsClient, profile: { id: string; email?: string | null; litellm_user_id?: string | null; starting_credit_usd?: number; purchased_credits_usd?: number }) {
   const key = Deno.env.get("LITELLM_MASTER_KEY");
   if (!key) throw new Error("LITELLM_MASTER_KEY not configured");
   const base = await getProxyBaseUrl(admin);

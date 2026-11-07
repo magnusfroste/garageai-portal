@@ -18,7 +18,7 @@
 - Route user-facing strings through `t()` (`src/i18n`, English source, translations in `src/i18n/<lang>.ts`); site_settings text is English with `translations.<lang>` overrides merged only in `useSiteSettings`.
 - Grant purchased credits through one idempotent shared claim path; total budget = starting credit + purchased credits.
 - Read signup starter credit from the public default-budget setting, never translated branding; signup profiles use it with zero fallback.
-- Share the browser-link connection view across current and former wizard URLs; advanced token renewal requests no setup key, so portal connection stays independent of legacy scripts.
+- Share the browser-link connection view across current and former wizard URLs; advanced token renewal uses Bridge credentials only, so portal connection stays independent of legacy scripts.
 - Gateway health owns live availability. Market routes require offers/tests; owner `mine/` routes use heartbeat inventory independently of market visibility/pause, with shared private planning and gateway access checks.
 - Audit garage price changes with an atomic database trigger, then reconcile both token prices; statements always sum recorded request spend to keep historical rates.
 - Single-garage views use owner-scoped aggregates; recorded spend is never repriced. Shared modelPrices resolves model overrides before routing.
@@ -44,3 +44,6 @@
 
 - The portal decides what should hold: people's decisions and business terms (models for sale, prices, the garageai/auto list, garages, owners, terms, earnings, accounts, onboarding). The gateway (LiteLLM) carries it out within seconds: routing, failover, cooldown, context checks, health. Never build a fast reaction (failover, retries, timeouts, blocking) as a portal function on a schedule. Never make a routing or health decision from gateway data gathered while the gateway itself is unreachable: treat it as inconclusive. Routing, pricing and health code needs tests. Full rationale: https://github.com/magnusfroste/garageai/blob/main/docs/architecture.md (syncModels moves into a separate control plane when there is more than one gateway or region).
 - The Logs page reads one paged account-wide request list (get-request-logs, 100 rows/page by gateway user), never one usage call per key, so it stays fast as keys grow.
+
+- Garages use only Bridge tunnel transport; providers use endpoint transport, with endpoint health evaluated before tunnel rules so provider behavior stays unchanged.
+- Shared gateway settings/user helpers accept structural query interfaces across SDK versions; payment callers share the current npm SDK to avoid nominal class mismatches without downgrading payments.

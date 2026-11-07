@@ -15,7 +15,7 @@ const bad = (msg: string) => json({ error: msg }, 400);
 // Hosts that are ours: a provider endpoint must never point back at the gateway.
 // Whole garageai.eu subtree is blocked via blockedDomains (see _shared/garageHosts.ts).
 async function blockedHosts(admin: Parameters<typeof getProxyBaseUrl>[0]) {
-  const hosts = [...GARAGE_EXTRA_HOSTS];
+  const hosts: string[] = [...GARAGE_EXTRA_HOSTS];
   try { hosts.push(new URL(await getProxyBaseUrl(admin)).hostname.toLowerCase()); } catch { /* ignore */ }
   try { hosts.push(new URL(Deno.env.get("SUPABASE_URL") || "").hostname.toLowerCase()); } catch { /* ignore */ }
   return hosts;
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await admin.from("garages").select("id, connection_type").eq("name", name).maybeSingle();
     if (existing && existing.connection_type !== "endpoint") return bad("A garage with this name already exists");
-    const row = { name, display_name: displayName, connection_type: "endpoint", endpoint_url: endpointUrl, models: Array.from(new Set(models as string[])), status: "pending", runtime: "openai", port: 443, ...prices, ...termsFields(), ...(declared ? { declared_country: declared } : {}) };
+    const row = { name, display_name: displayName, connection_type: "endpoint", transport: "endpoint", endpoint_url: endpointUrl, models: Array.from(new Set(models as string[])), status: "pending", runtime: "openai", port: 443, ...prices, ...termsFields(), ...(declared ? { declared_country: declared } : {}) };
     const q = existing
       ? admin.from("garages").update(row).eq("id", existing.id).select("*").single()
       : admin.from("garages").insert(row).select("*").single();

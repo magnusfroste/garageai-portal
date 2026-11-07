@@ -35,12 +35,12 @@ test("registerGarage: a tunnel garage registers end to end on the internal gatew
   }) as typeof fetch;
   const { registerGarage } = await import("../../supabase/functions/_shared/registerGarage");
   const updates: Array<{ table: string; patch: Record<string, unknown> }> = [];
-  const garage = { id: "g1", name: "garage-m1", operator_id: "o1", api_host: null, netbird_peer_id: null, dedicated_input_cost_per_million: 0, dedicated_output_cost_per_million: 0, pool_input_cost_per_million: 0, pool_output_cost_per_million: 0, connection_type: "mesh", transport: "tunnel", tunnel_ip: "10.66.0.2" };
+  const garage = { id: "g1", name: "garage-m1", operator_id: "o1", api_host: null, dedicated_input_cost_per_million: 0, dedicated_output_cost_per_million: 0, pool_input_cost_per_million: 0, pool_output_cost_per_million: 0, connection_type: "mesh", transport: "tunnel", tunnel_ip: "10.66.0.2" };
   const res = await registerGarage(fakeAdmin(updates) as never, garage, { name: "garage-m1", runtime: "ollama", port: 11434, models: ["qwen3:8b"], mesh_ip: "10.66.0.2" });
   expect(res.api_base).toBe("http://10.66.0.2:11434/v1");
   expect(calls.some((u) => u.includes("api.garageai.eu"))).toBe(false);
   expect(calls.some((u) => u.includes("netbird"))).toBe(false);
   const g = updates.find((u) => u.table === "garages" && "last_registered_at" in u.patch)!;
   expect(g.patch.mesh_ip).toBe("10.66.0.2");
-  expect(g.patch.netbird_peer_id).toBeNull();
+  expect(g.patch).not.toHaveProperty("netbird_peer_id");
 });

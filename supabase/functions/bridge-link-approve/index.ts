@@ -1,6 +1,6 @@
 // Bridge device-link approval by a signed-in operator. Actions: lookup (show the machine), approve, deny.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { NAME_RE, entryFor, linkWantsSetupKey, machineConflict, normaliseUserCode } from "../_shared/bridgeLink.ts";
+import { NAME_RE, entryFor, machineConflict, normaliseUserCode } from "../_shared/bridgeLink.ts";
 import { termsAccepted } from "../_shared/garageTerms.ts";
 import { CredentialError, countOwnedGarages, issueGarageCredentials, loadGarageByName } from "../_shared/garageCredentials.ts";
 import { garageLimitReached } from "../_shared/garageCredentialRules.ts";
@@ -69,8 +69,7 @@ Deno.serve(async (req) => {
 
     const issued = await issueGarageCredentials(admin, {
       userId: user.id, isAdmin, name, adminPanel: false, operatorId: user.id,
-      setupKeyRequested: linkWantsSetupKey(link.transport, !!existing?.netbird_peer_id, conflict), acceptTerms: accepted, machineId: link.machine_id,
-      noNetbird: link.transport === "tunnel",
+      acceptTerms: accepted, machineId: link.machine_id,
     });
 
     const { data: prof } = await admin.from("profiles").select("connect_page_seen_at").eq("id", user.id).maybeSingle();
@@ -78,7 +77,7 @@ Deno.serve(async (req) => {
     const { data: updated } = await admin.from("bridge_links").update({
       entry: entryFor(prof?.connect_page_seen_at, approvedNow),
       status: "approved", garage_id: issued.garage.id, approved_by: user.id, approved_at: new Date(approvedNow).toISOString(),
-      credentials: { register_token: issued.register_token, setup_key: issued.setup_key, register_url: issued.register_url, management_url: issued.management_url },
+      credentials: { register_token: issued.register_token, register_url: issued.register_url },
     }).eq("id", link.id).eq("status", "pending").select("id");
     if (!updated?.length) return json({ error: "not_pending" }, 409);
 
@@ -92,7 +91,7 @@ Deno.serve(async (req) => {
       script_version: link.bridge_version, node_name: link.hostname, runtime: link.runtime, os: link.os, arch: link.arch, gpu: link.gpu,
       memory_gb: link.memory_gb != null ? String(link.memory_gb) : null,
     });
-    console.log("[bridge-link-approve] approved", { garage: name, replaced: conflict === "replace", setup_key_created: !!issued.setup_key });
+    console.log("[bridge-link-approve] approved", { garage: name, replaced: conflict === "replace" });
     return json({ status: "approved", garage: { id: issued.garage.id, name: issued.garage.name } });
   } catch (e) {
     if (e instanceof CredentialError) return json({ error: e.message }, e.status);

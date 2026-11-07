@@ -1,10 +1,10 @@
 // Bridge tunnel (GarageAI's own WireGuard hub) rules. Pure: no I/O, shared by edge functions and tests.
 // Design: https://github.com/magnusfroste/garageai/blob/main/docs/bridge-tunnel.md
 
-export type Transport = "netbird" | "tunnel";
+export type Transport = "tunnel";
 export interface TunnelHub { public_key: string; endpoint: string; network: string; hub_ip: string }
 
-export const isTunnel = (g: { transport?: string | null }) => g.transport === "tunnel";
+export const isTunnel = (g: { transport?: string | null; connection_type?: string | null }) => g.connection_type !== "endpoint" && g.transport !== "endpoint";
 
 /** A WireGuard public key: standard base64 (44 chars) decoding to exactly 32 bytes. */
 export function validTunnelKey(key: unknown): key is string {
@@ -29,23 +29,15 @@ export function lowestFreeTunnelIp(used: Iterable<string | null | undefined>): s
   return null;
 }
 
-export interface MeshPeer { id: string | null; ip: string | null }
-
-/** Tunnel garages use their tunnel IP and never touch NetBird; others resolve their NetBird peer. */
-export async function resolveGaragePeer(
-  garage: { transport?: string | null; tunnel_ip?: string | null },
-  netbirdLookup: () => Promise<MeshPeer>,
-): Promise<MeshPeer> {
-  if (isTunnel(garage)) {
-    if (!garage.tunnel_ip) throw new Error("node is not connected to the mesh yet (no tunnel address)");
-    return { id: null, ip: garage.tunnel_ip };
-  }
-  return netbirdLookup();
+/** Garages require an assigned Bridge tunnel address; caller-supplied addresses are never trusted. */
+export async function resolveGaragePeer(garage: { tunnel_ip?: string | null }): Promise<{ id: null; ip: string }> {
+  if (!garage.tunnel_ip) throw new Error("node is not connected to the tunnel yet (no tunnel address)");
+  return { id: null, ip: garage.tunnel_ip };
 }
 
 /** Transport fields every gateway target carries; tunnel garages use host = tunnel_ip and peer_id = null. */
-export function transportTargetFields(g: { transport?: string | null; tunnel_ip?: string | null; tunnel_public_key?: string | null }) {
-  const transport: Transport = isTunnel(g) ? "tunnel" : "netbird";
+export function transportTargetFields(g: { connection_type?: string | null; transport?: string | null; tunnel_ip?: string | null; tunnel_public_key?: string | null }) {
+  const transport: Transport | "endpoint" = isTunnel(g) ? "tunnel" : "endpoint";
   return { transport, tunnel_ip: g.tunnel_ip ?? null, tunnel_public_key: g.tunnel_public_key ?? null };
 }
 
@@ -53,7 +45,7 @@ const HEARTBEAT_STALE_MS = 15 * 60 * 1000;
 
 /**
  * Connectivity of a tunnel garage: the gateway's health report (mesh_connected from the hub handshake)
- * first, then heartbeat freshness. NetBird is never consulted, so missing from NetBird never means offline.
+ * first, then heartbeat freshness. No external peer service is consulted.
  */
 export function tunnelStatus(
   g: { last_gateway_check_at?: string | null; runtime_ok?: boolean | null; mesh_connected?: boolean | null; last_heartbeat_at?: string | null },

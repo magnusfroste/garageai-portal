@@ -3,7 +3,7 @@ import type { OnboardingEvent, OnboardingStatus } from "@/models/types/onboardin
 export type StepState = "pending" | "running" | "done" | "failed" | "warning" | "waiting";
 export interface ProgressStep { index: number; label: string; state: StepState; message: string | null; hint: string | null; at: string | null; }
 
-export const TOTAL_STEPS = 6;
+export const TOTAL_STEPS = 5;
 
 /** "3/6  Inference runtime (vllm, port 8000)" → 3; null when not parseable. */
 export const stepNumber = (step: string): number | null => {
@@ -13,7 +13,7 @@ export const stepNumber = (step: string): number | null => {
 export const stepLabel = (step: string) => step.replace(/^\s*\d+\s*\/\s*\d+\s*/, "").trim() || step;
 
 const HINTS: Record<number, string> = {
-  1: "NetBird could not be installed; install it from netbird.io and run the command again.",
+  1: "Run garageai doctor on this machine to check the Bridge tunnel.",
   2: "Run garageai connect again and approve this computer in your browser.",
   3: "Start your model runtime with a model loaded, then run garageai connect again. Bridge can reach it on localhost.",
   4: "Bridge can diagnose the tunnel, runtime and port for you:",
@@ -42,7 +42,7 @@ export const buildProgress = (events: OnboardingEvent[]): { steps: ProgressStep[
   const latestN = latest ? stepNumber(latest.step) : null;
   const done = latest?.status === "done";
   const steps: ProgressStep[] = [];
-  for (let i = 0; i <= TOTAL_STEPS; i++) {
+  for (let i = 0; i <= Math.max(TOTAL_STEPS, ...byStep.keys()); i++) {
     const e = byStep.get(i);
     if (!e) { steps.push({ index: i, label: "", state: done && i < (latestN ?? 0) ? "done" : "pending", message: null, hint: null, at: null }); continue; }
     const state = stateFor(e.status, latestN === i, maxStarted > i);
@@ -55,7 +55,7 @@ export const buildProgress = (events: OnboardingEvent[]): { steps: ProgressStep[
 export const onboardingBadge = (lastRegisteredAt: string | null, latest: OnboardingEvent | null | undefined): { label: string; stuck: boolean; step: string } | null => {
   if (lastRegisteredAt || !latest) return null;
   const n = stepNumber(latest.step);
-  const step = n == null ? latest.step : `${n}/${TOTAL_STEPS}`;
+  const step = n == null ? latest.step : `${n}/${/^\s*\d+\s*\/\s*6/.test(latest.step) ? 6 : TOTAL_STEPS}`;
   const stuck = latest.status === "failed" || latest.status === "stopped";
   if (latest.status === "done") return { label: "Onboarding · done", stuck: false, step };
   return { label: stuck ? "Onboarding · stuck at {step}" : "Onboarding · {step} running", stuck, step };

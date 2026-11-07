@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
-import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, type NetbirdPeer } from "./netbirdConfig.ts";
 import { resolveGaragePeer } from "./tunnel.ts";
 import { runAndStoreAcceptanceTests, type AcceptanceResult } from "./acceptanceTest.ts";
 import { syncModels } from "./syncModels.ts";
@@ -16,7 +15,7 @@ const sanitize = (model: string) => model.replace(/[^A-Za-z0-9._-]/g, "-");
 
 export interface GarageRegistrationPayload { name: string; runtime: string; port: number; models: string[]; runtime_api_key?: string; mesh_ip?: string; contexts?: Record<string, number>; }
 export interface GarageRegistration { api_base: string; models: string[]; acceptance: AcceptanceResult[]; catalog_synced: boolean; summary: LinkSummary; }
-export interface GarageRecord { id: string; name: string; operator_id: string | null; api_host: string | null; netbird_peer_id: string | null; dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number; pool_input_cost_per_million: number; pool_output_cost_per_million: number; connection_type?: string | null; endpoint_url?: string | null; transport?: string | null; tunnel_ip?: string | null; }
+export interface GarageRecord { id: string; name: string; operator_id: string | null; api_host: string | null; dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number; pool_input_cost_per_million: number; pool_output_cost_per_million: number; connection_type?: string | null; endpoint_url?: string | null; transport?: string | null; tunnel_ip?: string | null; }
 
 export function validateGaragePayload(body: Record<string, unknown>, allowEmptyModels = false): GarageRegistrationPayload {
   const port = body.port;
@@ -63,17 +62,9 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   const isEndpoint = garage.connection_type === "endpoint";
   let peer: { id: string | null; ip: string | null } = { id: null, ip: null };
   if (!isEndpoint) {
-    // Tunnel garages: host is tunnel_ip, no NetBird lookup or pin (netbird_peer_id stays null).
-    peer = await resolveGaragePeer(garage, async () => {
-      const netbirdApiUrl = await getNetbirdApiUrl(admin);
-      const peersRes = await fetch(`${netbirdApiUrl}/peers`, { headers: netbirdHeaders() });
-      if (!peersRes.ok) throw new Error(`Could not query mesh (${peersRes.status})`);
-      const lookup = findGaragePeer(await peersRes.json() as NetbirdPeer[], garage);
-      if (!lookup.peer) throw new Error(lookup.error);
-      return { id: lookup.peer.id, ip: lookup.peer.ip };
-    });
+    peer = await resolveGaragePeer(garage);
   } else if (!garage.endpoint_url) throw new Error("provider has no endpoint_url");
-  const apiBase = isEndpoint ? garage.endpoint_url! : `http://${garage.api_host || peer.ip}:${payload.port}/v1`;
+  const apiBase = isEndpoint ? (garage.endpoint_url ?? "") : `http://${garage.api_host || peer.ip}:${payload.port}/v1`;
   const litellm = await getProxyBaseUrl(admin);
   const headers = { Authorization: `Bearer ${masterKey}`, "Content-Type": "application/json" };
   await storeRuntimeKey(admin, garage.id, payload.runtime_api_key);
@@ -95,7 +86,7 @@ export async function registerGarage(admin: SupabaseClient, garage: GarageRecord
   for (const result of acceptance) if (!result.inconclusive) latestByModel.set(result.model, result.passed);
   const anyPassed = payload.models.some((model) => latestByModel.get(model) === true);
   const prefill = await prefillPrices(admin, garage, payload.models);
-  const { error } = await admin.from("garages").update({ ...prefill, runtime: payload.runtime, port: payload.port, models: payload.models, ...(isEndpoint ? {} : { mesh_ip: peer.ip, netbird_peer_id: peer.id }), status: anyPassed ? "online" : payload.models.length ? "failed_test" : "pending", last_registered_at: new Date().toISOString() }).eq("id", garage.id);
+  const { error } = await admin.from("garages").update({ ...prefill, runtime: payload.runtime, port: payload.port, models: payload.models, ...(isEndpoint ? {} : { mesh_ip: peer.ip }), status: anyPassed ? "online" : payload.models.length ? "failed_test" : "pending", last_registered_at: new Date().toISOString() }).eq("id", garage.id);
   if (error) throw error;
 
   let catalogSynced = true;

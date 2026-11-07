@@ -1,5 +1,5 @@
 import { countsAsDemand, loadInternalIdentities, fingerprint } from "./internalTraffic.ts";
-import { isTunnel, tunnelStatus } from "./tunnel.ts";
+import { tunnelStatus } from "./tunnel.ts";
 import { offeredByGarage } from "./garageModels.ts";
 import { garageOfDeploymentId } from "./autoRoute.ts";
 // Garage reliability: status samples, LiteLLM usage ingestion and hourly probes.
@@ -24,7 +24,7 @@ const MAX_PROBES_PER_RUN = 10;
 
 type GarageRow = {
   id: string; name: string; status: string; disabled: boolean;
-  models: string[]; netbird_peer_id: string | null; last_heartbeat_at: string | null;
+  models: string[]; last_heartbeat_at: string | null;
 };
 
 const underlyingModel = (garage: string, modelName: string | null, tier: string | null) => {
@@ -49,7 +49,7 @@ async function healthyModelsByGarage(admin: SupabaseClient) {
 /** One sample per non-disabled garage, using the same online rules as the catalogue sync. */
 export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResult) {
   const { data: garages, error } = await admin.from("garages")
-    .select("id, name, status, disabled, models, netbird_peer_id, last_heartbeat_at, connection_type, paused_at, transport, last_gateway_check_at, runtime_ok, mesh_connected").eq("disabled", false);
+    .select("id, name, status, disabled, models, last_heartbeat_at, connection_type, paused_at, transport, last_gateway_check_at, runtime_ok, mesh_connected").eq("disabled", false);
   if (error) throw new Error(`garages read failed: ${error.message}`);
   const now = Date.now();
   const healthy = await healthyModelsByGarage(admin);
@@ -65,22 +65,10 @@ export async function recordStatusSamples(admin: SupabaseClient, sync: SyncResul
     let reason: string | null = null;
     if ((g as { connection_type?: string }).connection_type === "endpoint") {
       // No tunnel: health comes only from recent passing tests (hasModels below).
-    } else if (isTunnel(g as { transport?: string })) {
-      // Never offline because NetBird lacks it: gateway hub handshake / heartbeat only; no data = skip.
+    } else {
       const st = tunnelStatus(g as Parameters<typeof tunnelStatus>[0], now);
       if (st === "unknown") { skipped++; continue; }
       if (st === "unhealthy") reason = g.last_heartbeat_at && now - Date.parse(g.last_heartbeat_at) > HEARTBEAT_STALE_MS ? "no_heartbeat" : "mesh_disconnected";
-    } else if (g.last_heartbeat_at) {
-      if (now - Date.parse(g.last_heartbeat_at) > HEARTBEAT_STALE_MS) reason = "no_heartbeat";
-    } else {
-      const conn = sync.garageConnectivity[g.name];
-      if (conn === undefined) {
-        // No deployments in LiteLLM: nothing to serve.
-        if (!g.netbird_peer_id) reason = "mesh_disconnected";
-      } else if (conn === "unknown") {
-        if (!sync.netbirdOk) { skipped++; continue; } // our lookup failed — don't blame the garage
-        reason = "mesh_disconnected";
-      } else if (conn !== "healthy") reason = "mesh_disconnected";
     }
     if (!reason && !hasModels) reason = "no_models";
     rows.push({ garage_id: g.id, online: reason === null, reason });

@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { siteSettingsRepository } from "@/data/repositories/siteSettingsRepository";
 import { toast } from "sonner";
 
 import { t } from "@/i18n";
@@ -29,8 +28,6 @@ export const ProxyConfigCard = () => {
   const [checking, setChecking] = useState(false);
   const [editingUrl, setEditingUrl] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
-  const [editingNetbird, setEditingNetbird] = useState(false);
-  const [netbirdDraft, setNetbirdDraft] = useState("");
 
   const [searxDraft, setSearxDraft] = useState("");
   useEffect(() => {
@@ -40,23 +37,6 @@ export const ProxyConfigCard = () => {
     if (!settings) return;
     save({ ...settings, searxng_url: searxDraft.trim().replace(/\/+$/, "") });
     toast.success(t("Search server saved"));
-  };
-
-  const [netbirdUrl, setNetbirdUrl] = useState("");
-  useEffect(() => {
-    siteSettingsRepository.getNetbirdApiUrl().then((u) => { setNetbirdUrl(u); setNetbirdDraft(u); }).catch(() => {});
-  }, []);
-
-  const handleSaveNetbird = async () => {
-    const url = netbirdDraft.trim().replace(/\/+$/, "");
-    try {
-      await siteSettingsRepository.saveNetbirdApiUrl(url);
-      setNetbirdUrl(url);
-      setEditingNetbird(false);
-      toast.success(t("Settings saved"));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to save");
-    }
   };
 
   useEffect(() => {
@@ -143,35 +123,7 @@ export const ProxyConfigCard = () => {
           <p className="text-[11px] text-muted-foreground">{t("Used by web search in the chat. An optional authentication header is set via the secrets SEARXNG_HEADER_NAME / SEARXNG_HEADER_VALUE.")}</p>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">NetBird API URL</Label>
-          {editingNetbird ? (
-            <div className="flex gap-2">
-              <Input
-                value={netbirdDraft}
-                onChange={(e) => setNetbirdDraft(e.target.value)}
-                placeholder="https://netbird.example.com/api"
-                className="font-mono text-sm"
-              />
-              <Button size="sm" onClick={handleSaveNetbird} disabled={isSaving}>
-                <Save className="w-3.5 h-3.5 mr-1.5" />
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setEditingNetbird(false); setNetbirdDraft(netbirdUrl); }}>
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <code className="text-sm bg-muted px-2 py-1 rounded font-mono flex-1 truncate">
-                {netbirdUrl || "Not configured"}
-              </code>
-              <Button size="sm" variant="ghost" onClick={() => setEditingNetbird(true)}>
-                <Pencil className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          )}
-        </div>
+
 
         <Separator />
 

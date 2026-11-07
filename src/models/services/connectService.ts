@@ -5,11 +5,9 @@ import { stepNumber } from "./onboardingProgress";
 export type ConnectOs = "macos" | "linux" | "windows";
 export const BRIDGE_ONE_LINE = "curl -fsSL https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.sh | sh -s -- connect";
 export const BRIDGE_ONE_LINE_WINDOWS = "irm https://raw.githubusercontent.com/magnusfroste/garageai/main/cli/install.ps1 | iex; garageai connect";
-export const BRIDGE_NETBIRD_FLAG = " --tunnel netbird";
 
-/** The plain command uses the Bridge tunnel (default); the NetBird variant is the fallback when the network blocks UDP. */
+/** Bridge uses its own tunnel on every platform. */
 export const bridgeInstallCommand = (os: ConnectOs = "linux"): string => (os === "windows" ? BRIDGE_ONE_LINE_WINDOWS : BRIDGE_ONE_LINE);
-export const bridgeNetbirdCommand = (os: ConnectOs = "linux"): string => bridgeInstallCommand(os) + BRIDGE_NETBIRD_FLAG;
 
 /**
  * For a computer with no AI engine yet: install Bridge, then let Bridge install Xyntetik Runner
@@ -30,18 +28,22 @@ export function detectOs(userAgent: string): ConnectOs {
   return "linux";
 }
 
-export const BRIDGE_STEPS = ["NetBird client", "Join the mesh", "Inference runtime", "Reachable over the mesh", "Register (acceptance test)", "Heartbeat"] as const;
+export const BRIDGE_STEPS = ["Bridge tunnel", "Runtime", "Reachable through the tunnel", "Models", "Linked"] as const;
 export type BridgeStepState = "pending" | "running" | "done" | "warning" | "failed";
 export interface BridgeStep { index: number; label: string; state: BridgeStepState; message: string | null }
 
-const KEYWORD: Array<[RegExp, number]> = [[/^register/i, 5], [/^heartbeat/i, 6]];
+const KEYWORD: Array<[RegExp, number]> = [[/^tunnel/i, 1], [/^runtime/i, 2], [/^reachable/i, 3], [/^(models|register)/i, 4], [/^(heartbeat|linked)/i, 5]];
 const stepIndex = (step: string): number | null => {
   const n = stepNumber(step);
-  if (n != null) return n >= 1 && n <= 6 ? n : null;
+  if (n != null) {
+    // Preserve six-step reports from earlier Bridge releases without mislabelling their state.
+    if (/^\s*\d+\s*\/\s*6/.test(step)) return ({1:1,2:1,3:2,4:3,5:4,6:5} as Record<number,number>)[n] ?? null;
+    return n >= 1 && n <= 5 ? n : null;
+  }
   return KEYWORD.find(([re]) => re.test(step.trim()))?.[1] ?? null;
 };
 
-/** Maps onboarding events (any order) to the six Bridge steps, using only events from the latest browser link onwards. */
+/** Maps onboarding events (any order) to the five Bridge steps, using only events from the latest browser link onwards. */
 export function bridgeProgress(events: OnboardingEvent[]): { steps: BridgeStep[]; live: boolean; failed: BridgeStep | null } {
   const sorted = [...events].sort((a, b) => a.created_at.localeCompare(b.created_at));
   let start = 0;
@@ -55,5 +57,5 @@ export function bridgeProgress(events: OnboardingEvent[]): { steps: BridgeStep[]
     const state: BridgeStepState = e.status === "done" ? "done" : e.status === "failed" || e.status === "stopped" ? "failed" : e.status === "warning" ? "warning" : i + 1 < maxSeen ? "done" : "running";
     return { index: i + 1, label, state, message: e.message };
   });
-  return { steps, live: steps[4].state === "done", failed: steps.find((s) => s.state === "failed") ?? null };
+  return { steps, live: steps[3].state === "done" || steps[4].state === "done", failed: steps.find((s) => s.state === "failed") ?? null };
 }

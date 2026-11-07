@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Remove NetBird code/UI; transport defaults and guarded legacy history applied (0090 + corrective 0091), providers endpoint, v100 retained because owned; 407 tests pass/1 pre-existing skip, 14 direct function checks pass, 36 functions deployed, security scan completed; frontend publication requested.
+- [ ] Tunnel removal signed-in connection approval/admin readback — blocked: requester has no matching app account; public desktop/mobile and deployed invalid-transport/auth refusal verified.
+
 - [x] Reset exactly three approved cache overrides and audit admin approval/reason; live Qwen pool/dedicated 0.060 and deliberate autoversio 0.006 verified after sync.
 - [ ] dgx-city paid cache 0.035 gateway readback — blocked: garage offline (runtime_ok false), paid routes absent; free mine route remains 0. Approved stored overrides are null and input is 0.14.
 - [x] Buyer first-answer: shared inline terms/default show-once key, Auto sample prefill, key-filled examples, successful account request marker, Swedish/mobile; 40 affected tests pass, build OK, desktop/mobile isolated acceptance/key/prefill/completion checks passed; backend deployed.

@@ -4,17 +4,8 @@ import { corsHeaders, json, getCaller } from "../_shared/garageAuth.ts";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
 import { readGatewayDeployments } from '../_shared/gatewayDeployments.ts';
 import { syncModels } from "../_shared/syncModels.ts";
-import { getNetbirdApiUrl, netbirdHeaders } from "../_shared/netbirdConfig.ts";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-async function nbDelete(url: string): Promise<boolean> {
-  const r = await fetch(url, { method: "DELETE", headers: netbirdHeaders() });
-  await r.text();
-  if (r.ok) return true;
-  if (r.status === 404) return false;
-  throw new Error(`NetBird DELETE failed with status ${r.status}`);
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -28,47 +19,11 @@ Deno.serve(async (req) => {
     const garageId = typeof body.garage_id === "string" ? body.garage_id : "";
     if (!UUID_RE.test(garageId)) return json({ error: "garage_id must be a uuid" }, 400);
 
-    const { data: garage, error } = await admin.from("garages").select("id, name, operator_id, connection_type, netbird_peer_id").eq("id", garageId).maybeSingle();
+    const { data: garage, error } = await admin.from("garages").select("id, name, operator_id, connection_type").eq("id", garageId).maybeSingle();
     if (error) throw error;
     if (!garage) return json({ error: "Garage not found" }, 404);
     if (!caller.isAdmin && garage.operator_id !== caller.userId) return json({ error: "Forbidden" }, 403);
     const name = garage.name as string;
-
-    // 1. NetBird first (mesh only). Every NetBird error is non-fatal: collected and reported.
-    let netbird_peer_deleted = false, netbird_group_deleted = false, netbird_setup_keys_deleted = 0;
-    const netbird_errors: string[] = [];
-    const netbird_left_for_admin: string[] = [];
-    if (garage.connection_type !== "endpoint") {
-      let api: string | null = null;
-      try { api = await getNetbirdApiUrl(admin); } catch (e) { netbird_errors.push(`api url: ${e instanceof Error ? e.message : "unknown"}`); }
-      if (api) {
-        if (garage.netbird_peer_id) {
-          try { netbird_peer_deleted = await nbDelete(`${api}/peers/${encodeURIComponent(garage.netbird_peer_id)}`); }
-          catch (e) { netbird_errors.push(`peer: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`peer ${garage.netbird_peer_id}`); }
-        }
-        try {
-          const gRes = await fetch(`${api}/groups`, { headers: netbirdHeaders() });
-          if (!gRes.ok) { await gRes.text(); throw new Error(`GET /groups failed with status ${gRes.status}`); }
-          const group = ((await gRes.json()) as Array<{ id: string; name: string }>).find((g) => g.name === `garage-${name}`);
-          if (group) {
-            try {
-              const kRes = await fetch(`${api}/setup-keys`, { headers: netbirdHeaders() });
-              if (!kRes.ok) { await kRes.text(); throw new Error(`GET /setup-keys failed with status ${kRes.status}`); }
-              for (const k of (await kRes.json()) as Array<{ id: string; auto_groups?: string[] }>) {
-                if (!(k.auto_groups || []).includes(group.id)) continue;
-                try { if (await nbDelete(`${api}/setup-keys/${encodeURIComponent(k.id)}`)) netbird_setup_keys_deleted++; }
-                catch (e) { netbird_errors.push(`setup key ${k.id}: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`setup key ${k.id}`); }
-              }
-            } catch (e) { netbird_errors.push(`setup keys: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`setup keys of group garage-${name}`); }
-            try { netbird_group_deleted = await nbDelete(`${api}/groups/${encodeURIComponent(group.id)}`); }
-            catch (e) { netbird_errors.push(`group: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`group garage-${name} (${group.id})`); }
-          }
-        } catch (e) { netbird_errors.push(`groups: ${e instanceof Error ? e.message : "unknown"}`); netbird_left_for_admin.push(`group garage-${name} and its setup keys`); }
-      } else {
-        if (garage.netbird_peer_id) netbird_left_for_admin.push(`peer ${garage.netbird_peer_id}`);
-        netbird_left_for_admin.push(`group garage-${name} and its setup keys`);
-      }
-    }
 
     // 2. LiteLLM deployments (same prefix path as disable/pause).
     let litellm_removed = 0;
@@ -88,7 +43,7 @@ Deno.serve(async (req) => {
     }
 
     // Free the Bridge tunnel identity first; the hub drops the peer once the garage leaves gateway-targets.
-    await admin.from("garages").update({ transport: "netbird", tunnel_public_key: null, tunnel_ip: null, tunnel_assigned_at: null }).eq("id", garageId);
+    await admin.from("garages").update({ tunnel_public_key: null, tunnel_ip: null, tunnel_assigned_at: null }).eq("id", garageId);
 
     // 3. Credentials.
     const rows_deleted: Record<string, number> = {};
@@ -108,8 +63,8 @@ Deno.serve(async (req) => {
     try { await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: false }); }
     catch (e) { console.error("[delete-garage] sync failed:", e instanceof Error ? e.message : "unknown"); }
 
-    console.log("[delete-garage] deleted", { garage: name, by_admin: caller.isAdmin, litellm_removed, netbird_errors: netbird_errors.length });
-    return json({ ok: true, garage: name, litellm_removed, netbird_peer_deleted, netbird_group_deleted, netbird_setup_keys_deleted, netbird_errors, netbird_left_for_admin, rows_deleted });
+    console.log("[delete-garage] deleted", { garage: name, by_admin: caller.isAdmin, litellm_removed });
+    return json({ ok: true, garage: name, litellm_removed, rows_deleted });
   } catch (e) {
     console.error("[delete-garage] error:", e instanceof Error ? e.message : "unknown");
     return json({ error: e instanceof Error ? e.message : "Internal error" }, 500);

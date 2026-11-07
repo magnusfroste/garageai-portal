@@ -40,7 +40,7 @@ export const garageHealth = (g: GarageHealthInput, models: GarageModelRow[]): Ga
   const live = healthy ? offeredRows.filter((m) => m.status === "live").length : 0;
   let reason: GarageHealth["reason"] = null;
   if (g.disabled) reason = { text: "The garage has been disabled by the platform." };
-  else if (tunnel === "fail") reason = { text: "Tunnel: NetBird is not connected" };
+  else if (tunnel === "fail") reason = { text: "Tunnel is not connected" };
   else if (runtime === "fail") reason = {
     text: "Runtime: nothing answers on port {port} — start {runtime} (see Troubleshooting)",
     params: { port: g.port ?? "?", runtime: g.runtime ? runtimeLabel(g.runtime) : "the runtime" },

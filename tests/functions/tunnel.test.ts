@@ -20,21 +20,18 @@ test("tunnel-assign: rejects bad keys, accepts a 32-byte base64 key", () => {
   expect(validTunnelKey(42)).toBe(false);
 });
 
-test("register-node for a tunnel garage skips NetBird and uses tunnel_ip", async () => {
-  let called = false;
-  const peer = await resolveGaragePeer({ transport: "tunnel", tunnel_ip: "10.66.0.7" }, async () => { called = true; return { id: "nb", ip: "100.64.0.1" }; });
-  expect(peer).toEqual({ id: null, ip: "10.66.0.7" });
-  expect(called).toBe(false);
-  const nb = await resolveGaragePeer({ transport: "netbird" }, async () => ({ id: "nb", ip: "100.64.0.1" }));
-  expect(nb.id).toBe("nb");
+test("register-node requires an assigned tunnel address", async () => {
+  expect(await resolveGaragePeer({tunnel_ip: "10.66.0.7"})).toEqual({id: null, ip: "10.66.0.7"});
+  await expect(resolveGaragePeer({})).rejects.toThrow("no tunnel address");
 });
 
 test("gateway-targets carries the tunnel fields", () => {
   expect(transportTargetFields({ transport: "tunnel", tunnel_ip: "10.66.0.7", tunnel_public_key: KEY })).toEqual({ transport: "tunnel", tunnel_ip: "10.66.0.7", tunnel_public_key: KEY });
-  expect(transportTargetFields({})).toEqual({ transport: "netbird", tunnel_ip: null, tunnel_public_key: null });
+  expect(transportTargetFields({connection_type: "endpoint", transport: "tunnel"}).transport).toBe("endpoint");
+  expect(transportTargetFields({})).toEqual({ transport: "tunnel", tunnel_ip: null, tunnel_public_key: null });
 });
 
-test("a tunnel garage is never offline because NetBird lacks it", () => {
+test("a tunnel garage is never offline without a peer service", () => {
   expect(tunnelStatus({})).toBe("unknown");
   expect(tunnelStatus({ last_gateway_check_at: new Date().toISOString(), runtime_ok: true, mesh_connected: true })).toBe("healthy");
   expect(tunnelStatus({ last_gateway_check_at: new Date().toISOString(), runtime_ok: true, mesh_connected: false })).toBe("unhealthy");

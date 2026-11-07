@@ -20,8 +20,6 @@ export interface Garage {
   runtime: string | null;
   port: number | null;
   models: string[];
-  mesh_ip: string | null;
-  netbird_peer_id: string | null;
   status: string;
   disabled: boolean;
   last_registered_at: string | null;
@@ -56,9 +54,7 @@ export interface Garage {
 export interface CreateGarageResult {
   garage: { id: string; name: string };
   register_token: string;
-  setup_key: string | null;
   register_url: string;
-  management_url: string;
 }
 
 export interface GarageModelTest {
@@ -135,7 +131,6 @@ export const useGarages = () => {
   const createGarage = async (body: {
     name: string;
     api_host?: string;
-    create_setup_key: boolean;
     terms_accepted?: boolean;
   }): Promise<CreateGarageResult> => {
     const { data, error } = await runWithTermsAcceptance(async () => {

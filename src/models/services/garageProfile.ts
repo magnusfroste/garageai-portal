@@ -6,7 +6,6 @@ export interface ProfileRuntime { port: number | string | null; kind: string | n
 export interface GarageProfile {
   machine: { os: string | null; arch: string | null; memory_gb: number | string | null };
   gpus: { vendor: string | null; name: string | null; memory_mb: number | null; driver: string | null }[];
-  netbird: { installed: boolean | null; connected: boolean | null; mesh_ip: string | null };
   runtimes: ProfileRuntime[];
   firewall: { tool: string | null; active: boolean | null };
   heartbeat: { installed: boolean | null; active: boolean | null };
@@ -25,7 +24,7 @@ const RANK: Record<ProblemSeverity, number> = { error: 0, warning: 1, info: 2 };
 export const parseProfile = (raw: unknown): GarageProfile | null => {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const p = raw as Obj;
-  const m = obj(p.machine), nb = obj(p.netbird), fw = obj(p.firewall), hb = obj(p.heartbeat);
+  const m = obj(p.machine), fw = obj(p.firewall), hb = obj(p.heartbeat);
   const problems = arr(p.problems).map(obj).map((x) => {
     const s = str(x.severity);
     return { severity: (s === "error" || s === "warning" ? s : "info") as ProblemSeverity, code: str(x.code) ?? "", message: str(x.message) ?? "", fix: str(x.fix) };
@@ -33,7 +32,6 @@ export const parseProfile = (raw: unknown): GarageProfile | null => {
   return {
     machine: { os: str(m.os), arch: str(m.arch), memory_gb: (num(m.memory_gb) ?? str(m.memory_gb)) },
     gpus: arr(p.gpus).map(obj).map((g) => ({ vendor: str(g.vendor), name: str(g.name), memory_mb: num(g.memory_mb), driver: str(g.driver) })),
-    netbird: { installed: bool(nb.installed), connected: bool(nb.connected), mesh_ip: str(nb.mesh_ip) },
     runtimes: arr(p.runtimes).map(obj).map((r) => ({
       port: num(r.port) ?? str(r.port), kind: str(r.kind), binds: arr(r.binds).map(str).filter((b): b is string => !!b), network: bool(r.network),
       models: arr(r.models).map(obj).map((x) => ({ id: str(x.id) ?? "", context: num(x.context) })).filter((x) => x.id),
