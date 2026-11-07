@@ -1,9 +1,9 @@
 import { corsHeaders, json, NAME_RE, getCaller } from "../_shared/garageAuth.ts";
-import { getNetbirdApiUrl, netbirdHeaders, findGaragePeer, NetbirdPeer } from "../_shared/netbirdConfig.ts";
+
 
 
 const GARAGE_COLUMNS =
-  "id, name, operator_id, api_host, runtime, port, models, mesh_ip, netbird_peer_id, connection_type, endpoint_url, display_name, status, disabled, last_registered_at, last_heartbeat_at, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, runtime_models, created_at, updated_at";
+  "id, name, operator_id, api_host, runtime, port, models, transport, tunnel_ip, connection_type, endpoint_url, display_name, status, disabled, last_registered_at, last_heartbeat_at, last_gateway_check_at, mesh_connected, runtime_ok, runtime_error, runtime_models, created_at, updated_at";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -23,21 +23,7 @@ Deno.serve(async (req) => {
     if (error) throw error;
     if (!garage || (!isAdmin && garage.operator_id !== userId)) return json({ error: "Garage not found" }, 404);
 
-    let mesh: { connected: boolean | null; peer_found: boolean } = { connected: null, peer_found: false };
-    if (garage.connection_type !== "endpoint") try {
-      const nbUrl = await getNetbirdApiUrl(admin);
-      const res = await fetch(`${nbUrl}/peers`, { headers: netbirdHeaders() });
-      if (res.ok) {
-        const peers = (await res.json()) as NetbirdPeer[];
-        const { peer } = findGaragePeer(peers, garage);
-        mesh = { connected: peer ? peer.connected === true : null, peer_found: !!peer };
-      } else {
-        await res.text();
-        console.warn("[garage-status] NetBird /peers failed", { status: res.status });
-      }
-    } catch (e) {
-      console.warn("[garage-status] NetBird lookup error:", e instanceof Error ? e.message : "unknown");
-    }
+    const tunnel = { connected: garage.connection_type === "endpoint" ? null : garage.mesh_connected };
 
     const { data: tests, error: tErr } = await admin
       .from("garage_model_tests")
@@ -49,7 +35,7 @@ Deno.serve(async (req) => {
     const seen = new Set<string>();
     const latest_tests = (tests || []).filter((t) => (seen.has(t.model) ? false : (seen.add(t.model), true)));
 
-    return json({ garage, mesh, latest_tests });
+    return json({ garage, tunnel, latest_tests });
   } catch (e) {
     console.error("[garage-status] error:", e instanceof Error ? e.message : "unknown");
     return json({ error: "Internal error" }, 500);

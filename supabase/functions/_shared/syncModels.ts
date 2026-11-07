@@ -1,11 +1,9 @@
 // Shared model-catalogue sync: LiteLLM /model/info -> public.curated_models.
-// Garage status comes from NetBird /peers (never probe garage GPUs via LiteLLM).
+// Garage connectivity comes from gateway tunnel health; providers retain endpoint test/health rules.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getProxyBaseUrl } from "./proxyConfig.ts";
-import { getNetbirdApiUrl, netbirdHeaders } from "./netbirdConfig.ts";
-import { isTunnel, tunnelStatus } from "./tunnel.ts";
+import { tunnelStatus } from "./tunnel.ts";
 import { offeredByGarage, pausedModels } from "./garageModels.ts";
-import { updateMeasuredCountries } from "./garageLocation.ts";
 import { AUTO_CATALOG_ID, AUTO_TIER, autoCatalogRow } from "./autoRoute.ts";
 import { isProbeDeployment, isProbeName } from "./probeDeployments.ts";
 import { isPrivateDeployment } from './privateMachines.ts';
@@ -41,8 +39,6 @@ export interface SyncResult {
   health: Record<string, number>;
   /** Per-garage connectivity used for this sync (garages with LiteLLM deployments only). */
   garageConnectivity: Record<string, "healthy" | "unhealthy" | "unknown">;
-  /** False when the NetBird lookup was needed but failed (connectivity unknown, not offline). */
-  netbirdOk: boolean;
 }
 
 async function checkModelHealth(base: string, modelName: string, authHeaders: Record<string, string>, timeoutMs = 8000): Promise<string> {
@@ -97,43 +93,22 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
     const g = m.model_info?.garage;
     if (typeof g === "string" && g) garageNames.add(g);
   }
-  // Status is keyed on the pinned NetBird peer id, never the peer name.
-  let peerConnected: Map<string, boolean> | null = null;
-  const pinnedPeer = new Map<string, string>();
   const heartbeatStatus = new Map<string, "healthy" | "unhealthy">();
   const gatewayGarages = new Set<string>();
   if (garageNames.size > 0) {
-    const { data: gRows } = await admin.from("garages").select("name, netbird_peer_id, last_heartbeat_at, connection_type, last_gateway_check_at, runtime_ok, mesh_connected, transport").in("name", Array.from(garageNames));
-    const staleBefore = Date.now() - 15 * 60 * 1000;
-    for (const g of (gRows || []) as Array<{ name: string; netbird_peer_id: string | null; last_heartbeat_at: string | null; connection_type: string | null; last_gateway_check_at: string | null; runtime_ok: boolean | null; mesh_connected: boolean | null; transport: string | null }>) {
-      // Tunnel garages: connectivity from the gateway (hub handshake) and heartbeats only, never NetBird.
-      if (isTunnel(g)) { const st = tunnelStatus(g); if (st !== "unknown") { if (g.last_gateway_check_at) gatewayGarages.add(g.name); heartbeatStatus.set(g.name, st); } continue; }
-      if (g.last_gateway_check_at) { gatewayGarages.add(g.name); heartbeatStatus.set(g.name, gatewayHealthy(g) ? "healthy" : "unhealthy"); }
-      else if (g.connection_type === "endpoint") heartbeatStatus.set(g.name, "healthy"); // no tunnel; routes follow recent tests
-      else if (g.last_heartbeat_at) heartbeatStatus.set(g.name, Date.parse(g.last_heartbeat_at) < staleBefore ? "unhealthy" : "healthy");
-      else if (g.netbird_peer_id) pinnedPeer.set(g.name, g.netbird_peer_id);
-    }
-  }
-  if (pinnedPeer.size > 0) {
-    try {
-      const nbUrl = await getNetbirdApiUrl(admin);
-      const res = await fetch(`${nbUrl}/peers`, { headers: netbirdHeaders() });
-      if (!res.ok) throw new Error(`NetBird GET /peers status ${res.status}`);
-      const peers = (await res.json()) as Array<{ id?: string; connected?: boolean; groups?: Array<{ name?: string }> }>;
-      const byId = new Map(peers.filter((p) => p.id).map((p) => [p.id!, p]));
-      peerConnected = new Map();
-      for (const [g, pid] of pinnedPeer) {
-        const p = byId.get(pid);
-        const ok = !!p && p.connected === true && (p.groups || []).some((x) => x.name === "garages");
-        peerConnected.set(g, ok);
+    const { data: gRows } = await admin.from("garages").select("name, last_heartbeat_at, connection_type, last_gateway_check_at, runtime_ok, mesh_connected, transport").in("name", Array.from(garageNames));
+    for (const g of (gRows || []) as Array<{ name: string; last_heartbeat_at: string | null; connection_type: string | null; last_gateway_check_at: string | null; runtime_ok: boolean | null; mesh_connected: boolean | null; transport: string | null }>) {
+      // Endpoints must stay on their existing gateway-health / recent-test path, even with old transport metadata.
+      if (g.connection_type === "endpoint") {
+        if (g.last_gateway_check_at) { gatewayGarages.add(g.name); heartbeatStatus.set(g.name, gatewayHealthy(g) ? "healthy" : "unhealthy"); }
+        else heartbeatStatus.set(g.name, "healthy");
+        continue;
       }
-    } catch (e) {
-      console.warn("NetBird peer lookup failed; garage status unknown:", e instanceof Error ? e.message : "error");
-      peerConnected = null;
+      const st = tunnelStatus(g);
+      if (st !== "unknown") { if (g.last_gateway_check_at) gatewayGarages.add(g.name); heartbeatStatus.set(g.name, st); }
     }
   }
-  const garageStatus = (g: string) => heartbeatStatus.get(g)
-    ?? (peerConnected === null || !peerConnected.has(g) ? "unknown" : peerConnected.get(g) ? "healthy" : "unhealthy");
+  const garageStatus = (g: string) => heartbeatStatus.get(g) ?? "unknown";
 
   const { data: disabledRows } = await admin.from("garages").select("name").eq("disabled", true);
   const disabledGarages = new Set(((disabledRows || []) as Array<{ name: string }>).map((g) => g.name));
@@ -299,8 +274,5 @@ export async function syncModels(admin: SupabaseClient, opts: SyncOptions): Prom
   const health = rows.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {} as Record<string, number>);
   const garageConnectivity: SyncResult["garageConnectivity"] = {};
   for (const g of garageNames) garageConnectivity[g] = garageStatus(g);
-  const netbirdOk = pinnedPeer.size === 0 || peerConnected !== null;
-  try { await updateMeasuredCountries(admin); }
-  catch (e) { console.warn("[location] country update failed:", e instanceof Error ? e.message : "error"); }
-  return { synced: rows.length, deleted, health, garageConnectivity, netbirdOk };
+  return { synced: rows.length, deleted, health, garageConnectivity };
 }

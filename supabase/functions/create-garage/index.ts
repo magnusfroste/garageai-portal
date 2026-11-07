@@ -65,17 +65,15 @@ Deno.serve(async (req) => {
     }
     const issued = await issueGarageCredentials(admin, {
       userId: user.id, isAdmin, name, apiHost, adminPanel, operatorId,
-      setupKeyRequested: body.create_setup_key, acceptTerms: true,
+      acceptTerms: true,
     });
 
-    console.log("[create-garage] garage ready", { garage: name, reused: issued.reused, setup_key_created: !!issued.setup_key });
+    console.log("[create-garage] garage ready", { garage: name, reused: issued.reused });
 
     return json({
       garage: issued.garage,
       register_token: issued.register_token,
-      setup_key: issued.setup_key,
       register_url: issued.register_url,
-      management_url: issued.management_url,
     });
   } catch (e) {
     if (e instanceof CredentialError) return json({ error: e.message }, e.status);
