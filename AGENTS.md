@@ -47,3 +47,4 @@
 
 - Garages use only Bridge tunnel transport; providers use endpoint transport, with endpoint health evaluated before tunnel rules so provider behavior stays unchanged.
 - Shared gateway settings/user helpers accept structural query interfaces across SDK versions; payment callers share the current npm SDK to avoid nominal class mismatches without downgrading payments.
+- Bridge release error recovery belongs in the atomic `record_bridge_run` upsert; retain first-seen timestamps and error history so transient failures do not reset promotion age.
