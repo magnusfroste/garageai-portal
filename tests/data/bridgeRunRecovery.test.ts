@@ -31,7 +31,7 @@ const setting = { stable: "v1.4.3", mode: "auto" as const, auto_after_hours: 24 
 
 beforeAll(async () => {
   command(["initdb", "-D", join(directory, "data"), "-U", "bridge_test", "-A", "trust", "--no-locale"]);
-  command(["pg_ctl", "-D", join(directory, "data"), "-l", join(directory, "server.log"), "-o", `-k ${directory} -h ''`, "-w", "start"]);
+  command(["pg_ctl", "-D", join(directory, "data"), "-l", join(directory, "server.log"), "-o", `-k ${directory} -h '' -p 5432`, "-w", "start"]);
   started = true;
   // Disposable PostgreSQL only: no production connection or application fixtures.
   await sql.unsafe(`
