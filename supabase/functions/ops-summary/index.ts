@@ -8,6 +8,7 @@ import { median } from "../_shared/bridgeLink.ts";
 import { autoDeploymentId, parseAutoSettings } from "../_shared/autoRoute.ts";
 
 import { bridgeVersionsSummary } from "../_shared/bridgeVersions.ts";
+import { isLiveStep } from "../_shared/onboardingLive.ts";
 
 const H = 3600_000;
 const BUDGET_MS = 1500;
@@ -88,8 +89,6 @@ async function onboarding(admin: SupabaseClient) {
   return { count: list.length, garages: list.map((g) => ({ garage: g.name, created_at: g.created_at, last_step: latest.get(g.id)?.step ?? null, last_status: latest.get(g.id)?.status ?? null })) };
 }
 
-/** Live once the register step is done: "register", or any counted "N/M  Register with GarageAI" label. */
-export const isLiveStep = (step: string) => step === "register" || /^\d+\/\d+\s+Register with GarageAI$/.test(step.trim());
 async function onboardingFunnel(admin: SupabaseClient) {
   const since = new Date(Date.now() - 30 * 24 * H).toISOString();
   const [{ data: links }, { data: events }, { data: garages }] = await Promise.all([
