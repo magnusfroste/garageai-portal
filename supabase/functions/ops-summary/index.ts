@@ -8,6 +8,7 @@ import { median } from "../_shared/bridgeLink.ts";
 import { autoDeploymentId, parseAutoSettings } from "../_shared/autoRoute.ts";
 
 import { bridgeVersionsSummary } from "../_shared/bridgeVersions.ts";
+import { isLiveStep } from "../_shared/onboardingLive.ts";
 
 const H = 3600_000;
 const BUDGET_MS = 1500;
@@ -88,7 +89,6 @@ async function onboarding(admin: SupabaseClient) {
   return { count: list.length, garages: list.map((g) => ({ garage: g.name, created_at: g.created_at, last_step: latest.get(g.id)?.step ?? null, last_status: latest.get(g.id)?.status ?? null })) };
 }
 
-const LIVE_STEPS = new Set(["5/6  Register with GarageAI", "register"]);
 async function onboardingFunnel(admin: SupabaseClient) {
   const since = new Date(Date.now() - 30 * 24 * H).toISOString();
   const [{ data: links }, { data: events }, { data: garages }] = await Promise.all([
@@ -117,7 +117,7 @@ async function onboardingFunnel(admin: SupabaseClient) {
     let s = by.get(e.garage_id);
     if (!s) { s = { garage: names.get(e.garage_id) ?? e.garage_id, first_event_at: e.created_at, live_at: null, minutes_to_live: null, events: 0, failed_steps: [], problems: [], tool: null, bridge_version: null, entry: null, _f: new Set(), _p: new Set() }; by.set(e.garage_id, s); }
     s.events++;
-    if (!s.live_at && e.status === "done" && LIVE_STEPS.has(e.step)) { s.live_at = e.created_at; s.minutes_to_live = Math.round(secs(s.first_event_at, e.created_at) / 6) / 10; }
+    if (!s.live_at && e.status === "done" && isLiveStep(e.step)) { s.live_at = e.created_at; s.minutes_to_live = Math.round(secs(s.first_event_at, e.created_at) / 6) / 10; }
     if (e.status === "failed") s._f.add(e.step);
     const p = e.profile && typeof e.profile === "object" && !Array.isArray(e.profile) ? e.profile : null;
     if (p) {

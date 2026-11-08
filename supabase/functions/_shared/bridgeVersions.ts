@@ -9,8 +9,8 @@ export const bridgeVersionsSummary = (setting: unknown, garages: Array<{ name: s
   const s = setting && typeof setting === "object" ? setting as Record<string, unknown> : {};
   const u = update && typeof update === "object" ? update as Record<string, unknown> : {};
   const pinned = bridgeVersion(s.pinned), stable = bridgeVersion(u.stable), mode = u.mode === "manual" ? "manual" : "auto";
-  // Outdated = behind what garages should run: stable, else pin, else latest release.
-  const latest = pinned ?? bridgeVersion(s.version), target = stable ?? latest;
+  // latest is always the newest release; outdated = behind what garages should run: stable, else pin, else latest.
+  const latest = bridgeVersion(s.version), target = stable ?? pinned ?? latest;
   return { latest, pinned, stable, mode, garages: garages.map((g) => {
     const version = bridgeVersion(g.agent?.version);
     const auto = typeof g.agent?.update?.auto === "boolean" ? g.agent.update.auto : null;
