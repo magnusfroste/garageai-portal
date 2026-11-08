@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Backend-only Bridge auto-promotion recovery: clear recovered garage errors, backfill release runs without changing first-seen/history, execute SQL regression cases and full suite, apply and report backend migration.
+- [x] Backend-only Bridge auto-promotion recovery: migration 0092 applied live; v1.5.0 errors 1→0 with first-seen/history preserved; four isolated PostgreSQL regression tests and full suite pass (411 pass, 1 existing skip, 0 fail); pickStable/frontend/other functions/dependencies unchanged.
 
 - [x] Remove NetBird code/UI; transport defaults and guarded legacy history applied (0090 + corrective 0091), providers endpoint, v100 retained because owned; 407 tests pass/1 pre-existing skip, 14 direct function checks pass, 36 functions deployed, security scan completed; frontend publication requested.
 - [ ] Tunnel removal signed-in connection approval/admin readback — blocked: requester has no matching app account; public desktop/mobile and deployed invalid-transport/auth refusal verified.
