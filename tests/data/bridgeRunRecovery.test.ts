@@ -13,9 +13,14 @@ const migrationPath = process.env.BRIDGE_RUN_MIGRATION_FILE ?? (migrationName ? 
 const migration = readFileSync(migrationPath, "utf8");
 const directory = mkdtempSync(join(tmpdir(), "bridge-run-test-"));
 const asRoot = process.getuid?.() === 0;
-if (asRoot) chownSync(directory, 65534, 65534);
+const nonRoot = readFileSync("/etc/passwd", "utf8").split("\n").map(line => line.split(":"))
+  .find(fields => Number(fields[2]) > 0 && Number(fields[2]) < 65534);
+if (asRoot && !nonRoot) throw new Error("A non-root account is required for disposable PostgreSQL");
+const uid = Number(nonRoot?.[2]);
+const gid = Number(nonRoot?.[3]);
+if (asRoot) chownSync(directory, uid, gid);
 const command = (args: string[]) => {
-  const result = Bun.spawnSync(asRoot ? ["setpriv", "--reuid=65534", "--regid=65534", "--clear-groups", ...args] : args);
+  const result = Bun.spawnSync(asRoot ? ["setpriv", `--reuid=${uid}`, `--regid=${gid}`, "--clear-groups", ...args] : args);
   if (result.exitCode !== 0) throw new Error(result.stderr.toString() || result.stdout.toString());
 };
 const sql = postgres({ host: directory, port: 5432, user: "bridge_test", database: "postgres", max: 1 });
