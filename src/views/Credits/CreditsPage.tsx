@@ -130,7 +130,7 @@ export const CreditsPage = () => {
               <Wallet className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight">
-              {creditsText(budgetLoading ? "—" : remaining.toFixed(2))}
+              {budgetLoading ? "—" : creditsText(remaining.toFixed(2))}
             </p>
           </CardContent>
         </Card>
@@ -142,7 +142,7 @@ export const CreditsPage = () => {
               <TrendingUp className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight">
-              {creditsText(budgetLoading ? "—" : spent.toFixed(4))}
+              {budgetLoading ? "—" : creditsText(spent.toFixed(4))}
             </p>
           </CardContent>
         </Card>
@@ -154,7 +154,7 @@ export const CreditsPage = () => {
               <TrendingDown className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight text-primary">
-              {creditsText(budgetLoading ? "—" : maxBudget.toFixed(2))}
+              {budgetLoading ? "—" : creditsText(maxBudget.toFixed(2))}
             </p>
           </CardContent>
         </Card>
@@ -234,7 +234,7 @@ export const CreditsPage = () => {
                         {new Date(tx.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right text-sm font-medium">
-                        {creditsText(tx.amount_usd.toFixed(2))}
+                        ${tx.amount_usd.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right text-sm">
                         +{creditsText(tx.credits_added.toFixed(2))}
