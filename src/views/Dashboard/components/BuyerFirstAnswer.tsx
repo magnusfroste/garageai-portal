@@ -24,7 +24,7 @@ export const BuyerFirstAnswer = ({ complete = false }: { complete?: boolean }) =
     <div className="flex flex-wrap gap-5 text-sm text-primary"><Link to="/models">{t("Models")}</Link><Link to="/dashboard/keys">{t("API keys")}</Link><Link to="/dashboard/api">{t("Documentation")}</Link></div>
   </section>;
   return <section className="w-full max-w-xl space-y-5 min-w-0">
-    <div className="space-y-1"><h1 className="text-2xl font-semibold">{t("Your first answer")}</h1><p className="text-sm text-muted-foreground">{t("Start with a short conversation.")}</p></div>
+    <div className="space-y-1"><h1 className="text-2xl font-semibold">{t("Use GarageAI from code")}</h1></div>
     {!hasCurrentAccountTerms(profile) && <ReadAndAcceptButton />}
     {defaultKey.busy && <p role="status" className="text-sm text-muted-foreground">{t("Creating your API key…")}</p>}
     {defaultKey.error && <div role="alert" className="text-sm text-destructive">{t("Could not create your key. Please try again.")} <Button variant="link" onClick={defaultKey.retry}>{t("Try again")}</Button></div>}

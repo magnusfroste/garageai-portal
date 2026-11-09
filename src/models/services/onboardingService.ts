@@ -3,6 +3,7 @@ import { profileService } from "@/models/services/profileService";
 import { isSignupIntent, type SignupIntent } from "@/models/types/onboarding.types";
 import { firstLoginContinuation } from "./signupDestination";
 import { profileRepository } from "@/data/repositories/profileRepository";
+import { firstChatService } from "./firstChatService";
 
 const STORAGE_KEY = "garageai_signup_intent";
 
@@ -25,6 +26,7 @@ class OnboardingService {
     if (!profile) throw new Error("Account profile is not available yet");
     const continuation = firstLoginContinuation(profile, user.user_metadata, requested, intent);
     if (continuation.completeOnboarding) {
+      if (continuation.intent === "buyer" && continuation.destination.startsWith("/dashboard/chat")) await firstChatService.arm();
       await profileRepository.updateOnboarding(user.id, { signup_intent: continuation.intent, onboarding_done: true });
     }
     this.clearStoredIntent();

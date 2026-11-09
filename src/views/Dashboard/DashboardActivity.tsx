@@ -1,5 +1,6 @@
 import { creditsText } from "@/models/services/credits";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { FIRST_CHAT_PATH } from "@/models/services/firstChatService";
 import { Shield } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useDashboardData } from "./hooks/useDashboardData";
@@ -43,7 +44,7 @@ export const DashboardActivity = () => {
   const used = usedThisWeek(dailyBreakdown);
   const series = boughtEarnedSeries(dailyBreakdown, earn.dailyEarned);
 
-  if (buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data)) return <div className="p-4 sm:p-6"><BuyerFirstAnswer /></div>;
+  if (buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data)) return <Navigate to={FIRST_CHAT_PATH} replace />;
   if (profile?.signup_intent === "buyer" && firstRequest.isPending) return <p className="p-6 text-sm text-muted-foreground">{t("Loading dashboard...")}</p>;
   if (profile?.signup_intent === "buyer" && firstRequest.isError) return <div className="p-6 text-sm">{t("Could not check your first request.")} <Link to="/dashboard/chat" className="text-primary underline">{t("Chat")}</Link></div>;
 

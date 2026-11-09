@@ -111,7 +111,7 @@ export const KeysPage = () => {
     );
   }
 
-  if (!params.has("manage") && buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data)) return <div className="p-4 sm:p-6"><BuyerFirstAnswer /></div>;
+  if (!params.has("manage") && (params.has("setup") || buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data))) return <div className="p-4 sm:p-6"><BuyerFirstAnswer /></div>;
 
   return (
     <div className="p-6 space-y-8">

@@ -50,7 +50,7 @@ const SignedInLayout = () => {
   const defaultKey = useDefaultKey(profile);
   const location = useLocation();
   const firstRequest = useBuyerFirstRequest(profile?.signup_intent === "buyer");
-  const inlineKey = profile?.signup_intent === "buyer" && !firstRequest.data && (location.pathname === "/dashboard" || (location.pathname === "/dashboard/keys" && !location.search.includes("manage=1")));
+  const inlineKey = location.pathname === "/dashboard/chat" || (location.pathname === "/dashboard/keys" && new URLSearchParams(location.search).has("setup")) || (profile?.signup_intent === "buyer" && !firstRequest.data && (location.pathname === "/dashboard" || (location.pathname === "/dashboard/keys" && !location.search.includes("manage=1"))));
   useLanguagePreference(profile?.preferred_language);
 
   useEffect(() => {
