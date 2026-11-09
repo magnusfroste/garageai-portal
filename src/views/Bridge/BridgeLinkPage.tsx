@@ -16,6 +16,7 @@ import { useBridgeLink } from "./hooks/useBridgeLink";
 import { BridgeLiveProgress } from "./components/BridgeLiveProgress";
 import { t } from "@/i18n";
 import { garageLimitMessage, limitMessage } from "@/models/services/credentialErrors";
+import { garageRepository } from "@/data/repositories/garageRepository";
 
 import { useProfile } from "@/hooks/useProfile";
 import { ACCOUNT_TERMS_REQUIRED, hasCurrentAccountTerms } from "@/models/services/accountTermsService";
@@ -47,6 +48,9 @@ const BridgeLinkPage = () => {
   const { garages } = useMyGarages();
   const meshGarages = useMemo(() => garages.filter((g) => g.connection_type !== "endpoint"), [garages]);
   const [choice, setChoice] = useState<string>("new");
+  const [visibility, setVisibility] = useState<"market" | "private" | null>(null);
+  const [savingAccess, setSavingAccess] = useState(false);
+  const [accessError, setAccessError] = useState(false);
   const [newName, setNewName] = useState("");
   const [terms, setTerms] = useState(false);
   const [replace, setReplace] = useState(false);
@@ -55,7 +59,7 @@ const BridgeLinkPage = () => {
   const link = lookup.data;
 
   useEffect(() => { if (link?.suggested_name) setNewName(link.suggested_name); }, [link?.suggested_name]);
-  useEffect(() => setReplace(false), [choice]);
+  useEffect(() => { setReplace(false); setVisibility(choice === "new" ? null : meshGarages.find(g => g.id === choice)?.visibility ?? "market"); }, [choice]);
 
   if (loading) return null;
   if (!session) return <Navigate to={`/auth?intent=operator&next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
@@ -65,11 +69,19 @@ const BridgeLinkPage = () => {
   const name = chosen ? chosen.name : newName.trim().toLowerCase();
   const limitBlocksNew = !chosen && link?.garage_limit_reached === true;
   const needsTerms = !chosen || !chosen.terms_accepted_at;
-  const canApprove = hasCurrentAccountTerms(profile) && !!link && !limitBlocksNew && GARAGE_NAME_RE.test(name) && (!needsTerms || terms) && (!conflict || replace) && !approve.isPending;
+  const canApprove = hasCurrentAccountTerms(profile) && !!link && !!visibility && !savingAccess && !limitBlocksNew && GARAGE_NAME_RE.test(name) && (!needsTerms || terms) && (!conflict || replace) && !approve.isPending;
   const mins = link ? Math.max(0, Math.round((Date.now() - new Date(link.created_at).getTime()) / 60000)) : 0;
 
   const submitCode = (e: React.FormEvent) => { e.preventDefault(); setParams({ code: normaliseUserCode(input) }); };
-  const onApprove = () => approve.mutate({ userCode: code, garageName: name, termsAccepted: needsTerms ? terms : false, replaceMachine: replace }, { onSuccess: (r) => { setGarageId(r.garage.id); setDone("approved"); } });
+  const onApprove = async () => {
+    if (!visibility || savingAccess) return;
+    setSavingAccess(true); setAccessError(false);
+    try {
+      if (chosen && visibility !== (chosen.visibility ?? "market")) await garageRepository.setVisibility(chosen.id, visibility);
+      await approve.mutateAsync({ userCode: code, garageName: name, termsAccepted: needsTerms ? terms : false, replaceMachine: replace, visibility }).then(r => { setGarageId(r.garage.id); setDone("approved"); });
+    } catch { setAccessError(true); }
+    finally { setSavingAccess(false); }
+  };
   const onDeny = () => deny.mutate(undefined, { onSuccess: () => setDone("denied") });
 
   return (
@@ -133,6 +145,12 @@ const BridgeLinkPage = () => {
                     </div>
                   )}
                   {limitBlocksNew && <p className="flex items-start gap-2 rounded border border-warning-border bg-warning-surface p-3 text-sm"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-foreground" />{garageLimitMessage()}</p>}
+                  <div className="space-y-3">
+                    <h2 className="text-sm font-medium">{t("Who can use this machine")}</h2>
+                    <RadioGroup value={visibility ?? ""} onValueChange={value => { if (value === "private" || value === "market") setVisibility(value); }} disabled={savingAccess || approve.isPending}>
+                      {(["private", "market"] as const).map(value => <div key={value} className="flex items-start gap-3"><RadioGroupItem id={`access-${value}`} value={value} className="mt-0.5" /><div><Label htmlFor={`access-${value}`}>{t(value === "private" ? "Only me" : "Me and the market")}</Label><p className="mt-1 text-xs text-muted-foreground">{t(value === "private" ? "Only you can use it. Your machine is hidden from buyers." : "Use it free yourself, and offer models to buyers.")}</p></div></div>)}
+                    </RadioGroup>
+                  </div>
                   {needsTerms && <TermsCheckbox id="link-terms" checked={terms} onChange={setTerms} />}
                   <LegalLinks />
                   {conflict && (
@@ -146,10 +164,11 @@ const BridgeLinkPage = () => {
 
               <div className="space-y-3">
                 {!hasCurrentAccountTerms(profile) && <div className="flex flex-wrap items-center gap-3"><p className="text-sm text-destructive">{t(ACCOUNT_TERMS_REQUIRED)}</p><ReadAndAcceptButton onAccepted={() => { if (link && !limitBlocksNew && GARAGE_NAME_RE.test(name) && (!needsTerms || terms) && (!conflict || replace)) onApprove(); }} /></div>}
-                <p className="text-sm">{t("Only approve if you started this on your own machine just now. Approving lets that machine sell inference as your garage.")}</p>
+                <p className="text-sm">{t("Only approve if you started this on your own machine just now.")}</p>
+                {accessError && !approve.isError && <p role="alert" className="text-sm text-destructive">{t("Could not update machine access. Please try again.")}</p>}
                 {(approve.isError || deny.isError) && <p className="text-sm text-danger-foreground">{errorText(approve.error ?? deny.error)}</p>}
                 <div className="flex gap-2">
-                  <Button onClick={onApprove} disabled={!canApprove}>{approve.isPending ? t("Approving…") : t("Approve")}</Button>
+                  <Button onClick={() => { void onApprove(); }} disabled={!canApprove}>{approve.isPending || savingAccess ? t("Approving…") : t("Approve")}</Button>
                   <Button variant="outline" onClick={onDeny} disabled={deny.isPending}>{t("Deny")}</Button>
                 </div>
               </div>
