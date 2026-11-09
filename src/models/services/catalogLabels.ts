@@ -23,8 +23,8 @@ export const catalogLabels = (models: CatalogModel[]): Map<string, CatalogLabel>
   return out;
 };
 
-/** "$0.15 per M tokens in · $0.60 out" */
+/** "0.15 in · 0.60 out credits per 1M tokens" */
 export const priceLine = (input: number | null | undefined, output: number | null | undefined) => {
-  const f = (v: number | null | undefined) => (v == null ? "—" : `$${Number(v).toFixed(2)}`);
+  const f = (v: number | null | undefined) => (v == null ? "—" : Number(v).toFixed(2));
   return { input: f(input), output: f(output) };
 };

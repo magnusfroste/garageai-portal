@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DollarSign, TrendingUp, Wallet, RefreshCw, AlertTriangle, XCircle, Flame, ArrowRight } from "lucide-react";
@@ -39,9 +40,9 @@ export const UserBudgetCard = ({ budget, loading, onRefresh }: UserBudgetCardPro
     : 0;
 
   const budgetWarning = usagePercent >= 100
-    ? { level: "critical" as const, icon: XCircle, title: "Budget exhausted", description: `You've used 100% of your $${budget.max_budget.toFixed(2)} budget. Purchase more credits to continue using the API.`, className: "border-destructive/60 bg-destructive/10 text-destructive" }
+    ? { level: "critical" as const, icon: XCircle, title: "Budget exhausted", description: `You've used 100% of your ${creditsText(budget.max_budget.toFixed(2))} budget. Purchase more credits to continue using the API.`, className: "border-destructive/60 bg-destructive/10 text-destructive" }
     : usagePercent >= 90
-    ? { level: "danger" as const, icon: Flame, title: "Budget almost depleted", description: `You've used ${usagePercent.toFixed(1)}% of your budget. Only $${budget.budget_remaining.toFixed(2)} remaining.`, className: "border-orange-500/60 bg-orange-500/10 text-orange-400" }
+    ? { level: "danger" as const, icon: Flame, title: "Budget almost depleted", description: `You've used ${usagePercent.toFixed(1)}% of your budget. Only ${creditsText(budget.budget_remaining.toFixed(2))} remaining.`, className: "border-orange-500/60 bg-orange-500/10 text-orange-400" }
     : usagePercent >= 80
     ? { level: "warning" as const, icon: AlertTriangle, title: "Approaching budget limit", description: `You've used ${usagePercent.toFixed(1)}% of your budget. Consider purchasing additional credits soon.`, className: "border-yellow-500/60 bg-yellow-500/10 text-yellow-400" }
     : null;
@@ -83,7 +84,7 @@ export const UserBudgetCard = ({ budget, loading, onRefresh }: UserBudgetCardPro
             <Wallet className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${budget.max_budget.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{creditsText(budget.max_budget.toFixed(2))}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Trial + purchased credits
             </p>
@@ -96,7 +97,7 @@ export const UserBudgetCard = ({ budget, loading, onRefresh }: UserBudgetCardPro
             <TrendingUp className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${budget.spend.toFixed(4)}</div>
+            <div className="text-3xl font-bold">{creditsText(budget.spend.toFixed(4))}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Across all API keys
             </p>
@@ -110,7 +111,7 @@ export const UserBudgetCard = ({ budget, loading, onRefresh }: UserBudgetCardPro
           </CardHeader>
           <CardContent>
             <div className={`text-3xl font-bold ${usagePercent >= 90 ? "text-destructive" : "text-accent"}`}>
-              ${budget.budget_remaining.toFixed(2)}
+              {creditsText(budget.budget_remaining.toFixed(2))}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Available to spend

@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -84,7 +85,7 @@ export const MonthlyUsageChart = ({ logs }: MonthlyUsageChartProps) => {
           </p>
           {payload[0]?.payload?.requests > 0 && (
             <p className="text-xs text-muted-foreground">
-              {payload[0].payload.requests} requests · ${payload[0].payload.cost.toFixed(4)}
+              {payload[0].payload.requests} requests · {creditsText(payload[0].payload.cost.toFixed(4))}
             </p>
           )}
         </div>

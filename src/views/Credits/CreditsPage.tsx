@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { runWithTermsAcceptance, TermsNotAcceptedError } from "@/models/services/termsGate";
 import { checkoutFailedMessage } from "@/models/services/credentialErrors";
 import { t } from "@/i18n";
@@ -129,7 +130,7 @@ export const CreditsPage = () => {
               <Wallet className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight">
-              ${budgetLoading ? "—" : remaining.toFixed(2)}
+              {budgetLoading ? "—" : creditsText(remaining.toFixed(2))}
             </p>
           </CardContent>
         </Card>
@@ -141,7 +142,7 @@ export const CreditsPage = () => {
               <TrendingUp className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight">
-              ${budgetLoading ? "—" : spent.toFixed(4)}
+              {budgetLoading ? "—" : creditsText(spent.toFixed(4))}
             </p>
           </CardContent>
         </Card>
@@ -153,7 +154,7 @@ export const CreditsPage = () => {
               <TrendingDown className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight text-primary">
-              ${budgetLoading ? "—" : maxBudget.toFixed(2)}
+              {budgetLoading ? "—" : creditsText(maxBudget.toFixed(2))}
             </p>
           </CardContent>
         </Card>
@@ -163,7 +164,7 @@ export const CreditsPage = () => {
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{t("{n}% used", { n: usagePercent.toFixed(1) })}</span>
-            <span>${spent.toFixed(4)} / ${maxBudget.toFixed(2)}</span>
+            <span>{creditsText(spent.toFixed(4))} / {creditsText(maxBudget.toFixed(2))}</span>
           </div>
           <Progress value={usagePercent} className="h-2" />
         </div>
@@ -204,7 +205,7 @@ export const CreditsPage = () => {
         </CardContent>
       </Card>
 
-      <div className="space-y-2 text-xs text-muted-foreground"><p>{t("Prices in USD, VAT handled per your country at checkout")}</p><p>{t("Stripe sends your receipt by email after checkout. Check your inbox for the receipt link.")}</p></div>
+      <div className="space-y-2 text-xs text-muted-foreground"><p>{t("1 credit = 1 USD of usage today. Top up by card; VAT is handled at checkout.")}</p><p>{t("Prices in USD, VAT handled per your country at checkout")}</p><p>{t("Stripe sends your receipt by email after checkout. Check your inbox for the receipt link.")}</p></div>
       {/* Transaction History */}
       <Card className="glass-card">
         <CardHeader>
@@ -236,7 +237,7 @@ export const CreditsPage = () => {
                         ${tx.amount_usd.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right text-sm">
-                        +${tx.credits_added.toFixed(2)}
+                        +{creditsText(tx.credits_added.toFixed(2))}
                       </TableCell>
                     </TableRow>
                   ))}

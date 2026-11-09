@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import {useState} from 'react';
 import {lifecycleLine} from '@/models/services/agentLifecycle';
 import {Link,useSearchParams} from 'react-router-dom';
@@ -46,7 +47,7 @@ function GaragePage({garage:g,onDone}:{garage:GarageRow;onDone:()=>void}){
  const stats=overview.data;
  const status=myGarageStatus(g,models);
  const memory=g.agent?.machine?.mem_total_mb!=null?g.agent.machine.mem_total_mb/1000:managed.machines.get(g.id)?.memoryGb??null;
- const money=(n:number|undefined)=>n==null?'—':new Intl.NumberFormat(undefined,{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+ const money=(n:number|undefined)=>n==null?'—':creditsText(n.toFixed(2));
  const [noticeCount,setNoticeCount]=useState(1);
  const life=lifecycleLine(g.agent_state);
  return <>

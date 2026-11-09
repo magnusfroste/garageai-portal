@@ -1,7 +1,7 @@
 import type { Garage } from "../../hooks/useGarages";
 import { t } from "@/i18n";
 
-const price = (value?: number) => `$${Number(value ?? 0).toFixed(2)}`;
+const price = (value?: number) => Number(value ?? 0).toFixed(2);
 
 export const GaragePriceCell = ({ garage }: { garage: Garage }) => (
   <div className="space-y-1 text-xs tabular-nums">

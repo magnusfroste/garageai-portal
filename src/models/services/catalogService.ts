@@ -188,7 +188,7 @@ export const formatContext = (n: number | null) => {
   return `${Math.round(n / 1000)}k`;
 };
 
-export const formatPrice = (v: number | null | undefined) => (v == null ? "—" : `$${v}`);
+export const formatPrice = (v: number | null | undefined) => (v == null ? "—" : String(v));
 
 export const priceRange = (min: number | null, max: number | null) =>
   min == null ? "—" : min === max || max == null ? formatPrice(min) : `${formatPrice(min)}–${formatPrice(max)}`;

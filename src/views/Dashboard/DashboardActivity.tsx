@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { Link } from "react-router-dom";
 import { Shield } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
@@ -13,7 +14,7 @@ import { useBuyerFirstRequest } from "@/hooks/useBuyerFirstRequest";
 import { buyerNeedsFirstAnswer } from "@/models/services/buyerFirstAnswer";
 import { BuyerFirstAnswer } from "./components/BuyerFirstAnswer";
 
-const money = (v: number) => `$${v.toFixed(v > 0 && v < 1 ? 3 : 2)}`;
+const money = (v: number) => `${creditsText(v.toFixed(v > 0 && v < 1 ? 3 : 2))}`;
 
 const Big = ({ label, value, to, link }: { label: string; value: string; to: string; link: string }) => (
   <div className="border-b border-border pb-4">

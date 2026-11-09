@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { useEffect, useState } from "react";
 import { garageRepository, type GarageModelRow, type ProviderPrices } from "@/data/repositories/garageRepository";
 import { Button } from "@/components/ui/button";
@@ -76,11 +77,11 @@ export const EditGaragePrices = ({ garage, models = [], onSaved, open: controlle
 
   const id = (s: string) => `${garage.name}-${s}`;
   return <>{!hideTrigger && <Button size="sm" variant="outline" onClick={() => setOpen(true)}>{t("Edit prices")}</Button>}
-    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{t("Edit prices")} · {garage.name}</DialogTitle><DialogDescription>{t("USD per 1M tokens. New prices apply to future requests; statements retain recorded spend.")}</DialogDescription></DialogHeader>
+    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{t("Edit prices")} · {garage.name}</DialogTitle><DialogDescription>{t("Credits per 1M tokens. New prices apply to future requests; statements retain recorded spend.")}</DialogDescription></DialogHeader>
       <form className="space-y-5" onSubmit={submit}>
         {suggestion && modelId && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/50 bg-muted/20 p-2 text-xs">
-            <span><span className="font-medium">{t(PRICE_SOURCE_LABEL[suggestion.source])}</span> · <span className="font-mono">{modelId}</span> · ${fmt(suggestion.input)} / ${fmt(suggestion.output)}</span>
+            <span><span className="font-medium">{t(PRICE_SOURCE_LABEL[suggestion.source])}</span> · <span className="font-mono">{modelId}</span> · {creditsText(fmt(suggestion.input))} / {creditsText(fmt(suggestion.output))}</span>
             <Button type="button" size="sm" variant="outline" className="h-7" onClick={applySuggestion}>{t("Use this price")}</Button>
           </div>
         )}
@@ -92,7 +93,7 @@ export const EditGaragePrices = ({ garage, models = [], onSaved, open: controlle
               <div className="space-y-1"><Label htmlFor={id(`${key}-cache`)} className="text-xs">{t("Cache read")}</Label><Input id={id(`${key}-cache`)} type="number" min="0" max={rows[key].input || undefined} step="any" placeholder={fmt(defaultCacheRead(input(key)))} value={rows[key].cache} onChange={(e) => setRow(key, "cache", e.target.value)} /></div>
               <div className="space-y-1"><Label htmlFor={id(`${key}-out`)} className="text-xs">{t("Output")}</Label><Input id={id(`${key}-out`)} type="number" min="0" max="10000" step="any" required value={rows[key].output} onChange={(e) => setRow(key, "output", e.target.value)} /></div>
             </div>
-            <p className="text-xs text-muted-foreground">{t("Leave cache read empty for the default: 25 % of input ({v}).", { v: `$${fmt(defaultCacheRead(input(key)))}` })}</p>
+            <p className="text-xs text-muted-foreground">{t("Leave cache read empty for the default: 25 % of input ({v}).", { v: `${creditsText(fmt(defaultCacheRead(input(key))))}` })}</p>
           </fieldset>
         ))}
         {modelRows.length > 0 && (

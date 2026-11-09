@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
@@ -70,7 +71,7 @@ export const LogsPage = () => {
           {(["today", "week"] as const).map((k) => (
             <div key={k} className="border-b border-border pb-3">
               <p className="text-sm text-muted-foreground">{t(k === "today" ? "Today" : "This week")}</p>
-              <p className="text-2xl font-bold tabular-nums">${summary[k].cost.toFixed(summary[k].cost > 0 && summary[k].cost < 1 ? 4 : 2)}</p>
+              <p className="text-2xl font-bold tabular-nums">{creditsText(summary[k].cost.toFixed(summary[k].cost > 0 && summary[k].cost < 1 ? 4 : 2))}</p>
               <p className="text-xs text-muted-foreground tabular-nums">{t("{r} requests · {tk} tokens", { r: summary[k].requests.toLocaleString(), tk: fmtTok(summary[k].tokens) })}</p>
             </div>
           ))}

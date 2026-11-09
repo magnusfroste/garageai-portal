@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import type { PoolSummary } from "@/models/services/poolPricing";
 import { t } from "@/i18n";
 
-const usd = (n: number) => `$${Number(n.toFixed(4))}`;
+const usd = (n: number) => String(Number(n.toFixed(4)));
 const ctx = (n?: number | null) => (!n ? "—" : n >= 1000 ? `${Math.round(n / 1000)}K` : String(n));
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 
@@ -12,7 +12,7 @@ export const PoolPricing = ({ pool }: { pool: PoolSummary }) => (
     <div className="grid grid-cols-3 gap-3 text-sm">
       {([["From", pool.from, "The cheapest garage"], ["Expected", pool.expected, "Average weighted by each garage's share"], ["Cap", pool.cap, "The most expensive garage"]] as const).map(([label, p, hint]) => (
         <div key={label} title={t(hint)}>
-          <div className="text-xs text-muted-foreground">{t(label)} · {t("in / out per 1M")}</div>
+          <div className="text-xs text-muted-foreground">{t(label)} · {t("in / out · credits per 1M tokens")}</div>
           <div className="tabular-nums">{usd(p.input)} / {usd(p.output)}</div>
         </div>
       ))}
