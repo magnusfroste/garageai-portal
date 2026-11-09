@@ -1162,7 +1162,6 @@ export const sv: Record<string, string> = {
   "Off: chats stay only in this browser. On: they are also stored in your GarageAI account.": "Av: chattarna finns bara i den här webbläsaren. På: de sparas även i ditt GarageAI-konto.",
   "Delete the chats saved in your account?": "Radera chattarna som sparats i ditt konto?",
   "Change": "Ändra",
-  "{n} credits": "{n} krediter",
   "1 credit = 1 USD of usage today. Top up by card; VAT is handled at checkout.": "1 kredit = 1 USD i användning idag. Fyll på med kort; moms hanteras i kassan.",
   "Price in / out · credits per 1M tokens": "Pris in / ut · krediter per 1M tokens",
   "in / out · credits per 1M tokens": "in / ut · krediter per 1M tokens",
