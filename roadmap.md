@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Chat-first onboarding and one-time first answer; three starting paths with access chosen before Bridge approval; intent-aware Ops buyer funnel; full tests, deployment and publication.
+
 - [x] Backend-only Bridge auto-promotion recovery: migration 0092 applied live; v1.5.0 errors 1→0 with first-seen/history preserved; four isolated PostgreSQL regression tests and full suite pass (411 pass, 1 existing skip, 0 fail); pickStable/frontend/other functions/dependencies unchanged.
 
 - [x] Remove NetBird code/UI; transport defaults and guarded legacy history applied (0090 + corrective 0091), providers endpoint, v100 retained because owned; 407 tests pass/1 pre-existing skip, 14 direct function checks pass, 36 functions deployed, security scan completed; frontend publication requested.
