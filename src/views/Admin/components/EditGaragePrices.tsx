@@ -77,7 +77,7 @@ export const EditGaragePrices = ({ garage, models = [], onSaved, open: controlle
 
   const id = (s: string) => `${garage.name}-${s}`;
   return <>{!hideTrigger && <Button size="sm" variant="outline" onClick={() => setOpen(true)}>{t("Edit prices")}</Button>}
-    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{t("Edit prices")} · {garage.name}</DialogTitle><DialogDescription>{t("USD per 1M tokens. New prices apply to future requests; statements retain recorded spend.")}</DialogDescription></DialogHeader>
+    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{t("Edit prices")} · {garage.name}</DialogTitle><DialogDescription>{t("Credits per 1M tokens. New prices apply to future requests; statements retain recorded spend.")}</DialogDescription></DialogHeader>
       <form className="space-y-5" onSubmit={submit}>
         {suggestion && modelId && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/50 bg-muted/20 p-2 text-xs">

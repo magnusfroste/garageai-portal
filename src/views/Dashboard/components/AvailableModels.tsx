@@ -21,8 +21,8 @@ const formatTokenCount = (tokens: number | null): string => {
 
 const formatCost = (cost: number | null): string => {
   if (cost === null || cost === undefined) return "—";
-  if (cost === 0) return "$0";
-  return `$${cost}`;
+  if (cost === 0) return "0";
+  return String(cost);
 };
 
 const tone: Record<CuratedModel["status"], StatusTone> = {
@@ -89,7 +89,7 @@ const ModelCard = ({ model }: { model: CuratedModel }) => {
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Cost per 1M tokens: {formatCost(model.input_cost_per_million)} input / {formatCost(model.output_cost_per_million)} output</p>
+                <p>Credits per 1M tokens: {formatCost(model.input_cost_per_million)} input / {formatCost(model.output_cost_per_million)} output</p>
               </TooltipContent>
             </Tooltip>
           )}
@@ -114,7 +114,7 @@ export const AvailableModels = () => {
               Available Models
             </CardTitle>
             <CardDescription>
-              Models accessible with your API key — with pricing per 1M tokens
+              Models accessible with your API key — with pricing in credits per 1M tokens
             </CardDescription>
           </div>
           <Button

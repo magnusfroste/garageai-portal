@@ -100,7 +100,7 @@ export const AppSidebar = () => {
         {renderGroup(
           myGarages,
           !hasGarages && !collapsed ? (
-            <p className="px-2 pt-1 text-xs text-muted-foreground">{t("Have a GPU? Earn money with it.")}</p>
+            <p className="px-2 pt-1 text-xs text-muted-foreground">{t("Have a GPU? Earn credits with it.")}</p>
           ) : null,
         )}
         {renderGroup(DEVELOPERS)}

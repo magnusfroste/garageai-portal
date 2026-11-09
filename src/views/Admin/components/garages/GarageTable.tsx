@@ -26,7 +26,7 @@ export const GarageTable = ({ rows, actions }: { rows: AdminGarageRow[]; actions
         <TableHead className="w-[18%]">{t("Garage")}</TableHead>
         <TableHead className="w-[10%]">{t("Models")}</TableHead>
         <TableHead className="w-[15%]">{t("Grade & availability")}</TableHead>
-        <TableHead className="w-[17%]">{t("Price in / out per 1M")}</TableHead>
+        <TableHead className="w-[17%]">{t("Price in / out · credits per 1M tokens")}</TableHead>
         <TableHead className="w-[9%]">Bridge</TableHead>
         <TableHead className="w-[10%]">{t("Last seen")}</TableHead>
         <TableHead className="w-[6%]"><span className="sr-only">{t("Actions")}</span></TableHead>

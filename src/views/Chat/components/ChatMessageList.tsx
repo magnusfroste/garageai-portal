@@ -86,7 +86,7 @@ const Footer = ({ meta, displayName }: { meta: ChatAnswerMeta; displayName?: (id
   else if (isPool) parts.push(t("Pool"));
   if (meta.usage) parts.push(t("{in} in · {out} out", { in: nf.format(meta.usage.prompt), out: nf.format(meta.usage.completion) }));
   const cost = formatCost(meta.costUsd);
-  if (cost) parts.push(cost);
+  if (cost) parts.push(t("{n} credits", { n: cost }));
   if (meta.tokensPerSecond) parts.push(t("{n} tok/s", { n: meta.tokensPerSecond.toFixed(1) }));
   if (!parts.length) return null;
   return (

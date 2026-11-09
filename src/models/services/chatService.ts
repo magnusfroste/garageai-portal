@@ -39,9 +39,9 @@ export function tokensPerSecond(completionTokens: number | undefined, firstToken
 
 export function formatCost(usd: number | null | undefined): string | null {
   if (usd == null) return null;
-  if (usd === 0) return "$0";
-  if (usd < 0.0001) return "<$0.0001";
-  return `$${usd < 0.01 ? usd.toFixed(4) : usd.toFixed(3)}`;
+  if (usd === 0) return "0";
+  if (usd < 0.0001) return "<0.0001";
+  return usd < 0.01 ? usd.toFixed(4) : usd.toFixed(3);
 }
 
 export type HistoryBucket = "today" | "yesterday" | "earlier";

@@ -54,7 +54,7 @@ const CatalogRow = ({ m, label }: { m: CatalogModel; label?: CatalogLabel }) => 
           <p className="text-xs text-muted-foreground">{t("Picks the best available model for each request and switches automatically if one is busy.")}</p>
         ) : (
           <>
-            <p className="text-xs tabular-nums">{t("{i} per M tokens in · {o} out", { i: p.input, o: p.output })}</p>
+            <p className="text-xs tabular-nums">{t("{i} in · {o} out credits per 1M tokens", { i: p.input, o: p.output })}</p>
             <p className="text-[11px] text-muted-foreground">
               {m.contextLength ? t("{c} context", { c: formatContext(m.contextLength) }) : null}
               {m.contextLength ? " · " : ""}{t(m.offers.length === 1 ? "{n} garage" : "{n} garages", { n: m.offers.length })}

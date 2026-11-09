@@ -7,7 +7,7 @@ export const GarageEarnings = ({ garage }: { garage: GarageRow }) => {
   const q = useOperatorActivity();
   const money = (n?: number) => `${creditsText(Number(n ?? 0).toFixed(2))}`;
   return <section className="border-t border-border pt-3 space-y-3">
-    <h2 className="text-sm font-medium">{t("Buyer prices · USD per 1M tokens in / out")}</h2>
+    <h2 className="text-sm font-medium">{t("Buyer prices · credits per 1M tokens in / out")}</h2>
     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm tabular-nums">
       <span>{t("Pool")}: {money(garage.pool_input_cost_per_million)} / {money(garage.pool_output_cost_per_million)}</span>
       <span>{t("Specific garage")}: {money(garage.dedicated_input_cost_per_million)} / {money(garage.dedicated_output_cost_per_million)}</span>

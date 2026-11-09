@@ -205,7 +205,7 @@ export const CreditsPage = () => {
         </CardContent>
       </Card>
 
-      <div className="space-y-2 text-xs text-muted-foreground"><p>{t("Prices in USD, VAT handled per your country at checkout")}</p><p>{t("Stripe sends your receipt by email after checkout. Check your inbox for the receipt link.")}</p></div>
+      <div className="space-y-2 text-xs text-muted-foreground"><p>{t("1 credit = 1 USD of usage today. Top up by card; VAT is handled at checkout.")}</p><p>{t("Prices in USD, VAT handled per your country at checkout")}</p><p>{t("Stripe sends your receipt by email after checkout. Check your inbox for the receipt link.")}</p></div>
       {/* Transaction History */}
       <Card className="glass-card">
         <CardHeader>
