@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Chat-first onboarding and one-time first answer; three starting paths with access chosen before Bridge approval; intent-aware Ops buyer funnel; full tests, deployment and publication.
+- [x] Chat-first onboarding and one-time first answer; three starting paths with access chosen before Bridge approval; intent-aware, counts-only Ops buyer funnel; 426 pass/1 existing skip/0 fail; both changed functions deployed and frontend publication requested.
+- [ ] Chat-first real-account signup/first answer/approval readback — blocked: requester has no matching app auth account; isolated signed-in desktop/mobile flow verified once-only send, key setup/manage=1 and private approval; production aggregate counts read back.
 
 - [x] Backend-only Bridge auto-promotion recovery: migration 0092 applied live; v1.5.0 errors 1→0 with first-seen/history preserved; four isolated PostgreSQL regression tests and full suite pass (411 pass, 1 existing skip, 0 fail); pickStable/frontend/other functions/dependencies unchanged.
 
