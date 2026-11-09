@@ -1,5 +1,5 @@
 // Buyer funnel for the Operations Center: signed up → accepted terms → has a key → first successful request.
-// Pure: no names or e-mails, ids cut to 8 characters.
+// Pure aggregates only; the legacy stuck field remains as an empty array for compatibility.
 export const FUNNEL_DAYS = 30;
 export const STUCK_MINUTES = 30;
 export type FunnelStep = "accept_terms" | "create_key" | "first_request";
@@ -8,6 +8,7 @@ export interface BuyerFunnel {
   days: number;
   signed_up: number; accepted_terms: number; has_key: number; first_request: number;
   chatted: number; first_use: number;
+  stuck_count: number; stuck_by_step: Record<FunnelStep, number>;
   stuck: Array<{ id: string; created_at: string; stuck_at: FunnelStep; minutes: number }>;
 }
 
@@ -38,6 +39,8 @@ export function buyerFunnel(accounts: FunnelAccount[], now = Date.now()): BuyerF
     first_request: recent.filter((a) => a.terms_accepted_at && a.first_key_at && a.first_request_at).length,
     chatted: recent.filter((a) => a.first_chat_at).length,
     first_use: recent.filter((a) => firstUseAt(a)).length,
-    stuck,
+    stuck_count: stuck.length,
+    stuck_by_step: { accept_terms: stuck.filter(a => a.stuck_at === "accept_terms").length, create_key: stuck.filter(a => a.stuck_at === "create_key").length, first_request: stuck.filter(a => a.stuck_at === "first_request").length },
+    stuck: [],
   };
 }

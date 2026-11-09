@@ -18,7 +18,7 @@ export const StartingPaths = ({ onChoose }: { onChoose?: (path: string) => Promi
       <p className="text-sm text-muted-foreground">{t("Reach the AI on your computer at home from your phone or any computer. Only you, free, no ports or VPN.")}</p>
       <BridgeInstallLine />
       {action("/dashboard/connect", "Approve this computer in the browser.")}
-      <details className="text-xs text-muted-foreground"><summary className="cursor-pointer"><a href="https://www.garageai.eu/setups/gaming-pc" target="_blank" rel="noopener noreferrer" className="underline">{t("Guides per setup")}</a></summary><div className="mt-2 flex flex-wrap gap-3">{["gaming-pc", "mac", "workstation", "amd"].map(setup => <a key={setup} href={`https://www.garageai.eu/setups/${setup}`} target="_blank" rel="noopener noreferrer" className="underline">{setup === "gaming-pc" ? "Gaming PC" : setup === "mac" ? "Mac" : setup === "amd" ? "AMD" : t("Workstation")}</a>)}</div></details>
+      <div className="space-y-2 text-xs text-muted-foreground"><a href="https://www.garageai.eu/setups/gaming-pc" target="_blank" rel="noopener noreferrer" className="underline">{t("Guides per setup")}</a><div className="flex flex-wrap gap-3">{["mac", "workstation", "amd"].map(setup => <a key={setup} href={`https://www.garageai.eu/setups/${setup}`} target="_blank" rel="noopener noreferrer" className="underline">{setup === "mac" ? "Mac" : setup === "amd" ? "AMD" : t("Workstation")}</a>)}</div></div>
       <a href="https://www.garageai.eu/my-machine" target="_blank" rel="noopener noreferrer" className="block text-xs text-muted-foreground underline">{t("How My machine works")}</a>
     </section>
     <section className="min-w-0 space-y-4 border-t border-border pt-4">

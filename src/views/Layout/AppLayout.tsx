@@ -50,7 +50,8 @@ const SignedInLayout = () => {
   const defaultKey = useDefaultKey(profile);
   const location = useLocation();
   const firstRequest = useBuyerFirstRequest(profile?.signup_intent === "buyer");
-  const inlineKey = location.pathname === "/dashboard/chat" || (location.pathname === "/dashboard/keys" && new URLSearchParams(location.search).has("setup")) || (profile?.signup_intent === "buyer" && !firstRequest.data && (location.pathname === "/dashboard" || (location.pathname === "/dashboard/keys" && !location.search.includes("manage=1"))));
+  const inlineTerms = (location.pathname === "/dashboard/keys" && new URLSearchParams(location.search).has("setup")) || (profile?.signup_intent === "buyer" && !firstRequest.data && (location.pathname === "/dashboard" || (location.pathname === "/dashboard/keys" && !location.search.includes("manage=1"))));
+  const inlineKey = location.pathname === "/dashboard/chat" || inlineTerms;
   useLanguagePreference(profile?.preferred_language);
 
   useEffect(() => {
@@ -118,7 +119,7 @@ const SignedInLayout = () => {
             </div>
           </header>
           <AnnouncementBar />
-          {!inlineKey && <AccountTermsBanner />}<TermsAcceptDialog />
+          {!inlineTerms && <AccountTermsBanner />}<TermsAcceptDialog />
           <ShowKeyOnceDialog title={t("Your API key")} keyValue={inlineKey ? null : defaultKey.created?.key ?? null} onClose={defaultKey.dismiss} />
           <main className="flex-1 overflow-auto">
             <Outlet context={{ defaultKey }} />

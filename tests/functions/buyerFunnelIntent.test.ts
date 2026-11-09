@@ -21,5 +21,7 @@ test("chat counts as use without altering existing API-request count", () => {
 test("no chat or API request still counts as stuck", () => {
   const result = buyerFunnel([account], now);
   expect(result.first_use).toBe(0);
-  expect(result.stuck[0]?.stuck_at).toBe("first_request");
+  expect(result.stuck_by_step.first_request).toBe(1);
+  expect(result.stuck_count).toBe(1);
+  expect(result.stuck).toEqual([]);
 });
