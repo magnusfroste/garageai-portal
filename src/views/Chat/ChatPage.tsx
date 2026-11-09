@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { ArrowDown, Menu, PanelLeft, SlidersHorizontal, SquarePen } from "lucide-react";
+import { ArrowDown, Menu, PanelLeft, SlidersHorizontal, SquarePen, X } from "lucide-react";
+import { useFirstChat } from "./hooks/useFirstChat";
+import { useProfile } from "@/hooks/useProfile";
+import { hasCurrentAccountTerms } from "@/models/services/accountTermsService";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +32,7 @@ import type { ChatMessage } from "./types";
 
 export const ChatPage = () => {
   const { checkAuth } = useAuth();
+  const { profile } = useProfile();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedModel = searchParams.get("model");
   const [selectedModel, setSelectedModel] = useState("");
@@ -130,6 +134,16 @@ export const ChatPage = () => {
       await startRun(id, [...messages, { role: "user", content: text }]);
     } finally { sending.current = false; }
   }, [isStreaming, canSend, convs, selectedModel, messages, startRun, scroll]);
+
+  const sendFirst = useCallback(async (text: string) => {
+    if (sending.current || isStreaming) return;
+    sending.current = true;
+    try {
+      const id = await convs.createConversation(selectedModel);
+      if (id) await startRun(id, [{ role: "user", content: text }]);
+    } finally { sending.current = false; }
+  }, [convs.createConversation, selectedModel, startRun, isStreaming]);
+  const firstChat = useFirstChat(canSend && convs.loaded && sync.state !== "loading" && !selectedOffline && hasCurrentAccountTerms(profile), selectedModel, sendFirst);
 
   const handleRegenerate = useCallback(() => {
     if (isStreaming || !convs.activeId) return;
@@ -242,6 +256,12 @@ export const ChatPage = () => {
             </Popover>
           </div>
         </header>
+
+        {firstChat.notice && <div className="flex shrink-0 items-start gap-2 border-b border-border px-4 py-2 text-xs text-muted-foreground">
+          <p className="min-w-0 flex-1">{t("This answer ran on a garage in the GarageAI network. Using it from code?")} {" "}<Link className="text-primary underline" to="/dashboard/keys?setup=1">{t("Get your API key")}</Link></p>
+          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" aria-label={t("Dismiss first answer notice")} onClick={() => { void firstChat.dismiss().catch(() => setSendError(t("Could not save your choice. Please try again."))); }}><X className="h-3.5 w-3.5" /></Button>
+        </div>}
+        {firstChat.error && <p role="alert" className="px-4 py-2 text-xs text-destructive">{t("Could not start your first answer. You can send a message below.")}</p>}
 
         {sync.state === "prompt" && (
           <div className="shrink-0 border-b border-border/50 bg-muted/40 px-4 py-3">

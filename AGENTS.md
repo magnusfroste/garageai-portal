@@ -31,6 +31,7 @@
 ## Where logic lives
 
 - Buyer first-answer eligibility uses the account-scoped, service-written first-request marker checked against successful gateway logs; the signed-in layout alone owns the ephemeral default-key value and shares it with setup views, never browser storage.
+- Chat-first onboarding arms and consumes prompt metadata through the shared first-chat service before sending; API setup receives the layout's ephemeral key, and Bridge approval saves explicit visibility before releasing credentials, preventing replay and accidental market registration.
 
 - Chat initial selection and unavailable-machine fallback derive only in chatModelChoice; wait for owner inventory and account-scoped device preferences before selecting, so asynchronous loading cannot force Auto.
 

@@ -186,9 +186,14 @@ async function sha256Hex(s: string) {
 // deno-lint-ignore no-explicit-any
 async function buyers30d(admin: any) {
   const since = new Date(Date.now() - FUNNEL_DAYS * 24 * H).toISOString();
-  const { data: profs } = await admin.from("profiles").select("id, created_at, terms_accepted_at").gte("created_at", since);
+  const { data: profs, error: profileError } = await admin.from("profiles").select("id, created_at, terms_accepted_at, signup_intent").gte("created_at", since).or("signup_intent.is.null,signup_intent.neq.operator");
+  if (profileError) throw profileError;
   const ids = ((profs || []) as Array<{ id: string }>).map((p) => p.id);
   if (!ids.length) return buyerFunnel([]);
+  const { data: chats, error: chatError } = await admin.from("chat_conversations").select("user_id, created_at").in("user_id", ids).order("created_at", { ascending: true }).limit(20000);
+  if (chatError) throw chatError;
+  const firstChat = new Map<string, string>();
+  for (const chat of (chats ?? []) as Array<{ user_id: string; created_at: string }>) if (!firstChat.has(chat.user_id)) firstChat.set(chat.user_id, chat.created_at);
   const { data: keys } = await admin.from("api_keys").select("user_id, created_at, litellm_token, internal").in("user_id", ids).eq("internal", false);
   const firstKey = new Map<string, string>(), tokenOwner = new Map<string, string>();
   for (const k of (keys || []) as Array<{ user_id: string; created_at: string; litellm_token: string | null }>) {
@@ -201,8 +206,8 @@ async function buyers30d(admin: any) {
     if (Number(r.requests) <= Number(r.failures)) continue;
     for (const h of r.api_keys || []) { const u = tokenOwner.get(h); if (u && !firstReq.has(u)) firstReq.set(u, r.hour); }
   }
-  return buyerFunnel(((profs || []) as Array<{ id: string; created_at: string; terms_accepted_at: string | null }>).map((p) => ({
-    id: p.id, created_at: p.created_at, terms_accepted_at: p.terms_accepted_at, first_key_at: firstKey.get(p.id) ?? null, first_request_at: firstReq.get(p.id) ?? null,
+  return buyerFunnel(((profs || []) as Array<{ id: string; created_at: string; terms_accepted_at: string | null; signup_intent: string | null }>).map((p) => ({
+    id: p.id, created_at: p.created_at, signup_intent: p.signup_intent, terms_accepted_at: p.terms_accepted_at, first_key_at: firstKey.get(p.id) ?? null, first_request_at: firstReq.get(p.id) ?? null, first_chat_at: firstChat.get(p.id) ?? null,
   })));
 }
 

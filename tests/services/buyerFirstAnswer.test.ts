@@ -3,7 +3,7 @@ import { buyerNeedsFirstAnswer, ensureFirstAnswerKey, firstAnswerExamples } from
 import { firstLoginContinuation } from "@/models/services/signupDestination";
 describe("buyer first answer", () => {
   it("new buyer goes straight to setup and sees it before a request", () => {
-    expect(firstLoginContinuation({ onboarding_done: false, signup_intent: "buyer" }, {}).destination).toBe("/dashboard");
+    expect(firstLoginContinuation({ onboarding_done: false, signup_intent: "buyer" }, {}).destination).toBe("/dashboard/chat?model=garageai/auto");
     expect(buyerNeedsFirstAnswer("buyer", null)).toBe(true);
     expect(buyerNeedsFirstAnswer("operator", null)).toBe(false);
     expect(buyerNeedsFirstAnswer("buyer", undefined)).toBe(false);

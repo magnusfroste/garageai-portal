@@ -20,8 +20,9 @@ const call = async <T>(body: Record<string, unknown>): Promise<T> => {
 export const bridgeLinkRepository = {
   lookup: (userCode: string) => call<{ link: BridgeLinkRequest }>({ user_code: userCode, action: "lookup" }).then((r) => r.link),
   deny: (userCode: string) => call<{ status: string }>({ user_code: userCode, action: "deny" }),
-  approve: (p: { userCode: string; garageName: string; termsAccepted: boolean; replaceMachine: boolean }) =>
+  approve: (p: { userCode: string; garageName: string; termsAccepted: boolean; replaceMachine: boolean; visibility: "market" | "private" }) =>
     call<{ status: string; garage: { id: string; name: string } }>({
       user_code: p.userCode, action: "approve", garage_name: p.garageName, terms_accepted: p.termsAccepted, replace_machine: p.replaceMachine,
+      visibility: p.visibility,
     }),
 };

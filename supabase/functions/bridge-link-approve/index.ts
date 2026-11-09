@@ -4,6 +4,7 @@ import { NAME_RE, entryFor, machineConflict, normaliseUserCode } from "../_share
 import { termsAccepted } from "../_shared/garageTerms.ts";
 import { CredentialError, countOwnedGarages, issueGarageCredentials, loadGarageByName } from "../_shared/garageCredentials.ts";
 import { garageLimitReached } from "../_shared/garageCredentialRules.ts";
+import { approvalVisibility } from "../_shared/bridgeVisibility.ts";
 
 import { accountTermsAccepted, ACCOUNT_TERMS_ERROR_CODE, ACCOUNT_TERMS_REQUIRED } from "../_shared/accountTerms.ts";
 const corsHeaders = {
@@ -32,6 +33,7 @@ Deno.serve(async (req) => {
     if (!userCode) return json({ error: "invalid_code" }, 400);
     const action = body.action;
     if (action !== "lookup" && action !== "approve" && action !== "deny") return json({ error: "action must be lookup, approve or deny" }, 400);
+    if (action === "approve" && body.visibility !== undefined && body.visibility !== "private" && body.visibility !== "market") return json({ error: "visibility must be private or market" }, 400);
 
     if (action === "approve" && !await accountTermsAccepted(admin, user.id)) return json({ error: ACCOUNT_TERMS_REQUIRED, code: ACCOUNT_TERMS_ERROR_CODE }, 403);
     const { data: link, error } = await admin.from("bridge_links").select(PUBLIC_FIELDS).eq("user_code", userCode).maybeSingle();
@@ -71,6 +73,10 @@ Deno.serve(async (req) => {
       userId: user.id, isAdmin, name, adminPanel: false, operatorId: user.id,
       acceptTerms: accepted, machineId: link.machine_id,
     });
+
+    // Save access before credentials become available to Bridge; no transient market registration.
+    const { error: visibilityError } = await admin.from("garages").update({ visibility: approvalVisibility(body.visibility, existing?.visibility) }).eq("id", issued.garage.id).eq("operator_id", user.id);
+    if (visibilityError) throw visibilityError;
 
     const { data: prof } = await admin.from("profiles").select("connect_page_seen_at").eq("id", user.id).maybeSingle();
     const approvedNow = Date.now();

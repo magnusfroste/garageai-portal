@@ -8,6 +8,7 @@ import type { SignupIntent } from "@/models/types/onboarding.types";
 import { toast } from "sonner";
 import { AccountTermsBanner } from "@/views/Account/components/AccountTermsBanner";
 import { TermsAcceptDialog } from "@/views/Account/components/TermsAcceptDialog";
+import { FIRST_CHAT_PATH } from "@/models/services/firstChatService";
 
 import { t } from "@/i18n";
 export const OnboardingPage = () => {
@@ -17,8 +18,8 @@ export const OnboardingPage = () => {
   const choose = async (intent: SignupIntent | null) => {
     setSaving(true);
     try {
-      await profileService.completeOnboarding(intent);
-      navigate(intent === "operator" ? "/connect" : "/dashboard", { replace: true });
+      await profileService.completeOnboarding(intent ?? "buyer");
+      navigate(intent === "operator" ? "/connect" : FIRST_CHAT_PATH, { replace: true });
     } catch {
       toast.error(t("Could not save your choice. Please try again."));
       setSaving(false);
@@ -36,7 +37,7 @@ export const OnboardingPage = () => {
         <StartingPaths onChoose={async path => {
           if (saving) return;
           setSaving(true);
-          try { const operator = path.includes("connect"); await profileService.completeOnboarding(operator ? "operator" : "buyer"); navigate(operator ? path : "/dashboard", { replace: true }); }
+          try { const operator = path.includes("connect"); await profileService.completeOnboarding(operator ? "operator" : "buyer"); navigate(path, { replace: true }); }
           catch { toast.error(t("Could not save your choice. Please try again.")); setSaving(false); }
         }} />
         <div className="flex justify-center">

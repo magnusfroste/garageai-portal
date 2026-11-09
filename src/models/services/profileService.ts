@@ -2,6 +2,7 @@ import { profileRepository } from "@/data/repositories/profileRepository";
 import { authService } from "./authService";
 import { Profile, ProfileUpdateData } from "@/models/types/profile.types";
 import type { SignupIntent } from "@/models/types/onboarding.types";
+import { firstChatService } from "./firstChatService";
 
 export class ProfileService {
   async getCurrentUserProfile(): Promise<Profile | null> {
@@ -31,6 +32,7 @@ export class ProfileService {
   async completeOnboarding(intent: SignupIntent | null): Promise<void> {
     const user = await authService.getCurrentUser();
     if (!user) throw new Error("Not authenticated");
+    if (intent === "buyer") await firstChatService.arm();
     return profileRepository.updateOnboarding(user.id, { signup_intent: intent, onboarding_done: true });
   }
 }

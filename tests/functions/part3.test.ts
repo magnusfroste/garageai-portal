@@ -26,7 +26,7 @@ describe("buyer funnel", () => {
     { id: "dddddddd-4444", created_at: "2026-08-01T10:00:00Z", terms_accepted_at: null, first_key_at: null, first_request_at: null },
   ], now);
   test("counts the last 30 days", () => expect([f.signed_up, f.accepted_terms, f.has_key, f.first_request]).toEqual([3, 2, 2, 1]));
-  test("stuck > 30 minutes only, short ids", () => expect(f.stuck).toEqual([{ id: "bbbbbbbb", created_at: "2026-10-18T20:00:00Z", stuck_at: "first_request", minutes: 299 }]));
+  test("stuck > 30 minutes only, counts without account identifiers", () => { expect(f.stuck_count).toBe(1); expect(f.stuck_by_step).toEqual({ accept_terms: 0, create_key: 0, first_request: 1 }); expect(f.stuck).toEqual([]); });
 });
 
 describe("chat sync asked once per account", () => {
