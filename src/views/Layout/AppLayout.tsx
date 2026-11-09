@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { useEffect } from "react";
 import { Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -30,7 +31,7 @@ import {
 import { AccountTermsBanner } from "@/views/Account/components/AccountTermsBanner";
 import { TermsAcceptDialog } from "@/views/Account/components/TermsAcceptDialog";
 import { ACCOUNT_TERMS_URL, ACCOUNT_PRIVACY_URL } from "@/models/services/accountTermsService";
-const formatBalance = (n: number) => `$${n.toFixed(2)}`;
+const formatBalance = (n: number) => `${creditsText(n.toFixed(2))}`;
 
 export const AppLayout = () => {
   const { session, loading } = useSession();

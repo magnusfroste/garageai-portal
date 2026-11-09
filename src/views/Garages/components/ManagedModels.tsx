@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { useMemo, useState } from "react";
 import { Download, Loader2, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ export const CandidateRow = ({ c, onAdd, busy }: { c: ModelCandidate; onAdd: () 
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium truncate">{c.model} <span className="font-mono text-xs text-muted-foreground">{c.tag}</span></p>
         <p className="text-xs text-muted-foreground">
-          {sizeText(c)} · {c.market ? `${t("Market price")} $${c.market.input}/$${c.market.output} · ` : ""}
+          {sizeText(c)} · {c.market ? `${t("Market price")} ${creditsText(c.market.input)}/${creditsText(c.market.output)} · ` : ""}
           {t("{n} garages offer it", { n: c.garages })} · {t("{n} requests/day", { n: c.requestsPerDay })}
         </p>
         {c.fits && <p className="text-xs text-muted-foreground">{c.fitsWithOthers ? t("Fits with your other models") : t("Does not fit at once with your other models: will swap with {m}", { m: c.swapsWith.join(", ") })}</p>}

@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { useState } from "react";
 import { CreditCard, Zap, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,7 +58,7 @@ export const SubscriptionSection = ({ profile }: SubscriptionSectionProps) => {
               <Zap className="w-4 h-4 text-primary" />
               Purchased Credits
             </div>
-            <p className="text-2xl font-bold">${profile.purchased_credits_usd.toFixed(2)}</p>
+            <p className="text-2xl font-bold">{creditsText(profile.purchased_credits_usd.toFixed(2))}</p>
             <p className="text-xs text-muted-foreground">
               Purchased credits available for API usage.
             </p>

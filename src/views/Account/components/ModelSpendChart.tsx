@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { PieChart as PieIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
@@ -80,7 +81,7 @@ export const ModelSpendChart = ({ data, loading }: ModelSpendChartProps) => {
                 formatter={(value: number, _name, item) => {
                   const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0";
                   const reqs = (item?.payload as { requests?: number })?.requests ?? 0;
-                  return [`$${value.toFixed(6)} (${pct}%) · ${reqs} req`, item?.payload?.model];
+                  return [`${creditsText(value.toFixed(6))} (${pct}%) · ${reqs} req`, item?.payload?.model];
                 }}
                 contentStyle={{
                   background: "hsl(var(--card))",

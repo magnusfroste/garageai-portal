@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
@@ -43,7 +44,7 @@ export const RequestLogTable = ({ logs, onLoadMore, hasMore, loadingMore }: { lo
                 <TableCell className="hidden sm:table-cell text-xs whitespace-nowrap"><span className="block max-w-[10rem] truncate" title={log.key_name}>{log.key_name}</span></TableCell>
                 <TableCell className="text-xs whitespace-nowrap">{log.garage || "—"}</TableCell>
                 <TableCell className="text-right text-xs tabular-nums">{log.total_tokens.toLocaleString()}</TableCell>
-                <TableCell className="text-right text-xs tabular-nums">${log.spend.toFixed(6)}</TableCell>
+                <TableCell className="text-right text-xs tabular-nums">{creditsText(log.spend.toFixed(6))}</TableCell>
                 <TableCell><Badge variant={log.status === "success" ? "default" : "destructive"} className="text-xs">{t(log.status)}</Badge></TableCell>
               </TableRow>
               {isOpen && (

@@ -1,10 +1,11 @@
+import { creditsText } from "@/models/services/credits";
 import type { GarageRow } from "@/data/repositories/garageRepository";
 import { useOperatorActivity } from "@/hooks/useOperatorActivity";
 import { Button } from "@/components/ui/button";
 import { t, locale } from "@/i18n";
 export const GarageEarnings = ({ garage }: { garage: GarageRow }) => {
   const q = useOperatorActivity();
-  const money = (n?: number) => `$${Number(n ?? 0).toFixed(2)}`;
+  const money = (n?: number) => `${creditsText(Number(n ?? 0).toFixed(2))}`;
   return <section className="border-t border-border pt-3 space-y-3">
     <h2 className="text-sm font-medium">{t("Buyer prices · USD per 1M tokens in / out")}</h2>
     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm tabular-nums">
@@ -17,7 +18,7 @@ export const GarageEarnings = ({ garage }: { garage: GarageRow }) => {
         return <div key={period} className="space-y-1 text-sm">
           <h3 className="text-xs text-muted-foreground">{t(period === "7d" ? "Last 7 days" : "Last 30 days")}</h3>
           <p>{t("{n} requests · {i} tokens in / {o} out", { n: Number(row?.requests ?? 0).toLocaleString(locale()), i: Number(row?.prompt_tokens ?? 0).toLocaleString(locale()), o: Number(row?.completion_tokens ?? 0).toLocaleString(locale()) })}</p>
-          <p className="font-semibold">{t("≈ earned at current prices")}: {`$${Number(row?.estimated_earnings ?? 0).toFixed(Number(row?.estimated_earnings ?? 0) > 0 && Number(row?.estimated_earnings ?? 0) < 0.01 ? 4 : 2)}`}</p>
+          <p className="font-semibold">{t("≈ earned at current prices")}: {`${creditsText(Number(row?.estimated_earnings ?? 0).toFixed(Number(row?.estimated_earnings ?? 0) > 0 && Number(row?.estimated_earnings ?? 0) < 0.01 ? 4 : 2))}`}</p>
         </div>;
       })}</div>}
     {!q.isLoading && !q.isError && !q.data?.some(r => r.garage_id === garage.id && Number(r.requests) > 0) && <p className="text-xs text-muted-foreground">{t(garage.runtime_ok === false || garage.disabled || garage.status !== "online" ? "No requests yet — reconnect your garage to appear in the catalogue." : "No requests yet — your garage is live and will show up in the catalogue.")}</p>}

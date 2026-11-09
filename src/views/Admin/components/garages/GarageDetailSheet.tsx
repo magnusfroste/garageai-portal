@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { Building2, Rocket, Clock3, Coins, HeartPulse, MapPin, Network, Server, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -26,7 +27,7 @@ const Section = ({ icon: Icon, title, children }: { icon: typeof Server; title: 
 );
 const Field = ({ label, value }: { label: string; value: ReactNode }) => <div className="min-w-0"><dt className="admin-meta">{label}</dt><dd className="mt-0.5 break-words text-sm">{value || "—"}</dd></div>;
 const date = (value?: string | null) => value ? new Date(value).toLocaleString() : "—";
-const usd = (value: number) => `$${value.toFixed(value < 1 ? 4 : 2)}`;
+const usd = (value: number) => `${creditsText(value.toFixed(value < 1 ? 4 : 2))}`;
 
 export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, onAlias, onSaved }: {
   row: AdminGarageRow | null;

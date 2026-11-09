@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -28,7 +29,7 @@ export const UsageOverview = ({ usageByModel, totalSpend, loading }: UsageOvervi
             <CardDescription>Spend distribution across models</CardDescription>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold">${totalSpend.toFixed(4)}</p>
+            <p className="text-2xl font-bold">{creditsText(totalSpend.toFixed(4))}</p>
             <p className="text-xs text-muted-foreground">Total spend</p>
           </div>
         </div>
@@ -48,7 +49,7 @@ export const UsageOverview = ({ usageByModel, totalSpend, loading }: UsageOvervi
         ) : (
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={usageByModel} layout="vertical" margin={{ left: 20, right: 20 }}>
-              <XAxis type="number" tickFormatter={(v) => `$${v.toFixed(4)}`} fontSize={12} />
+              <XAxis type="number" tickFormatter={(v) => `${creditsText(v.toFixed(4))}`} fontSize={12} />
               <YAxis
                 type="category"
                 dataKey="model"
@@ -57,7 +58,7 @@ export const UsageOverview = ({ usageByModel, totalSpend, loading }: UsageOvervi
                 tickFormatter={(v) => v.length > 20 ? v.slice(0, 18) + "…" : v}
               />
               <Tooltip
-                formatter={(value: number) => [`$${value.toFixed(6)}`, "Spend"]}
+                formatter={(value: number) => [`${creditsText(value.toFixed(6))}`, "Spend"]}
                 contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
               />
               <Bar dataKey="cost" radius={[0, 4, 4, 0]}>

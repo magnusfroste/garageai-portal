@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -49,12 +50,12 @@ export const DailySpendChart = ({ data, loading }: DailySpendChartProps) => {
               />
               <YAxis
                 fontSize={11}
-                tickFormatter={(v) => `$${Number(v).toFixed(2)}`}
+                tickFormatter={(v) => `${creditsText(Number(v).toFixed(2))}`}
                 stroke="hsl(var(--muted-foreground))"
               />
               <Tooltip
                 formatter={(value: number, name: string) =>
-                  name === "spend" ? [`$${value.toFixed(6)}`, "Spend"] : [value, name]
+                  name === "spend" ? [`${creditsText(value.toFixed(6))}`, "Spend"] : [value, name]
                 }
                 labelFormatter={(v) => `Date: ${v}`}
                 contentStyle={{

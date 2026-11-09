@@ -1,3 +1,4 @@
+import { creditsText } from "@/models/services/credits";
 import { runWithTermsAcceptance, TermsNotAcceptedError } from "@/models/services/termsGate";
 import { checkoutFailedMessage } from "@/models/services/credentialErrors";
 import { t } from "@/i18n";
@@ -129,7 +130,7 @@ export const CreditsPage = () => {
               <Wallet className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight">
-              ${budgetLoading ? "—" : remaining.toFixed(2)}
+              {creditsText(budgetLoading ? "—" : remaining.toFixed(2))}
             </p>
           </CardContent>
         </Card>
@@ -141,7 +142,7 @@ export const CreditsPage = () => {
               <TrendingUp className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight">
-              ${budgetLoading ? "—" : spent.toFixed(4)}
+              {creditsText(budgetLoading ? "—" : spent.toFixed(4))}
             </p>
           </CardContent>
         </Card>
@@ -153,7 +154,7 @@ export const CreditsPage = () => {
               <TrendingDown className="w-4 h-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold tracking-tight text-primary">
-              ${budgetLoading ? "—" : maxBudget.toFixed(2)}
+              {creditsText(budgetLoading ? "—" : maxBudget.toFixed(2))}
             </p>
           </CardContent>
         </Card>
@@ -163,7 +164,7 @@ export const CreditsPage = () => {
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{t("{n}% used", { n: usagePercent.toFixed(1) })}</span>
-            <span>${spent.toFixed(4)} / ${maxBudget.toFixed(2)}</span>
+            <span>{creditsText(spent.toFixed(4))} / {creditsText(maxBudget.toFixed(2))}</span>
           </div>
           <Progress value={usagePercent} className="h-2" />
         </div>
@@ -233,10 +234,10 @@ export const CreditsPage = () => {
                         {new Date(tx.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right text-sm font-medium">
-                        ${tx.amount_usd.toFixed(2)}
+                        {creditsText(tx.amount_usd.toFixed(2))}
                       </TableCell>
                       <TableCell className="text-right text-sm">
-                        +${tx.credits_added.toFixed(2)}
+                        +{creditsText(tx.credits_added.toFixed(2))}
                       </TableCell>
                     </TableRow>
                   ))}

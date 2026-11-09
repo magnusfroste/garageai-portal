@@ -1,7 +1,8 @@
+import { creditsText } from "@/models/services/credits";
 import { useEarningBuckets } from "@/hooks/useEarningBuckets";
 import { t } from "@/i18n";
 
-const usd = (v: number) => `$${Number(v).toFixed(Number(v) < 1 ? 4 : 2)}`;
+const usd = (v: number) => `${creditsText(Number(v).toFixed(Number(v) < 1 ? 4 : 2))}`;
 
 /** Who paid for this month's traffic: only payable earns. */
 export const GarageEarningBuckets = ({ garageId }: { garageId: string }) => {
