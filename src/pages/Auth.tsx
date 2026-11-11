@@ -106,7 +106,7 @@ const Auth = () => {
         toast.success(t("Account created! Welcome to {site}.", { site: siteName }));
       }
     } catch (error) {
-      toast.error(error instanceof z.ZodError ? error.errors[0].message : t("An unexpected error occurred"));
+      toast.error(error instanceof z.ZodError ? error.issues[0].message : t("An unexpected error occurred"));
     } finally {
       setIsLoading(false);
     }
@@ -145,7 +145,7 @@ const Auth = () => {
       if (error) toast.error(error.message);
       else toast.success(t("Welcome back!"));
     } catch (error) {
-      toast.error(error instanceof z.ZodError ? error.errors[0].message : t("An unexpected error occurred"));
+      toast.error(error instanceof z.ZodError ? error.issues[0].message : t("An unexpected error occurred"));
     } finally {
       setIsLoading(false);
     }
