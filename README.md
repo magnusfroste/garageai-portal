@@ -44,8 +44,8 @@ Rules for code changes are in [AGENTS.md](AGENTS.md) and `supabase/functions/AGE
 ## Run it locally
 
 ```sh
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 The app reads `VITE_SUPABASE_URL`, `VITE_SUPABASE_PROJECT_ID` and `VITE_SUPABASE_PUBLISHABLE_KEY`
