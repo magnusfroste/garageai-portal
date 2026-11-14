@@ -6,7 +6,7 @@ export const LINK_TTL_S = 600;
 export const POLL_INTERVAL_S = 3;
 export const SLOW_DOWN_MS = 2000;
 export const STARTS_PER_IP_PER_HOUR = 10;
-export const VERIFICATION_URL = "https://app.garageai.eu/door/link";
+export const VERIFICATION_URL = "https://app.garageai.eu/bridge/link";
 
 export function makeUserCode(random: (n: number) => Uint8Array = (n) => crypto.getRandomValues(new Uint8Array(n))): string {
   const bytes = random(8);

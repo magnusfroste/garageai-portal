@@ -22,7 +22,7 @@ export function safeSignupDestination(value: unknown): string | null {
 
 export function destinationIntent(destination: string | null, explicit?: unknown): SignupIntent | null {
   const path = destination?.split(/[?#]/)[0];
-  if (path === "/bridge/link" || path === "/connect" || path === "/dashboard/connect") return "operator";
+  if (path === "/bridge/link" || path === "/door/link" || path === "/connect" || path === "/dashboard/connect") return "operator";
   if (path === "/dashboard/keys") return "buyer";
   return isSignupIntent(explicit as string | null) ? explicit as SignupIntent : null;
 }

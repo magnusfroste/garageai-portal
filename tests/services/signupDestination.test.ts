@@ -26,6 +26,11 @@ describe("signup continuation", () => {
   it("allows only the primary site's absolute URL and returns a path", () => {
     expect(safeSignupDestination("https://app.garageai.eu/bridge/link?code=ABCD-EFGH")).toBe("/bridge/link?code=ABCD-EFGH");
   });
+  it("Door signup link is the operator destination too", () => {
+    const entry = signupContinuation("?next=%2Fdoor%2Flink%3Fcode%3DABCD-EFGH");
+    expect(entry.intent).toBe("operator");
+    expect(firstLoginContinuation(fresh, { signup_destination: entry.destination })).toEqual({ destination: "/door/link?code=ABCD-EFGH", completeOnboarding: true, intent: "operator" });
+  });
   it("does not replay the original signup destination on subsequent sign-ins", () => {
     expect(firstLoginContinuation({ onboarding_done: true, signup_intent: "operator" }, { signup_destination: "/bridge/link?code=old" }).destination).toBe("/dashboard");
     expect(firstLoginContinuation({ onboarding_done: true, signup_intent: "operator" }, {}, "/dashboard/chat?model=qwen%2Fqwen3").destination).toBe("/dashboard/chat?model=qwen%2Fqwen3");
