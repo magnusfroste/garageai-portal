@@ -27,7 +27,7 @@ class OnboardingService {
     const continuation = firstLoginContinuation(profile, user.user_metadata, requested, intent);
     if (continuation.completeOnboarding) {
       if (continuation.intent === "buyer" && continuation.destination.startsWith("/dashboard/chat")) await firstChatService.arm();
-      await profileRepository.updateOnboarding(user.id, { signup_intent: continuation.intent, onboarding_done: true });
+      await profileRepository.updateOnboarding(user.id, { signup_intent: continuation.intent, onboarding_done: true, ...(continuation.intent === "operator" ? { first_goal: "share" as const, first_goal_at: new Date().toISOString() } : {}) });
     }
     this.clearStoredIntent();
     return continuation.destination;

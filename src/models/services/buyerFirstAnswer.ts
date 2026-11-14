@@ -1,6 +1,7 @@
 export const FIRST_ANSWER_MODEL = "garageai/auto";
 export const FIRST_ANSWER_PROMPT = "In one sentence, what can I do with an open AI model?";
-export const buyerNeedsFirstAnswer = (intent: string | null | undefined, firstRequestAt: string | null | undefined) => intent === "buyer" && firstRequestAt === null;
+/** "Look around" accounts may browse; they are never forced into the first chat. */
+export const buyerNeedsFirstAnswer = (intent: string | null | undefined, firstRequestAt: string | null | undefined, firstGoal?: string | null) => intent === "buyer" && firstGoal !== "look" && firstRequestAt === null;
 export function firstAnswerExamples(key: string, prompt = FIRST_ANSWER_PROMPT) {
   const body = { model: FIRST_ANSWER_MODEL, messages: [{ role: "user", content: prompt }] };
   return {

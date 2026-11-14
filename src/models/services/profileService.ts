@@ -3,6 +3,7 @@ import { authService } from "./authService";
 import { Profile, ProfileUpdateData } from "@/models/types/profile.types";
 import type { SignupIntent } from "@/models/types/onboarding.types";
 import { firstChatService } from "./firstChatService";
+import { firstGoalUpdate, type FirstGoal } from "./firstGoal";
 
 export class ProfileService {
   async getCurrentUserProfile(): Promise<Profile | null> {
@@ -29,11 +30,21 @@ export class ProfileService {
     return profileRepository.updateLanguage(user.id, lang);
   }
 
-  async completeOnboarding(intent: SignupIntent | null): Promise<void> {
+  /** asked = the first-goal question was on screen (onboarding page), even if a path below was chosen. */
+  async completeOnboarding(intent: SignupIntent | null, asked = false): Promise<void> {
     const user = await authService.getCurrentUser();
     if (!user) throw new Error("Not authenticated");
     if (intent === "buyer") await firstChatService.arm();
-    return profileRepository.updateOnboarding(user.id, { signup_intent: intent, onboarding_done: true });
+    return profileRepository.updateOnboarding(user.id, { signup_intent: intent, onboarding_done: true, ...(asked ? { first_goal_asked: true } : {}) });
+  }
+
+  /** Stores the one-time "What do you want to do first?" answer (null = Skip). */
+  async answerFirstGoal(goal: FirstGoal | null): Promise<void> {
+    const user = await authService.getCurrentUser();
+    if (!user) throw new Error("Not authenticated");
+    const update = firstGoalUpdate(goal);
+    if (update.signup_intent === "buyer" && goal !== "look") await firstChatService.arm();
+    return profileRepository.updateOnboarding(user.id, update);
   }
 }
 

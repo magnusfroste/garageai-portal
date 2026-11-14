@@ -1704,6 +1704,9 @@ export type Database = {
           created_at: string
           default_key_at: string | null
           email: string
+          first_goal: string | null
+          first_goal_asked: boolean
+          first_goal_at: string | null
           full_name: string | null
           id: string
           litellm_user_id: string | null
@@ -1725,6 +1728,9 @@ export type Database = {
           created_at?: string
           default_key_at?: string | null
           email: string
+          first_goal?: string | null
+          first_goal_asked?: boolean
+          first_goal_at?: string | null
           full_name?: string | null
           id: string
           litellm_user_id?: string | null
@@ -1746,6 +1752,9 @@ export type Database = {
           created_at?: string
           default_key_at?: string | null
           email?: string
+          first_goal?: string | null
+          first_goal_asked?: boolean
+          first_goal_at?: string | null
           full_name?: string | null
           id?: string
           litellm_user_id?: string | null

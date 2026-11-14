@@ -44,7 +44,7 @@ export const DashboardActivity = () => {
   const used = usedThisWeek(dailyBreakdown);
   const series = boughtEarnedSeries(dailyBreakdown, earn.dailyEarned);
 
-  if (buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data)) return <Navigate to={FIRST_CHAT_PATH} replace />;
+  if (buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data, profile?.first_goal)) return <Navigate to={FIRST_CHAT_PATH} replace />;
   if (profile?.signup_intent === "buyer" && firstRequest.isPending) return <p className="p-6 text-sm text-muted-foreground">{t("Loading dashboard...")}</p>;
   if (profile?.signup_intent === "buyer" && firstRequest.isError) return <div className="p-6 text-sm">{t("Could not check your first request.")} <Link to="/dashboard/chat" className="text-primary underline">{t("Chat")}</Link></div>;
 

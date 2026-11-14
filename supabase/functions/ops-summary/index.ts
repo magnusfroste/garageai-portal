@@ -1,6 +1,7 @@
 // Read-only business aggregates for the gateway Operations Center. Auth: x-gateway-key (like gateway-targets).
 // Returns counts and sums only: never e-mails, names, keys, Stripe ids or other personal data.
 import { buyerFunnel, FUNNEL_DAYS } from "../_shared/buyerFunnel.ts";
+import { firstGoalSummary } from "../_shared/firstGoalSummary.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
@@ -186,10 +187,10 @@ async function sha256Hex(s: string) {
 // deno-lint-ignore no-explicit-any
 async function buyers30d(admin: any) {
   const since = new Date(Date.now() - FUNNEL_DAYS * 24 * H).toISOString();
-  const { data: profs, error: profileError } = await admin.from("profiles").select("id, created_at, terms_accepted_at, signup_intent").gte("created_at", since).or("signup_intent.is.null,signup_intent.neq.operator");
+  const { data: profs, error: profileError } = await admin.from("profiles").select("id, created_at, terms_accepted_at, signup_intent, first_goal, first_goal_asked").gte("created_at", since);
   if (profileError) throw profileError;
   const ids = ((profs || []) as Array<{ id: string }>).map((p) => p.id);
-  if (!ids.length) return buyerFunnel([]);
+  if (!ids.length) return { funnel: buyerFunnel([]), firstGoal: firstGoalSummary([]) };
   const { data: chats, error: chatError } = await admin.from("chat_conversations").select("user_id, created_at").in("user_id", ids).order("created_at", { ascending: true }).limit(20000);
   if (chatError) throw chatError;
   const firstChat = new Map<string, string>();
@@ -206,9 +207,15 @@ async function buyers30d(admin: any) {
     if (Number(r.requests) <= Number(r.failures)) continue;
     for (const h of r.api_keys || []) { const u = tokenOwner.get(h); if (u && !firstReq.has(u)) firstReq.set(u, r.hour); }
   }
-  return buyerFunnel(((profs || []) as Array<{ id: string; created_at: string; terms_accepted_at: string | null; signup_intent: string | null }>).map((p) => ({
+  const { data: beating, error: garageError } = await admin.from("garages").select("operator_id").in("operator_id", ids).not("last_heartbeat_at", "is", null);
+  if (garageError) throw garageError;
+  const connected = new Set(((beating ?? []) as Array<{ operator_id: string }>).map((g) => g.operator_id));
+  const rows = ((profs || []) as Array<{ id: string; created_at: string; terms_accepted_at: string | null; signup_intent: string | null; first_goal: string | null; first_goal_asked: boolean }>).map((p) => ({
     id: p.id, created_at: p.created_at, signup_intent: p.signup_intent, terms_accepted_at: p.terms_accepted_at, first_key_at: firstKey.get(p.id) ?? null, first_request_at: firstReq.get(p.id) ?? null, first_chat_at: firstChat.get(p.id) ?? null,
-  })));
+    first_goal: p.first_goal, first_goal_asked: !!p.first_goal_asked, connected_garage: connected.has(p.id),
+  }));
+  // buyerFunnel excludes operator intents itself, so its result is unchanged.
+  return { funnel: buyerFunnel(rows), firstGoal: firstGoalSummary(rows) };
 }
 
 Deno.serve(async (req) => {
@@ -265,7 +272,8 @@ Deno.serve(async (req) => {
         active_24h: spend1 ? active1.size : null,
         low_credit: low,
       },
-      buyer_funnel: buyerFunnel30d,
+      buyer_funnel: buyerFunnel30d?.funnel ?? null,
+      first_goal: buyerFunnel30d?.firstGoal ?? null,
       support: supportRes.error ? null : supportRes.data,
       credits: { topups_24h: sum(d1), topups_7d: sum(d7), outstanding_balance_usd: outstanding == null ? null : round(outstanding) },
       stripe: { last_webhook_at: null, last_topup_at: tx[0]?.created_at ?? null, failed_webhooks_24h: null, pending_checkouts: pending },

@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { AccountTermsBanner } from "@/views/Account/components/AccountTermsBanner";
 import { TermsAcceptDialog } from "@/views/Account/components/TermsAcceptDialog";
 import { FIRST_CHAT_PATH } from "@/models/services/firstChatService";
+import { firstGoalRoute, type FirstGoal } from "@/models/services/firstGoal";
+import { FirstGoalQuestion } from "./FirstGoalQuestion";
 
 import { t } from "@/i18n";
 export const OnboardingPage = () => {
@@ -18,7 +20,7 @@ export const OnboardingPage = () => {
   const choose = async (intent: SignupIntent | null) => {
     setSaving(true);
     try {
-      await profileService.completeOnboarding(intent ?? "buyer");
+      await profileService.completeOnboarding(intent ?? "buyer", true);
       navigate(intent === "operator" ? "/connect" : FIRST_CHAT_PATH, { replace: true });
     } catch {
       toast.error(t("Could not save your choice. Please try again."));
@@ -34,10 +36,16 @@ export const OnboardingPage = () => {
           <h1 className="text-3xl font-bold">{t("What do you want to do?")}</h1>
           <p className="text-muted-foreground">{t("Pick a starting point. You can always use both later.")}</p>
         </div>
+        <FirstGoalQuestion disabled={saving} onAnswer={async goal => {
+          if (saving) return;
+          setSaving(true);
+          try { await profileService.answerFirstGoal(goal); navigate(firstGoalRoute(goal), { replace: true }); }
+          catch { toast.error(t("Could not save your choice. Please try again.")); setSaving(false); }
+        }} />
         <StartingPaths onChoose={async path => {
           if (saving) return;
           setSaving(true);
-          try { const operator = path.includes("connect"); await profileService.completeOnboarding(operator ? "operator" : "buyer"); navigate(path, { replace: true }); }
+          try { const operator = path.includes("connect"); await profileService.completeOnboarding(operator ? "operator" : "buyer", true); navigate(path, { replace: true }); }
           catch { toast.error(t("Could not save your choice. Please try again.")); setSaving(false); }
         }} />
         <div className="flex justify-center">

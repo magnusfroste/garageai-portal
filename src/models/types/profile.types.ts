@@ -11,6 +11,7 @@ export interface Profile {
   terms_notice_dismissed_version?: string | null;
   chat_sync: boolean;
   default_key_at: string | null;
+  first_goal?: "look" | "use" | "own_machine" | "share" | null;
 }
 
 export interface ProfileUpdateData {
@@ -21,4 +22,7 @@ export interface ProfileUpdateData {
 export interface OnboardingUpdateData {
   signup_intent: "buyer" | "operator" | null;
   onboarding_done: boolean;
+  first_goal?: "look" | "use" | "own_machine" | "share" | null;
+  first_goal_at?: string | null;
+  first_goal_asked?: boolean;
 }

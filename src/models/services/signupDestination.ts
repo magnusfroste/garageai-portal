@@ -42,6 +42,7 @@ export function firstLoginContinuation(
 ) {
   const destination = safeSignupDestination(requested) ?? (!profile.onboarding_done ? safeSignupDestination(metadata.signup_destination) : null);
   const choice = profile.signup_intent ?? destinationIntent(destination, intent ?? metadata.signup_intent);
-  return { destination: destination ?? (profile.onboarding_done ? "/dashboard" : choice === "buyer" ? FIRST_CHAT_PATH : "/onboarding"),
-    completeOnboarding: (!!destination || choice === "buyer") && !profile.onboarding_done, intent: choice };
+  // A clear operator link is not asked the first-goal question; it continues to connect.
+  return { destination: destination ?? (profile.onboarding_done ? "/dashboard" : choice === "buyer" ? FIRST_CHAT_PATH : choice === "operator" ? "/dashboard/connect" : "/onboarding"),
+    completeOnboarding: (!!destination || choice === "buyer" || choice === "operator") && !profile.onboarding_done, intent: choice };
 }

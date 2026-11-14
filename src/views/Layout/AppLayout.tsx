@@ -1,3 +1,4 @@
+import { buyerNeedsFirstAnswer } from "@/models/services/buyerFirstAnswer";
 import { creditsText } from "@/models/services/credits";
 import { useEffect } from "react";
 import { Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
@@ -50,7 +51,7 @@ const SignedInLayout = () => {
   const defaultKey = useDefaultKey(profile);
   const location = useLocation();
   const firstRequest = useBuyerFirstRequest(profile?.signup_intent === "buyer");
-  const inlineTerms = (location.pathname === "/dashboard/keys" && new URLSearchParams(location.search).has("setup")) || (profile?.signup_intent === "buyer" && !firstRequest.data && (location.pathname === "/dashboard" || (location.pathname === "/dashboard/keys" && !location.search.includes("manage=1"))));
+  const inlineTerms = (location.pathname === "/dashboard/keys" && new URLSearchParams(location.search).has("setup")) || (buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data ?? null, profile?.first_goal) && (location.pathname === "/dashboard" || (location.pathname === "/dashboard/keys" && !location.search.includes("manage=1"))));
   const inlineKey = location.pathname === "/dashboard/chat" || inlineTerms;
   useLanguagePreference(profile?.preferred_language);
 

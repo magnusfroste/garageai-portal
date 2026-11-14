@@ -652,6 +652,13 @@
       "when": 1794151908533,
       "tag": "0092_bridge_run_error_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1794700678512,
+      "tag": "0093_profile_first_goal",
+      "breakpoints": true
     }
   ]
 }

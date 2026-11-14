@@ -1181,4 +1181,11 @@ export const sv: Record<string, string> = {
   "1 credit = 1 USD of usage today. Top up by card; VAT is handled at checkout.": "1 kredit = 1 USD i användning idag. Fyll på med kort; moms hanteras i kassan.",
   "Price in / out · credits per 1M tokens": "Pris in / ut · krediter per 1M tokens",
   "in / out · credits per 1M tokens": "in / ut · krediter per 1M tokens",
+  "What do you want to do first?": "Vad vill du göra först?",
+  "Look around": "Titta runt",
+  "Use AI from the garages": "Använda AI från garagen",
+  "Use my own computer from anywhere": "Använda min egen dator var som helst",
+  "Share my computer with others": "Dela min dator med andra",
+  "We ask to show you the right first step and to make getting started better. You can change your mind at any time.": "Vi frågar för att visa rätt första steg och göra starten bättre. Du kan ändra dig när som helst.",
+  "Skip": "Hoppa över",
 };

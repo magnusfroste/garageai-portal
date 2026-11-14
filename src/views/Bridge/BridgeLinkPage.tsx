@@ -1,3 +1,4 @@
+import { firstGoalVisibility } from "@/models/services/firstGoal";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, Laptop, XCircle } from "lucide-react";
@@ -59,7 +60,7 @@ const BridgeLinkPage = () => {
   const link = lookup.data;
 
   useEffect(() => { if (link?.suggested_name) setNewName(link.suggested_name); }, [link?.suggested_name]);
-  useEffect(() => { setReplace(false); setVisibility(choice === "new" ? null : meshGarages.find(g => g.id === choice)?.visibility ?? "market"); }, [choice]);
+  useEffect(() => { setReplace(false); setVisibility(choice === "new" ? firstGoalVisibility(profile?.first_goal) : meshGarages.find(g => g.id === choice)?.visibility ?? "market"); }, [choice, profile?.first_goal]);
 
   if (loading) return null;
   if (!session) return <Navigate to={`/auth?intent=operator&next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
