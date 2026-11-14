@@ -1,4 +1,4 @@
-// Plain-language messages for credential-issuing errors (Bridge link page and the wizard).
+// Plain-language messages for credential-issuing errors (Door link page and the wizard).
 import { t } from "@/i18n";
 
 export const SUPPORT_URL = "mailto:support@garageai.eu";

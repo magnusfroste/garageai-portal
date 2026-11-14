@@ -164,7 +164,7 @@ async function bridgeVersions(admin: SupabaseClient) {
     admin.from("admin_settings").select("value").eq("key", "bridge_update").maybeSingle(),
     admin.from("garages").select("name, agent, canary, agent_state"),
   ]);
-  if (setting.error || update.error || garages.error) throw new Error("Bridge version data unavailable");
+  if (setting.error || update.error || garages.error) throw new Error("Door version data unavailable");
   return bridgeVersionsSummary(setting.data?.value, garages.data ?? [], update.data?.value);
 }
 

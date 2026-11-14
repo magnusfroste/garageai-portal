@@ -107,7 +107,7 @@ export const GarageModelList = ({ garageName, models, pending, onToggle, onPause
 export const GarageTroubleshooting = () => {
   const [open, setOpen] = useState(false);
   const items: Array<{ title: string; body: string; code?: string }> = [
-    { title: "Run the built-in check", body: "Bridge can diagnose the tunnel, runtime and port for you:", code: "garageai doctor" },
+    { title: "Run the built-in check", body: "Door can diagnose the tunnel, runtime and port for you:", code: "garageai doctor" },
     { title: "Model too big for memory", body: "If the model does not fit in RAM/VRAM it loads slowly or fails. Choose a smaller model or quantization." },
     { title: "Token revoked", body: "If the token was revoked, run garageai connect again and approve this computer in your browser." },
     { title: "Sleeping Mac/PC goes offline", body: "A sleeping machine cannot answer. Disable sleep while you offer the GPU; the garage comes back automatically when it wakes." },

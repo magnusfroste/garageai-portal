@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Free the Bridge tunnel identity first; the hub drops the peer once the garage leaves gateway-targets.
+    // Free the GarageAI tunnel identity first; the hub drops the peer once the garage leaves gateway-targets.
     await admin.from("garages").update({ tunnel_public_key: null, tunnel_ip: null, tunnel_assigned_at: null }).eq("id", garageId);
 
     // 3. Credentials.

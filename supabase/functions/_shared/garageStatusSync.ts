@@ -1,5 +1,5 @@
-// Keeps garages.status in line with the status sampler for Bridge (non-endpoint) garages.
-// Endpoint garages keep their own test-driven status logic. A Bridge lifecycle state
+// Keeps garages.status in line with the status sampler for Door (non-endpoint) garages.
+// Endpoint garages keep their own test-driven status logic. A Door lifecycle state
 // (agent_state, e.g. maintenance) is shown from agent_state by the UI; status only says
 // whether the machine is reachable, so a stale heartbeat always means 'offline'.
 export type SampleReason = string | null;

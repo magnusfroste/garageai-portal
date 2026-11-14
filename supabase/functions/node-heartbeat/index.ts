@@ -65,13 +65,13 @@ Deno.serve(async (req) => {
       if (resumeErr) console.warn("[node-heartbeat] portal resume", garage.name, resumeErr.message);
       else { portalResumed = true; garage.paused_at = null; console.log("[node-heartbeat] garageai resume cleared portal pause", garage.name); }
     }
-    // Bridge release runs on our own garages drive auto promotion (RPC ignores non-admin, non-canary garages).
+    // Door release runs on our own garages drive auto promotion (RPC ignores non-admin, non-canary garages).
     if (parsedAgent.agent?.version) {
       const errVer = updateErrorVersion(parsedAgent.agent.version, bridge.bridge_stable, parsedAgent.agent.update?.last_error);
       const { error: runErr } = await admin.rpc("record_bridge_run", { _garage_id: garage.id, _version: parsedAgent.agent.version.startsWith("v") ? parsedAgent.agent.version : `v${parsedAgent.agent.version.replace(/^bridge-/, "")}`, _error: errVer ? parsedAgent.agent.update?.last_error ?? null : null, _error_version: errVer });
       if (runErr) console.warn("[node-heartbeat] bridge run", garage.name, runErr.message);
     }
-    // Managed models: store Bridge's reports, answer with what the portal still wants. Never rejects the heartbeat.
+    // Managed models: store Door's reports, answer with what the portal still wants. Never rejects the heartbeat.
     let wanted: WantedModel[] = [];
     let offerNow: string[] = [];
     try {
@@ -81,14 +81,14 @@ Deno.serve(async (req) => {
       const current = (rows ?? []) as ManagedRow[];
       const updates = applyReports(current, reports.models);
       for (const u of updates) {
-        if (u.patch.status === "ready" && u.patch.total_mb == null) { // Bridge sent no size: use the registry's
+        if (u.patch.status === "ready" && u.patch.total_mb == null) { // Door sent no size: use the registry's
           const { data: cm } = await admin.from("curated_models").select("download_bytes").eq("ollama_tag", u.model).not("download_bytes", "is", null).limit(1).maybeSingle();
           if (cm?.download_bytes) { u.patch.total_mb = Math.round(Number(cm.download_bytes) / 1e6); u.patch.completed_mb = u.patch.total_mb; }
         }
         await admin.from("garage_managed_models").update(u.patch).eq("garage_id", garage.id).eq("model", u.model);
         const row = current.find((r) => r.model === u.model); if (row && u.patch.status) { row.status = u.patch.status; row.reported_at = u.patch.reported_at; }
       }
-      // Idempotent: every heartbeat offers fetched pulls that Bridge lists but that are not offered yet.
+      // Idempotent: every heartbeat offers fetched pulls that Door lists but that are not offered yet.
       const candidates = pendingOffers(current, payload.models, new Set());
       if (candidates.length) {
         const { data: inv } = await admin.from("garage_models").select("model, offered").eq("garage_id", garage.id).in("model", candidates);

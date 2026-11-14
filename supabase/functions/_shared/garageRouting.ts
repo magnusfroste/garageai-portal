@@ -48,7 +48,7 @@ export interface RoutingGarage {
   last_heartbeat_at: string | null;
   last_gateway_check_at?: string | null; runtime_ok?: boolean | null; mesh_connected?: boolean | null;
   connection_type?: string | null; endpoint_url?: string | null; paused_at?: string | null;
-  /** Bridge lifecycle state; set = planned absence, out of routing. */
+  /** Door lifecycle state; set = planned absence, out of routing. */
   agent_state?: unknown;
   visibility?: 'market' | 'private';
   dedicated_input_cost_per_million: number; dedicated_output_cost_per_million: number;

@@ -13,7 +13,7 @@ export const BridgeAgentSection = ({ agent, at }: { agent: AgentReport; at: stri
   const problems = sortedProblems(agent);
   return (
     <div className="space-y-1.5 text-xs">
-      <p><span className="font-medium">Bridge</span> {agent.version ?? "—"}{mins != null && <span className="text-muted-foreground"> · {t("reported")} {mins} {t("min ago")}</span>}</p>
+      <p><span className="font-medium">Door</span> {agent.version ?? "—"}{mins != null && <span className="text-muted-foreground"> · {t("reported")} {mins} {t("min ago")}</span>}</p>
       {problems.length === 0 ? <p className="text-muted-foreground">{t("No problems reported")}</p> : (
         <ul className="space-y-1">
           {problems.map((p, i) => { const { Icon, cls } = ICON[p.severity]; return (

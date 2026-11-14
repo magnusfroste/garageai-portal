@@ -37,7 +37,7 @@ export const presentAdminGarage = (garage: Garage, models: GarageModelRow[], now
 
   if (garage.disabled) return { status: "disabled", label: "Disabled", reason: "Disabled by admin", attention: false, severity: 4, offered: offeredRows.length, live, lastSeen };
   if (garage.paused_at) return { status: "paused", label: "Paused", reason: garage.paused_reason || null, attention: false, severity: 3, offered: offeredRows.length, live, lastSeen };
-  // Planned absence chosen by the operator (Bridge agent.state): a pill, never "needs attention".
+  // Planned absence chosen by the operator (Door agent.state): a pill, never "needs attention".
   if (garage.agent_state) return { status: "paused", label: lifecyclePill(garage.agent_state), reason: garage.agent_state.reason || null, attention: false, severity: 3, offered: offeredRows.length, live, lastSeen };
   if (garage.mesh_connected === false) return { status: "offline", label: "Offline", reason: "Tunnel disconnected", attention: true, severity: 0, offered: offeredRows.length, live: 0, lastSeen };
   if (garage.runtime_ok === false) return { status: "offline", label: "Offline", reason: garage.runtime_error || "Runtime unavailable", attention: true, severity: 0, offered: offeredRows.length, live: 0, lastSeen };

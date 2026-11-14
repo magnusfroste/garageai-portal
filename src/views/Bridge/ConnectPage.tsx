@@ -41,7 +41,7 @@ const ConnectPage = () => {
     <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">{t("Connect this computer")}</h1>
-        <p className="text-sm text-muted-foreground">{t("Run this in a terminal on the computer with the GPU. It installs GarageAI Bridge, and you approve the computer here in the browser. Nothing secret is in the command.")}</p>
+        <p className="text-sm text-muted-foreground">{t("Run this in a terminal on the computer with the GPU. It installs GarageAI Door (formerly Bridge), and you approve the computer here in the browser. Nothing secret is in the command.")}</p>
       </div>
       <section className="space-y-2 rounded-md border p-4 text-sm">
         <p className="font-medium">{t("How it works")}</p>
@@ -54,7 +54,7 @@ const ConnectPage = () => {
         <Collapsible className="pt-1">
           <CollapsibleTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ChevronDown className="h-4 w-4" />{t("No AI engine on this computer yet?")}</CollapsibleTrigger>
           <CollapsibleContent className="space-y-2 pt-2">
-            <p className="text-muted-foreground">{t("Bridge can install one: Xyntetik Runner, a one-file engine made in Sweden, with a model that fits your machine.")}</p>
+            <p className="text-muted-foreground">{t("Door can install one: Xyntetik Runner, a one-file engine made in Sweden, with a model that fits your machine.")}</p>
             <OneLine command={bridgeRuntimeInstallCommand(os)} onCopied={() => setWaiting(true)} />
           </CollapsibleContent>
         </Collapsible>
@@ -78,10 +78,10 @@ const ConnectPage = () => {
             </TabsContent>
           </Tabs>
           <a href="https://www.garageai.eu/security" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"><Shield className="h-3.5 w-3.5" />{t("Is it safe to share from my computer?")}</a>
-          <p className="text-sm text-muted-foreground">{t("Bridge connects this computer to GarageAI through its own encrypted tunnel. Nothing to configure on your network, and your model runtime can stay on localhost.")}</p>
+          <p className="text-sm text-muted-foreground">{t("Door connects this computer to GarageAI through its own encrypted tunnel. Nothing to configure on your network, and your model runtime can stay on localhost.")}</p>
           <LegalLinks />
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-            <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp, Xyntetik Runner) with a model loaded, or let Bridge install Xyntetik Runner (above).")}</li>
+            <li>{t("Have your model runtime running (Ollama, LM Studio, vLLM, llama.cpp, Xyntetik Runner) with a model loaded, or let Door install Xyntetik Runner (above).")}</li>
             <li>{t("After connecting, choose the models to offer under My garage.")}</li>
           </ul>
           {waiting && (

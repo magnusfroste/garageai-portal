@@ -1,4 +1,4 @@
-// Bridge self-update: the portal decides the stable version garages run (admin_settings bridge_update), never GitHub directly.
+// Door self-update: the portal decides the stable version garages run (admin_settings bridge_update), never GitHub directly.
 import { gt, valid } from "npm:semver@7.8.5";
 
 const v = (raw: unknown): string | null => {

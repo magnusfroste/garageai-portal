@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       if (rows.length < 100) break;
     }
     const release = newestBridgeRelease(releases);
-    if (!release?.version) return json({ error: "No Bridge release found" }, 404);
+    if (!release?.version) return json({ error: "No Door release found" }, 404);
     const checked_at = new Date().toISOString();
     const { error } = await admin.rpc("record_bridge_release", { p_version: release.version, p_tag: release.tag, p_checked_at: checked_at, p_published_at: release.published_at });
     if (error) throw error;

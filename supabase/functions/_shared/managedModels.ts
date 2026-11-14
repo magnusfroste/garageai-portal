@@ -1,4 +1,4 @@
-// Models chosen in the portal, fetched by Bridge (docs/bridge.md). Pure, no Deno imports (unit-tested).
+// Models chosen in the portal, fetched by Door (docs/bridge.md). Pure, no Deno imports (unit-tested).
 export type ManagedAction = "pull" | "remove";
 export type ManagedBy = "operator" | "garageai" | "ops-test";
 export type ManagedStatus = "wanted" | "downloading" | "ready" | "failed" | "removed" | "refused";
@@ -29,13 +29,13 @@ export function parseAgentModels(raw: unknown): { models: AgentModelReport[]; er
   return { models, errors };
 }
 
-/** Entry stays wanted until Bridge reports ready (pull) or removed (remove); failed/refused stay too. */
+/** Entry stays wanted until Door reports ready (pull) or removed (remove); failed/refused stay too. */
 export const isOpen = (r: Pick<ManagedRow, "action" | "status">) => r.action === "pull" ? r.status !== "ready" : r.status !== "removed";
-export const wantedModels = (rows: ManagedRow[]): WantedModel[] => rows.filter(isOpen).map((r) => ({ model: r.model, action: r.action, by: r.by === "operator" ? "operator" : "garageai" })); // Bridge contract knows only operator/garageai; ops tests are GarageAI's
+export const wantedModels = (rows: ManagedRow[]): WantedModel[] => rows.filter(isOpen).map((r) => ({ model: r.model, action: r.action, by: r.by === "operator" ? "operator" : "garageai" })); // Door contract knows only operator/garageai; ops tests are GarageAI's
 
 const ACCEPTS: Record<ManagedAction, Set<string>> = { pull: new Set(["downloading", "ready", "failed", "refused"]), remove: new Set(["removed", "failed", "refused"]) };
 
-/** Row updates from Bridge reports. Reports for unknown models or that don't fit the row's action are ignored. */
+/** Row updates from Door reports. Reports for unknown models or that don't fit the row's action are ignored. */
 export function applyReports(rows: ManagedRow[], reports: AgentModelReport[]): Array<{ model: string; patch: Partial<ManagedRow> & { reported_at: string } }> {
   const byModel = new Map(rows.map((r) => [r.model, r]));
   const out: Array<{ model: string; patch: Partial<ManagedRow> & { reported_at: string } }> = [];
@@ -65,14 +65,14 @@ export const fitsMemory = (sizeGb: number | null, memoryGb: number | null) =>
 export const fitsTogether = (sizeGb: number | null, otherGb: number[], memoryGb: number | null) =>
   fitsMemory(sizeGb == null ? null : sizeGb + otherGb.reduce((a, b) => a + b, 0), memoryGb);
 
-/** Idempotent auto-offer: fetched pulls Bridge now lists that are not offered yet (Bridge may list a model one heartbeat after reporting ready). */
+/** Idempotent auto-offer: fetched pulls Door now lists that are not offered yet (Door may list a model one heartbeat after reporting ready). */
 /** Only within an hour of "ready", so an operator who later switches the offer off is not overridden. */
 export const OFFER_WINDOW_MS = 60 * 60 * 1000;
 export const pendingOffers = (rows: ManagedRow[], listed: string[], offered: Set<string>, now = Date.now()) =>
   rows.filter((r) => r.action === "pull" && r.status === "ready" && listed.includes(r.model) && !offered.has(r.model)
     && (!r.reported_at || now - Date.parse(r.reported_at) <= OFFER_WINDOW_MS)).map((r) => r.model);
 
-/** What Cancel does (mirrors SQL apply_managed_model_cancel). Once Bridge has fetched, cancel becomes a remove. */
+/** What Cancel does (mirrors SQL apply_managed_model_cancel). Once Door has fetched, cancel becomes a remove. */
 export function cancelOutcome(r: Pick<ManagedRow, "action" | "status"> | null): "none" | "delete" | "remove" | "revert" {
   if (!r) return "none";
   if (r.action === "remove") return r.status === "removed" ? "none" : "revert";

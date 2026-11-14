@@ -12,7 +12,7 @@ export const connectionTool = (scriptVersion: string | null | undefined): string
   if (!version) return null;
   if (/\bbridge\b/i.test(version)) {
     const clean = version.replace(/\(bridge\)/gi, "").replace(/\bbridge\b/gi, "").trim();
-    return clean ? `Bridge ${clean}` : "Bridge";
+    return clean ? `Door ${clean}` : "Door";
   }
   return `script ${version}`;
 };

@@ -1,5 +1,5 @@
 import { statusAfterHealth } from "../_shared/agentState.ts";
-// Gateway L1 (Bridge tunnel up signal) / L2 (GET /v1/models) results -> garages columns -> routing within a minute.
+// Gateway L1 (GarageAI tunnel up signal) / L2 (GET /v1/models) results -> garages columns -> routing within a minute.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
 import { GARAGE_SELECT, GATEWAY_TEST_MAX_AGE_MS, gatewayHealthy, modelsToRetest, withProbeDeployments, type RoutingGarage } from "../_shared/garageRouting.ts";
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
         if (!t.inconclusive && !latest.has(t.model)) latest.set(t.model, { passed: t.passed, at: Date.parse(t.tested_at) });
       }
       const anyRecentPass = [...latest.values()].some((t) => t.passed && Date.now() - t.at <= GATEWAY_TEST_MAX_AGE_MS);
-      const absent = !!g.agent_state; // planned absence (Bridge agent.state): measured, never marked offline/unhealthy
+      const absent = !!g.agent_state; // planned absence (Door agent.state): measured, never marked offline/unhealthy
       const status = statusAfterHealth(g.status, healthy, anyRecentPass, absent);
       if (status !== g.status) changed = true;
       await admin.from("garages").update({ last_gateway_check_at: r.checked_at, ...next, runtime_error: r.runtime_error, runtime_models: r.models, status }).eq("id", g.id);

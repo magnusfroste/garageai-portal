@@ -13,10 +13,10 @@ export const stepNumber = (step: string): number | null => {
 export const stepLabel = (step: string) => step.replace(/^\s*\d+\s*\/\s*\d+\s*/, "").trim() || step;
 
 const HINTS: Record<number, string> = {
-  1: "Run garageai doctor on this machine to check the Bridge tunnel.",
+  1: "Run garageai doctor on this machine to check the GarageAI tunnel.",
   2: "Run garageai connect again and approve this computer in your browser.",
-  3: "Start your model runtime with a model loaded, then run garageai connect again. Bridge can reach it on localhost.",
-  4: "Bridge can diagnose the tunnel, runtime and port for you:",
+  3: "Start your model runtime with a model loaded, then run garageai connect again. Door can reach it on localhost.",
+  4: "Door can diagnose the tunnel, runtime and port for you:",
 };
 export const stepHint = (n: number): string | null => HINTS[n] ?? null;
 

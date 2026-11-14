@@ -1,4 +1,4 @@
-// Validates the optional Bridge `agent` object sent with node-heartbeat. Pure, no Deno imports (unit-tested).
+// Validates the optional Door `agent` object sent with node-heartbeat. Pure, no Deno imports (unit-tested).
 import { parseEnergy, type AgentEnergy } from './agentEnergy.ts';
 export type AgentSeverity = "error" | "warning" | "info";
 export interface AgentProblem { severity: AgentSeverity; code: string; message: string; fix?: string }
@@ -22,7 +22,7 @@ export function parseAgent(raw: unknown): { agent: AgentReport | null; error?: s
   if (raw === undefined) return { agent: null };
   if (!isObj(raw)) return { agent: null, error: "agent is not an object" };
   const out: AgentReport = { problems: [] };
-  // Keep future Bridge fields (state, nodes, requests, ...) as sent, within a size cap; validated keys below override.
+  // Keep future Door fields (state, nodes, requests, ...) as sent, within a size cap; validated keys below override.
   const extras: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(raw)) {
     if (KNOWN.has(k) || k.length > AGENT_STRING_MAX) continue;

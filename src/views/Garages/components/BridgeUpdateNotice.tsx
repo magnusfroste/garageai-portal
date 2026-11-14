@@ -10,7 +10,7 @@ export const BridgeUpdateNotice = ({ version, latest, stable = null }: { version
   const status = bridgeStatus(version, latest, stable);
   if (!status.outdated) return null;
   return <div className="space-y-2 border-t border-border pt-3">
-    <p className="text-sm font-medium">{t("Bridge {version} · {latest} available", { version: status.version ?? "", latest: status.latest ?? "" })}</p>
+    <p className="text-sm font-medium">{t("Door {version} · {latest} available", { version: status.version ?? "", latest: status.latest ?? "" })}</p>
     <div className="flex items-start gap-2 rounded-md bg-muted/40 p-3">
       <code className="min-w-0 flex-1 break-all font-mono text-xs">{BRIDGE_UPDATE_COMMAND}</code>
       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label={t("Copy command")} onClick={async () => {

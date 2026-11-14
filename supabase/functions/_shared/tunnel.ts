@@ -1,4 +1,4 @@
-// Bridge tunnel (GarageAI's own WireGuard hub) rules. Pure: no I/O, shared by edge functions and tests.
+// GarageAI tunnel (GarageAI's own WireGuard hub) rules. Pure: no I/O, shared by edge functions and tests.
 // Design: https://github.com/magnusfroste/garageai/blob/main/docs/bridge-tunnel.md
 
 export type Transport = "tunnel";
@@ -29,7 +29,7 @@ export function lowestFreeTunnelIp(used: Iterable<string | null | undefined>): s
   return null;
 }
 
-/** Garages require an assigned Bridge tunnel address; caller-supplied addresses are never trusted. */
+/** Garages require an assigned GarageAI tunnel address; caller-supplied addresses are never trusted. */
 export async function resolveGaragePeer(garage: { tunnel_ip?: string | null }): Promise<{ id: null; ip: string }> {
   if (!garage.tunnel_ip) throw new Error("node is not connected to the tunnel yet (no tunnel address)");
   return { id: null, ip: garage.tunnel_ip };

@@ -75,6 +75,9 @@ const App = () => (
           <Route path="/bridge" element={<PublicOrAppLayout />}>
             <Route path="link" element={<BridgeLinkPage />} />
           </Route>
+          <Route path="/door" element={<PublicOrAppLayout />}>
+            <Route path="link" element={<BridgeLinkPage />} />
+          </Route>
           <Route path="/models" element={<PublicOrAppLayout />}>
             <Route index element={<CatalogPage />} />
             <Route path="*" element={<ModelDetailPage />} />

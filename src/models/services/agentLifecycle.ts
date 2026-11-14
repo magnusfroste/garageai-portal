@@ -1,4 +1,4 @@
-// Bridge lifecycle state (garages.agent_state) presented the same way on My garage and Admin → Garages.
+// Door lifecycle state (garages.agent_state) presented the same way on My garage and Admin → Garages.
 export interface AgentLifecycleState { kind: "maintenance" | "starting" | "away"; reason: string | null; since: string | null; until: string | null }
 const time = (iso: string | null) => iso && Number.isFinite(Date.parse(iso)) ? new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) : null;
 

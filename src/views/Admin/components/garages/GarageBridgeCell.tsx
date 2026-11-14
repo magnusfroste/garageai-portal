@@ -1,9 +1,9 @@
 import type { AdminGaragePresentation } from "@/models/services/adminGaragePresentation";
 import { t } from "@/i18n";
 
-/** Bridge column: version, "→ updating to", "update failed: …" or "auto-update off". */
+/** Door column: version, "→ updating to", "update failed: …" or "auto-update off". */
 export const GarageBridgeCell = ({ view, canary }: { view: AdminGaragePresentation; canary?: boolean }) => (
-  <>{canary && <span className="mr-1 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-sans text-muted-foreground" title={t("Gets the latest Bridge release before other garages")}>{t("canary")}</span>}<BridgeVersion view={view} /></>
+  <>{canary && <span className="mr-1 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-sans text-muted-foreground" title={t("Gets the latest Door release before other garages")}>{t("canary")}</span>}<BridgeVersion view={view} /></>
 );
 
 const BridgeVersion = ({ view }: { view: AdminGaragePresentation }) => {

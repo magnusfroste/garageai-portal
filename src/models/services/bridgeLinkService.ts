@@ -1,4 +1,4 @@
-// Rules for the Bridge link approval page and machine display.
+// Rules for the Door link approval page and machine display.
 export const GARAGE_NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 
 export const normaliseUserCode = (v: string): string => {

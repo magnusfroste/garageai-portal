@@ -58,7 +58,7 @@ function GaragePage({garage:g,onDone}:{garage:GarageRow;onDone:()=>void}){
    {!life&&!status.online&&status.reason&&<p className="text-sm text-warning-foreground">{t(status.reason.text,status.reason.params)}</p>}
    {status.tunnelFailed&&<p className="text-xs text-warning-foreground">{t('Tunnel unavailable. Run garageai doctor on this machine.')}</p>}
    {status.runtimeFailed&&<p className="text-xs text-warning-foreground">{g.runtime_error??t('Start the model runtime on this machine, then run garageai doctor.')}</p>}
-   {status.heartbeatMissing&&<p className="text-xs text-warning-foreground">{t('Bridge has stopped reporting. Wake the machine and run garageai doctor.')}</p>}
+   {status.heartbeatMissing&&<p className="text-xs text-warning-foreground">{t('Door has stopped reporting. Wake the machine and run garageai doctor.')}</p>}
   </section>
   <section aria-label={t('Is it earning?')} className="border-t border-border pt-5 space-y-4">
    {energy.isError?<p className="text-xs text-destructive">{t('Could not load energy readings.')}</p>:<GarageEnergyToday energy={energy.data}/>}

@@ -16,7 +16,7 @@ const ICON: Record<BridgeStepState, JSX.Element> = {
   failed: <XCircle className="h-4 w-4 text-danger" aria-hidden />,
 };
 
-/** Live Bridge onboarding for a just-approved garage (3 s poll until live). */
+/** Live Door onboarding for a just-approved garage (3 s poll until live). */
 export const BridgeLiveProgress = ({ garageId }: { garageId: string }) => {
   const [stop, setStop] = useState(false);
   const events = useQuery({
@@ -47,7 +47,7 @@ export const BridgeLiveProgress = ({ garageId }: { garageId: string }) => {
         ))}
       </ol>
       {failed && !live && (
-        <p className="rounded-md border border-danger-border bg-danger-surface p-3 text-sm">{t("Bridge says what to do in your terminal; fix it and run garageai connect again.")}</p>
+        <p className="rounded-md border border-danger-border bg-danger-surface p-3 text-sm">{t("Door says what to do in your terminal; fix it and run garageai connect again.")}</p>
       )}
       {live && (
         <div className="space-y-3 rounded-md border border-success-border bg-success-surface p-4">

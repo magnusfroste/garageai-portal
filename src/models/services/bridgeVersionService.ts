@@ -20,7 +20,7 @@ export const parseBridgeUpdate = (raw: unknown): BridgeUpdate => {
     stable_set_at: typeof s.stable_set_at === "string" ? s.stable_set_at : typeof s.stable_at === "string" ? s.stable_at : null, stable_set_by: typeof s.stable_set_by === "string" ? s.stable_set_by.slice(0, 120) : null };
 };
 export type BridgeUpdateState = { kind: "none" } | { kind: "current"; version: string } | { kind: "updating"; version: string; target: string } | { kind: "failed"; version: string | null; error: string } | { kind: "off"; version: string | null };
-/** Admin Bridge column: failed > auto-update off > updating > version. */
+/** Admin Door column: failed > auto-update off > updating > version. */
 export const bridgeUpdateState = (agent: { version?: unknown; update?: { auto?: boolean; last_error?: string | null } } | null | undefined, stable: string | null): BridgeUpdateState => {
   const version = bridgeVersion(agent?.version);
   const u = agent?.update;

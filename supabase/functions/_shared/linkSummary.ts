@@ -1,4 +1,4 @@
-// What the link/connect step tells the operator (printed by Bridge from the registration result).
+// What the link/connect step tells the operator (printed by Door from the registration result).
 export const TELL_US_URL = "mailto:support@garageai.eu?subject=Model%20not%20recognised";
 
 export interface LinkSummary {

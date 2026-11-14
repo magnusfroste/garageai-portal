@@ -13,7 +13,7 @@ export interface IssueOptions {
   adminPanel: boolean;
   operatorId?: string;
   acceptTerms: boolean;
-  /** Machine asking for credentials (Bridge link); same machine re-linking its garage is not rate-limited. */
+  /** Machine asking for credentials (Door link); same machine re-linking its garage is not rate-limited. */
   machineId?: string | null;
 }
 

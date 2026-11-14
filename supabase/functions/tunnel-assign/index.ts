@@ -1,4 +1,4 @@
-// Assigns a Bridge tunnel address. Auth: the garage's register token.
+// Assigns a GarageAI tunnel address. Auth: the garage's register token.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { lowestFreeTunnelIp, validTunnelKey, type TunnelHub } from "../_shared/tunnel.ts";
 

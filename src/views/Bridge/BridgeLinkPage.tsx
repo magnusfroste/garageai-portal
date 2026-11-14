@@ -87,12 +87,12 @@ const BridgeLinkPage = () => {
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-8">
       <div>
-        <h1 className="text-2xl font-semibold">{t("Link a machine with Bridge")}</h1>
+        <h1 className="text-2xl font-semibold">{t("Link a machine with Door")}</h1>
         <p className="text-sm text-muted-foreground">{t("Approve the machine that is running garageai connect.")}</p>
       </div>
 
       {done === "approved" ? (
-        <Card><CardContent className="space-y-4 p-6"><p className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-foreground" />{t("Approved. Go back to your terminal: Bridge continues on its own.")}</p>{garageId && <BridgeLiveProgress garageId={garageId} />}</CardContent></Card>
+        <Card><CardContent className="space-y-4 p-6"><p className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-foreground" />{t("Approved. Go back to your terminal: Door continues on its own.")}</p>{garageId && <BridgeLiveProgress garageId={garageId} />}</CardContent></Card>
       ) : done === "denied" ? (
         <Card><CardContent className="flex items-start gap-3 p-6"><XCircle className="mt-0.5 h-5 w-5 text-muted-foreground" /><p>{t("Denied. The machine was not linked.")}</p></CardContent></Card>
       ) : (
@@ -119,7 +119,7 @@ const BridgeLinkPage = () => {
                     <Fact label={t("System")} value={[link.os, link.arch].filter(Boolean).join(" · ")} />
                     <Fact label="GPU" value={link.gpu} />
                     <Fact label={t("Memory")} value={link.memory_gb != null ? `${link.memory_gb} GB` : null} />
-                    <Fact label={t("Bridge version")} value={link.bridge_version} />
+                    <Fact label={t("Door version")} value={link.bridge_version} />
                     <Fact label={t("Runtime")} value={link.runtime} />
                     <Fact label={t("Asked")} value={`${mins} ${t("min ago")}`} />
                     <Fact label={t("Requested from")} value={link.requested_ip_country} />

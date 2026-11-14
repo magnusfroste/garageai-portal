@@ -1,4 +1,4 @@
-// Pure rules for the Bridge device-link flow (no I/O), shared by bridge-link-* functions and unit tests.
+// Pure rules for the Door device-link flow (no I/O), shared by bridge-link-* functions and unit tests.
 export const NAME_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
 export const USER_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I, O, 0, 1
 export const USER_CODE_RE = /^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/;
@@ -6,7 +6,7 @@ export const LINK_TTL_S = 600;
 export const POLL_INTERVAL_S = 3;
 export const SLOW_DOWN_MS = 2000;
 export const STARTS_PER_IP_PER_HOUR = 10;
-export const VERIFICATION_URL = "https://app.garageai.eu/bridge/link";
+export const VERIFICATION_URL = "https://app.garageai.eu/door/link";
 
 export function makeUserCode(random: (n: number) => Uint8Array = (n) => crypto.getRandomValues(new Uint8Array(n))): string {
   const bytes = random(8);

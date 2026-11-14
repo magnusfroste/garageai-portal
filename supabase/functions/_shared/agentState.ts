@@ -1,4 +1,4 @@
-// Bridge lifecycle state (agent.state) and node report (agent.nodes). Pure, no Deno imports (unit-tested).
+// Door lifecycle state (agent.state) and node report (agent.nodes). Pure, no Deno imports (unit-tested).
 // A set state is a planned absence: the garage leaves routing at once and is never marked unhealthy for it.
 export type AgentStateKind = "maintenance" | "starting" | "away";
 export interface AgentState { kind: AgentStateKind; reason: string | null; since: string | null; until: string | null }
@@ -77,8 +77,8 @@ export function splitReturnModels(models: string[], latest: Map<string, { passed
   return { testFirst, testAfter };
 }
 
-/** Bridge's `garageai resume` also lifts a portal pause the operator set themselves (never a GarageAI pause):
- * when Bridge now reports serving and either it was in a planned state before, or it reports agent.resumed_at after the pause. */
+/** Door's `garageai resume` also lifts a portal pause the operator set themselves (never a GarageAI pause):
+ * when Door now reports serving and either it was in a planned state before, or it reports agent.resumed_at after the pause. */
 export function resumeClearsPortalPause(
   garage: { paused_at?: string | null; paused_by_admin?: boolean | null },
   prev: AgentState | null, next: AgentState | null, resumedAt: unknown,

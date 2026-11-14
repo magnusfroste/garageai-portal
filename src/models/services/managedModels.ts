@@ -5,7 +5,7 @@ import { paramsB } from "./poolPricing";
 
 export interface ModelCandidate {
   model: string;        // public name
-  tag: string;          // Ollama tag Bridge pulls
+  tag: string;          // Ollama tag Door pulls
   sizeGb: number | null;
   /** True when sizeGb is the parameter estimate, not the registry's real size. */
   sizeEstimated: boolean;

@@ -5,14 +5,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { t } from "@/i18n";
 
-/** Admin → Settings: the portal decides which Bridge version garages run (stable), never GitHub directly. */
+/** Admin → Settings: the portal decides which Door version garages run (stable), never GitHub directly. */
 export const BridgeVersionField = () => {
   const { latest, isLoading, error, update, setUpdate, candidates } = useBridgeVersion();
   const release = latest.version;
   const save = (patch: { stable?: string; mode?: "manual" | "auto" }) =>
-    setUpdate.mutate(patch, { onSuccess: () => toast.success(t("Bridge update setting saved.")), onError: (e) => toast.error(e.message) });
+    setUpdate.mutate(patch, { onSuccess: () => toast.success(t("Door update setting saved.")), onError: (e) => toast.error(e.message) });
   return <section className="space-y-3 border-t border-border pt-4">
-    <h3 className="font-semibold">{t("Bridge updates")}</h3>
+    <h3 className="font-semibold">{t("Door updates")}</h3>
     <dl className="grid grid-cols-2 gap-2 text-sm">
       <dt className="text-muted-foreground">{t("Stable version")}</dt><dd className="font-mono">{update.stable ?? "—"}</dd>
       <dt className="text-muted-foreground">{t("Made stable")}</dt><dd>{update.stable_set_at ? `${new Date(update.stable_set_at).toLocaleString()}${update.stable_set_by ? ` · ${t("by {who}", { who: update.stable_set_by })}` : ""}` : "—"}</dd>

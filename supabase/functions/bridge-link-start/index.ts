@@ -1,4 +1,4 @@
-// Bridge device-link start: the machine asks to be linked; the operator approves it in the browser. No auth.
+// Door device-link start: the machine asks to be linked; the operator approves it in the browser. No auth.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { LINK_TTL_S, POLL_INTERVAL_S, STARTS_PER_IP_PER_HOUR, VERIFICATION_URL, makeDeviceCode, makeUserCode, parseStartBody } from "../_shared/bridgeLink.ts";
 

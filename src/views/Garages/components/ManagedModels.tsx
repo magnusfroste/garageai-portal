@@ -16,14 +16,14 @@ export const garagesPerModel = (catalog: CatalogModel[]) => new Map(catalog.map(
 const statusText = (r: ManagedModelRow) => {
   if (r.action === "remove") return r.status === "removed" ? t("removed") : r.status === "failed" || r.status === "refused" ? `${t("removal failed")}: ${r.error ?? r.status}` : t("removing…");
   if (r.status === "downloading") { const a = progressGb(r.completed_mb), b = progressGb(r.total_mb); return a != null && b != null ? t("fetching, {a} of {b} GB", { a, b }) : t("fetching…"); }
-  if (r.status === "wanted") return t("waiting for Bridge…");
-  if (r.status === "failed") return `${t("failed")}: ${r.error ?? "—"} · ${t("Bridge retries in an hour")}`;
-  if (r.status === "refused") return `${t("refused by Bridge")}: ${r.error ?? "—"}`;
+  if (r.status === "wanted") return t("waiting for Door…");
+  if (r.status === "failed") return `${t("failed")}: ${r.error ?? "—"} · ${t("Door retries in an hour")}`;
+  if (r.status === "refused") return `${t("refused by Door")}: ${r.error ?? "—"}`;
   const gb = progressGb(r.total_mb);
   return gb != null ? `${t("ready")} · ${gb} GB` : t("ready");
 };
 
-/** Status of Bridge-fetched models (garage detail, admin sheet). */
+/** Status of Door-fetched models (garage detail, admin sheet). */
 export const ManagedModelStatusList = ({ rows, onCancel, onRemove, busy }: { rows: ManagedModelRow[]; onCancel?: (m: string) => void; onRemove?: (m: string) => void; busy?: boolean }) =>
   rows.length === 0 ? null : (
     <ul className="space-y-1 text-xs">
@@ -98,7 +98,7 @@ export const ManagedModelsSection = ({ garageId, runtime, installed, rows, memor
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("Add a model")}</DialogTitle>
-            <DialogDescription>{memoryGb ? t("Models that fit {gb} GB of memory with 2 GB to spare. Bridge fetches it on the next heartbeat.", { gb: memoryGb }) : t("Memory unknown: run garageai connect again so Bridge reports this machine.")}</DialogDescription>
+            <DialogDescription>{memoryGb ? t("Models that fit {gb} GB of memory with 2 GB to spare. Door fetches it on the next heartbeat.", { gb: memoryGb }) : t("Memory unknown: run garageai connect again so Door reports this machine.")}</DialogDescription>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto">
             {isLoading ? <p className="text-sm text-muted-foreground">{t("Loading...")}</p>

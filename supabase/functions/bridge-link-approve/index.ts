@@ -1,4 +1,4 @@
-// Bridge device-link approval by a signed-in operator. Actions: lookup (show the machine), approve, deny.
+// Door device-link approval by a signed-in operator. Actions: lookup (show the machine), approve, deny.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { NAME_RE, entryFor, machineConflict, normaliseUserCode } from "../_shared/bridgeLink.ts";
 import { termsAccepted } from "../_shared/garageTerms.ts";
@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       acceptTerms: accepted, machineId: link.machine_id,
     });
 
-    // Save access before credentials become available to Bridge; no transient market registration.
+    // Save access before credentials become available to Door; no transient market registration.
     const { error: visibilityError } = await admin.from("garages").update({ visibility: approvalVisibility(body.visibility, existing?.visibility) }).eq("id", issued.garage.id).eq("operator_id", user.id);
     if (visibilityError) throw visibilityError;
 

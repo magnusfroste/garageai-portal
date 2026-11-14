@@ -1,4 +1,4 @@
-// Frontend view of the Bridge self-report stored on garages.agent (validated server-side in node-heartbeat).
+// Frontend view of the Door self-report stored on garages.agent (validated server-side in node-heartbeat).
 export type AgentSeverity = "error" | "warning" | "info";
 export interface AgentProblem { severity: AgentSeverity; code: string; message: string; fix?: string }
 export interface AgentReport { tool?: string; version?: string; os?: string; arch?: string; problems?: AgentProblem[]; machine?: import('../../../supabase/functions/_shared/agentReport').AgentMachine; update?: { last_check: string | null; last_update: string | null; last_error: string | null; auto: boolean } }
