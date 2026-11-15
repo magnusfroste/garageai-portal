@@ -1,0 +1,49 @@
+// Shared by gateway-targets (GET) and gateway-health-report (POST reply), so both lists are always identical.
+import { transportTargetFields } from "./tunnel.ts";
+import { isGatewayTarget } from "./gatewayTargetFilter.ts";
+
+// deno-lint-ignore no-explicit-any
+export async function buildGatewayTargets(admin: any) {
+    const { data: garages, error } = await admin.from("garages")
+      .select("id, name, api_host, mesh_ip, port, connection_type, endpoint_url, last_heartbeat_at, agent, agent_at, machine_id, last_machine_id, transport, tunnel_ip, tunnel_public_key, disabled, paused_at, visibility, agent_state, agent_nodes").eq("disabled", false).order("name");
+    if (error) throw error;
+    const list = ((garages || []) as Array<{ disabled?: boolean; paused_at?: string | null }>).filter((g) => !g.disabled) as unknown as Array<{ paused_at: string | null; id: string; name: string; api_host: string | null; mesh_ip: string | null; port: number | null; connection_type: string | null; endpoint_url: string | null; last_heartbeat_at: string | null; agent: unknown; agent_state: unknown; agent_nodes: unknown; agent_at: string | null; machine_id: string | null; last_machine_id: string | null; transport: string | null; tunnel_ip: string | null; tunnel_public_key: string | null }>;
+    const { data: secrets } = await admin.from("garage_runtime_secrets").select("garage_id, runtime_api_key").in("garage_id", list.map((g) => g.id));
+    const keys = new Map(((secrets || []) as Array<{ garage_id: string; runtime_api_key: string | null }>).map((s) => [s.garage_id, s.runtime_api_key]));
+    const { data: ctxRows } = await admin.from("garage_models").select("garage_id, model, context_length").in("garage_id", list.map((g) => g.id)).not("context_length", "is", null);
+    const contexts = new Map<string, Record<string, number>>();
+    for (const r of (ctxRows || []) as Array<{ garage_id: string; model: string; context_length: number }>) {
+      const m = contexts.get(r.garage_id) ?? {}; m[r.model] = r.context_length; contexts.set(r.garage_id, m);
+    }
+    // Paused garages stay listed (paused: true, tunnel fields kept) so the hub keeps their peer; they get no routed models.
+    const extra = (g: typeof list[number]) => ({ visibility: (g as { visibility?: string }).visibility ?? 'market', paused: !!g.paused_at, routed: isGatewayTarget(g), private_routed: g.connection_type !== 'endpoint', last_heartbeat_at: g.last_heartbeat_at, agent: g.agent ? { ...(g.agent as Record<string, unknown>), state: g.agent_state ?? null, nodes: g.agent_nodes ?? null } : null, agent_state: g.agent_state ?? null, agent_nodes: g.agent_nodes ?? null, agent_requests: (g.agent as { requests?: unknown } | null)?.requests ?? null, agent_at: g.agent_at, contexts: contexts.get(g.id) ?? {}, machine_id: g.machine_id, machine_mismatch: !!(g.machine_id && g.last_machine_id && g.machine_id !== g.last_machine_id), ...transportTargetFields(g) });
+    const unregistered = list.filter((g) => g.connection_type !== "endpoint" && (!g.tunnel_ip || !g.port)).map((g) => g.id);
+    const latest = new Map<string, { step: string; status: string; message: string | null; at: string; problems?: string[] }>();
+    if (unregistered.length) {
+      const { data: events } = await admin.from("onboarding_events").select("garage_id, step, status, message, created_at, profile")
+        .in("garage_id", unregistered).order("created_at", { ascending: false }).limit(unregistered.length * 50);
+      const problemsSeen = new Set<string>();
+      for (const e of (events || []) as Array<{ garage_id: string; step: string; status: string; message: string | null; created_at: string; profile: unknown }>) {
+        if (!latest.has(e.garage_id)) latest.set(e.garage_id, { step: e.step, status: e.status, message: e.message, at: e.created_at });
+        const p = e.profile as { problems?: unknown } | null;
+        if (!problemsSeen.has(e.garage_id) && p && typeof p === "object" && !Array.isArray(p)) {
+          problemsSeen.add(e.garage_id);
+          const codes = (Array.isArray(p.problems) ? p.problems : [])
+            .filter((x: any) => x && (x.severity === "error" || x.severity === "warning") && typeof x.code === "string")
+            .map((x: any) => x.code as string);
+          const event = latest.get(e.garage_id);
+          if (event) event.problems = codes;
+        }
+      }
+    }
+    const targets = list.map((g) => {
+      if (g.connection_type === "endpoint") {
+        let host: string | null = null;
+        try { host = g.endpoint_url ? new URL(g.endpoint_url).hostname : null; } catch { host = null; }
+        return { garage: g.name, peer_id: null, host, port: 443, endpoint: true, url: g.endpoint_url, runtime_api_key: keys.get(g.id) ?? null, ...extra(g) };
+      }
+      const onboarding = latest.get(g.id);
+      return { garage: g.name, peer_id: null, host: g.tunnel_ip, port: g.port, runtime_api_key: keys.get(g.id) ?? null, ...extra(g), ...(onboarding ? { onboarding } : {}) };
+    });
+    return targets;
+}

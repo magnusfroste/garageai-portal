@@ -10,7 +10,8 @@ export const useGarageModels = (garageIds: string[]) => {
     queryKey: ["garage-models", garageIds.join(",")],
     enabled: garageIds.length > 0,
     queryFn: () => garageRepository.listModels(garageIds),
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
   const byGarage = new Map<string, GarageModelRow[]>();
   for (const r of query.data ?? []) {

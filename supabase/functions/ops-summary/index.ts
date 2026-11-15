@@ -2,6 +2,7 @@
 // Returns counts and sums only: never e-mails, names, keys, Stripe ids or other personal data.
 import { buyerFunnel, FUNNEL_DAYS } from "../_shared/buyerFunnel.ts";
 import { firstGoalSummary } from "../_shared/firstGoalSummary.ts";
+import { allUserSpend } from "../_shared/userSpendList.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { gatewayJson, isGatewayAuthorized } from "../_shared/gatewayAuth.ts";
 import { getProxyBaseUrl } from "../_shared/proxyConfig.ts";
@@ -249,7 +250,9 @@ Deno.serve(async (req) => {
     };
     const active1 = activeSet(spend1, d1), active7 = activeSet(spend7, d7);
 
-    const spends = base ? await timed(Promise.all(profiles.map(async (p) => [p.id, p.litellm_user_id ? await userSpend(base, master, p.litellm_user_id).catch(() => null) : 0] as const)), null) : null;
+    // One paged list call for all users; per-user lookups only for accounts the list did not return (or if the list fails).
+    const listed = base ? await timed(allUserSpend(base, master), null) : null;
+    const spends = base ? await timed(Promise.all(profiles.map(async (p) => [p.id, !p.litellm_user_id ? 0 : listed?.has(p.litellm_user_id) ? listed.get(p.litellm_user_id)! : await userSpend(base, master, p.litellm_user_id).catch(() => null)] as const)), null) : null;
     const spendBy = spends ? new Map(spends) : null;
     let outstanding: number | null = spendBy ? 0 : null, low = spendBy ? 0 : null;
     if (spendBy) for (const p of profiles) {

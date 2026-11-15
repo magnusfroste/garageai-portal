@@ -15,5 +15,6 @@ export const useLatestOnboardingEvents = (garageIds: string[]) =>
     queryKey: ["onboarding-latest", [...garageIds].sort().join(",")],
     enabled: garageIds.length > 0,
     queryFn: () => onboardingEventRepository.latestFor(garageIds),
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });

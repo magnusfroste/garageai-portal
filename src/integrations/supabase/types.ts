@@ -1301,6 +1301,38 @@ export type Database = {
           },
         ]
       }
+      garage_status_summary: {
+        Row: {
+          first_online_at: string | null
+          first_sampled_at: string
+          garage_id: string
+          last_online_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          first_online_at?: string | null
+          first_sampled_at: string
+          garage_id: string
+          last_online_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          first_online_at?: string | null
+          first_sampled_at?: string
+          garage_id?: string
+          last_online_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_status_summary_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: true
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_tokens: {
         Row: {
           created_at: string | null

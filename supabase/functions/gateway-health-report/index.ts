@@ -6,6 +6,7 @@ import { GARAGE_SELECT, GATEWAY_TEST_MAX_AGE_MS, gatewayHealthy, modelsToRetest,
 import { offeredByGarage } from "../_shared/garageModels.ts";
 import { runAndStoreAcceptanceTests } from "../_shared/acceptanceTest.ts";
 import { syncModels } from "../_shared/syncModels.ts";
+import { buildGatewayTargets } from "../_shared/gatewayTargets.ts";
 
 const RETEST_COOLDOWN_MS = 10 * 60 * 1000;
 interface Result { garage: string; checked_at?: string; mesh_connected?: boolean | null; runtime_ok?: boolean; runtime_error?: string | null; models?: string[] }
@@ -88,7 +89,10 @@ Deno.serve(async (req) => {
       try { await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true }); synced = true; }
       catch (e) { console.error("[gateway-health] sync failed", e instanceof Error ? e.message : "unknown"); }
     }
-    return gatewayJson({ ok: true, synced, results: summary });
+    // Same list as gateway-targets, so the gateway needs one call a minute instead of two.
+    // A failed list must not turn a processed health report into an error; the gateway then keeps its last list.
+    const targets = await buildGatewayTargets(admin).catch((e) => { console.error("[gateway-health-report] targets", e instanceof Error ? e.message : "unknown"); return undefined; });
+    return gatewayJson({ ok: true, synced, results: summary, ...(targets ? { targets } : {}) });
   } catch (e) {
     console.error("[gateway-health] error", e instanceof Error ? e.message : "unknown");
     return gatewayJson({ error: "Internal error" }, 500);

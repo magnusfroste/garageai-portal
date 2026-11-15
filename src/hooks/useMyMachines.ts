@@ -7,7 +7,7 @@ import { useSession } from './useSession';
 export function useMyMachines() {
   const { session, loading } = useSession();
   const userId = session?.user.id ?? '';
-  const query = useQuery({ queryKey: ['my-machines', userId], enabled: !!userId, refetchInterval: 30_000,
+  const query = useQuery({ queryKey: ['my-machines', userId], enabled: !!userId, refetchInterval: 60_000, refetchOnWindowFocus: true,
     queryFn: async () => {
       const garages = await garageRepository.listOwn(userId);
       const rows = await garageRepository.listModels(garages.map(g => g.id));

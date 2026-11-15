@@ -659,6 +659,13 @@
       "when": 1794700678512,
       "tag": "0093_profile_first_goal",
       "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1794701242312,
+      "tag": "0094_garage_status_summary_rollup",
+      "breakpoints": true
     }
   ]
 }

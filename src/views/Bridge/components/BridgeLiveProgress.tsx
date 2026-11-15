@@ -22,7 +22,8 @@ export const BridgeLiveProgress = ({ garageId }: { garageId: string }) => {
   const events = useQuery({
     queryKey: ["bridge-live-events", garageId],
     queryFn: () => onboardingEventRepository.forGarage(garageId),
-    refetchInterval: stop ? false : 3000,
+    // Stops when live, and after 15 minutes (300 polls) at the latest.
+    refetchInterval: (q) => stop || q.state.dataUpdateCount + q.state.errorUpdateCount >= 300 ? false : 3000,
   });
   const { steps, live, failed } = bridgeProgress(events.data ?? []);
   if (live && steps[4].state === "done" && !stop) setStop(true);
