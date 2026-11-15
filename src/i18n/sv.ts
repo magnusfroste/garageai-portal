@@ -399,6 +399,7 @@ export const sv: Record<string, string> = {
   "Pricing": "Priser",
   "Profile": "Profil",
   "Recent outages": "Senaste avbrotten",
+  "Recent outages (last 30 days)": "Avbrott (senaste 30 dagarna)",
   "Registered:": "Registrerad:",
   "Reliability": "Tillförlitlighet",
   "Reliability (30 days)": "Tillförlitlighet (30 dagar)",

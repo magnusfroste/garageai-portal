@@ -666,6 +666,13 @@
       "when": 1794701242312,
       "tag": "0094_garage_status_summary_rollup",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1794765864119,
+      "tag": "0095_status_readers_use_summary",
+      "breakpoints": true
     }
   ]
 }

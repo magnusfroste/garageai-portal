@@ -22,7 +22,7 @@ export const GarageReliabilityPanel = ({ name, reliability }: { name: string; re
       <CollapsibleContent className="space-y-3 pt-3">
         <ReliabilityStats r={reliability} />
         <div>
-          <div className="text-xs font-medium mb-1">{t("Recent outages")}</div>
+          <div className="text-xs font-medium mb-1">{t("Recent outages (last 30 days)")}</div>
           {periods.isLoading ? <p className="text-xs text-muted-foreground">{t("Loading...")}</p> : <OfflinePeriodList periods={periods.data ?? []} />}
         </div>
         <p className="text-[11px] text-muted-foreground">{honestNote()}</p>
