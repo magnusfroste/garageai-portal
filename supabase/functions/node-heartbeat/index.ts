@@ -10,6 +10,7 @@ import { heartbeatBridgeFields, parseBridgeUpdate, updateErrorVersion } from "..
 import { parseAgentModels, applyReports, pendingOffers, wantedModels, type ManagedRow, type WantedModel } from "../_shared/managedModels.ts";
 import { parseMachineId, claimMachineId } from "../_shared/bridgeLink.ts";
 import { reconcilePrivateGarage, storeRuntimeKey, GARAGE_SELECT, withProbeDeployments, type RoutingGarage } from '../_shared/garageRouting.ts';
+import { garagePause } from '../_shared/garagePause.ts';
 import { runAndStoreAcceptanceTests } from '../_shared/acceptanceTest.ts';
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type" };
@@ -65,6 +66,9 @@ Deno.serve(async (req) => {
       if (resumeErr) console.warn("[node-heartbeat] portal resume", garage.name, resumeErr.message);
       else { portalResumed = true; garage.paused_at = null; console.log("[node-heartbeat] garageai resume cleared portal pause", garage.name); }
     }
+    // Pause state as it stands after this heartbeat's own changes (a resume above clears it).
+    const paused = garagePause(garage);
+    const pausedField = paused ? { garage: { paused } } : {};
     // Door release runs on our own garages drive auto promotion (RPC ignores non-admin, non-canary garages).
     if (parsedAgent.agent?.version) {
       const errVer = updateErrorVersion(parsedAgent.agent.version, bridge.bridge_stable, parsedAgent.agent.update?.last_error);
@@ -100,7 +104,7 @@ Deno.serve(async (req) => {
     // No acceptance tests, no inventory pruning, no status change; in-flight requests drain on the gateway.
     if (agentState) {
       if (transition === "leave") await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
-      return json({ ok: true, changed: transition === "leave", state: agentState.kind, wanted_models: wanted, ...bridge });
+      return json({ ok: true, changed: transition === "leave", state: agentState.kind, wanted_models: wanted, ...bridge, ...pausedField });
     }
     let returnTests: string[] = [];
     let backgroundTests: string[] = [];
@@ -147,11 +151,11 @@ Deno.serve(async (req) => {
           await syncModels(admin, { checkNonGarageHealth: false, enableNewGarageModels: true });
         }
       }
-      return json({ ok: true, changed: false, wanted_models: wanted, ...bridge });
+      return json({ ok: true, changed: false, wanted_models: wanted, ...bridge, ...pausedField });
     }
 
     const result = await registerGarage(admin, garage, payload, { testOnly: [...new Set([...added, ...offerNow, ...returnTests])], offer: offerNow });
-    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), offered: result.summary.offered, not_offered: result.summary.not_offered, wanted_models: wanted, ...bridge });
+    return json({ ok: true, changed: true, added, removed, contexts_changed: Object.keys(contextChanges), acceptance: result.acceptance.map(toPublicResult), offered: result.summary.offered, not_offered: result.summary.not_offered, wanted_models: wanted, ...bridge, ...pausedField });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     if (message.includes("connected to the mesh") || message.includes("connected to mesh")) return json({ error: message }, 409);
