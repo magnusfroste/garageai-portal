@@ -49,3 +49,4 @@
 - Garages use only Bridge tunnel transport; providers use endpoint transport, with endpoint health evaluated before tunnel rules so provider behavior stays unchanged.
 - Shared gateway settings/user helpers accept structural query interfaces across SDK versions; payment callers share the current npm SDK to avoid nominal class mismatches without downgrading payments.
 - Bridge release error recovery belongs in the atomic `record_bridge_run` upsert; retain first-seen timestamps and error history so transient failures do not reset promotion age.
+- Resolve caller addresses only through `_shared/callerAddress`; trust the client-address header only for allowlisted gateway proxies and omit proxy-derived country when used, so rate limits remain caller-scoped without trusting direct callers.

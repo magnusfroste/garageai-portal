@@ -1,6 +1,7 @@
 // Door device-link start: the machine asks to be linked; the operator approves it in the browser. No auth.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { LINK_TTL_S, POLL_INTERVAL_S, STARTS_PER_IP_PER_HOUR, VERIFICATION_URL, makeDeviceCode, makeUserCode, parseStartBody } from "../_shared/bridgeLink.ts";
+import { callerAddress } from "../_shared/callerAddress.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -17,7 +18,7 @@ Deno.serve(async (req) => {
     if (!parsed.fields) return json({ error: parsed.error }, 400);
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const ip = (req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown").trim();
+    const { address: ip, fromHeader } = callerAddress(req);
     const ipHash = await sha256Hex(`bridge-link:${ip}`); // raw IPs are never stored
     const since = new Date(Date.now() - 3600_000).toISOString();
     const { count } = await admin.from("bridge_links").select("id", { count: "exact", head: true }).eq("requested_ip_hash", ipHash).gte("created_at", since);
@@ -31,7 +32,7 @@ Deno.serve(async (req) => {
       userCode = makeUserCode();
       const { error } = await admin.from("bridge_links").insert({
         device_code_hash: await sha256Hex(deviceCode), user_code: userCode, status: "pending", ...parsed.fields,
-        requested_ip_country: /^[A-Z]{2}$/.test(country) && country !== "XX" ? country : null, requested_ip_hash: ipHash,
+        requested_ip_country: !fromHeader && /^[A-Z]{2}$/.test(country) && country !== "XX" ? country : null, requested_ip_hash: ipHash,
         created_at: new Date(now).toISOString(), expires_at: new Date(now + LINK_TTL_S * 1000).toISOString(),
       });
       if (!error) break;
