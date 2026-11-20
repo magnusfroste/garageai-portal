@@ -15,6 +15,11 @@ export const useLanguagePreference = (profileLanguage?: string | null) => {
     if (isLanguage(profileLanguage)) setLanguage(profileLanguage);
   }, [profileLanguage]);
 
+  useEffect(() => {
+    if (profileLanguage === undefined) return;
+    void profileService.updateMailLanguage(language).catch(() => { /* retain local UI language */ });
+  }, [language, profileLanguage]);
+
   const change = useCallback(async (lang: Language) => {
     try {
       // Save first so a re-mounted layout re-reads the new value from the profile.

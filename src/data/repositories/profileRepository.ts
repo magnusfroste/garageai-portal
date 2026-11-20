@@ -23,7 +23,12 @@ export class ProfileRepository {
   }
 
   async updateLanguage(userId: string, preferred_language: "en" | "sv"): Promise<void> {
-    const { error } = await supabase.from("profiles").update({ preferred_language }).eq("id", userId);
+    const { error } = await supabase.from("profiles").update({ preferred_language, mail_language: preferred_language }).eq("id", userId);
+    if (error) throw error;
+  }
+
+  async updateMailLanguage(userId: string, mail_language: "en" | "sv"): Promise<void> {
+    const { error } = await supabase.from("profiles").update({ mail_language }).eq("id", userId).neq("mail_language", mail_language);
     if (error) throw error;
   }
 

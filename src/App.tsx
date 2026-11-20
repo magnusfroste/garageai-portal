@@ -30,6 +30,7 @@ import BridgeLinkPage from "./views/Bridge/BridgeLinkPage";
 import ConnectPage from "./views/Bridge/ConnectPage";
 import { RobotsNoindex } from "./components/RobotsNoindex";
 import { OnboardingPage } from "./views/Onboarding/OnboardingPage";
+import UnsubscribePage from "./views/Mail/UnsubscribePage";
 
 import { LanguageBoundary } from "./views/Layout/LanguageBoundary";
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/mail/unsubscribe" element={<UnsubscribePage />} />
           <Route path="/dashboard" element={<AppLayout />}>
             <Route index element={<DashboardActivity />} />
             <Route path="logs" element={<LogsPage />} />

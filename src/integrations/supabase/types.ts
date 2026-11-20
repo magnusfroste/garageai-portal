@@ -1641,6 +1641,127 @@ export type Database = {
         }
         Relationships: []
       }
+      mail_delivery_state: {
+        Row: {
+          recent_sent: string[]
+          sent_events: Json
+          total_sent: number
+          user_id: string
+        }
+        Insert: {
+          recent_sent?: string[]
+          sent_events?: Json
+          total_sent?: number
+          user_id: string
+        }
+        Update: {
+          recent_sent?: string[]
+          sent_events?: Json
+          total_sent?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_delivery_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mail_log: {
+        Row: {
+          created_at: string
+          error: string | null
+          event_ref: string
+          id: string
+          mode: string
+          provider_message_id: string | null
+          status: string
+          template_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event_ref?: string
+          id?: string
+          mode: string
+          provider_message_id?: string | null
+          status: string
+          template_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event_ref?: string
+          id?: string
+          mode?: string
+          provider_message_id?: string | null
+          status?: string
+          template_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mail_templates: {
+        Row: {
+          body_en: string
+          body_sv: string
+          enabled: boolean
+          key: string
+          subject_en: string
+          subject_sv: string
+          updated_at: string
+        }
+        Insert: {
+          body_en: string
+          body_sv: string
+          enabled?: boolean
+          key: string
+          subject_en: string
+          subject_sv: string
+          updated_at?: string
+        }
+        Update: {
+          body_en?: string
+          body_sv?: string
+          enabled?: boolean
+          key?: string
+          subject_en?: string
+          subject_sv?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mail_worker_lock: {
+        Row: {
+          owner: string
+          singleton: boolean
+          until_at: string
+        }
+        Insert: {
+          owner: string
+          singleton?: boolean
+          until_at: string
+        }
+        Update: {
+          owner?: string
+          singleton?: boolean
+          until_at?: string
+        }
+        Relationships: []
+      }
       market_prices: {
         Row: {
           fetched_at: string
@@ -1742,6 +1863,9 @@ export type Database = {
           full_name: string | null
           id: string
           litellm_user_id: string | null
+          mail_language: string
+          mail_opt_out_at: string | null
+          mail_test: boolean
           onboarding_done: boolean
           preferred_language: string
           purchased_credits_usd: number
@@ -1766,6 +1890,9 @@ export type Database = {
           full_name?: string | null
           id: string
           litellm_user_id?: string | null
+          mail_language?: string
+          mail_opt_out_at?: string | null
+          mail_test?: boolean
           onboarding_done?: boolean
           preferred_language?: string
           purchased_credits_usd?: number
@@ -1790,6 +1917,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           litellm_user_id?: string | null
+          mail_language?: string
+          mail_opt_out_at?: string | null
+          mail_test?: boolean
           onboarding_done?: boolean
           preferred_language?: string
           purchased_credits_usd?: number
@@ -2038,6 +2168,44 @@ export type Database = {
         Args: { _version: string }
         Returns: undefined
       }
+      event_mail_candidates: {
+        Args: { _mode?: string }
+        Returns: {
+          days_offline: number
+          email: string
+          event_ref: string
+          garage_name: string
+          key_hint: string
+          template_key: string
+          user_id: string
+        }[]
+      }
+      event_mail_claim: {
+        Args: {
+          _manual?: boolean
+          _ref: string
+          _template: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      event_mail_eligible_counts: { Args: never; Returns: Json }
+      event_mail_finish: {
+        Args: {
+          _definite_failure?: boolean
+          _error?: string
+          _log_id: string
+          _provider_id?: string
+          _sent: boolean
+        }
+        Returns: undefined
+      }
+      event_mail_lock: {
+        Args: { _owner: string; _release?: boolean }
+        Returns: boolean
+      }
+      event_mail_prune: { Args: never; Returns: number }
+      event_mail_stats: { Args: never; Returns: Json }
       garage_daily_tokens: {
         Args: { _names: string[] }
         Returns: {
@@ -2237,6 +2405,10 @@ export type Database = {
       }
       set_machine_visibility: {
         Args: { _garage_id: string; _visibility: string }
+        Returns: undefined
+      }
+      set_mail_test: {
+        Args: { _enabled: boolean; _user_id: string }
         Returns: undefined
       }
       set_operator_model_prices: {

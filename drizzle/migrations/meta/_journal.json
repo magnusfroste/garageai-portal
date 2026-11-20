@@ -673,6 +673,20 @@
       "when": 1794765864119,
       "tag": "0095_status_readers_use_summary",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1795215715280,
+      "tag": "0096_event_mail_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1795215756964,
+      "tag": "0097_event_mail_rules_and_delivery",
+      "breakpoints": true
     }
   ]
 }

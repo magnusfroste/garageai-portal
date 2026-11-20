@@ -10,6 +10,7 @@ import { useAdminData } from "./hooks/useAdminData";
 import { UserTable } from "./components/UserTable";
 import { EditUserDialog } from "./components/EditUserDialog";
 import { AdminSettingsPanel } from "./components/AdminSettingsPanel";
+import { EventMailPanel } from "./components/EventMailPanel";
 import { ModelCurationPanel } from "./components/ModelCurationPanel";
 import { StripeConfigCard } from "./components/StripeConfigCard";
 import { ProxyConfigCard } from "./components/ProxyConfigCard";
@@ -18,7 +19,7 @@ import { ApiKeyOverviewPanel } from "./components/ApiKeyOverviewPanel";
 import { GaragePanel } from "./components/GaragePanel";
 import { UsageStatsPanel } from "./components/UsageStatsPanel";
 import { SiteSettingsPage } from "@/views/SiteSettings/SiteSettingsPage";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -110,10 +111,16 @@ export const AdminPage = () => {
         <TabsContent value="announcements" className="mt-6"><AnnouncementsPanel /></TabsContent>
         <TabsContent value="support" className="mt-6"><SupportInbox /></TabsContent>
         <TabsContent value="settings" className="mt-6 space-y-6">
+          <Tabs defaultValue="general">
+          <TabsList><TabsTrigger value="general">{t("General")}</TabsTrigger><TabsTrigger value="mail">{t("Mail")}</TabsTrigger></TabsList>
+          <TabsContent value="general" className="space-y-6 mt-6">
           <AdminSettingsPanel />
           <ProxyConfigCard />
           <StripeConfigCard />
           <SiteSettingsPage embedded />
+          </TabsContent>
+          <TabsContent value="mail" className="mt-6"><EventMailPanel /></TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
 

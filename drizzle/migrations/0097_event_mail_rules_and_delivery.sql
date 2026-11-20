@@ -1,0 +1,44 @@
+CREATE FUNCTION public.event_mail_candidates(_mode text DEFAULT NULL) RETURNS TABLE(user_id uuid,email text,template_key text,event_ref text,key_hint text,garage_name text,days_offline integer) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public AS $$ DECLARE m text; delay_minutes integer; BEGIN
+IF auth.role() IS DISTINCT FROM 'service_role' AND NOT public.has_role(auth.uid(),'admin') THEN RAISE EXCEPTION 'Forbidden' USING ERRCODE='42501'; END IF;
+SELECT coalesce(_mode,value->>'mode','off'),coalesce((value->>'test_delay_minutes')::integer,10) INTO m,delay_minutes FROM admin_settings WHERE key='event_mail';
+IF m IS NULL OR m='off' THEN RETURN; END IF;
+IF m NOT IN ('test','on') THEN RAISE EXCEPTION 'Invalid mail mode'; END IF;
+RETURN QUERY WITH accounts AS(SELECT p.* FROM profiles p WHERE m='on' OR p.mail_test),first_keys AS(SELECT DISTINCT ON(k.user_id) k.user_id,k.created_at,coalesce(nullif(k.key_last4,''),right(k.key_value,4)) hint FROM api_keys k JOIN accounts p ON p.id=k.user_id WHERE NOT k.internal ORDER BY k.user_id,k.created_at),uses AS(SELECT u.user_id,min(u.at) at FROM(SELECT r.user_id,r.first_request_at at FROM buyer_first_requests r UNION ALL SELECT c.user_id,c.created_at FROM chat_conversations c UNION ALL SELECT k.user_id,h.hour FROM api_keys k JOIN customer_garage_model_stats_hourly h ON encode(extensions.digest(k.litellm_token,'sha256'),'hex')=ANY(h.api_keys) WHERE NOT k.internal AND h.requests>h.failures)u GROUP BY u.user_id)
+SELECT p.id,p.email,'first_request_nudge'::text,'first-key'::text,k.hint,''::text,0 FROM accounts p JOIN first_keys k ON k.user_id=p.id LEFT JOIN uses u ON u.user_id=p.id WHERE u.at IS NULL AND k.created_at<=now()-CASE WHEN m='test' THEN make_interval(mins=>delay_minutes) ELSE interval '2 days' END AND EXISTS(SELECT 1 FROM mail_templates t WHERE t.key='first_request_nudge' AND t.enabled)
+UNION ALL SELECT p.id,p.email,'connect_garage_nudge','first-goal','', '',0 FROM accounts p WHERE p.first_goal IN ('share','own_machine') AND p.first_goal_at<=now()-CASE WHEN m='test' THEN make_interval(mins=>delay_minutes) ELSE interval '3 days' END AND NOT EXISTS(SELECT 1 FROM garages g WHERE g.operator_id=p.id) AND EXISTS(SELECT 1 FROM mail_templates t WHERE t.key='connect_garage_nudge' AND t.enabled)
+UNION ALL SELECT p.id,p.email,'garage_offline',g.id::text||':'||to_char(g.last_heartbeat_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US'),'',coalesce(nullif(g.display_name,''),g.name),greatest(0,floor(extract(epoch FROM now()-g.last_heartbeat_at)/86400)::integer) FROM accounts p JOIN garages g ON g.operator_id=p.id WHERE g.connection_type<>'endpoint' AND g.last_heartbeat_at IS NOT NULL AND g.paused_at IS NULL AND NOT g.paused_by_admin AND g.last_heartbeat_at<=now()-CASE WHEN m='test' THEN make_interval(mins=>delay_minutes) ELSE interval '3 days' END AND EXISTS(SELECT 1 FROM mail_templates t WHERE t.key='garage_offline' AND t.enabled);
+END $$;
+REVOKE ALL ON FUNCTION public.event_mail_candidates(text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.event_mail_candidates(text) TO authenticated,service_role;
+CREATE FUNCTION public.event_mail_claim(_user_id uuid,_template text,_ref text,_manual boolean DEFAULT false) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE p profiles;s mail_delivery_state;cfg jsonb;m text;slot text;lid uuid;skip text;recent timestamptz[]; BEGIN
+SELECT * INTO p FROM profiles WHERE id=_user_id FOR UPDATE; IF p.id IS NULL THEN RETURN NULL; END IF;
+SELECT value INTO cfg FROM admin_settings WHERE key='event_mail'; m:=coalesce(cfg->>'mode','off');
+IF NOT _manual AND (m='off' OR (m='test' AND NOT p.mail_test)) THEN RETURN NULL; END IF;
+IF NOT _manual AND NOT EXISTS(SELECT 1 FROM public.event_mail_candidates(m) c WHERE c.user_id=_user_id AND c.template_key=_template AND c.event_ref=_ref) THEN RETURN NULL; END IF;
+IF p.mail_opt_out_at IS NOT NULL THEN skip:='skipped_opt_out'; END IF;
+INSERT INTO mail_delivery_state(user_id) VALUES(_user_id) ON CONFLICT DO NOTHING;
+SELECT * INTO s FROM mail_delivery_state WHERE user_id=_user_id FOR UPDATE;
+slot:=_template||CASE WHEN _template='garage_offline' THEN ':'||split_part(_ref,':',1) ELSE '' END;
+IF NOT _manual AND (s.sent_events->>slot=_ref OR EXISTS(SELECT 1 FROM mail_log WHERE user_id=_user_id AND template_key=_template AND event_ref=_ref AND status='sent')) THEN RETURN NULL; END IF;
+SELECT coalesce(array_agg(x),'{}'::timestamptz[]) INTO recent FROM unnest(s.recent_sent)x WHERE x>=now()-interval '7 days';
+IF NOT _manual AND skip IS NULL AND (s.total_sent>=coalesce((cfg->>'max_total')::integer,3) OR cardinality(recent)>=coalesce((cfg->>'max_per_week')::integer,1)) THEN skip:='skipped_cap'; END IF;
+IF _manual THEN DELETE FROM mail_log WHERE user_id=_user_id AND template_key=_template AND event_ref='manual-test' AND status='sent'; END IF;
+INSERT INTO mail_log(user_id,template_key,event_ref,mode,status,error) VALUES(_user_id,_template,_ref,m,coalesce(skip,'failed'),CASE WHEN skip IS NULL THEN 'delivery pending' ELSE NULL END) RETURNING id INTO lid;
+IF skip IS NULL AND NOT _manual THEN UPDATE mail_delivery_state SET total_sent=s.total_sent+1,recent_sent=array_append(recent,now()),sent_events=jsonb_set(s.sent_events,ARRAY[slot],to_jsonb(_ref)) WHERE user_id=_user_id; END IF;
+RETURN jsonb_build_object('log_id',lid,'status',coalesce(skip,'ready'),'language',p.mail_language);
+END $$;
+REVOKE ALL ON FUNCTION public.event_mail_claim(uuid,text,text,boolean) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.event_mail_claim(uuid,text,text,boolean) TO service_role;
+CREATE FUNCTION public.event_mail_finish(_log_id uuid,_sent boolean,_provider_id text DEFAULT NULL,_error text DEFAULT NULL,_definite_failure boolean DEFAULT true) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE l mail_log;slot text; BEGIN
+SELECT * INTO l FROM mail_log WHERE id=_log_id FOR UPDATE; IF l.id IS NULL OR l.status<>'failed' OR l.error<>'delivery pending' THEN RETURN; END IF;
+UPDATE mail_log SET status=CASE WHEN _sent THEN 'sent' ELSE 'failed' END,provider_message_id=_provider_id,error=CASE WHEN _sent THEN NULL ELSE left(_error,300) END WHERE id=_log_id;
+IF NOT _sent AND _definite_failure AND l.event_ref<>'manual-test' THEN slot:=l.template_key||CASE WHEN l.template_key='garage_offline' THEN ':'||split_part(l.event_ref,':',1) ELSE '' END; UPDATE mail_delivery_state SET total_sent=greatest(0,total_sent-1),recent_sent=array_remove(recent_sent,l.created_at),sent_events=sent_events-slot WHERE user_id=l.user_id AND sent_events->>slot=l.event_ref; END IF;
+END $$;
+REVOKE ALL ON FUNCTION public.event_mail_finish(uuid,boolean,text,text,boolean) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.event_mail_finish(uuid,boolean,text,text,boolean) TO service_role;
+CREATE FUNCTION public.event_mail_eligible_counts() RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public AS $$ BEGIN IF auth.role() IS DISTINCT FROM 'service_role' AND NOT public.has_role(auth.uid(),'admin') THEN RAISE EXCEPTION 'Forbidden' USING ERRCODE='42501'; END IF; RETURN (WITH candidates AS(SELECT c.* FROM public.event_mail_candidates('on')c),cfg AS(SELECT value FROM admin_settings WHERE key='event_mail'),eligible AS(SELECT c.* FROM candidates c JOIN profiles p ON p.id=c.user_id LEFT JOIN mail_delivery_state s ON s.user_id=c.user_id CROSS JOIN cfg WHERE p.mail_opt_out_at IS NULL AND coalesce(s.total_sent,0)<coalesce((cfg.value->>'max_total')::integer,3) AND (SELECT count(*) FROM unnest(s.recent_sent)x WHERE x>=now()-interval '7 days')<coalesce((cfg.value->>'max_per_week')::integer,1) AND (s.sent_events->>(c.template_key||CASE WHEN c.template_key='garage_offline' THEN ':'||split_part(c.event_ref,':',1) ELSE '' END)) IS DISTINCT FROM c.event_ref) SELECT jsonb_build_object('accounts',(SELECT count(DISTINCT user_id) FROM eligible),'by_rule',(SELECT jsonb_object_agg(t.key,jsonb_build_object('matching_accounts',(SELECT count(DISTINCT c.user_id) FROM candidates c WHERE c.template_key=t.key),'eligible_accounts',(SELECT count(DISTINCT c.user_id) FROM eligible c WHERE c.template_key=t.key))) FROM mail_templates t))); END $$;
+REVOKE ALL ON FUNCTION public.event_mail_eligible_counts() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.event_mail_eligible_counts() TO authenticated,service_role;
+CREATE FUNCTION public.event_mail_prune() RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE n bigint; BEGIN DELETE FROM mail_log WHERE created_at<now()-interval '12 months'; GET DIAGNOSTICS n=ROW_COUNT; RETURN n; END $$;
+REVOKE ALL ON FUNCTION public.event_mail_prune() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.event_mail_prune() TO service_role;

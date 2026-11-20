@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Event mail: protected storage, rule/cap/dedupe worker, bilingual admin/account/unsubscribe UI, counts-only Ops, 15-minute cron, tests and publication with mode Off.
+- [ ] Event mail real delivery — waiting for owner-provided Brevo/signing secrets and same-URL one-click POST forwarding.
+
 - [x] Chat-first onboarding and one-time first answer; three starting paths with access chosen before Bridge approval; intent-aware, counts-only Ops buyer funnel; 426 pass/1 existing skip/0 fail; both changed functions deployed and frontend publication requested.
 - [ ] Chat-first real-account signup/first answer/approval readback — blocked: requester has no matching app auth account; isolated signed-in desktop/mobile flow verified once-only send, key setup/manage=1 and private approval; production aggregate counts read back.
 

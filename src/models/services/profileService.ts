@@ -30,6 +30,11 @@ export class ProfileService {
     return profileRepository.updateLanguage(user.id, lang);
   }
 
+  async updateMailLanguage(lang: "en" | "sv"): Promise<void> {
+    const user = await authService.getCurrentUser();
+    if (user) await profileRepository.updateMailLanguage(user.id, lang);
+  }
+
   /** asked = the first-goal question was on screen (onboarding page), even if a path below was chosen. */
   async completeOnboarding(intent: SignupIntent | null, asked = false): Promise<void> {
     const user = await authService.getCurrentUser();
