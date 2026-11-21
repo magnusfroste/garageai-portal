@@ -6,6 +6,7 @@ import { MAIL_DEFAULTS, MAIL_KEYS, MAIL_RUN_LIMIT, mailToken, verifyMailToken, r
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
 const SettingsSchema = z.object({ mode: z.enum(["off", "test", "on"]), test_delay_minutes: z.number().int().min(1).max(1440), max_per_week: z.number().int().min(0).max(100), max_total: z.number().int().min(0).max(1000), from_email: z.email().max(254), from_name: z.string().trim().min(1).max(100) });
+const TemplateSchema = z.object({ key: z.enum(MAIL_KEYS), enabled: z.boolean(), subject_en: z.string().min(1).max(998), subject_sv: z.string().min(1).max(998), body_en: z.string().min(1).max(30000), body_sv: z.string().min(1).max(30000) });
 const BodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("run") }),
   z.object({ action: z.literal("preview"), template_key: z.enum(MAIL_KEYS), language: z.enum(["en", "sv"]) }),
@@ -79,7 +80,9 @@ Deno.serve(async req => {
 
     const { data: templates, error: templatesError } = await admin.from("mail_templates").select("*");
     if (templatesError) throw new Error("Mail templates unavailable");
-    const templateByKey = new Map((templates ?? []).map((t: MailTemplate) => [t.key, t]));
+    const validatedTemplates = z.array(TemplateSchema).safeParse(templates ?? []);
+    if (!validatedTemplates.success) return json({ error: "Invalid mail template" }, 400);
+    const templateByKey = new Map<string, MailTemplate>(validatedTemplates.data.map(t => [t.key, t]));
     let candidates: MailCandidate[] = [];
     if (body.action === "run") candidates = await rpc("event_mail_candidates") ?? [];
     else if (body.action === "preview" || body.action === "send_test") {

@@ -27,7 +27,7 @@ export function renderMail(template: MailTemplate, language: MailLanguage, value
   const body = replace(language === "sv" ? template.body_sv : template.body_en);
   const footer = language === "sv" ? "Avsluta mejl om ditt konto och dina garage" : "Unsubscribe from mail about your account and garages";
   return { subject, textContent: `GarageAI\n\n${body}\n\n${footer}: ${unsubscribeUrl}`,
-    htmlContent: `<!doctype html><html lang="${language}"><body><main><p><strong>GarageAI</strong></p><div style="white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.6">${escapeHtml(body)}</div><hr><p><a href="${escapeHtml(unsubscribeUrl)}">${footer}</a></p></main></body></html>` };
+    htmlContent: `<!doctype html><html lang="${language}"><body style="color-scheme:light;background-color:Canvas;color:CanvasText;padding:20px"><main><p><strong>GarageAI</strong></p><div style="white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.6">${escapeHtml(body)}</div><hr><p><a href="${escapeHtml(unsubscribeUrl)}">${footer}</a></p></main></body></html>` };
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

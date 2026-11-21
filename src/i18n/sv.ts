@@ -1,6 +1,7 @@
 /** Swedish translations, keyed by the English source string. */
 export const sv: Record<string, string> = {
   "Mail": "Mejl",
+  "Save settings": "Spara inställningar",
   "General": "Allmänt",
   "Mail about my account and garages": "Mejl om mitt konto och mina garage",
   "Sign-in mail and receipts are unaffected.": "Inloggningsmejl och kvitton påverkas inte.",
@@ -45,6 +46,7 @@ export const sv: Record<string, string> = {
   "Confirm before enabling mail": "Bekräfta innan mejl aktiveras",
   "Your account has no mail address": "Ditt konto saknar mejladress",
   "Template unavailable": "Mallen är inte tillgänglig",
+  "Invalid mail template": "Ogiltig mejlmall",
   "sent": "skickat",
   "skipped_cap": "över gränsen",
   "skipped_opt_out": "avslutade mejl",

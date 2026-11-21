@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { eventMailService } from "@/models/services/eventMailService";
 import { setLanguage, t } from "@/i18n";
+import { GarageAIMark } from "@/components/GarageAIMark";
 
 export default function UnsubscribePage() {
   const [params] = useSearchParams();
@@ -22,7 +23,7 @@ export default function UnsubscribePage() {
     finally { setBusy(false); }
   };
   return <main className="min-h-screen bg-background text-foreground p-6 sm:p-12 space-y-6">
-    <p className="font-semibold text-lg">GarageAI</p><h1 className="text-2xl font-semibold">{t(out ? "You are unsubscribed" : "Account mail")}</h1>
+    <p className="font-semibold text-lg flex items-center gap-2"><GarageAIMark />GarageAI</p><h1 className="text-2xl font-semibold">{t(out ? "You are unsubscribed" : "Account mail")}</h1>
     {error ? <p role="alert" className="text-destructive">{t(error)}</p> : out === null ? <p>{t("Loading...")}</p> : <>
       <p className="text-muted-foreground">{t(out ? "You will no longer receive mail about your account and garages. Sign-in mail and receipts are unaffected." : "Stop mail about your account and garages? Sign-in mail and receipts are unaffected.")}</p>
       <Button disabled={busy} onClick={() => void change(out ? "undo" : "unsubscribe")}>{t(out ? "Undo" : "Unsubscribe")}</Button>

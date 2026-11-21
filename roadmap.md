@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Event mail: protected storage, rule/cap/dedupe worker, bilingual admin/account/unsubscribe UI, counts-only Ops, 15-minute cron, tests and publication with mode Off.
-- [ ] Event mail real delivery — waiting for owner-provided Brevo/signing secrets and same-URL one-click POST forwarding.
+- [x] Event mail: migrations 0096/0097, protected storage and durable cap/dedupe worker, bilingual admin/account/unsubscribe UI, counts-only Ops, authenticated event-mail cron every 15 minutes verified Off, 463 pass/1 existing skip; publication requested with mode Off.
+- [ ] Event mail real delivery and real-account UI — blocked: Brevo/signing secrets absent; same-URL one-click POST forwarding needs owner answer; test-user mint failed and requester has no matching account. Isolated desktop/mobile controls, preference readback and unsubscribe/undo verified; no mail sent.
 
 - [x] Chat-first onboarding and one-time first answer; three starting paths with access chosen before Bridge approval; intent-aware, counts-only Ops buyer funnel; 426 pass/1 existing skip/0 fail; both changed functions deployed and frontend publication requested.
 - [ ] Chat-first real-account signup/first answer/approval readback — blocked: requester has no matching app auth account; isolated signed-in desktop/mobile flow verified once-only send, key setup/manage=1 and private approval; production aggregate counts read back.
