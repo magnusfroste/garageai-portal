@@ -29,7 +29,7 @@ export function MailTemplateEditor({ template, canSend, refresh }: { template: E
     finally { setBusy(false); }
   };
   return <section className="border-t border-border py-5 space-y-4">
-    <div className="flex justify-between items-center gap-4"><h3 className="font-medium break-all">{draft.key}</h3><Switch aria-label={`${t("Enabled")} ${draft.key}`} checked={draft.enabled} disabled={busy} onCheckedChange={enabled => { setDraft({ ...draft, enabled }); void eventMailService.saveTemplate({ ...draft, enabled }).then(refresh).catch(() => toast.error(t("Mail operation failed"))); }} /></div>
+    <div className="flex justify-between items-center gap-4"><h3 className="font-medium break-all">{draft.key} <span className="text-xs font-normal text-muted-foreground">· {t(draft.kind === "marketing" ? "Marketing" : "Service")}</span></h3><Switch aria-label={`${t("Enabled")} ${draft.key}`} checked={draft.enabled} disabled={busy} onCheckedChange={enabled => { setDraft({ ...draft, enabled }); void eventMailService.saveTemplate({ ...draft, enabled }).then(refresh).catch(() => toast.error(t("Mail operation failed"))); }} /></div>
     <Tabs value={language} onValueChange={value => { if (value === "en" || value === "sv") { setLanguage(value); setPreview(null); } }}>
       <TabsList><TabsTrigger value="en">English</TabsTrigger><TabsTrigger value="sv">Svenska</TabsTrigger></TabsList>
       {(["en", "sv"] as const).map(lang => <TabsContent key={lang} value={lang} className="space-y-3">

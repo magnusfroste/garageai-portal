@@ -2,11 +2,11 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@4";
 import { authenticateCronRequest } from "../_shared/cron-auth.ts";
-import { MAIL_DEFAULTS, MAIL_KEYS, MAIL_RUN_LIMIT, mailToken, verifyMailToken, renderMail, type MailCandidate, type MailTemplate, type MailSettings } from "../_shared/eventMail.ts";
+import { MAIL_DEFAULTS, MAIL_KEYS, MAIL_RUN_LIMIT, mailToken, verifyMailToken, sendMail, mailProviderReady, providerAllowsKind, MAIL_PROVIDERS, renderMail, type MailCandidate, type MailTemplate, type MailSettings } from "../_shared/eventMail.ts";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
-const SettingsSchema = z.object({ mode: z.enum(["off", "test", "on"]), test_delay_minutes: z.number().int().min(1).max(1440), max_per_week: z.number().int().min(0).max(100), max_total: z.number().int().min(0).max(1000), from_email: z.email().max(254), from_name: z.string().trim().min(1).max(100) });
-const TemplateSchema = z.object({ key: z.enum(MAIL_KEYS), enabled: z.boolean(), subject_en: z.string().min(1).max(998), subject_sv: z.string().min(1).max(998), body_en: z.string().min(1).max(30000), body_sv: z.string().min(1).max(30000) });
+const SettingsSchema = z.object({ mode: z.enum(["off", "test", "on"]), test_delay_minutes: z.number().int().min(1).max(1440), max_per_week: z.number().int().min(0).max(100), max_total: z.number().int().min(0).max(1000), from_email: z.email().max(254), from_name: z.string().trim().min(1).max(100), provider: z.enum(MAIL_PROVIDERS).default("cloudflare") });
+const TemplateSchema = z.object({ key: z.enum(MAIL_KEYS), enabled: z.boolean(), kind: z.enum(["service", "marketing"]).default("service"), subject_en: z.string().min(1).max(998), subject_sv: z.string().min(1).max(998), body_en: z.string().min(1).max(30000), body_sv: z.string().min(1).max(30000) });
 const BodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("run") }),
   z.object({ action: z.literal("preview"), template_key: z.enum(MAIL_KEYS), language: z.enum(["en", "sv"]) }),
@@ -23,7 +23,7 @@ Deno.serve(async req => {
     const url = new URL(req.url);
     let input: unknown;
     if (req.method === "GET") input = { action: "status", token: url.searchParams.get("t") ?? "" };
-    else if (url.searchParams.has("t") && req.headers.get("content-type")?.includes("application/x-www-form-urlencoded")) input = { action: "unsubscribe", token: url.searchParams.get("t") };
+    else if (url.searchParams.has("t") && (url.searchParams.get("action") === "unsubscribe" || req.headers.get("content-type")?.includes("application/x-www-form-urlencoded"))) input = { action: "unsubscribe", token: url.searchParams.get("t") };
     else { try { input = await req.json(); } catch { return json({ error: "Invalid request" }, 400); } }
     const parsed = BodySchema.safeParse(input);
     if (!parsed.success) return json({ error: "Invalid mail request" }, 400);
@@ -61,12 +61,12 @@ Deno.serve(async req => {
       adminUser = { id: user.user.id, email: user.user.email };
     }
 
-    if (body.action === "capabilities") return json({ mail_key: !!Deno.env.get("BREVO_API_KEY"), link_secret: !!Deno.env.get("MAIL_LINK_SECRET") });
     const { data: setting, error: settingError } = await admin.from("admin_settings").select("value").eq("key", "event_mail").maybeSingle();
     if (settingError) throw new Error("Mail settings unavailable");
     const settingsParsed = SettingsSchema.safeParse(setting?.value ?? MAIL_DEFAULTS);
     if (!settingsParsed.success) return json({ error: "Invalid mail settings" }, 503);
     const settings: MailSettings = settingsParsed.data;
+    if (body.action === "capabilities") return json({ mail_key: mailProviderReady(settings.provider, name => Deno.env.get(name)), provider: settings.provider, link_secret: !!Deno.env.get("MAIL_LINK_SECRET") });
     if (body.action === "save_settings") {
       if (body.settings.mode === "on" && settings.mode !== "on" && !body.confirm_on) return json({ error: "Confirm before enabling mail", eligible: await rpc("event_mail_eligible_counts") }, 409);
       const { error } = await admin.from("admin_settings").upsert({ key: "event_mail", value: body.settings, updated_at: new Date().toISOString() });
@@ -97,7 +97,7 @@ Deno.serve(async req => {
     // own URL, because SPA hosting cannot forward POST at the app path.
     const tokenFor = (c: MailCandidate) => mailToken(c.user_id, Deno.env.get("MAIL_LINK_SECRET") ?? "");
     const visibleUrl = async (c: MailCandidate) => `https://app.garageai.eu/mail/unsubscribe?t=${encodeURIComponent(await tokenFor(c))}`;
-    const oneClickUrl = async (c: MailCandidate) => `${dbUrl}/functions/v1/event-mail?t=${encodeURIComponent(await tokenFor(c))}`;
+    const oneClickUrl = async (c: MailCandidate) => `${dbUrl}/functions/v1/event-mail?action=unsubscribe&t=${encodeURIComponent(await tokenFor(c))}`;
     if (body.action === "preview") {
       const candidate = candidates[0], template = templateByKey.get(body.template_key);
       if (!candidate || !template) return json({ error: "Template unavailable" }, 404);
@@ -113,12 +113,18 @@ Deno.serve(async req => {
         if (attempted >= MAIL_RUN_LIMIT) break;
         const template = templateByKey.get(candidate.template_key);
         if (!template || (body.action === "run" && !template.enabled)) continue;
+        if (!providerAllowsKind(settings.provider, template.kind)) {
+          const { count } = await admin.from("mail_log").select("id", { count: "exact", head: true }).eq("user_id", candidate.user_id).eq("template_key", candidate.template_key).eq("event_ref", candidate.event_ref).eq("status", "skipped_provider");
+          if (!count) await admin.from("mail_log").insert({ user_id: candidate.user_id, template_key: candidate.template_key, event_ref: candidate.event_ref, mode: settings.mode, status: "skipped_provider", provider: settings.provider });
+          continue;
+        }
         const claim = await rpc("event_mail_claim", { _user_id: candidate.user_id, _template: candidate.template_key, _ref: candidate.event_ref, _manual: body.action === "send_test" });
         if (!claim || claim.status !== "ready") continue;
         attempted++;
+        await admin.from("mail_log").update({ provider: settings.provider }).eq("id", claim.log_id);
         const finish = (success: boolean, provider: string | null, error: string | null, definite = true) => rpc("event_mail_finish", { _log_id: claim.log_id, _sent: success, _provider_id: provider, _error: error, _definite_failure: definite });
-        const apiKey = Deno.env.get("BREVO_API_KEY"), secret = Deno.env.get("MAIL_LINK_SECRET");
-        if (!apiKey) { await finish(false, null, "no mail key"); continue; }
+        const secret = Deno.env.get("MAIL_LINK_SECRET");
+        if (!mailProviderReady(settings.provider, name => Deno.env.get(name))) { await finish(false, null, "no mail key"); continue; }
         if (!secret) { await finish(false, null, "no mail link secret"); continue; }
         // Recheck opt-out and mode immediately before external delivery.
         const [{ data: profile }, { data: current }] = await Promise.all([admin.from("profiles").select("mail_opt_out_at").eq("id", candidate.user_id).single(), admin.from("admin_settings").select("value").eq("key", "event_mail").single()]);
@@ -127,13 +133,9 @@ Deno.serve(async req => {
         const oneClick = await oneClickUrl(candidate);
         const language = body.action === "send_test" ? body.language : claim.language === "sv" ? "sv" : "en";
         const rendered = renderMail(template, language, values(candidate), unsubscribeUrl);
-        try {
-          const response = await fetch("https://api.brevo.com/v3/smtp/email", { method: "POST", signal: AbortSignal.timeout(10_000), headers: { "api-key": apiKey, "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ sender: { email: settings.from_email, name: settings.from_name }, to: [{ email: candidate.email }], ...rendered, headers: { "List-Unsubscribe": `<${oneClick}>, <${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } }) });
-          if (!response.ok) { await response.text(); await finish(false, null, `Brevo HTTP ${response.status}`); continue; }
-          const result = await response.json().catch(() => ({}));
-          await finish(true, typeof result.messageId === "string" ? result.messageId : null, null);
-          sent++;
-        } catch { await finish(false, null, "delivery outcome unknown", false); }
+        const result = await sendMail(settings.provider, { from_email: settings.from_email, from_name: settings.from_name, to: candidate.email, ...rendered, headers: { "List-Unsubscribe": `<${oneClick}>, <${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } }, name => Deno.env.get(name));
+        if (result.ok) { await finish(true, result.id, null); sent++; }
+        else await finish(false, null, result.error, result.definite);
       }
     } finally { await rpc("event_mail_lock", { _owner: owner, _release: true }); }
     return json({ ok: true, mode: settings.mode, attempted, sent });

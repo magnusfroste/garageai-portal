@@ -7,7 +7,7 @@ export const eventMailRepository = {
     const [settings, templates, logs, counts] = await Promise.all([
       supabase.from("admin_settings").select("value").eq("key", "event_mail").single(),
       supabase.from("mail_templates").select("*").order("key"),
-      supabase.from("mail_log").select("id,created_at,template_key,status,mode").order("created_at", { ascending: false }).limit(100),
+      supabase.from("mail_log").select("id,created_at,template_key,status,mode,provider").order("created_at", { ascending: false }).limit(100),
       supabase.rpc("event_mail_eligible_counts"),
     ]);
     for (const result of [settings, templates, logs, counts]) if (result.error) throw result.error;

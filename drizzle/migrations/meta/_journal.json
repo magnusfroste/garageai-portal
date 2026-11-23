@@ -687,6 +687,13 @@
       "when": 1795215756964,
       "tag": "0097_event_mail_rules_and_delivery",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1795460413391,
+      "tag": "0098_event_mail_provider_and_kind",
+      "breakpoints": true
     }
   ]
 }

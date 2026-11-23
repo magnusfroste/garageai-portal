@@ -1677,6 +1677,7 @@ export type Database = {
           event_ref: string
           id: string
           mode: string
+          provider: string | null
           provider_message_id: string | null
           status: string
           template_key: string
@@ -1688,6 +1689,7 @@ export type Database = {
           event_ref?: string
           id?: string
           mode: string
+          provider?: string | null
           provider_message_id?: string | null
           status: string
           template_key: string
@@ -1699,6 +1701,7 @@ export type Database = {
           event_ref?: string
           id?: string
           mode?: string
+          provider?: string | null
           provider_message_id?: string | null
           status?: string
           template_key?: string
@@ -1720,6 +1723,7 @@ export type Database = {
           body_sv: string
           enabled: boolean
           key: string
+          kind: string
           subject_en: string
           subject_sv: string
           updated_at: string
@@ -1729,6 +1733,7 @@ export type Database = {
           body_sv: string
           enabled?: boolean
           key: string
+          kind?: string
           subject_en: string
           subject_sv: string
           updated_at?: string
@@ -1738,6 +1743,7 @@ export type Database = {
           body_sv?: string
           enabled?: boolean
           key?: string
+          kind?: string
           subject_en?: string
           subject_sv?: string
           updated_at?: string

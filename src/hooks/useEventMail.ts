@@ -6,7 +6,7 @@ export function useEventMailAdmin() {
   const client = useQueryClient();
   const query = useQuery({ queryKey: ["event-mail-admin"], queryFn: eventMailService.adminData, staleTime: 60_000 });
   const capabilities = useQuery({ queryKey: ["event-mail-capabilities"], queryFn: eventMailService.capabilities, staleTime: 60_000 });
-  const refresh = () => client.invalidateQueries({ queryKey: ["event-mail-admin"] });
+  const refresh = () => Promise.all([client.invalidateQueries({ queryKey: ["event-mail-admin"] }), client.invalidateQueries({ queryKey: ["event-mail-capabilities"] })]);
   return { ...query, capabilities: capabilities.data, refresh };
 }
 export function useMailPreference() {

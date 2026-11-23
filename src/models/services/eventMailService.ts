@@ -5,13 +5,13 @@ import { defaultEventMailSettings, type EventMailSettings, type EventMailTemplat
 export const eventMailService = {
   async adminData() {
     const data = await eventMailRepository.adminData();
-    return { ...data, settings: data.settings ?? defaultEventMailSettings, counts: data.counts as unknown as MailCounts };
+    return { ...data, settings: { ...defaultEventMailSettings, ...(data.settings ?? {}) }, counts: data.counts as unknown as MailCounts };
   },
   saveSettings: (settings: EventMailSettings, confirmOn = false) => eventMailRepository.invoke({ action: "save_settings", settings, confirm_on: confirmOn }),
   saveTemplate: (template: EventMailTemplate) => eventMailRepository.saveTemplate(template),
   preview: (key: string, language: "en" | "sv") => eventMailRepository.invoke<MailPreview>({ action: "preview", template_key: key, language }),
   sendTest: (key: string, language: "en" | "sv") => eventMailRepository.invoke<{ sent: number }>({ action: "send_test", template_key: key, language }),
-  capabilities: () => eventMailRepository.invoke<{ mail_key: boolean; link_secret: boolean }>({ action: "capabilities" }),
+  capabilities: () => eventMailRepository.invoke<{ mail_key: boolean; link_secret: boolean; provider?: string }>({ action: "capabilities" }),
   searchAccounts: (search: string) => eventMailRepository.searchAccounts(search),
   markTest: (id: string, enabled: boolean) => eventMailRepository.markTest(id, enabled),
   async preference() { const user = await authService.getCurrentUser(); if (!user) throw new Error("Authentication required"); return eventMailRepository.preference(user.id); },
