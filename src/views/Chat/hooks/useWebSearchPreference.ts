@@ -6,7 +6,7 @@ const keyFor = (userId: string) => `garageai:chat:web-search:${userId}`;
 /** Default is on: only an explicit "0" (user turned it off) disables search. */
 export const webSearchEnabled = (stored: string | null): boolean => stored !== "0";
 
-/** "Webbsök" toggle, remembered per user on this device. Defaults to on. */
+/** "Web search" toggle, remembered per user on this device. Defaults to on. */
 export const useWebSearchPreference = (): [boolean, () => void] => {
   const [userId, setUserId] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(true);

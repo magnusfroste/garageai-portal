@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { eventMailService } from "@/models/services/eventMailService";
-import { setLanguage, t } from "@/i18n";
+import { t } from "@/i18n";
 import { GarageAIMark } from "@/components/GarageAIMark";
 
 export default function UnsubscribePage() {
@@ -14,7 +14,7 @@ export default function UnsubscribePage() {
   useEffect(() => {
     const meta = document.createElement("meta"); meta.name = "referrer"; meta.content = "no-referrer"; document.head.appendChild(meta);
     let alive = true;
-    void eventMailService.unsubscribe(token, "status").then(result => { if (alive) { setOut(result.opted_out); setLanguage(result.language); } }).catch(e => { if (alive) setError(e instanceof Error ? e.message : "Mail operation failed"); });
+    void eventMailService.unsubscribe(token, "status").then(result => { if (alive) { setOut(result.opted_out); } }).catch(e => { if (alive) setError(e instanceof Error ? e.message : "Mail operation failed"); });
     return () => { alive = false; meta.remove(); };
   }, [token]);
   const change = async (action: "unsubscribe" | "undo") => {

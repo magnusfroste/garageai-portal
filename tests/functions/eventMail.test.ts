@@ -36,9 +36,9 @@ test("unsubscribe HMAC is account-bound and rejects a modified id signature or e
   expect(await verifyMailToken(`${token}.extra`, fixtureSecret)).toBeNull();
   expect(await verifyMailToken("invalid", fixtureSecret)).toBeNull();
 });
-test("mail rendering substitutes the chosen language and escapes dynamic values in HTML", () => {
-  const rendered = renderMail({ key: "garage_offline", enabled: true, subject_en: "Garage {{garage_name}}", body_en: "Offline {{days_offline}}", subject_sv: "Garage {{garage_name}}", body_sv: "Offline {{days_offline}}, nyckel {{key_hint}}" }, "sv", { garage_name: "<script>bad</script>", days_offline: "3", key_hint: "ABCD" }, "https://app.garageai.eu/mail/unsubscribe?t=fixture");
-  expect(rendered.textContent).toContain("Offline 3, nyckel ABCD");
+test("mail rendering is English only and escapes dynamic values in HTML", () => {
+  const rendered = renderMail({ key: "garage_offline", enabled: true, subject_en: "Garage {{garage_name}}", body_en: "Offline {{days_offline}}, key {{key_hint}}" }, { garage_name: "<script>bad</script>", days_offline: "3", key_hint: "ABCD" }, "https://app.garageai.eu/mail/unsubscribe?t=fixture");
+  expect(rendered.textContent).toContain("Offline 3, key ABCD");
   expect(rendered.htmlContent).not.toContain("<script>");
-  expect(rendered.textContent).toContain("Avsluta mejl");
+  expect(rendered.textContent).toContain("Unsubscribe from mail");
 });

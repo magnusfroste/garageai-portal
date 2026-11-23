@@ -6,11 +6,11 @@ import { MAIL_DEFAULTS, MAIL_KEYS, MAIL_RUN_LIMIT, mailToken, verifyMailToken, s
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
 const SettingsSchema = z.object({ mode: z.enum(["off", "test", "on"]), test_delay_minutes: z.number().int().min(1).max(1440), max_per_week: z.number().int().min(0).max(100), max_total: z.number().int().min(0).max(1000), from_email: z.email().max(254), from_name: z.string().trim().min(1).max(100), provider: z.enum(MAIL_PROVIDERS).default("cloudflare") });
-const TemplateSchema = z.object({ key: z.enum(MAIL_KEYS), enabled: z.boolean(), kind: z.enum(["service", "marketing"]).default("service"), subject_en: z.string().min(1).max(998), subject_sv: z.string().min(1).max(998), body_en: z.string().min(1).max(30000), body_sv: z.string().min(1).max(30000) });
+const TemplateSchema = z.object({ key: z.enum(MAIL_KEYS), enabled: z.boolean(), kind: z.enum(["service", "marketing"]).default("service"), subject_en: z.string().min(1).max(998), body_en: z.string().min(1).max(30000) });
 const BodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("run") }),
-  z.object({ action: z.literal("preview"), template_key: z.enum(MAIL_KEYS), language: z.enum(["en", "sv"]) }),
-  z.object({ action: z.literal("send_test"), template_key: z.enum(MAIL_KEYS), language: z.enum(["en", "sv"]) }),
+  z.object({ action: z.literal("preview"), template_key: z.enum(MAIL_KEYS) }),
+  z.object({ action: z.literal("send_test"), template_key: z.enum(MAIL_KEYS) }),
   z.object({ action: z.literal("save_settings"), settings: SettingsSchema, confirm_on: z.boolean().optional() }),
   z.object({ action: z.enum(["unsubscribe", "undo", "status"]), token: z.string().min(1).max(150) }),
   z.object({ action: z.literal("capabilities") }),
@@ -42,9 +42,9 @@ Deno.serve(async req => {
         const { error } = await admin.from("profiles").update({ mail_opt_out_at: body.action === "undo" ? null : new Date().toISOString() }).eq("id", userId);
         if (error) throw new Error("Mail preference could not be saved");
       }
-      const { data, error } = await admin.from("profiles").select("mail_opt_out_at,mail_language").eq("id", userId).maybeSingle();
+      const { data, error } = await admin.from("profiles").select("mail_opt_out_at").eq("id", userId).maybeSingle();
       if (error || !data) return json({ error: "This mail link is invalid" }, 400);
-      return json({ opted_out: data.mail_opt_out_at !== null, language: data.mail_language });
+      return json({ opted_out: data.mail_opt_out_at !== null });
     }
 
     let adminUser: { id: string; email?: string } | null = null;
@@ -103,7 +103,7 @@ Deno.serve(async req => {
       if (!candidate || !template) return json({ error: "Template unavailable" }, 404);
       const ready = !!Deno.env.get("MAIL_LINK_SECRET");
       const previewUrl = ready ? await visibleUrl(candidate) : "https://app.garageai.eu/mail/unsubscribe";
-      return json({ ...renderMail(template, body.language, values(candidate), previewUrl), one_click_url: ready ? await oneClickUrl(candidate) : "https://app.garageai.eu/mail/unsubscribe" });
+      return json({ ...renderMail(template, values(candidate), previewUrl), one_click_url: ready ? await oneClickUrl(candidate) : "https://app.garageai.eu/mail/unsubscribe" });
     }
     const owner = crypto.randomUUID();
     if (!await rpc("event_mail_lock", { _owner: owner })) return json({ ok: true, busy: true, sent: 0 });
@@ -131,8 +131,7 @@ Deno.serve(async req => {
         if (!profile || profile.mail_opt_out_at || !current || (body.action === "run" && (current.value as { mode?: string }).mode !== settings.mode)) { await finish(false, null, "mail preferences changed"); continue; }
         const unsubscribeUrl = await visibleUrl(candidate);
         const oneClick = await oneClickUrl(candidate);
-        const language = body.action === "send_test" ? body.language : claim.language === "sv" ? "sv" : "en";
-        const rendered = renderMail(template, language, values(candidate), unsubscribeUrl);
+        const rendered = renderMail(template, values(candidate), unsubscribeUrl);
         const result = await sendMail(settings.provider, { from_email: settings.from_email, from_name: settings.from_name, to: candidate.email, ...rendered, headers: { "List-Unsubscribe": `<${oneClick}>, <${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } }, name => Deno.env.get(name));
         if (result.ok) { await finish(true, result.id, null); sent++; }
         else await finish(false, null, result.error, result.definite);

@@ -44,7 +44,7 @@ export async function getProxyBaseUrl(client?: ProxySettingsReader): Promise<str
   }
 
   if (!url) {
-    throw new Error("Proxy base URL not configured. Set it in Admin → Inställningar → Proxy or LITELLM_BASE_URL env var.");
+    throw new Error("Proxy base URL not configured. Set it in Admin → Settings → Proxy or LITELLM_BASE_URL env var.");
   }
 
   cached = { url, expires: now + TTL_MS };

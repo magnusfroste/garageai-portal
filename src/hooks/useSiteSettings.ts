@@ -1,12 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { siteSettingsService, localizeSiteSettings } from "@/models/services/siteSettingsService";
-import { useLanguage } from "@/i18n";
+import { siteSettingsService } from "@/models/services/siteSettingsService";
 import { SiteSettings } from "@/models/types/siteSettings.types";
 import { toast } from "sonner";
 
 export const useSiteSettings = () => {
   const queryClient = useQueryClient();
-  const lang = useLanguage();
 
   const settingsQuery = useQuery({
     queryKey: ["site-settings"],
@@ -32,9 +30,8 @@ export const useSiteSettings = () => {
   });
 
   return {
-    /** Localized for display. */
-    settings: localizeSiteSettings(settingsQuery.data, lang),
-    /** Stored values (English + translations) — use in editors that save. */
+    settings: settingsQuery.data,
+    /** Stored values — use in editors that save. */
     rawSettings: settingsQuery.data,
     isLoading: settingsQuery.isLoading,
     save: saveMutation.mutate,

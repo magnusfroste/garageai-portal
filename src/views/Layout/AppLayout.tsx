@@ -17,10 +17,8 @@ import { HELP_URL } from "@/models/services/navigation";
 import { CreditCard, HelpCircle, LogOut, User, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { t } from "@/i18n";
-import { LanguageMenu } from "./LanguageMenu";
 import { AnnouncementBar } from "@/views/Announcements/AnnouncementBar";
 import { SupportProvider, SupportHeaderButton } from "@/views/Support/SupportProvider";
-import { useLanguagePreference } from "@/hooks/useLanguagePreference";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,7 +51,6 @@ const SignedInLayout = () => {
   const firstRequest = useBuyerFirstRequest(profile?.signup_intent === "buyer");
   const inlineTerms = (location.pathname === "/dashboard/keys" && new URLSearchParams(location.search).has("setup")) || (buyerNeedsFirstAnswer(profile?.signup_intent, firstRequest.data ?? null, profile?.first_goal) && (location.pathname === "/dashboard" || (location.pathname === "/dashboard/keys" && !location.search.includes("manage=1"))));
   const inlineKey = location.pathname === "/dashboard/chat" || inlineTerms;
-  useLanguagePreference(profile?.preferred_language);
 
   useEffect(() => {
     checkAuth();
@@ -106,7 +103,7 @@ const SignedInLayout = () => {
                     <CreditCard className="w-4 h-4 mr-2" />
                     {t("Billing & credits")}
                   </DropdownMenuItem>
-                  <LanguageMenu />
+                  
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild><a href={ACCOUNT_TERMS_URL} target="_blank" rel="noopener noreferrer">{t("Terms")}</a></DropdownMenuItem>
                   <DropdownMenuItem asChild><a href={ACCOUNT_PRIVACY_URL} target="_blank" rel="noopener noreferrer">{t("Privacy")}</a></DropdownMenuItem>

@@ -66,4 +66,4 @@ export const poolSummaryText = (count: number, best: ReliabilityGrade | null) =>
   `${t(count === 1 ? "{n} garage" : "{n} garages", { n: count })}${best && best !== "Nytt" ? ` · ${t("best grade {g}", { g: best })}` : best === "Nytt" ? ` · ${t("new")}` : ""}`;
 
 /** Decimal number in the current locale (comma in Swedish). */
-export const formatDecimal = (v: number | string) => (locale() === "sv-SE" ? String(v).replace(".", ",") : String(v));
+export const formatDecimal = (v: number | string) => String(v);

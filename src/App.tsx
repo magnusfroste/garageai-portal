@@ -32,7 +32,6 @@ import { RobotsNoindex } from "./components/RobotsNoindex";
 import { OnboardingPage } from "./views/Onboarding/OnboardingPage";
 import UnsubscribePage from "./views/Mail/UnsubscribePage";
 
-import { LanguageBoundary } from "./views/Layout/LanguageBoundary";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -42,7 +41,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <RobotsNoindex />
-        <LanguageBoundary>
+        <>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
@@ -96,7 +95,7 @@ const App = () => (
           <Route path="/credits" element={<Navigate to="/dashboard/credits" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-        </LanguageBoundary>
+        </>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

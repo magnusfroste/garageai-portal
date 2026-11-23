@@ -25,7 +25,7 @@ export const eventMailRepository = {
     return data as T;
   },
   async saveTemplate(template: EventMailTemplate) {
-    const { error } = await supabase.from("mail_templates").update({ enabled: template.enabled, subject_en: template.subject_en, subject_sv: template.subject_sv, body_en: template.body_en, body_sv: template.body_sv, updated_at: new Date().toISOString() }).eq("key", template.key);
+    const { error } = await supabase.from("mail_templates").update({ enabled: template.enabled, subject_en: template.subject_en, body_en: template.body_en, updated_at: new Date().toISOString() }).eq("key", template.key);
     if (error) throw error;
   },
   async searchAccounts(search: string) {

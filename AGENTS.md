@@ -15,7 +15,7 @@
 - Build the buyer catalogue (one entry per base model, garages as providers) only in `catalogService.buildCatalog` from public data (curated_models + public garage RPCs); pool weights/shares come only from `_shared/poolPricing.ts`.
 - Track why a catalogue model is off in `curated_models.disabled_reason` (admin vs failed_test); only syncModels re-enables failed_test rows on a pass, never admin-disabled ones.
 - Decide tool-calling support only from the acceptance-test probe (`garage_model_tests.supports_tools`, public via `garage_tool_support`); chat backend and UI share one "garage/<g>/<m> vs pool" match.
-- Route user-facing strings through `t()` (`src/i18n`, English source, translations in `src/i18n/<lang>.ts`); site_settings text is English with `translations.<lang>` overrides merged only in `useSiteSettings`.
+- The portal is English only: keep `t()` (`src/i18n`) as a pass-through for English source strings, with no locales, switcher or language detection; site_settings and mail templates are read in English only.
 - Grant purchased credits through one idempotent shared claim path; total budget = starting credit + purchased credits.
 - Read signup starter credit from the public default-budget setting, never translated branding; signup profiles use it with zero fallback.
 - Share the browser-link connection view across current and former wizard URLs; advanced token renewal uses Bridge credentials only, so portal connection stays independent of legacy scripts.

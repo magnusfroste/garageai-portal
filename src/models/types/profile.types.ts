@@ -5,7 +5,6 @@ export interface Profile {
   purchased_credits_usd: number;
   signup_intent: "buyer" | "operator" | null;
   onboarding_done: boolean;
-  preferred_language: "en" | "sv";
   terms_version: string | null;
   terms_accepted_at: string | null;
   terms_notice_dismissed_version?: string | null;

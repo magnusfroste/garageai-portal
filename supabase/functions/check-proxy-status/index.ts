@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
         error = `Proxy svarade med ${readinessRes.status}: ${body.substring(0, 200)}`;
       }
     } catch (err) {
-      error = `Kunde inte nå ${apiBaseUrl}: ${err.message}`;
+      error = `Could not reach ${apiBaseUrl}: ${err.message}`;
     }
 
     // If health worked, try model count

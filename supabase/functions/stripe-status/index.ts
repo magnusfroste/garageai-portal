@@ -67,7 +67,7 @@ serve(async (req: Request) => {
         // We can't update Supabase secrets from edge functions, 
         // so we return instructions
         return new Response(JSON.stringify({
-          error: 'Stripe-nyckeln kan inte uppdateras härifrån. Kontakta support eller uppdatera via Lovable Cloud.',
+          error: 'The Stripe key cannot be updated from here. Contact support or update it in Lovable Cloud.',
         }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

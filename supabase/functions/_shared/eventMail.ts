@@ -1,10 +1,9 @@
 export type MailMode = "off" | "test" | "on";
-export type MailLanguage = "en" | "sv";
 export const MAIL_KEYS = ["first_request_nudge", "connect_garage_nudge", "garage_offline"] as const;
 export const MAIL_RUN_LIMIT = 20;
 export const MAIL_DEFAULTS = { mode: "off" as MailMode, test_delay_minutes: 10, max_per_week: 1, max_total: 3, from_email: "support@garageai.eu", from_name: "GarageAI", provider: "cloudflare" as "cloudflare" | "brevo" };
 export type MailSettings = typeof MAIL_DEFAULTS;
-export interface MailTemplate { key: string; enabled: boolean; kind: string; subject_en: string; subject_sv: string; body_en: string; body_sv: string }
+export interface MailTemplate { key: string; enabled: boolean; kind: string; subject_en: string; body_en: string; }
 export interface MailCandidate { user_id: string; email: string; template_key: string; event_ref: string; key_hint: string; garage_name: string; days_offline: number }
 
 export function mailCapReached(total: number, recent: string[], settings: Pick<MailSettings, "max_per_week" | "max_total">, now = Date.now()): boolean {
@@ -21,13 +20,13 @@ export function mailAccountAllowed(settings: MailSettings, mailTest: boolean, op
 
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c));
 
-export function renderMail(template: MailTemplate, language: MailLanguage, values: Record<string, string>, unsubscribeUrl: string) {
+export function renderMail(template: MailTemplate, values: Record<string, string>, unsubscribeUrl: string) {
   const replace = (text: string) => text.replace(/\{\{(key_hint|garage_name|days_offline)\}\}/g, (_, key: string) => values[key] ?? "");
-  const subject = replace(language === "sv" ? template.subject_sv : template.subject_en).replace(/[\r\n]/g, " ");
-  const body = replace(language === "sv" ? template.body_sv : template.body_en);
-  const footer = language === "sv" ? "Avsluta mejl om ditt konto och dina garage" : "Unsubscribe from mail about your account and garages";
+  const subject = replace(template.subject_en).replace(/[\r\n]/g, " ");
+  const body = replace(template.body_en);
+  const footer = "Unsubscribe from mail about your account and garages";
   return { subject, textContent: `GarageAI\n\n${body}\n\n${footer}: ${unsubscribeUrl}`,
-    htmlContent: `<!doctype html><html lang="${language}"><body style="color-scheme:light;background-color:Canvas;color:CanvasText;padding:20px"><main><p><strong>GarageAI</strong></p><div style="white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.6">${escapeHtml(body)}</div><hr><p><a href="${escapeHtml(unsubscribeUrl)}">${footer}</a></p></main></body></html>` };
+    htmlContent: `<!doctype html><html lang="en"><body style="color-scheme:light;background-color:Canvas;color:CanvasText;padding:20px"><main><p><strong>GarageAI</strong></p><div style="white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.6">${escapeHtml(body)}</div><hr><p><a href="${escapeHtml(unsubscribeUrl)}">${footer}</a></p></main></body></html>` };
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

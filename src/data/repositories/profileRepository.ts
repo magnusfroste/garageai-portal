@@ -5,7 +5,7 @@ export class ProfileRepository {
   async findById(userId: string): Promise<Profile | null> {
     const { data, error } = await supabase
       .from("profiles")
-      .select("full_name, email, company, purchased_credits_usd, signup_intent, onboarding_done, preferred_language, terms_version, terms_accepted_at, terms_notice_dismissed_version, chat_sync, default_key_at, first_goal")
+      .select("full_name, email, company, purchased_credits_usd, signup_intent, onboarding_done, terms_version, terms_accepted_at, terms_notice_dismissed_version, chat_sync, default_key_at, first_goal")
       .eq("id", userId)
       .single();
 
@@ -22,15 +22,7 @@ export class ProfileRepository {
     if (error) throw error;
   }
 
-  async updateLanguage(userId: string, preferred_language: "en" | "sv"): Promise<void> {
-    const { error } = await supabase.from("profiles").update({ preferred_language, mail_language: preferred_language }).eq("id", userId);
-    if (error) throw error;
-  }
 
-  async updateMailLanguage(userId: string, mail_language: "en" | "sv"): Promise<void> {
-    const { error } = await supabase.from("profiles").update({ mail_language }).eq("id", userId).neq("mail_language", mail_language);
-    if (error) throw error;
-  }
 
   async updateOnboarding(userId: string, updates: OnboardingUpdateData): Promise<void> {
     const { error } = await supabase.from("profiles").update(updates).eq("id", userId);

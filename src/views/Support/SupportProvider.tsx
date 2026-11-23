@@ -11,7 +11,7 @@ import { useSupport, useSupportMessages, useSupportAvailability } from '@/hooks/
 import { supportRepository } from '@/data/repositories/supportRepository';
 import { reportSupportError, shouldPrompt, sortSupport, supportContext, supportErrorEvent, supportStuck, supportUnread } from '@/models/services/supportService';
 import { SupportConversation } from './SupportConversation';
-import { t, getLanguage } from '@/i18n';
+import { t } from '@/i18n';
 
 const SupportUIContext=createContext<{open:()=>void;unread:boolean;header:boolean;available:boolean;hasThread:boolean}>({open:()=>{},unread:false,header:false,available:false,hasThread:false});
 export function SupportHeaderButton(){const ui=useContext(SupportUIContext);if(!ui.available)return null;return <Button variant="ghost" size="icon" className={ui.header?'relative h-8 w-8':'relative h-8 w-8 md:hidden'} onClick={ui.open} aria-label={t('Ask Magnus')} title={t('Ask Magnus')}><MessageCircle className="h-4 w-4"/>{ui.unread && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary"/>}</Button>;}
@@ -30,7 +30,7 @@ export function SupportProvider({children}:{children:React.ReactNode}) {
   const interacted=useRef(false);
   const diagnostics=useQuery({queryKey:['support-diagnostics',uid],enabled:!!uid,queryFn:supportRepository.diagnostics,refetchInterval:60_000});
   const avatar=useQuery({queryKey:['support-avatar',uid],enabled:!!uid,queryFn:supportRepository.avatar,staleTime:300_000});
-  const availabilityLine=availability.mode==='away' && availability.away_until ? t('Magnus is away until {date}. You can still write; he answers when he is back.',{date:new Date(availability.away_until+'T00:00:00Z').toLocaleDateString(getLanguage()==='sv'?'sv-SE':'en-GB',{day:'numeric',month:'long',timeZone:'UTC'})}) : availability.mode==='off'?t('Support chat is currently off. You can still read existing replies from Account.'):undefined;
+  const availabilityLine=availability.mode==='away' && availability.away_until ? t('Magnus is away until {date}. You can still write; he answers when he is back.',{date:new Date(availability.away_until+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'long',timeZone:'UTC'})}) : availability.mode==='off'?t('Support chat is currently off. You can still read existing replies from Account.'):undefined;
   const header=pathname.startsWith('/dashboard/chat'); const unread=support.threads.some(t=>supportUnread(t));
   useEffect(()=>{setBubble(false);setExpanded(false);setLastError('');setRepeated(false);interacted.current=false;errors.current.clear();seenToast.current.clear();},[uid]);
   useEffect(()=>{
