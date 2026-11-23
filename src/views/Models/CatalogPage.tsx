@@ -81,7 +81,7 @@ export const CatalogPage = () => {
   const { models, isLoading, isError, refetch } = useModelCatalog();
   const extra = () => {
     const o: Record<string, string> = {};
-    for (const k of ["modality", "tools", "country", "supply", "view"]) { const v = params.get(k); if (v) o[k] = v; }
+    for (const k of ["modality", "tools", "country", "where", "supply", "view"]) { const v = params.get(k); if (v) o[k] = v; }
     return o;
   };
   const set = (patch: Partial<CatalogFilters>) => setParams({ ...filtersToParams({ ...f, ...patch }), ...extra() }, { replace: true });
@@ -111,6 +111,9 @@ export const CatalogPage = () => {
           </FilterGroup>
           <FilterGroup title="Tool calling">
             <FilterOption active={panel.tools} onClick={() => setP("tools", panel.tools ? null : "1")}>{t("Supports tools")}</FilterOption>
+          </FilterGroup>
+          <FilterGroup title="Where it runs">
+            {([["se", "🇸🇪 Sweden"], ["eu", "🇪🇺 Europe (incl. Sweden)"], [null, "Any"]] as const).map(([v, l]) => <FilterOption key={l} active={panel.where === v} onClick={() => setP("where", v)}>{t(l)}</FilterOption>)}
           </FilterGroup>
           <FilterGroup title="Country">
             {countries.map((c) => <FilterOption key={c} active={panel.country === c} onClick={() => setP("country", panel.country === c ? null : c)}>{countryOptionLabel(c)}</FilterOption>)}

@@ -1129,6 +1129,41 @@ export type Database = {
         }
         Relationships: []
       }
+      garage_region_events: {
+        Row: {
+          actor_id: string
+          created_at: string
+          garage_id: string
+          id: string
+          previous_region: string | null
+          region: string | null
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          garage_id: string
+          id?: string
+          previous_region?: string | null
+          region?: string | null
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          garage_id?: string
+          id?: string
+          previous_region?: string | null
+          region?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_region_events_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_request_stats_hourly: {
         Row: {
           buyer_users: string[]
@@ -1452,6 +1487,9 @@ export type Database = {
           pool_input_cost_per_million: number
           pool_output_cost_per_million: number
           port: number | null
+          provider_region: string | null
+          provider_region_at: string | null
+          provider_region_by: string | null
           runtime: string | null
           runtime_error: string | null
           runtime_models: string[]
@@ -1515,6 +1553,9 @@ export type Database = {
           pool_input_cost_per_million?: number
           pool_output_cost_per_million?: number
           port?: number | null
+          provider_region?: string | null
+          provider_region_at?: string | null
+          provider_region_by?: string | null
           runtime?: string | null
           runtime_error?: string | null
           runtime_models?: string[]
@@ -1578,6 +1619,9 @@ export type Database = {
           pool_input_cost_per_million?: number
           pool_output_cost_per_million?: number
           port?: number | null
+          provider_region?: string | null
+          provider_region_at?: string | null
+          provider_region_by?: string | null
           runtime?: string | null
           runtime_error?: string | null
           runtime_models?: string[]
@@ -2335,6 +2379,7 @@ export type Database = {
           forwards_to: string
           garage_name: string
           is_endpoint: boolean
+          provider_region: string
           terms_accepted: boolean
           tokens_1d: number
           tokens_30d: number

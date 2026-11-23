@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePublicGarages } from "@/hooks/usePublicGarages";
 import { filterSortGarages, toSupplyRow } from "@/models/services/publicGarageService";
-import { countryOptionLabel, filterSupply, type SupplyFilters, type SupplyRow } from "@/models/services/catalogPresentation";
+import { countryOptionLabel, filterSupply, parseWhere, type SupplyFilters, type SupplyRow } from "@/models/services/catalogPresentation";
 import { formatTokens } from "@/models/services/reliabilityService";
 import { PublicGarageHeader, OfferedModelChips } from "./components/PublicGarageHeader";
 import { TERMS_URL } from "./components/TermsCheckbox";
@@ -52,12 +52,12 @@ const GaragesListPage = () => {
   const setP = (k: string, v: string | null) => { const n = new URLSearchParams(params); if (v) n.set(k, v); else n.delete(k); setParams(n, { replace: true }); };
   const view = params.get("view") === "list" ? "list" : "table";
   const kind = params.get("kind");
-  const f: SupplyFilters = { q: params.get("q") ?? "", kind: kind === "garage" || kind === "provider" ? kind : null, country: params.get("country"), terms: params.get("terms") === "1" };
+  const f: SupplyFilters = { q: params.get("q") ?? "", kind: kind === "garage" || kind === "provider" ? kind : null, country: params.get("country"), where: parseWhere(params.get("where")), terms: params.get("terms") === "1" };
   const garages = useMemo(() => filterSortGarages(query.data ?? [], false, "grade"), [query.data]);
   const all = useMemo(() => garages.map(toSupplyRow), [garages]);
   const rows = filterSupply(all, f);
   const shown = new Set(rows.map((r) => r.name));
-  const countries = [...new Set(all.map((r) => (r.forwardsTo ? "varies" : r.countryCode)).filter((c): c is string => !!c))].sort();
+  const countries = [...new Set(all.map((r) => (r.forwardsTo && r.kind !== "provider" ? "varies" : r.countryCode)).filter((c): c is string => !!c))].sort();
 
   return <div className="p-4 sm:p-6 space-y-5">
     <div className="flex items-center gap-3"><Warehouse className="w-6 h-6 text-primary" /><h1 className="text-2xl font-bold">{t("Garages & providers")}</h1></div>
@@ -65,6 +65,9 @@ const GaragesListPage = () => {
       <aside className="lg:w-52 shrink-0" aria-label={t("Filters")}>
         <FilterGroup title="Kind">
           {(["garage", "provider"] as const).map((k) => <FilterOption key={k} active={f.kind === k} onClick={() => setP("kind", f.kind === k ? null : k)}>{t(k === "garage" ? "Garage" : "Provider")}</FilterOption>)}
+        </FilterGroup>
+        <FilterGroup title="Where it runs">
+          {([["se", "🇸🇪 Sweden"], ["eu", "🇪🇺 Europe (incl. Sweden)"], [null, "Any"]] as const).map(([v, l]) => <FilterOption key={l} active={f.where === v} onClick={() => setP("where", v)}>{t(l)}</FilterOption>)}
         </FilterGroup>
         <FilterGroup title="Country">
           {countries.map((c) => <FilterOption key={c} active={f.country === c} onClick={() => setP("country", f.country === c ? null : c)}>{countryOptionLabel(c)}</FilterOption>)}

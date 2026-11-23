@@ -708,6 +708,13 @@
       "when": 1795476017619,
       "tag": "0100_public_catalogue_supply_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1795477519141,
+      "tag": "0101_provider_region",
+      "breakpoints": true
     }
   ]
 }

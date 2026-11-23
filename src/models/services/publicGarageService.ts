@@ -1,7 +1,7 @@
 import type { GarageProfile, GarageReliability } from "@/models/types/reliability.types";
 import { qualifiesEu, type GarageLocation } from "./location";
 import type { GarageSupplyFact } from "@/models/types/catalog.types";
-import { offerPlace, type SupplyRow } from "./catalogPresentation";
+import { offerPlace, whereClass, type SupplyRow } from "./catalogPresentation";
 
 export interface PublicGarage {
   profile: GarageProfile;
@@ -35,13 +35,16 @@ export const filterSortGarages = (garages: PublicGarage[], euOnly: boolean, sort
 export const toSupplyRow = (g: PublicGarage): SupplyRow => {
   const forwardsTo = g.supply?.forwards_to ?? null;
   const hidden = !g.location || g.location.location_display === "hidden";
+  const isProvider = !!(g.location?.is_endpoint || g.supply?.is_endpoint);
+  const placeInput = { forwardsTo, location: g.location ?? null, isProvider, providerRegion: isProvider ? g.supply?.provider_region ?? null : undefined };
   return {
     name: g.profile.name,
     displayName: g.providerName ?? g.profile.display_name,
     kind: g.location?.is_endpoint || g.supply?.is_endpoint ? "provider" : "garage",
-    countryCode: forwardsTo || hidden ? null : g.location?.country ?? null,
-    place: offerPlace({ forwardsTo, location: g.location ?? null }),
+    countryCode: isProvider || forwardsTo || hidden ? null : g.location?.country ?? null,
+    place: offerPlace(placeInput),
     forwardsTo,
+    where: whereClass(placeInput),
     termsAccepted: !!g.supply?.terms_accepted,
     tokens1d: g.supply?.tokens_1d ?? 0,
     tokens30d: g.supply?.tokens_30d ?? 0,

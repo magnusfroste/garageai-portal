@@ -55,7 +55,7 @@ const OfferName = ({ o }: { o: GarageOffer }) => {
         {place.flag && <span aria-hidden className="mr-1">{place.flag}</span>}{o.providerName ?? o.garage}
       </Link>
       <div className="text-[10px] text-muted-foreground">
-        {o.forwardsTo ? `${t("via {s}", { s: o.forwardsTo })} · ${t("country varies")}` : place.text !== "—" ? place.text : null}
+        {o.forwardsTo ? `${t("via {s}", { s: o.forwardsTo })} · ${t(place.text === "varies" ? "country varies" : place.text)}` : place.text !== "—" ? t(place.text) : null}
         {!o.online && ` · ${t("Offline")}`}
       </div>
     </div>

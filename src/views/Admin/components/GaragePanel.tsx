@@ -24,6 +24,7 @@ import { Building2 } from "lucide-react";
 import { ProviderDialog } from "./ProviderDialog";
 import { ProviderModelsDialog } from "./ProviderModelsDialog";
 import { ProviderTermsDialog } from "./ProviderTermsDialog";
+import { ProviderRegionDialog } from "./ProviderRegionDialog";
 import { DeleteGarageButton } from "@/views/Garages/components/DeleteGarageButton";
 import { useGarageLocations } from "@/hooks/useGarageLocations";
 import { useQuery } from "@tanstack/react-query";
@@ -99,6 +100,7 @@ export const GaragePanel = () => {
   const [pauseGarage, setPauseGarage] = useState<Garage | null>(null);
   const [modelsGarage, setModelsGarage] = useState<Garage | null>(null);
   const [termsGarage, setTermsGarage] = useState<Garage | null>(null);
+  const [regionGarage, setRegionGarage] = useState<Garage | null>(null);
   const [toggling, setToggling] = useState(false);
   const [retesting, setRetesting] = useState<string | null>(null);
   const { toast } = useToast();
@@ -207,6 +209,7 @@ export const GaragePanel = () => {
     onEditPrices: setPriceGarage,
     onModels: setModelsGarage,
     onTerms: setTermsGarage,
+    onRegion: setRegionGarage,
     onRetest: (garage) => { void handleRetest(garage); },
     onNewCredential: (garage) => garage.connection_type === "endpoint" ? (setNewKey(""), setKeyGarage(garage)) : handleNewToken(garage),
     onTogglePaused: setPauseGarage,
@@ -273,6 +276,7 @@ export const GaragePanel = () => {
       <GaragePauseDialog garage={pauseGarage} admin onClose={() => setPauseGarage(null)} onDone={invalidate} />
       <GarageDetailSheet row={selectedRow} open={!!selectedGarage} onOpenChange={(open) => !open && setSelectedGarage(null)} pending={pending} onToggle={setOffered} onAlias={setAlias} onSaved={invalidate} />
       {modelsGarage && <ProviderModelsDialog garage={garages.find((g) => g.id === modelsGarage.id) ?? modelsGarage} models={byGarage.get(modelsGarage.id) ?? []} onClose={() => setModelsGarage(null)} onSaved={invalidate} />}
+      {regionGarage && <ProviderRegionDialog garage={garages.find((g) => g.id === regionGarage.id) ?? regionGarage} onClose={() => setRegionGarage(null)} onSaved={invalidate} />}
       {termsGarage && <ProviderTermsDialog garage={garages.find((g) => g.id === termsGarage.id) ?? termsGarage} onClose={() => setTermsGarage(null)} onSaved={invalidate} />}
       {priceGarage && <EditGaragePrices garage={priceGarage} models={byGarage.get(priceGarage.id) ?? []} onSaved={invalidate} open onOpenChange={(open) => !open && setPriceGarage(null)} hideTrigger />}
       {deleteGarage && <DeleteGarageButton garage={deleteGarage} onDone={invalidate} open onOpenChange={(open) => !open && setDeleteGarage(null)} hideTrigger />}

@@ -1,5 +1,5 @@
 import type { CatalogModel, GarageOffer, GarageSupplyFact, ModelDailyStat } from "@/models/types/catalog.types";
-import { flagEmoji, countryName, locationLabel } from "./location";
+import { flagEmoji, countryName, locationLabel, qualifiesEu, type GarageLocation } from "./location";
 
 /** Author from the `<creator>/<model>` name, e.g. qwen/qwen3 → Qwen. */
 export const modelAuthor = (name: string): string | null => {
@@ -46,8 +46,30 @@ export const modelDescription = (m: CatalogModel): string => {
 };
 
 export interface OfferPlace { flag: string | null; text: string }
+
+// ---------- where it runs ----------
+export const PROVIDER_REGIONS = ["se", "eu", "other"] as const;
+export type ProviderRegion = typeof PROVIDER_REGIONS[number];
+/** Admin-set provider region → flag and label. */
+export const regionPlace = (r: ProviderRegion | null): OfferPlace =>
+  r === "se" ? { flag: flagEmoji("SE"), text: "Sweden" }
+  : r === "eu" ? { flag: "🇪🇺", text: "Europe" }
+  : r === "other" ? { flag: "🌐", text: "Other" }
+  : { flag: null, text: "Unknown" };
+export type WhereFilter = "se" | "eu";
+export const parseWhere = (v: string | null): WhereFilter | null => (v === "se" || v === "eu" ? v : null);
+/** Strongest "where it runs" class: providers by admin region, garages by measured/declared country (hidden = none). */
+export const whereClass = (o: { isProvider?: boolean; providerRegion?: ProviderRegion | null; location?: GarageLocation | null }): WhereFilter | null => {
+  if (o.isProvider || o.location?.is_endpoint) return o.providerRegion === "se" ? "se" : o.providerRegion === "eu" ? "eu" : null;
+  const l = o.location ?? undefined;
+  if (!qualifiesEu(l)) return null;
+  return l!.country?.toUpperCase() === "SE" && l!.location_display === "country" ? "se" : "eu";
+};
+/** Europe includes Sweden. */
+export const matchesWhere = (cls: WhereFilter | null, f: WhereFilter | null) => !f || (f === "se" ? cls === "se" : cls != null);
 /** Where the answer is produced. Forwarding providers vary and get no flag. */
-export const offerPlace = (o: Pick<GarageOffer, "forwardsTo" | "location">): OfferPlace => {
+export const offerPlace = (o: Pick<GarageOffer, "forwardsTo" | "location"> & { providerRegion?: ProviderRegion | null; isProvider?: boolean }): OfferPlace => {
+  if (o.isProvider || o.location?.is_endpoint) return regionPlace(o.providerRegion ?? null);
   if (o.forwardsTo) return { flag: null, text: "varies" };
   const l = locationLabel(o.location ?? undefined);
   return l ? { flag: l.flag, text: l.name } : { flag: null, text: "—" };
@@ -60,8 +82,12 @@ export const offerCountries = (m: CatalogModel): string[] =>
 export const countryOptionLabel = (c: string) => (c === "varies" ? "Varies (forwarding)" : `${flagEmoji(c)} ${countryName(c)}`);
 
 export const withForwarding = (models: CatalogModel[], supply: GarageSupplyFact[]): CatalogModel[] => {
-  const fw = new Map(supply.map((s) => [s.garage_name, s.forwards_to]));
-  return models.map((m) => ({ ...m, offers: m.offers.map((o) => ({ ...o, forwardsTo: fw.get(o.garage) ?? null })) }));
+  const by = new Map(supply.map((s) => [s.garage_name, s]));
+  return models.map((m) => ({ ...m, offers: m.offers.map((o) => {
+    const s = by.get(o.garage);
+    const isProvider = !!(s?.is_endpoint || o.location?.is_endpoint);
+    return { ...o, forwardsTo: s?.forwards_to ?? null, isProvider, providerRegion: isProvider ? s?.provider_region ?? null : undefined };
+  }) }));
 };
 
 /** Tokens (prompt + completion) per model, last 30 days. */
@@ -95,19 +121,22 @@ export interface CatalogPanelFilters {
   modality: string | null;
   tools: boolean;
   country: string | null;
+  where: WhereFilter | null;
   supply: "garage" | "provider" | null;
 }
 export const panelFromParams = (p: URLSearchParams): CatalogPanelFilters => ({
   modality: p.get("modality"),
   tools: p.get("tools") === "1",
   country: p.get("country"),
+  where: parseWhere(p.get("where")),
   supply: p.get("supply") === "garage" || p.get("supply") === "provider" ? (p.get("supply") as "garage" | "provider") : null,
 });
 export const applyPanel = (models: CatalogModel[], f: CatalogPanelFilters) => models.filter((m) => {
-  if (m.auto) return !f.modality && !f.country && !f.supply;
+  if (m.auto) return !f.modality && !f.country && !f.where && !f.supply;
   if (f.modality && !modelModalities(m).input.includes(f.modality)) return false;
   if (f.tools && !m.supportsTools) return false;
   if (f.country && !offerCountries(m).includes(f.country)) return false;
+  if (f.where && !m.offers.some((o) => matchesWhere(whereClass(o), f.where))) return false;
   if (f.supply && !m.offers.some((o) => (f.supply === "provider") === !!o.location?.is_endpoint)) return false;
   return true;
 });
@@ -120,17 +149,19 @@ export interface SupplyRow {
   countryCode: string | null; // null when hidden or forwarding
   place: OfferPlace;
   forwardsTo: string | null;
+  where: WhereFilter | null;
   termsAccepted: boolean;
   tokens1d: number;
   tokens30d: number;
   models: string[];
 }
-export interface SupplyFilters { q: string; kind: "garage" | "provider" | null; country: string | null; terms: boolean }
+export interface SupplyFilters { q: string; kind: "garage" | "provider" | null; country: string | null; where?: WhereFilter | null; terms: boolean }
 export const filterSupply = (rows: SupplyRow[], f: SupplyFilters) => {
   const q = f.q.trim().toLowerCase();
   return rows.filter((r) =>
     (!q || r.name.toLowerCase().includes(q) || r.displayName.toLowerCase().includes(q) || r.models.some((m) => m.toLowerCase().includes(q)))
     && (!f.kind || r.kind === f.kind)
     && (!f.country || (f.country === "varies" ? !!r.forwardsTo : r.countryCode === f.country))
+    && matchesWhere(r.where, f.where ?? null)
     && (!f.terms || r.termsAccepted));
 };

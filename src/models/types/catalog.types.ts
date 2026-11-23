@@ -43,6 +43,9 @@ export interface GarageOffer {
   maxOutput?: number | null;
   /** Upstream service an endpoint provider forwards to (e.g. OpenRouter); country then varies. */
   forwardsTo?: string | null;
+  /** Admin-set region for providers (null = unknown); undefined for garages. */
+  providerRegion?: "se" | "eu" | "other" | null;
+  isProvider?: boolean;
 }
 
 /** Buyer-facing catalogue entry: one per base model name. */
@@ -110,4 +113,5 @@ export interface GarageSupplyFact {
   forwards_to: string | null;
   tokens_1d: number;
   tokens_30d: number;
+  provider_region?: "se" | "eu" | "other" | null;
 }

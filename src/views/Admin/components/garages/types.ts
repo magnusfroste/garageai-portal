@@ -24,6 +24,7 @@ export interface GarageActionHandlers {
   onEditPrices: (garage: Garage) => void;
   onModels: (garage: Garage) => void;
   onTerms: (garage: Garage) => void;
+  onRegion: (garage: Garage) => void;
   onRetest: (garage: Garage) => void;
   onNewCredential: (garage: Garage) => void;
   onTogglePaused: (garage: Garage) => void;

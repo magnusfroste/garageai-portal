@@ -21,3 +21,24 @@ describe("catalogue presentation", () => {
     expect(paidAverage([{ model: "m", day: "d", requests: 1, promptTokens: 2_000_000, completionTokens: 1_000_000, inputSpend: 1, outputSpend: 3 }], "m")).toEqual({ input: 0.5, output: 3 });
   });
 });
+
+import { matchesWhere, whereClass, regionPlace } from "../../src/models/services/catalogPresentation";
+describe("provider region / where it runs", () => {
+  it("labels provider regions", () => {
+    expect(regionPlace("se")).toEqual({ flag: "🇸🇪", text: "Sweden" });
+    expect(regionPlace("eu").text).toBe("Europe");
+    expect(regionPlace("other")).toEqual({ flag: "🌐", text: "Other" });
+    expect(regionPlace(null).text).toBe("Unknown");
+  });
+  it("forwarding provider uses its region, not varies", () => {
+    expect(offerPlace({ forwardsTo: "OpenRouter", isProvider: true, providerRegion: "other", location: null })).toEqual({ flag: "🌐", text: "Other" });
+  });
+  it("Europe includes Sweden; Sweden excludes other EU", () => {
+    const se = whereClass({ isProvider: true, providerRegion: "se" });
+    const de = whereClass({ location: { country: "DE", location_display: "country", is_endpoint: false } as never });
+    const other = whereClass({ isProvider: true, providerRegion: "other" });
+    expect([matchesWhere(se, "eu"), matchesWhere(de, "eu"), matchesWhere(other, "eu")]).toEqual([true, true, false]);
+    expect([matchesWhere(se, "se"), matchesWhere(de, "se")]).toEqual([true, false]);
+    expect(whereClass({ location: { country: "SE", location_display: "country", is_endpoint: false } as never })).toBe("se");
+  });
+});
