@@ -1,258 +1,218 @@
 import { PoolPricing } from "./components/PoolPricing";
 import { HowWeMeasure } from "@/views/Garages/components/HowWeMeasure";
-import { StatusDot } from "@/components/ui/status-badge";
-import { ProviderModelBadge } from "@/views/Models/components/ProviderModelBadge";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQueries } from "@tanstack/react-query";
-import { ArrowUpDown, KeyRound, MessageSquare, Server, Users } from "lucide-react";
-import { Bar, BarChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Code2, MessageSquare } from "lucide-react";
+import { Bar, BarChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis, Legend } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useModelCatalog, useDailyTokens } from "@/hooks/useModelCatalog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useModelCatalog, useModelDaily } from "@/hooks/useModelCatalog";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useSession } from "@/hooks/useSession";
 import { reliabilityRepository } from "@/data/repositories/reliabilityRepository";
-import { dailyTotals, formatContext, formatPrice, priceRange } from "@/models/services/catalogService";
-import { formatNumber, formatPct, formatTokens, dayLevel } from "@/models/services/reliabilityService";
-import { runtimeLabel } from "@/models/services/garageRuntime";
-import { ProviderBadge } from "@/views/Garages/components/ProviderBadge";
-import { LocationBadge, liveHoursText } from "@/views/Garages/components/LocationBadge";
-import { locationLabel } from "@/models/services/location";
+import { formatContext, formatPrice } from "@/models/services/catalogService";
+import { fromPrice, modelActivity, modelContext, modelDescription, modelModalities, offerPlace, paidAverage } from "@/models/services/catalogPresentation";
+import { formatNumber, formatPct, formatTokens } from "@/models/services/reliabilityService";
 import type { GarageOffer } from "@/models/types/catalog.types";
-import type { GarageDay } from "@/models/types/reliability.types";
-import { GradeBadge } from "@/views/Garages/components/Reliability";
+import { ProviderModelBadge } from "@/views/Models/components/ProviderModelBadge";
 import { ToolsBadge } from "@/views/Models/components/ToolsBadge";
 import { CopyButton } from "./components/CopyButton";
 import { ModelSnippets } from "./components/ModelSnippets";
-import { cn } from "@/lib/utils";
-
 import { t } from "@/i18n";
-import { usePublicModelEnergy } from '@/hooks/useGarageEnergy';
-import { formatEnergyEfficiency } from '@/models/services/garageEnergy';
 
-type SortKey = "garage" | "grade" | "price" | "ttft" | "tps" | "availability" | "online";
-const GRADE_RANK = { Nytt: 0, D: 1, C: 2, B: 3, A: 4 } as const;
-const sortVal = (o: GarageOffer, k: SortKey): number | string => {
-  switch (k) {
-    case "garage": return o.garage;
-    case "grade": return o.grade ? GRADE_RANK[o.grade] : -1;
-    case "price": return o.price.output ?? Infinity;
-    case "ttft": return o.ttftMs ?? Infinity;
-    case "tps": return -(o.tokensPerSecond ?? -1);
-    case "availability": return -(o.availability30d ?? -1);
-    case "online": return o.online ? 0 : 1;
-  }
-};
-
-const MiniBar = ({ days }: { days: GarageDay[] | undefined }) => (
-  <div className="flex gap-px h-3 w-24" title={t("Last 30 days")}>
-    {(days ?? []).map((d) => {
-      const l = dayLevel(d.online_pct, d.samples);
-      return <div key={d.day} className={cn("flex-1 rounded-[1px]", {
-        good: "bg-emerald-500", warn: "bg-yellow-500", bad: "bg-destructive", none: "bg-muted",
-      }[l])} />;
-    })}
-  </div>
-);
-
-const Fact = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-md border border-border/50 bg-muted/20 px-3 py-2">
-    <div className="text-[11px] text-muted-foreground">{label}</div>
-    <div className="text-sm font-semibold tabular-nums">{value}</div>
-  </div>
-);
-
-const measuredLabel = (sampleDays: number | null | undefined) => {
-  const days = Math.max(1, Math.floor(sampleDays ?? 0));
-  return days < 30 ? t(days === 1 ? "measured over {n} day" : "measured over {n} days", { n: days }) : t("30 days");
-};
-
-/** Decode the splat once (tolerating bad escapes), then fall back to the raw splat. */
 const safeDecode = (s: string) => { try { return decodeURIComponent(s); } catch { return s; } };
 function findModelBySplat<T extends { name: string }>(models: T[], splat: string): T | undefined {
   const raw = splat.replace(/\/+$/, "");
   const decoded = safeDecode(raw);
   return models.find((x) => x.name === decoded) ?? models.find((x) => x.name === raw);
 }
+const SECTIONS = ["Providers", "Pricing", "Performance", "Uptime", "Activity"] as const;
+const AXIS = { fontSize: 10, stroke: "hsl(var(--muted-foreground))" };
+const TIP = { background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 };
+const num = (v: number | null | undefined) => (v == null ? "—" : String(Number(Number(v).toFixed(4))));
+
+const Tile = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-md border border-border/50 bg-muted/20 px-3 py-2">
+    <div className="text-[11px] text-muted-foreground">{t(label)}</div>
+    <div className="text-sm font-semibold tabular-nums">{value}</div>
+  </div>
+);
+
+const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
+  <section id={id} className="scroll-mt-20 space-y-3 border-t border-border/50 pt-6">
+    <h2 className="text-lg font-semibold">{t(title)}</h2>{children}
+  </section>
+);
+
+const OfferName = ({ o }: { o: GarageOffer }) => {
+  const place = offerPlace(o);
+  return (
+    <div className="min-w-0">
+      <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-medium text-primary hover:underline">
+        {place.flag && <span aria-hidden className="mr-1">{place.flag}</span>}{o.providerName ?? o.garage}
+      </Link>
+      <div className="text-[10px] text-muted-foreground">
+        {o.forwardsTo ? `${t("via {s}", { s: o.forwardsTo })} · ${t("country varies")}` : place.text !== "—" ? place.text : null}
+        {!o.online && ` · ${t("Offline")}`}
+      </div>
+    </div>
+  );
+};
 
 const ModelDetailPage = () => {
-  // Splat route: canonical names contain a slash (/models/qwen/qwen3-4b; %2F also accepted).
   const { "*": splat = "" } = useParams();
   const { models, isLoading, isError, refetch } = useModelCatalog();
+  const daily = useModelDaily();
   const { settings } = useSiteSettings();
   const { session } = useSession();
+  const [more, setMore] = useState(false);
+  const [api, setApi] = useState(false);
   const m = findModelBySplat(models, splat);
-  const energy = usePublicModelEnergy(m?.name ?? '');
-  const energyOf = (garage: string) => formatEnergyEfficiency(energy.data?.find(e => e.garage_name === garage)?.tokens_per_kwh);
   const garages = m?.offers.map((o) => o.garage) ?? [];
-  const daily = useDailyTokens(garages);
   const profiles = useQueries({
-    queries: garages.map((g) => ({
-      queryKey: ["garage-profile", g],
-      queryFn: () => reliabilityRepository.profile(g),
-      staleTime: 5 * 60 * 1000,
-    })),
+    queries: garages.map((g) => ({ queryKey: ["garage-profile", g], queryFn: () => reliabilityRepository.profile(g), staleTime: 5 * 60 * 1000 })),
   });
-  const [sort, setSort] = useState<{ k: SortKey; asc: boolean }>({ k: "grade", asc: false });
 
-  const offers = useMemo(() => {
-    const list = [...(m?.offers ?? [])];
-    list.sort((a, b) => {
-      const va = sortVal(a, sort.k), vb = sortVal(b, sort.k);
-      const c = typeof va === "string" ? va.localeCompare(vb as string) : (va as number) - (vb as number);
-      return sort.asc ? c : -c;
-    });
-    return list;
-  }, [m, sort]);
-
-  if (isLoading) return <div className="p-6"><p className="text-sm text-muted-foreground mb-3">{t("Loading available models…")}</p><Skeleton className="h-40" /></div>;
+  if (isLoading) return <div className="p-6"><Skeleton className="h-40" /></div>;
   if (isError) return <div className="p-6 text-sm text-destructive">{t("Could not load the catalogue.")} <Button variant="link" onClick={refetch}>{t("Try again")}</Button></div>;
   if (!m) return <p className="p-6 text-sm text-muted-foreground">{t("Model not found.")}</p>;
 
   const baseUrl = `${(settings?.api_base_url || "https://api.garageai.eu").replace(/\/+$/, "")}/v1`;
   const modelId = m.poolId ?? m.name;
-  const chart = dailyTotals(daily.data ?? []);
-  const hasUsage = chart.some((d) => d.tokens > 0);
-  const profileOf = (g: string) => profiles[garages.indexOf(g)]?.data?.daily;
-  const headerFlags = [...new Set(m.offers.map((o) => locationLabel(o.location ?? undefined)?.flag).filter(Boolean))];
-
-  const Th = ({ k, children, className }: { k: SortKey; children: React.ReactNode; className?: string }) => (
-    <th className={cn("px-3 py-2 font-normal text-left", className)}>
-      <Button variant="ghost" size="sm" className="h-auto p-0 inline-flex items-center gap-1 hover:text-foreground"
-        onClick={() => setSort((s) => ({ k, asc: s.k === k ? !s.asc : true }))}>
-        {children}<ArrowUpDown className={cn("w-3 h-3", sort.k === k ? "text-foreground" : "opacity-40")} />
-      </Button>
-    </th>
-  );
+  const ctx = modelContext(m), from = fromPrice(m), mods = modelModalities(m);
+  const desc = modelDescription(m);
+  const chatPath = `/dashboard/chat?model=${encodeURIComponent(modelId)}`;
+  const tryHref = session ? chatPath : `/auth?intent=buyer&next=${encodeURIComponent(chatPath)}`;
+  const offers = [...m.offers].sort((a, b) => Number(b.online) - Number(a.online) || (a.price.input ?? Infinity) - (b.price.input ?? Infinity));
+  const has = (f: (o: GarageOffer) => unknown) => offers.some((o) => f(o) != null);
+  const cols = { cache: has((o) => o.price.cacheRead), ctx: has((o) => o.contextLength), out: has((o) => o.maxOutput), ttft: has((o) => o.ttftMs), tps: has((o) => o.tokensPerSecond), up: has((o) => o.availability30d) };
+  const paid = paidAverage(daily.data ?? [], m.name);
+  const activity = modelActivity(daily.data ?? [], m.name);
+  const hasActivity = activity.some((d) => d.tokens > 0);
+  const perf = offers.filter((o) => o.ttftMs != null || o.tokensPerSecond != null).map((o) => ({ name: o.providerName ?? o.garage, ttft: o.ttftMs, tps: o.tokensPerSecond }));
+  const uptime = offers.map((o) => ({ o, days: profiles[garages.indexOf(o.garage)]?.data?.daily ?? [] })).filter((x) => x.days.length);
+  const dedicated = offers.filter((o) => o.modelId);
 
   return (
-    <div className="min-w-0 p-4 sm:p-6 space-y-6">
-      <div className="space-y-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          {headerFlags.length > 0 && <span aria-hidden className="text-2xl leading-none shrink-0">{headerFlags.join(" ")}</span>}
-          <h1 className="text-2xl font-bold font-mono break-all">{m.name}</h1>
+    <div className="min-w-0 p-4 sm:p-6">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold break-all">{m.name}</h1>
           {m.privateModel && <ProviderModelBadge />}
-          {m.bestGrade && <GradeBadge grade={m.bestGrade} />}
           {m.supportsTools && <ToolsBadge />}
           {!m.available && <Badge variant="outline">{t("Not available right now")}</Badge>}
         </div>
-        <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-          <Fact label={t("Context length")} value={formatContext(m.contextLength)} />
-          <Fact label={t("Max output")} value={formatContext(m.maxOutput)} />
-          <Fact label={t("Price in / 1M")} value={priceRange(m.minPrice.input, m.maxPrice.input)} />
-          <Fact label={t("Price out / 1M")} value={priceRange(m.minPrice.output, m.maxPrice.output)} />
-          <Fact label={t("Garages")} value={String(m.offers.length)} />
-          <Fact label={t("Tokens last 7 days")} value={formatTokens(m.tokens7d)} />
+        <div className="flex items-center gap-1 text-sm text-muted-foreground"><code className="font-mono">{modelId}</code><CopyButton text={modelId} /></div>
+        <div className="max-w-3xl text-sm text-muted-foreground">
+          <p className={more ? "" : "line-clamp-2"}>{desc}</p>
+          {desc.length > 160 && <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setMore(!more)}>{t(more ? "Show less" : "Show more")}</Button>}
+          {m.huggingfaceUrl && <a href={m.huggingfaceUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary hover:underline">{t("Model card on HuggingFace")}</a>}
         </div>
-        {m.huggingfaceUrl && (
-          <a href={m.huggingfaceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">{t("Model card on HuggingFace")}</a>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm"><Link to={tryHref}><MessageSquare className="mr-1 h-4 w-4" />{t("Try this model")}</Link></Button>
+          <Button size="sm" variant="outline" onClick={() => setApi(true)}><Code2 className="mr-1 h-4 w-4" />{t("API")}</Button>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Tile label="Modalities" value={`${mods.input.join(", ")} → ${mods.output.join(", ")}`} />
+          <Tile label="In / out price (from)" value={m.auto ? "—" : `${num(from.input)} / ${num(from.output)} credits/M`} />
+          <Tile label="Context" value={`${formatContext(ctx.value)}${ctx.varies ? " (varies by garage)" : ""}`} />
+          <Tile label="Added" value={m.addedAt ? new Date(m.addedAt).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" }) : "—"} />
+        </div>
       </div>
 
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">{t("Connection options")}</h2>
-      {m.poolPrice && m.poolId && (
-        <Card className="glass-card border-primary/40">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2"><Users className="w-4 h-4 text-primary" />{t("Pool")}</CardTitle>
-            <CardDescription>{t("We pick the best available garage for you.")}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-end gap-6 text-sm">
-            {!m.pool && <div><div className="text-xs text-muted-foreground">{t("Price in / out · credits per 1M tokens")}</div>{formatPrice(m.poolPrice.input)} / {formatPrice(m.poolPrice.output)}{m.poolPrice.cacheRead != null && <div className="text-xs text-muted-foreground">{t("Cache read")} {formatPrice(m.poolPrice.cacheRead)}</div>}</div>}
-            <div><div className="text-xs text-muted-foreground">{t("Combined availability ({period})", { period: measuredLabel(Math.max(0, ...offers.map((o) => o.sampleDays ?? 0))) })}</div>{formatPct(m.poolAvailability)}</div>
-            <div><div className="text-xs text-muted-foreground">{t("Model ID")}</div><div className="flex items-center gap-2"><code className="font-mono text-xs">{m.poolId}</code><CopyButton text={m.poolId} /></div></div>
-            {m.pool ? <PoolPricing pool={m.pool} /> : <p className="basis-full text-[11px] text-muted-foreground">{t("Pool may route to any garage offering this model")}</p>}
-          </CardContent>
-        </Card>
-      )}
+      <div className="mt-6 flex gap-8">
+        <nav className="sticky top-20 hidden h-fit w-36 shrink-0 space-y-1 lg:block" aria-label={t("Sections")}>
+          {SECTIONS.map((s) => <a key={s} href={`#${s.toLowerCase()}`} className="block rounded px-2 py-1 text-sm text-muted-foreground hover:bg-accent/40 hover:text-foreground">{t(s)}</a>)}
+        </nav>
+        <div className="min-w-0 flex-1 space-y-6">
+          <Section id="providers" title="Providers">
+            <p className="text-sm text-muted-foreground">{t("Different garages run the same model. GarageAI spreads your requests across those that are up, weighted by price, and skips any whose context window does not fit your prompt.")}</p>
+            <div className="overflow-x-auto rounded-lg border border-border/50">
+              <table className="w-full text-sm">
+                <thead className="border-b border-border/50 text-[11px] text-muted-foreground">
+                  <tr className="text-left [&>th]:px-3 [&>th]:py-2 [&>th]:font-normal">
+                    <th>{t("Name")}</th><th>{t("Input /M")}</th><th>{t("Output /M")}</th>{cols.cache && <th>{t("Cache read /M")}</th>}
+                    {cols.ctx && <th>{t("Context")}</th>}{cols.out && <th>{t("Max output")}</th>}
+                    {cols.ttft && <th>{t("Latency")}</th>}{cols.tps && <th>{t("Throughput")}</th>}{cols.up && <th>{t("Uptime (30 days)")}</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {offers.map((o) => (
+                    <tr key={o.garage} className="tabular-nums [&>td]:px-3 [&>td]:py-2">
+                      <td><OfferName o={o} /></td>
+                      <td>{formatPrice(o.price.input)}</td><td>{formatPrice(o.price.output)}</td>
+                      {cols.cache && <td>{formatPrice(o.price.cacheRead)}</td>}
+                      {cols.ctx && <td>{formatContext(o.contextLength ?? null)}</td>}
+                      {cols.out && <td>{formatContext(o.maxOutput ?? null)}</td>}
+                      {cols.ttft && <td>{formatNumber(o.ttftMs, " ms")}</td>}
+                      {cols.tps && <td>{o.tokensPerSecond == null ? "—" : `${o.tokensPerSecond} tok/s`}</td>}
+                      {cols.up && <td>{formatPct(o.availability30d)}</td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <HowWeMeasure />
+            {dedicated.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">{t("Dedicated")}</h3>
+                <p className="text-xs text-muted-foreground">{t("Pin one garage by calling its own model name.")}</p>
+                <ul className="space-y-1">
+                  {dedicated.map((o) => <li key={o.garage} className="flex items-center gap-1"><code className="font-mono text-xs">{o.modelId}</code><CopyButton text={o.modelId!} /></li>)}
+                </ul>
+              </div>
+            )}
+          </Section>
 
-      <Card className="glass-card">
-        <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Server className="h-4 w-4 text-primary" />{t("Specific garage")}</CardTitle><CardDescription>{t("Choose one garage directly. Availability depends on that machine.")}</CardDescription></CardHeader>
-        <CardContent className="space-y-2">
-          {offers.map((o) => <div key={o.garage} className="grid gap-2 border-b border-border/50 py-3 last:border-0 sm:grid-cols-[1fr_auto_1.5fr] sm:items-center">
-            <div className="min-w-0">{o.providerName ? <Link to={`/garages/${encodeURIComponent(o.garage)}`}><ProviderBadge name={o.providerName} /></Link> : <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-sm text-primary hover:underline">{o.garage}</Link>}{o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}<LocationBadge location={o.location ?? undefined} /></div>
-            <div className="text-sm tabular-nums"><span className="text-xs text-muted-foreground">{t("Price in / out · credits per 1M tokens")}</span><br />{formatPrice(o.price.input)} / {formatPrice(o.price.output)}{o.price.cacheRead != null && <><br /><span className="text-xs text-muted-foreground">{t("Cache read")} {formatPrice(o.price.cacheRead)}</span></>}</div>
-            {o.modelId && <div className="flex min-w-0 items-center gap-2 sm:justify-end"><code className="truncate font-mono text-xs">{o.modelId}</code><CopyButton text={o.modelId} /></div>}
-          </div>)}
-        </CardContent>
-      </Card>
+          <Section id="pricing" title="Pricing">
+            <div className="grid max-w-md grid-cols-2 gap-2">
+              <Tile label="Average paid, input /M (30 days)" value={num(paid.input)} />
+              <Tile label="Average paid, output /M (30 days)" value={num(paid.output)} />
+            </div>
+            {paid.input == null && paid.output == null && <p className="text-xs text-muted-foreground">{t("No paid traffic in the last 30 days yet.")}</p>}
+            {m.pool ? <PoolPricing pool={m.pool} /> : (
+              <table className="text-sm"><tbody>{offers.map((o) => <tr key={o.garage} className="[&>td]:py-1 [&>td]:pr-6 tabular-nums"><td><OfferName o={o} /></td><td>{t("Listed")} {formatPrice(o.price.input)} / {formatPrice(o.price.output)}</td></tr>)}</tbody></table>
+            )}
+          </Section>
+
+          <Section id="performance" title="Performance">
+            {perf.length ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {([["ttft", "Latency (ms, median 30 days)"], ["tps", "Throughput (tokens/s, median 30 days)"]] as const).map(([k, l]) => (
+                  <div key={k} className="h-48"><div className="mb-1 text-xs text-muted-foreground">{t(l)}</div>
+                    <ResponsiveContainer width="100%" height="90%"><BarChart data={perf}><XAxis dataKey="name" {...AXIS} /><YAxis {...AXIS} width={40} /><RTooltip contentStyle={TIP} /><Bar dataKey={k} fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} /></BarChart></ResponsiveContainer>
+                  </div>))}
+              </div>
+            ) : <p className="text-sm text-muted-foreground">{t("No measurements yet.")}</p>}
+          </Section>
+
+          <Section id="uptime" title="Uptime">
+            {uptime.length ? uptime.map(({ o, days }) => (
+              <div key={o.garage} className="space-y-1">
+                <div className="flex justify-between text-xs"><span>{o.providerName ?? o.garage}</span><span className="tabular-nums text-muted-foreground">{formatPct(o.availability30d)}</span></div>
+                <div className="flex h-5 gap-px">{days.map((d) => <div key={d.day} title={`${d.day}: ${d.online_pct == null ? "no data" : `${Math.round(d.online_pct)}%`}`}
+                  className={d.online_pct == null || !d.samples ? "flex-1 rounded-[1px] bg-muted" : d.online_pct >= 99 ? "flex-1 rounded-[1px] bg-primary" : d.online_pct >= 90 ? "flex-1 rounded-[1px] bg-primary/50" : "flex-1 rounded-[1px] bg-destructive"} />)}</div>
+              </div>)) : <p className="text-sm text-muted-foreground">{t("No uptime data yet.")}</p>}
+          </Section>
+
+          <Section id="activity" title="Activity">
+            {hasActivity ? (
+              <div className="h-56"><ResponsiveContainer width="100%" height="100%">
+                <BarChart data={activity}><XAxis dataKey="day" tickFormatter={(d) => d.slice(5)} {...AXIS} /><YAxis {...AXIS} tickFormatter={(v) => formatTokens(v)} width={50} />
+                  <RTooltip formatter={(v: number, n) => [n === "tokens" ? formatTokens(v) : v, n === "tokens" ? "Tokens" : "Requests"]} contentStyle={TIP} /><Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="tokens" name="tokens" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} /></BarChart>
+              </ResponsiveContainer></div>
+            ) : <p className="text-sm text-muted-foreground">{t("No traffic in the last 30 days yet.")}</p>}
+          </Section>
+        </div>
       </div>
 
-      <Card className="glass-card">
-        <CardHeader className="pb-2"><CardTitle className="text-base">{t("Garages running this model")}</CardTitle><HowWeMeasure /></CardHeader>
-        <CardContent className="min-w-0 px-0">
-          <div className="w-full min-w-0 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-[11px] text-muted-foreground border-b border-border/50">
-              <tr>
-                <Th k="garage">{t("Garage")}</Th><Th k="grade">{t("Grade")}</Th><Th k="price">{t("Price in / out")}</Th>
-                <Th k="ttft">Median TTFT</Th><Th k="tps">Median tok/s</Th><Th k="availability">{t("Availability")}</Th><th className="px-3 py-2 font-normal text-left">{t("Energy")}<div>{t("Last 7 days")}</div></th><Th k="online">Status</Th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {offers.map((o) => (
-                <tr key={o.garage}>
-                  <td className="px-3 py-2">
-                    {o.providerName ? <Link to={`/garages/${encodeURIComponent(o.garage)}`}><ProviderBadge name={o.providerName} /></Link> : <Link to={`/garages/${encodeURIComponent(o.garage)}`} className="font-mono text-primary hover:underline">{o.garage}</Link>}
-                    {o.runtime && <div className="text-[10px] text-muted-foreground">{runtimeLabel(o.runtime)}</div>}
-                    <LocationBadge location={o.location ?? undefined} />
-                  </td>
-                  <td className="px-3 py-2">{o.grade ? <GradeBadge grade={o.grade} /> : "—"}{!o.location?.is_endpoint && liveHoursText(o.location, true) && <div className="text-[10px] text-muted-foreground whitespace-nowrap">{liveHoursText(o.location, true)}</div>}</td>
-                  <td className="px-3 py-2 tabular-nums">{formatPrice(o.price.input)} / {formatPrice(o.price.output)}{o.price.cacheRead != null && <div className="text-xs text-muted-foreground">{t("Cache read")} {formatPrice(o.price.cacheRead)}</div>}</td>
-                  <td className="px-3 py-2 tabular-nums">{formatNumber(o.ttftMs, " ms")}</td>
-                  <td className="px-3 py-2 tabular-nums">{o.tokensPerSecond == null ? "—" : String(o.tokensPerSecond)}</td>
-                  <td className="px-3 py-2"><div className="flex items-center gap-2"><MiniBar days={profileOf(o.garage)} /><span className="text-xs tabular-nums">{formatPct(o.availability30d)} · {measuredLabel(o.sampleDays)}</span></div></td>
-                  <td className="px-3 py-2 tabular-nums whitespace-nowrap">{o.location?.is_endpoint ? t("datacenter") : energyOf(o.garage)}</td>
-                  <td className="px-3 py-2">
-                    <span className="inline-flex items-center gap-1.5 text-xs">
-                      <StatusDot tone={o.online ? "success" : "neutral"} />
-                      {o.online ? "Online" : "Offline"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-          {offers.some((o) => o.modelId) && (
-            <p className="px-3 pt-3 text-[11px] text-muted-foreground">{t("Want to target a specific garage? Use the model ID")} <code className="font-mono">garage/&lt;garage&gt;/{m.name}</code>.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="glass-card">
-        <CardHeader className="pb-3 flex-row flex-wrap items-center justify-between gap-3 space-y-0">
-          <CardTitle className="text-base">{t("Get started")}</CardTitle>
-          {session && (
-            <Button asChild size="sm" variant="outline">
-              <Link to={`/dashboard/chat?model=${encodeURIComponent(modelId)}`}><MessageSquare className="w-4 h-4 mr-1" />{t("Try in chat")}</Link>
-            </Button>
-          )}
-          {!session && <Button asChild size="sm" className="max-w-full h-auto min-h-9 whitespace-normal text-center"><Link to={`/auth?intent=buyer&next=${encodeURIComponent(`/dashboard/keys?model=${encodeURIComponent(m.name)}`)}`}><KeyRound className="mr-1 h-4 w-4" />{t("Create account to get an API key")}</Link></Button>}
-        </CardHeader>
-        <CardContent><ModelSnippets baseUrl={baseUrl} model={modelId} /></CardContent>
-      </Card>
-
-      {hasUsage && (
-        <Card className="glass-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">{t("Usage")}</CardTitle>
-            <CardDescription>{t("Generated tokens per day, last 30 days (all garages running the model).")}</CardDescription>
-          </CardHeader>
-          <CardContent className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chart}>
-                <XAxis dataKey="day" tickFormatter={(d) => d.slice(5)} fontSize={10} stroke="hsl(var(--muted-foreground))" />
-                <YAxis fontSize={10} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => formatTokens(v)} width={50} />
-                <RTooltip formatter={(v: number) => [formatTokens(v), "Tokens"]} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 }} />
-                <Bar dataKey="tokens" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
+      <Dialog open={api} onOpenChange={setApi}>
+        <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{t("Use {m} from your code", { m: modelId })}</DialogTitle></DialogHeader><ModelSnippets baseUrl={baseUrl} model={modelId} /></DialogContent>
+      </Dialog>
     </div>
   );
 };

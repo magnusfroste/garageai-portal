@@ -1,5 +1,7 @@
 import type { GarageProfile, GarageReliability } from "@/models/types/reliability.types";
 import { qualifiesEu, type GarageLocation } from "./location";
+import type { GarageSupplyFact } from "@/models/types/catalog.types";
+import { offerPlace, type SupplyRow } from "./catalogPresentation";
 
 export interface PublicGarage {
   profile: GarageProfile;
@@ -7,6 +9,7 @@ export interface PublicGarage {
   reliability?: GarageReliability;
   providerName?: string;
   models: { model: string; private: boolean }[];
+  supply?: GarageSupplyFact;
 }
 export type GarageSort = "grade" | "availability" | "name";
 export const garageStatus = (p: GarageProfile) => p.paused ? "Paused" : p.online ? "Live" : "Offline";
@@ -27,4 +30,21 @@ export const filterSortGarages = (garages: PublicGarage[], euOnly: boolean, sort
       || (b.reliability?.score ?? -1) - (a.reliability?.score ?? -1)
       : sort === "availability" ? liveHours(b) - liveHours(a) : 0)
     || a.profile.display_name.localeCompare(b.profile.display_name));
+};
+/** One public supply-table row per listed garage/provider; private models are not listed. */
+export const toSupplyRow = (g: PublicGarage): SupplyRow => {
+  const forwardsTo = g.supply?.forwards_to ?? null;
+  const hidden = !g.location || g.location.location_display === "hidden";
+  return {
+    name: g.profile.name,
+    displayName: g.providerName ?? g.profile.display_name,
+    kind: g.location?.is_endpoint || g.supply?.is_endpoint ? "provider" : "garage",
+    countryCode: forwardsTo || hidden ? null : g.location?.country ?? null,
+    place: offerPlace({ forwardsTo, location: g.location ?? null }),
+    forwardsTo,
+    termsAccepted: !!g.supply?.terms_accepted,
+    tokens1d: g.supply?.tokens_1d ?? 0,
+    tokens30d: g.supply?.tokens_30d ?? 0,
+    models: g.models.filter((m) => !m.private).map((m) => m.model),
+  };
 };

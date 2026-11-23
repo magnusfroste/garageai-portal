@@ -2329,6 +2329,17 @@ export type Database = {
           tokens_7d: number
         }[]
       }
+      garage_public_supply: {
+        Args: never
+        Returns: {
+          forwards_to: string
+          garage_name: string
+          is_endpoint: boolean
+          terms_accepted: boolean
+          tokens_1d: number
+          tokens_30d: number
+        }[]
+      }
       garage_reliability: {
         Args: { _names?: string[] }
         Returns: {
@@ -2386,6 +2397,18 @@ export type Database = {
         Returns: {
           model: string
           requests_7d: number
+        }[]
+      }
+      model_public_daily: {
+        Args: never
+        Returns: {
+          completion_tokens: number
+          day: string
+          input_spend_usd: number
+          model: string
+          output_spend_usd: number
+          prompt_tokens: number
+          requests: number
         }[]
       }
       model_quantization: { Args: { _id: string }; Returns: string }

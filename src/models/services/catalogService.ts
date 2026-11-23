@@ -69,6 +69,8 @@ export const buildCatalog = (
         providerName: providers.get(g) ?? null,
         location: locations.get(g) ?? null,
         contextLength: maxOf(list.filter((r) => r.garage === g).map((r) => r.max_input_tokens)),
+        maxOutput: maxOf(list.filter((r) => r.garage === g).map((r) => r.max_output_tokens)),
+        forwardsTo: null,
       };
     });
     const allPrices = list.map((r) => ({ i: r.input_cost_per_million, o: r.output_cost_per_million, c: r.cache_read_cost_per_million ?? null }));
@@ -76,6 +78,7 @@ export const buildCatalog = (
     const ref = pool ?? list[0];
     out.push({
       name,
+      addedAt: list.map((r) => r.created_at).filter(Boolean).sort()[0] ?? null,
       poolId: pool ? pool.model_name || pool.id : null,
       provider: ref.provider,
       mode: ref.mode,
@@ -107,7 +110,7 @@ export const DEFAULT_FILTERS: CatalogFilters = {
   q: "", minContext: null, maxPrice: null, runtime: null, minGrade: null, multiGarage: false, sort: "popular", euOnly: false,
 };
 
-const SORTS: CatalogSort[] = ["popular", "cheapest", "fastest", "reliable"];
+const SORTS: CatalogSort[] = ["popular", "cheapest", "fastest", "reliable", "newest", "context"];
 const GRADES: ReliabilityGrade[] = ["A", "B", "C", "D"];
 const num = (v: string | null) => (v && !Number.isNaN(Number(v)) ? Number(v) : null);
 
@@ -163,6 +166,8 @@ export const applyFilters = (models: CatalogModel[], f: CatalogFilters): Catalog
     popular: (a, b) => (b.requests7d ?? 0) - (a.requests7d ?? 0),
     cheapest: (a, b) => (a.minPrice.output ?? Infinity) - (b.minPrice.output ?? Infinity),
     fastest: (a, b) => (b.tokensPerSecond ?? -1) - (a.tokensPerSecond ?? -1),
+    newest: (a, b) => (b.addedAt ?? "").localeCompare(a.addedAt ?? ""),
+    context: (a, b) => (b.contextLength ?? 0) - (a.contextLength ?? 0),
     reliable: (a, b) =>
       (b.bestGrade ? GRADE_RANK[b.bestGrade] : -1) - (a.bestGrade ? GRADE_RANK[a.bestGrade] : -1) ||
       Math.max(-1, ...b.offers.map((o) => o.score ?? -1)) - Math.max(-1, ...a.offers.map((o) => o.score ?? -1)),

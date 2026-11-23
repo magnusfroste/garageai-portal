@@ -40,14 +40,21 @@ export interface GarageOffer {
   providerName: string | null;
   location: GarageLocation | null;
   contextLength?: number | null;
+  maxOutput?: number | null;
+  /** Upstream service an endpoint provider forwards to (e.g. OpenRouter); country then varies. */
+  forwardsTo?: string | null;
 }
 
 /** Buyer-facing catalogue entry: one per base model name. */
 export interface CatalogModel {
   requests7d?: number;
+  /** Prompt + completion tokens over 30 days (public aggregate); null when unknown. */
+  tokens30d?: number | null;
   /** garageai/auto: ordered failover across a curated list. */
   auto?: boolean;
   name: string;
+  /** Earliest catalogue row for this model (ISO). */
+  addedAt?: string | null;
   poolId: string | null;
   provider: string;
   mode: string | null;
@@ -71,7 +78,7 @@ export interface CatalogModel {
   pool?: PoolSummary | null;
 }
 
-export type CatalogSort = "popular" | "cheapest" | "fastest" | "reliable";
+export type CatalogSort = "popular" | "cheapest" | "fastest" | "reliable" | "newest" | "context";
 
 export interface CatalogFilters {
   q: string;
@@ -82,4 +89,25 @@ export interface CatalogFilters {
   multiGarage: boolean;
   sort: CatalogSort;
   euOnly: boolean;
+}
+
+/** Public per-model daily aggregate (market garages, buyer traffic only). */
+export interface ModelDailyStat {
+  model: string;
+  day: string;
+  requests: number;
+  promptTokens: number;
+  completionTokens: number;
+  inputSpend: number;
+  outputSpend: number;
+}
+
+/** Public per-garage supply facts. */
+export interface GarageSupplyFact {
+  garage_name: string;
+  is_endpoint: boolean;
+  terms_accepted: boolean;
+  forwards_to: string | null;
+  tokens_1d: number;
+  tokens_30d: number;
 }

@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { GarageDailyTokens, GaragePublicStat } from "@/models/types/catalog.types";
+import type { GarageDailyTokens, GaragePublicStat, GarageSupplyFact, ModelDailyStat } from "@/models/types/catalog.types";
 import type { GarageToolSupport } from "@/models/services/toolSupportService";
 import type { GarageLocation } from "@/models/services/location";
 import { isProbeModel } from "@/models/services/probeFilter";
@@ -56,5 +56,22 @@ export const catalogRepository = {
     const { data, error } = await supabase.rpc("garage_daily_tokens", { _names: names });
     if (error) throw error;
     return (data ?? []).map((r) => ({ ...r, tokens: Number(r.tokens) })) as GarageDailyTokens[];
+  },
+
+  /** Per public model and day, last 30 days. */
+  async modelDaily(): Promise<ModelDailyStat[]> {
+    const { data, error } = await supabase.rpc("model_public_daily");
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      model: r.model, day: r.day, requests: Number(r.requests), promptTokens: Number(r.prompt_tokens),
+      completionTokens: Number(r.completion_tokens), inputSpend: Number(r.input_spend_usd), outputSpend: Number(r.output_spend_usd),
+    }));
+  },
+
+  /** Terms, forwarding and token totals per public garage/provider. */
+  async supply(): Promise<GarageSupplyFact[]> {
+    const { data, error } = await supabase.rpc("garage_public_supply");
+    if (error) throw error;
+    return (data ?? []).map((r) => ({ ...r, tokens_1d: Number(r.tokens_1d), tokens_30d: Number(r.tokens_30d) })) as GarageSupplyFact[];
   },
 };
