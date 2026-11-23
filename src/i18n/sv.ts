@@ -32,6 +32,7 @@ export const sv: Record<string, string> = {
   "Test mail was not sent. Check the log.": "Testmejlet skickades inte. Kontrollera loggen.",
   "Send test to me": "Skicka test till mig",
   "Mail preview": "Förhandsvisning av mejl",
+  "One-click unsubscribe (POST)": "Enklicksavprenumeration (POST)",
   "Mail log": "Mejllogg",
   "No mail attempts yet.": "Inga mejlförsök ännu.",
   "Turn on account mail?": "Aktivera kontomejl?",

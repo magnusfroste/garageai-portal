@@ -93,12 +93,17 @@ Deno.serve(async req => {
       candidates = [{ user_id: adminUser.id, email: adminUser.email, template_key: body.template_key, event_ref: "manual-test", key_hint: keys?.[0]?.key_last4 ?? "", garage_name: garage?.display_name || garage?.name || "", days_offline: garage?.last_heartbeat_at ? Math.max(0, Math.floor((Date.now() - Date.parse(garage.last_heartbeat_at)) / 86400_000)) : 0 }];
     }
     const values = (c: MailCandidate) => ({ key_hint: c.key_hint, garage_name: c.garage_name, days_offline: String(c.days_offline) });
-    const link = async (c: MailCandidate) => `https://app.garageai.eu/mail/unsubscribe?t=${encodeURIComponent(await mailToken(c.user_id, Deno.env.get("MAIL_LINK_SECRET") ?? ""))}`;
+    // The visible link is the app page a person reads; the one-click POST target is this function's
+    // own URL, because SPA hosting cannot forward POST at the app path.
+    const tokenFor = (c: MailCandidate) => mailToken(c.user_id, Deno.env.get("MAIL_LINK_SECRET") ?? "");
+    const visibleUrl = async (c: MailCandidate) => `https://app.garageai.eu/mail/unsubscribe?t=${encodeURIComponent(await tokenFor(c))}`;
+    const oneClickUrl = async (c: MailCandidate) => `${dbUrl}/functions/v1/event-mail?t=${encodeURIComponent(await tokenFor(c))}`;
     if (body.action === "preview") {
       const candidate = candidates[0], template = templateByKey.get(body.template_key);
       if (!candidate || !template) return json({ error: "Template unavailable" }, 404);
-      const previewUrl = Deno.env.get("MAIL_LINK_SECRET") ? await link(candidate) : "https://app.garageai.eu/mail/unsubscribe";
-      return json(renderMail(template, body.language, values(candidate), previewUrl));
+      const ready = !!Deno.env.get("MAIL_LINK_SECRET");
+      const previewUrl = ready ? await visibleUrl(candidate) : "https://app.garageai.eu/mail/unsubscribe";
+      return json({ ...renderMail(template, body.language, values(candidate), previewUrl), one_click_url: ready ? await oneClickUrl(candidate) : "https://app.garageai.eu/mail/unsubscribe" });
     }
     const owner = crypto.randomUUID();
     if (!await rpc("event_mail_lock", { _owner: owner })) return json({ ok: true, busy: true, sent: 0 });
@@ -118,11 +123,12 @@ Deno.serve(async req => {
         // Recheck opt-out and mode immediately before external delivery.
         const [{ data: profile }, { data: current }] = await Promise.all([admin.from("profiles").select("mail_opt_out_at").eq("id", candidate.user_id).single(), admin.from("admin_settings").select("value").eq("key", "event_mail").single()]);
         if (!profile || profile.mail_opt_out_at || !current || (body.action === "run" && (current.value as { mode?: string }).mode !== settings.mode)) { await finish(false, null, "mail preferences changed"); continue; }
-        const unsubscribeUrl = await link(candidate);
+        const unsubscribeUrl = await visibleUrl(candidate);
+        const oneClick = await oneClickUrl(candidate);
         const language = body.action === "send_test" ? body.language : claim.language === "sv" ? "sv" : "en";
         const rendered = renderMail(template, language, values(candidate), unsubscribeUrl);
         try {
-          const response = await fetch("https://api.brevo.com/v3/smtp/email", { method: "POST", signal: AbortSignal.timeout(10_000), headers: { "api-key": apiKey, "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ sender: { email: settings.from_email, name: settings.from_name }, to: [{ email: candidate.email }], ...rendered, headers: { "List-Unsubscribe": `<${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } }) });
+          const response = await fetch("https://api.brevo.com/v3/smtp/email", { method: "POST", signal: AbortSignal.timeout(10_000), headers: { "api-key": apiKey, "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ sender: { email: settings.from_email, name: settings.from_name }, to: [{ email: candidate.email }], ...rendered, headers: { "List-Unsubscribe": `<${oneClick}>, <${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } }) });
           if (!response.ok) { await response.text(); await finish(false, null, `Brevo HTTP ${response.status}`); continue; }
           const result = await response.json().catch(() => ({}));
           await finish(true, typeof result.messageId === "string" ? result.messageId : null, null);

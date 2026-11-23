@@ -38,6 +38,6 @@ export function MailTemplateEditor({ template, canSend, refresh }: { template: E
       </TabsContent>)}
     </Tabs>
     <div className="flex flex-wrap gap-2"><Button size="sm" disabled={busy} onClick={() => void perform("save")}><Save className="w-4 h-4 mr-2" />{t("Save")}</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("preview")}><Eye className="w-4 h-4 mr-2" />{t("Preview")}</Button><Button size="sm" variant="outline" disabled={busy || !canSend} onClick={() => void perform("send")}><Send className="w-4 h-4 mr-2" />{t("Send test to me")}</Button></div>
-    {preview && <div className="space-y-2"><h4 className="font-medium break-words">{preview.subject}</h4><iframe title={t("Mail preview")} sandbox="" referrerPolicy="no-referrer" srcDoc={preview.htmlContent} className="w-full h-[32rem] border border-border rounded-md bg-background" /></div>}
+    {preview && <div className="space-y-2"><h4 className="font-medium break-words">{preview.subject}</h4><iframe title={t("Mail preview")} sandbox="" referrerPolicy="no-referrer" srcDoc={preview.htmlContent} className="w-full h-[32rem] border border-border rounded-md bg-background" /><p className="text-xs text-muted-foreground break-all">{t("One-click unsubscribe (POST)")}: {preview.one_click_url}</p></div>}
   </section>;
 }
