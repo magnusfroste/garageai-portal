@@ -1333,6 +1333,47 @@ export type Database = {
           },
         ]
       }
+      garage_terms_events: {
+        Row: {
+          accepted_at: string | null
+          action: string
+          actor_id: string
+          created_at: string
+          garage_id: string
+          id: string
+          note: string | null
+          terms_version: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          action: string
+          actor_id: string
+          created_at?: string
+          garage_id: string
+          id?: string
+          note?: string | null
+          terms_version?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          action?: string
+          actor_id?: string
+          created_at?: string
+          garage_id?: string
+          id?: string
+          note?: string | null
+          terms_version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_terms_events_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       garage_tokens: {
         Row: {
           created_at: string | null
@@ -1421,6 +1462,9 @@ export type Database = {
           smart_disk_gb: number
           status: string
           terms_accepted_at: string | null
+          terms_accepted_by: string | null
+          terms_accepted_via: string | null
+          terms_note: string | null
           terms_version: string | null
           transport: string
           tunnel_assigned_at: string | null
@@ -1481,6 +1525,9 @@ export type Database = {
           smart_disk_gb?: number
           status?: string
           terms_accepted_at?: string | null
+          terms_accepted_by?: string | null
+          terms_accepted_via?: string | null
+          terms_note?: string | null
           terms_version?: string | null
           transport?: string
           tunnel_assigned_at?: string | null
@@ -1541,6 +1588,9 @@ export type Database = {
           smart_disk_gb?: number
           status?: string
           terms_accepted_at?: string | null
+          terms_accepted_by?: string | null
+          terms_accepted_via?: string | null
+          terms_note?: string | null
           terms_version?: string | null
           transport?: string
           tunnel_assigned_at?: string | null

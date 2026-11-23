@@ -44,6 +44,8 @@ export interface Garage {
   canary?: boolean;
   terms_accepted_at?: string | null;
   terms_version?: string | null;
+  terms_accepted_via?: string | null;
+  terms_note?: string | null;
   location_display?: string;
   measured_country?: string | null;
   measured_country_at?: string | null;

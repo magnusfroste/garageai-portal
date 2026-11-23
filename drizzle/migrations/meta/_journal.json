@@ -694,6 +694,13 @@
       "when": 1795460413391,
       "tag": "0098_event_mail_provider_and_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1795473067700,
+      "tag": "0099_provider_terms_admin_record",
+      "breakpoints": true
     }
   ]
 }

@@ -21,3 +21,4 @@
 - Keep all-time garage status facts (first sample, first/last online) in the trigger-maintained `garage_status_summary`, so status samples can be pruned without losing them.
 - Send event mail only through `_shared/eventMail.sendMail(provider, …)` (one branch per provider); marketing-kind templates never go through Cloudflare, so provider terms are enforced in one place.
 - Provider (endpoint) model checklists go through admin-only `provider-models` (list/offer/unoffer); the endpoint list is parsed by `_shared/providerModelList` and fetched live, uncapped, because gateway-health-report's `runtime_models` is capped and gateway-owned.
+- Provider (endpoint) operator terms are recorded only by admins via `provider-terms` (record/clear, audited in `garage_terms_events`, `terms_accepted_via = 'admin'`); garage owners keep self-acceptance via `set-garage-terms`, and "Old version" derives from `_shared/providerTerms.operatorTermsState`.

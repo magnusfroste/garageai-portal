@@ -1,3 +1,4 @@
+import { operatorTermsState } from "@/models/services/operatorTerms";
 import { creditsText } from "@/models/services/credits";
 import { Building2, Rocket, Clock3, Coins, HeartPulse, MapPin, Network, Server, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
@@ -78,7 +79,7 @@ export const GarageDetailSheet = ({ row, open, onOpenChange, pending, onToggle, 
             {!provider && machineMismatch(garage) && <p className="rounded border border-warning-border bg-warning-surface p-2 text-xs text-warning-foreground">{t("Heartbeats come from another machine ({id}) than the one this garage was linked to.").replace("{id}", shortMachineId(garage.last_machine_id) ?? "")}</p>}
           </Section>
           <Separator />
-          <Section icon={UserRound} title={t("Owner & terms")}><dl className="grid grid-cols-2 gap-3"><Field label={t("Operator")} value={row.operatorEmail || t("No owner")} /><Field label={t("Terms")} value={garage.terms_accepted_at ? `${garage.terms_version || "—"} · ${date(garage.terms_accepted_at)}` : t("Missing")} /></dl></Section>
+          <Section icon={UserRound} title={t("Owner & terms")}><dl className="grid grid-cols-2 gap-3"><Field label={t("Operator")} value={row.operatorEmail || t("No owner")} /><Field label={t("Terms")} value={garage.terms_accepted_at ? `${garage.terms_version || "—"} · ${date(garage.terms_accepted_at)}${operatorTermsState(garage) === "old" ? ` · ${t("Old version")}` : ""}${garage.terms_accepted_via === "admin" ? ` · ${t("Recorded by admin")}${garage.terms_note ? `: ${garage.terms_note}` : ""}` : ""}` : t("Missing")} /></dl></Section>
           <Separator />
           <Section icon={MapPin} title={t("Location")}><GarageCountryCell garage={garage} changedRecently={row.changedRecently} onSaved={onSaved} /><dl className="grid grid-cols-2 gap-3 sm:grid-cols-3"><Field label={t("Measured")} value={garage.measured_country} /><Field label={t("Declared")} value={garage.declared_country} /><Field label={t("Admin override")} value={garage.country_override} /><Field label={t("Public display")} value={garage.location_display} /></dl></Section>
           <Separator />
