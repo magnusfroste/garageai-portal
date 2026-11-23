@@ -20,3 +20,4 @@
 - Build the gateway target list only in `_shared/gatewayTargets.buildGatewayTargets`; gateway-targets and the gateway-health-report reply both use it, so the two lists never differ.
 - Keep all-time garage status facts (first sample, first/last online) in the trigger-maintained `garage_status_summary`, so status samples can be pruned without losing them.
 - Send event mail only through `_shared/eventMail.sendMail(provider, …)` (one branch per provider); marketing-kind templates never go through Cloudflare, so provider terms are enforced in one place.
+- Provider (endpoint) model checklists go through admin-only `provider-models` (list/offer/unoffer); the endpoint list is parsed by `_shared/providerModelList` and fetched live, uncapped, because gateway-health-report's `runtime_models` is capped and gateway-owned.

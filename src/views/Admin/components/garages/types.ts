@@ -22,6 +22,7 @@ export interface AdminGarageRow {
 export interface GarageActionHandlers {
   onOpen: (garage: Garage) => void;
   onEditPrices: (garage: Garage) => void;
+  onModels: (garage: Garage) => void;
   onRetest: (garage: Garage) => void;
   onNewCredential: (garage: Garage) => void;
   onTogglePaused: (garage: Garage) => void;

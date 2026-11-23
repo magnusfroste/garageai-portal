@@ -1,4 +1,4 @@
-import { Ban, Bird, Coins, FlaskConical, KeyRound, MoreHorizontal, Pause, Play, Power, Trash2 } from "lucide-react";
+import { Ban, Bird, ListChecks, Coins, FlaskConical, KeyRound, MoreHorizontal, Pause, Play, Power, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Garage } from "../../hooks/useGarages";
@@ -14,6 +14,7 @@ export const GarageActionsMenu = ({ garage, actions }: { garage: Garage; actions
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
       <DropdownMenuItem onSelect={() => actions.onEditPrices(garage)}><Coins className="mr-2 h-4 w-4" />{t("Edit prices")}</DropdownMenuItem>
+      {garage.connection_type === "endpoint" && <DropdownMenuItem onSelect={() => actions.onModels(garage)}><ListChecks className="mr-2 h-4 w-4" />{t("Models")}</DropdownMenuItem>}
       <DropdownMenuItem disabled={actions.retesting === garage.name || garage.models.length === 0} onSelect={() => actions.onRetest(garage)}>
         <FlaskConical className="mr-2 h-4 w-4" />{t(actions.retesting === garage.name ? "Testing..." : "Retest")}
       </DropdownMenuItem>
