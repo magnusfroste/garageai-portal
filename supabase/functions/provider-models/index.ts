@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     }
     return bad("action must be list, offer or unoffer");
   } catch (e) {
-    console.error("[provider-models] error", e instanceof Error ? e.message : "unknown");
-    return json({ error: "Internal error" }, 500);
+    console.error("[provider-models] error", (e as { message?: string })?.message ?? "unknown");
+    return json({ error: (e as { message?: string })?.message || "Internal error" }, 500);
   }
 });

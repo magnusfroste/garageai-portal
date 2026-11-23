@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     if (auditError) console.error("[provider-terms] audit failed:", auditError.message);
     return json({ ok: true, ...fields });
   } catch (e) {
-    console.error("[provider-terms] error:", e instanceof Error ? e.message : "unknown");
-    return json({ error: e instanceof Error ? e.message : "Internal error" }, 500);
+    console.error("[provider-terms] error:", (e as { message?: string })?.message ?? "unknown");
+    return json({ error: (e as { message?: string })?.message || "Internal error" }, 500);
   }
 });

@@ -10,6 +10,7 @@ import { useProviderTerms } from "@/hooks/useProviderTerms";
 import { OPERATOR_TERMS_VERSION, operatorTermsState } from "@/models/services/operatorTerms";
 import type { Garage } from "../hooks/useGarages";
 import { t } from "@/i18n";
+import { errorMessage } from "@/data/repositories/edgeError";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -19,7 +20,7 @@ export function ProviderTermsDialog({ garage, onClose, onSaved }: { garage: Gara
   const [form, setForm] = useState<{ version: string; date: string; note: string } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const state = operatorTermsState(garage);
-  const fail = (e: unknown) => toast({ title: t("Could not save operator terms"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
+  const fail = (e: unknown) => toast({ title: t("Could not save operator terms"), description: errorMessage(e, t("Unknown error")), variant: "destructive" });
   const save = async () => {
     if (!form) return;
     try { await record.mutateAsync({ version: form.version, acceptedAt: form.date, note: form.note }); toast({ title: t("Acceptance recorded") }); setForm(null); onSaved(); } catch (e) { fail(e); }

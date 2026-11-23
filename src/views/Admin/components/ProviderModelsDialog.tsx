@@ -11,6 +11,7 @@ import { validProviderModelId } from "@/models/services/providerModelSelection";
 import type { GarageModelRow } from "@/data/repositories/garageRepository";
 import type { Garage } from "../hooks/useGarages";
 import { t } from "@/i18n";
+import { errorMessage } from "@/data/repositories/edgeError";
 
 const SHOWN = 300;
 type Draft = { input: string; output: string; cache_read: string; context: string };
@@ -28,7 +29,7 @@ export function ProviderModelsDialog({ garage, models, onClose, onSaved }: { gar
   const shown = filterChecklist(rows, q);
 
   const startOffer = (r: Pick<ChecklistRow, "id" | "input" | "output" | "cache_read" | "context">) => setEditing({ id: r.id, draft: { input: str(r.input), output: str(r.output), cache_read: str(r.cache_read), context: str(r.context) } });
-  const fail = (e: unknown) => toast({ title: t("Could not change the model"), description: e instanceof Error ? e.message : t("Unknown error"), variant: "destructive" });
+  const fail = (e: unknown) => toast({ title: t("Could not change the model"), description: errorMessage(e, t("Unknown error")), variant: "destructive" });
   const save = async () => {
     if (!editing) return;
     const d = editing.draft;
