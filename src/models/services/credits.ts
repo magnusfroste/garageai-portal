@@ -5,3 +5,6 @@ import { t } from "@/i18n";
  * so stored USD amounts are shown unchanged, labelled as credits.
  */
 export const creditsText = (amount: string | number) => t("{n} credits", { n: amount });
+
+/** Single display conversion boundary; recorded USD spend is never repriced. */
+export const usdToCredits = (usd: number): number => usd;

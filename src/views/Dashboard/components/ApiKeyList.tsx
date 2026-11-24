@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ApiKey } from "@/models/types/apiKey.types";
 import { ApiKeyCard } from "./ApiKeyCard";
 import { KeyCreationDialog } from "./KeyCreationDialog";
+import type { KeyActivity } from '@/models/types/keyActivity.types';
 
 interface ApiKeyListProps {
   apiKeys: ApiKey[];
@@ -16,6 +17,9 @@ interface ApiKeyListProps {
   remainingKeys: number;
   onRevoke?: (keyId: string) => void;
   isRevoking?: boolean;
+  activity?: KeyActivity[];
+  activityLoading?: boolean;
+  onDetails?: (key: ApiKey) => void;
 }
 
 export const ApiKeyList = ({
@@ -29,6 +33,9 @@ export const ApiKeyList = ({
   remainingKeys,
   onRevoke,
   isRevoking,
+  activity,
+  activityLoading,
+  onDetails,
 }: ApiKeyListProps) => {
   return (
     <Card className="glass-card">
@@ -65,6 +72,7 @@ export const ApiKeyList = ({
           </div>
         ) : (
           <div className="space-y-4">
+            {onDetails && <div className="hidden items-center gap-3 px-5 text-xs text-muted-foreground sm:flex"><span className="min-w-0 flex-1">Key</span><div className="grid grid-cols-[8rem_12rem] gap-4"><span>Last used</span><span>Tokens (30 days)</span></div><span className="w-[7.5rem]" /></div>}
             {apiKeys.map((key) => (
               <ApiKeyCard
                 key={key.id}
@@ -74,6 +82,9 @@ export const ApiKeyList = ({
                 onRotate={onRotate}
                 onRename={onRename}
                 busy={isRevoking}
+                activity={activity?.find(entry => entry.keyId === key.id)}
+                activityLoading={activityLoading}
+                onDetails={onDetails ? () => onDetails(key) : undefined}
               />
             ))}
           </div>

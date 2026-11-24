@@ -30,6 +30,8 @@
 
 ## Where logic lives
 
+- Keys snapshots use get-keys-activity with server-owned key/account scope and a three-minute account-scoped query without polling; shared keyActivity aggregates hash/alias matches and strips gateway identifiers before returning data.
+
 - Admin Auto pickers share presentation-only alphabetical/search options in autoRouteService; selections persist curated IDs through the existing repository and sync path, preserving order and prices.
 
 - Buyer first-answer eligibility uses the account-scoped, service-written first-request marker checked against successful gateway logs; the signed-in layout alone owns the ephemeral default-key value and shares it with setup views, never browser storage.

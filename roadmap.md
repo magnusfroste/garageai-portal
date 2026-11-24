@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Keys: get-keys-activity deployed, own-account last-used and 30-day consumption, three-minute cache/no polling; 9 focused tests pass, desktop/mobile isolated details/UTC/one-call checks pass, deployed OPTIONS 200 and anonymous POST 401; full suite 497 pass, 1 skip, 2 existing failures and 1 existing semver error; frontend publication requested.
+- [ ] Keys real-account gateway readback — blocked: requester has no matching app account; sign in to the preview to verify actual usage. No account/key records changed.
+
 - [x] Replace Admin Auto model selection with searchable alphabetical pickers; 8 focused tests pass, desktop/mobile isolated keyboard/search/add/change checks pass; full suite 488 pass, 1 skip, 2 known failures and 1 existing semver startup error. Real-account save unavailable because requester has no matching auth account; frontend publication requested.
 
 - [x] Apply owner-approved portal typography and neutral catalogue/supply filters; desktop/mobile font loading, collapsible groups and filter selection verified with no page errors or horizontal overflow; build OK; 483 tests pass, 1 skip, 2 existing failures and 1 existing semver startup error; frontend publication requested.

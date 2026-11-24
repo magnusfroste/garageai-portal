@@ -18,6 +18,8 @@ import { useSearchParams } from "react-router-dom";
 import { useBuyerFirstRequest } from "@/hooks/useBuyerFirstRequest";
 import { buyerNeedsFirstAnswer } from "@/models/services/buyerFirstAnswer";
 import { BuyerFirstAnswer } from "@/views/Dashboard/components/BuyerFirstAnswer";
+import { useKeysActivity } from '@/hooks/useKeysActivity';
+import { KeyActivityDetail } from './KeyActivityDetail';
 
 export const KeysPage = () => {
   const { models } = useModelCatalog();
@@ -27,6 +29,8 @@ export const KeysPage = () => {
   const [params] = useSearchParams();
   const firstRequest = useBuyerFirstRequest(profile?.signup_intent === "buyer");
   const [revoking, setRevoking] = useState(false);
+  const activity = useKeysActivity();
+  const [detailKey, setDetailKey] = useState<ApiKey | null>(null);
   const { apiKeys, loading: keysLoading, isError, refetch } = useDashboardData();
   const { createKey, rotateKey, renameKey, revokeKey, isCreatingKey } = useKeyManagement();
   const [shown, setShown] = useState<{ title: string; key: string; oldId?: string } | null>(null);
@@ -129,6 +133,7 @@ export const KeysPage = () => {
   -d '${JSON.stringify({ model: poolModel, messages: [{ role: "user", content: "Hello" }] })}'`} />}
       </section>
       {isError && <div className="text-sm text-destructive">{t("Could not load API keys.")} <Button variant="link" onClick={refetch}>{t("Try again")}</Button></div>}
+      {activity.isError && <p role="alert" className="text-sm text-destructive">{activity.error.message}</p>}
       <ApiKeyList
         apiKeys={activeKeys}
         thisBrowserId={thisBrowserId}
@@ -140,7 +145,11 @@ export const KeysPage = () => {
         remainingKeys={remainingKeys}
         onRevoke={handleRevoke}
         isRevoking={revoking}
+        activity={activity.data?.keys}
+        activityLoading={activity.isPending}
+        onDetails={setDetailKey}
       />
+      <KeyActivityDetail name={detailKey?.name ?? ''} activity={activity.data?.keys.find(entry => entry.keyId === detailKey?.id)} open={!!detailKey} onOpenChange={(open) => { if (!open) setDetailKey(null); }} />
       <ShowKeyOnceDialog
         title={shown?.title ?? ""}
         keyValue={shown?.key ?? null}
