@@ -84,15 +84,16 @@ export function autoModelOptions(models: CuratedModel[], entries: AutoRouteEntry
     model,
     name: model.garage_tier === "dedicated" ? (model.model_name || model.id).replace(`garage/${model.garage}/`, "") : model.model_name || model.id,
     supplier: model.garage || model.provider,
+    tier: model.garage_tier || "—",
     alreadyInAuto: used.has(model.id),
     down: !model.enabled || model.status !== "healthy",
     disabled: !model.enabled || used.has(model.id),
-  })).sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }) || a.supplier.localeCompare(b.supplier) || a.model.id.localeCompare(b.model.id));
+  })).sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }) || a.supplier.localeCompare(b.supplier) || (a.tier === "pool" ? 0 : a.tier === "dedicated" ? 1 : 2) - (b.tier === "pool" ? 0 : b.tier === "dedicated" ? 1 : 2) || a.model.id.localeCompare(b.model.id));
 }
 
 export const filterAutoModelOptions = (options: ReturnType<typeof autoModelOptions>, query: string) => {
   const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  return options.filter((o) => words.every((word) => `${o.name} ${o.supplier} ${o.model.provider}`.toLowerCase().includes(word)));
+  return options.filter((o) => words.every((word) => `${o.name} ${o.supplier} ${o.tier} ${o.model.provider}`.toLowerCase().includes(word)));
 };
 
 /** Next free position at the end of the list (always ≥ 1). */

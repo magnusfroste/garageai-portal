@@ -33,3 +33,22 @@ test("down enabled models remain selectable; disabled models remain ineligible",
 test("picker excludes Auto and non-garage rows, preserving the old candidate scope", () => {
   expect(autoModelOptions([model("garageai-auto", "garageai/auto", "City"), model("none", "none", "", { garage: null })], [])).toEqual([]);
 });
+
+test("tier search distinguishes pool and dedicated for the same model and garage", () => {
+  const options = autoModelOptions([
+    model("pool-id", "deepseek/deepseek-v4.1-flash", "autoversio"),
+    model("dedicated-id", "garage/autoversio/deepseek/deepseek-v4.1-flash", "autoversio", { garage_tier: "dedicated" }),
+  ], []);
+  expect(filterAutoModelOptions(options, "autoversio pool").map((o) => o.model.id)).toEqual(["pool-id"]);
+  expect(filterAutoModelOptions(options, "DEDICATED").map((o) => o.model.id)).toEqual(["dedicated-id"]);
+});
+
+test("sort is model then garage then pool before dedicated regardless of IDs", () => {
+  const options = autoModelOptions([
+    model("a-dedicated", "garage/Alpha/zeta/model", "Alpha", { garage_tier: "dedicated" }),
+    model("b-pool", "zeta/model", "Beta"),
+    model("z-pool", "zeta/model", "Alpha"),
+    model("first", "alpha/model", "Zulu"),
+  ], []);
+  expect(options.map((o) => o.model.id)).toEqual(["first", "z-pool", "a-dedicated", "b-pool"]);
+});

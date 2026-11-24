@@ -27,7 +27,7 @@ export function AutoModelPicker({ models, entries, value, onSelect, currentEntry
     <Popover open={open} onOpenChange={(next) => { setOpen(next); if (!next) setQuery(""); }}>
       <PopoverTrigger asChild>
         <Button variant="outline" role="combobox" aria-expanded={open} aria-label={currentEntryId ? "Change model" : "Add a model"} disabled={disabled} className="w-full justify-between gap-2 font-normal sm:w-96">
-          <span className="min-w-0 truncate">{selected ? `${selected.name} · ${selected.supplier}` : value || "Add a model"}</span>
+          <span className="min-w-0 truncate">{selected ? `${selected.name} · ${selected.supplier} · ${selected.tier}` : value || "Add a model"}</span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Button>
       </PopoverTrigger>
@@ -42,7 +42,7 @@ export function AutoModelPicker({ models, entries, value, onSelect, currentEntry
                   <Check className={cn("mt-0.5 h-4 w-4 shrink-0", value === o.model.id ? "opacity-100" : "opacity-0")} />
                   <span className={cn("min-w-0 flex-1", (o.down || o.alreadyInAuto) && "text-muted-foreground")}>
                     <span className="block break-words text-sm font-medium">{o.name}</span>
-                    <span className="block break-words text-xs text-muted-foreground">{o.supplier} · {o.model.input_cost_per_million ?? "—"} / {o.model.output_cost_per_million ?? "—"} credits/M input / output · {formatContext(o.model.max_input_tokens)} context</span>
+                    <span className="block break-words text-xs text-muted-foreground">{o.supplier} · {o.tier} · {o.model.input_cost_per_million ?? "—"} / {o.model.output_cost_per_million ?? "—"} credits/M input / output · {formatContext(o.model.max_input_tokens)} context</span>
                     {(o.alreadyInAuto || o.down) && <span className="block text-xs">{[o.alreadyInAuto && "already in auto", o.down && "down"].filter(Boolean).join(" · ")}</span>}
                   </span>
                 </CommandItem>
