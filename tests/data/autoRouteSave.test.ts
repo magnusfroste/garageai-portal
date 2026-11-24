@@ -6,6 +6,7 @@ mock.module("@/integrations/supabase/client", () => ({
   supabase: {
     from: (table: string) => ({
       insert: async (row: unknown) => { calls.push({ table, op: "insert", row }); return { error: fail }; },
+      update: (row: unknown) => ({ eq: async (key: string, id: string) => { calls.push({ table, op: `update:${key}:${id}`, row }); return { error: fail }; } }),
       upsert: async (row: unknown) => { calls.push({ table, op: "upsert", row }); return { error: fail }; },
     }),
   },
@@ -31,4 +32,10 @@ test("a failed insert or save is thrown with a readable message, never silent", 
 test("empty prices do not block Save; mimo prices are valid", () => {
   expect(autoPriceError(parseAutoSettings({}))).toBeNull();
   expect(autoPriceError(parseAutoSettings({ input_cost_per_million: 0.1, output_cost_per_million: 0.3, cache_read_cost_per_million: 0.025 }))).toBeNull();
+});
+
+test("changing a model updates only the curated id, not position or prices", async () => {
+  fail = null; calls.length = 0;
+  await autoRouteRepository.update("entry-1", { curated_model_id: "city__qwen__pool" });
+  expect(calls).toEqual([{ table: "auto_route", op: "update:id:entry-1", row: { curated_model_id: "city__qwen__pool" } }]);
 });

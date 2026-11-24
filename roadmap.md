@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Replace Admin Auto model selection with searchable alphabetical pickers; 8 focused tests pass, desktop/mobile isolated keyboard/search/add/change checks pass; full suite 488 pass, 1 skip, 2 known failures and 1 existing semver startup error. Real-account save unavailable because requester has no matching auth account; frontend publication requested.
+
 - [x] Apply owner-approved portal typography and neutral catalogue/supply filters; desktop/mobile font loading, collapsible groups and filter selection verified with no page errors or horizontal overflow; build OK; 483 tests pass, 1 skip, 2 existing failures and 1 existing semver startup error; frontend publication requested.
 
 - [x] Event mail: migrations 0096/0097, protected storage and durable cap/dedupe worker, bilingual admin/account/unsubscribe UI, counts-only Ops, authenticated event-mail cron every 15 minutes verified Off, 463 pass/1 existing skip; publication requested with mode Off.

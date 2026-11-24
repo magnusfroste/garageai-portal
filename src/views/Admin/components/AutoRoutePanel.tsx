@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AutoModelPicker } from "./AutoModelPicker";
 import { useAutoRoute } from "@/hooks/useAutoRoute";
 import { useToolSupport } from "@/hooks/useToolSupport";
 import { useModelGarageGrades } from "@/hooks/useGarageReliability";
 import { toast } from "@/hooks/use-toast";
-import { addableModels, autoErrorMessage, nextAutoPosition, autoPriceError, autoSummary, buildAutoEntries, swapPositions } from "@/models/services/autoRouteService";
+import { autoErrorMessage, nextAutoPosition, autoPriceError, autoSummary, buildAutoEntries, swapPositions } from "@/models/services/autoRouteService";
 import { formatContext } from "@/models/services/catalogService";
 import type { AutoSettings, AutoWarning } from "@/models/types/autoRoute.types";
 
@@ -32,7 +32,6 @@ export const AutoRoutePanel = () => {
   const [pick, setPick] = useState("");
   const [form, setForm] = useState<AutoSettings | null>(null);
   useEffect(() => { if (a.settings) setForm(a.settings); }, [a.settings]);
-  const addable = addableModels(a.models, a.entries);
   const first = views.find((v) => !v.missing);
   const priceErr = form ? autoPriceError(form) : null;
   const errMsg = a.error ? autoErrorMessage(a.error) : null;
@@ -79,7 +78,7 @@ export const AutoRoutePanel = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs text-muted-foreground w-6">{v.entry.position}</span>
                 <span className={`h-2 w-2 rounded-full ${v.status === "healthy" ? "bg-primary" : "bg-destructive"}`} aria-hidden />
-                <span className="font-mono text-sm">{v.label}</span>
+                <AutoModelPicker models={a.models} entries={a.entries} value={v.entry.curated_model_id} currentEntryId={v.entry.id} disabled={a.busy} onSelect={(id) => { if (id !== v.entry.curated_model_id) a.setModel(v.entry.id, id); }} />
                 <span className="text-xs text-muted-foreground">{v.garage} · {v.tier} · {t("runtime")}: {v.runtimeModel}</span>
                 <span className="ml-auto flex items-center gap-1">
                   <Switch checked={v.entry.enabled} onCheckedChange={(on) => a.setEnabled(v.entry.id, on)} aria-label={t("Enabled")} />
@@ -100,10 +99,7 @@ export const AutoRoutePanel = () => {
           ))}
           <p className="text-xs text-muted-foreground">{t("Auto tries entry 1 first; the next entry only when the ones before it are down or busy.")}</p>
           <div className="flex flex-wrap gap-2 pt-2">
-            <Select value={pick} onValueChange={setPick}>
-              <SelectTrigger className="w-full sm:w-96"><SelectValue placeholder={t("Add a model")} /></SelectTrigger>
-              <SelectContent>{addable.map((m) => <SelectItem key={m.id} value={m.id}>{m.model_name || m.id} · {m.garage} · {m.garage_tier}</SelectItem>)}</SelectContent>
-            </Select>
+            <AutoModelPicker models={a.models} entries={a.entries} value={pick} onSelect={setPick} disabled={a.busy} />
             <Button disabled={!pick || a.busy} onClick={() => { a.add(pick, nextAutoPosition(a.entries)); setPick(""); }}>{t("Add")}</Button>
           </div>
         </CardContent>

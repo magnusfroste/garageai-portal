@@ -77,6 +77,24 @@ export const addableModels = (models: CuratedModel[], entries: AutoRouteEntry[])
   return models.filter((m) => m.enabled && !!m.garage && !used.has(m.id) && !isAutoModel(m));
 };
 
+/** Picker presentation only; keep the existing enabled/garage eligibility rule. */
+export function autoModelOptions(models: CuratedModel[], entries: AutoRouteEntry[], currentEntryId?: string) {
+  const used = new Set(entries.filter((e) => e.id !== currentEntryId).map((e) => e.curated_model_id));
+  return models.filter((m) => !!m.garage && !isAutoModel(m)).map((model) => ({
+    model,
+    name: model.garage_tier === "dedicated" ? (model.model_name || model.id).replace(`garage/${model.garage}/`, "") : model.model_name || model.id,
+    supplier: model.garage || model.provider,
+    alreadyInAuto: used.has(model.id),
+    down: !model.enabled || model.status !== "healthy",
+    disabled: !model.enabled || used.has(model.id),
+  })).sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }) || a.supplier.localeCompare(b.supplier) || a.model.id.localeCompare(b.model.id));
+}
+
+export const filterAutoModelOptions = (options: ReturnType<typeof autoModelOptions>, query: string) => {
+  const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  return options.filter((o) => words.every((word) => `${o.name} ${o.supplier} ${o.model.provider}`.toLowerCase().includes(word)));
+};
+
 /** Next free position at the end of the list (always ≥ 1). */
 export const nextAutoPosition = (entries: Array<{ position: number }>) => Math.max(0, ...entries.map((e) => e.position)) + 1;
 

@@ -26,6 +26,7 @@ export const useAutoRoute = () => {
     add: (id: string, position: number) => run.mutate(() => autoRouteRepository.add(id, position)),
     remove: (id: string) => run.mutate(() => autoRouteRepository.remove(id)),
     setEnabled: (id: string, enabled: boolean) => run.mutate(() => autoRouteRepository.update(id, { enabled })),
+    setModel: (id: string, curated_model_id: string) => run.mutate(() => autoRouteRepository.update(id, { curated_model_id })),
     move: (changes: Array<{ id: string; position: number }>) => run.mutate(async () => { for (const c of changes) await autoRouteRepository.update(c.id, { position: c.position }); }),
     saveSettings: (s: AutoSettings) => run.mutate(() => autoRouteRepository.saveSettings(s)),
   };

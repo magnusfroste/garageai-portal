@@ -12,7 +12,7 @@ export const autoRouteRepository = {
     const { error } = await supabase.from("auto_route").insert({ curated_model_id, position });
     if (error) throw error;
   },
-  async update(id: string, patch: Partial<Pick<AutoRouteEntry, "position" | "enabled" | "note">>) {
+  async update(id: string, patch: Partial<Pick<AutoRouteEntry, "position" | "enabled" | "note" | "curated_model_id">>) {
     const { error } = await supabase.from("auto_route").update(patch).eq("id", id);
     if (error) throw error;
   },
