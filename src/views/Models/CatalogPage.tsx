@@ -33,16 +33,16 @@ const metaLine = (m: CatalogModel) => {
 };
 
 const ModelCard = ({ m }: { m: CatalogModel }) => (
-  <div className="flex gap-4 px-4 py-4 hover:bg-accent/20 transition-colors">
+  <div className="flex gap-4 px-4 py-4 hover:bg-muted/40 transition-colors">
     <div className="min-w-0 flex-1 space-y-1">
       <div className="flex flex-wrap items-center gap-2">
-        <Link to={href(m)} className="text-base font-semibold hover:text-primary">{m.name}</Link>
+        <Link to={href(m)} className="text-base font-medium hover:text-primary">{m.name}</Link>
         {m.auto && <Badge variant="secondary" className="text-[10px]">{t("Recommended for coding tools")}</Badge>}
         {!m.available && <Badge variant="outline" className="text-[10px]">{t("Not available right now")}</Badge>}
       </div>
       <div className="flex items-center gap-1 text-xs text-muted-foreground"><code className="font-mono">{m.poolId ?? m.name}</code><CopyButton text={m.poolId ?? m.name} /></div>
       <p className="line-clamp-2 text-sm text-muted-foreground">{modelDescription(m)}</p>
-      {!m.auto && <p className="text-xs text-muted-foreground tabular-nums">{metaLine(m)}</p>}
+      {!m.auto && <p className="text-sm text-muted-foreground tabular-nums">{metaLine(m)}</p>}
     </div>
     <div className="shrink-0 text-right text-xs text-muted-foreground tabular-nums">
       {m.tokens30d != null && <><div className="text-sm font-semibold text-foreground">{formatTokens(m.tokens30d)}</div>{t("tokens · 30 days")}</>}
@@ -95,11 +95,11 @@ export const CatalogPage = () => {
   return (
     <div className="p-4 sm:p-6 space-y-5">
       <div>
-        <div className="flex items-center gap-3 mb-1"><Cpu className="w-6 h-6 text-primary" /><h1 className="text-2xl font-bold">{t("Models")}</h1></div>
+        <div className="flex items-center gap-3 mb-1"><Cpu className="w-6 h-6 text-muted-foreground" /><h1 className="text-2xl font-semibold">{t("Models")}</h1></div>
         <p className="text-sm text-muted-foreground">{t("Open models running in garages. Start with garageai/auto, or pick a model.")}</p>
       </div>
       <div className="flex flex-col gap-6 lg:flex-row">
-        <aside className="lg:w-52 shrink-0" aria-label={t("Filters")}>
+        <aside className="flex shrink-0 flex-col gap-4 bg-background lg:w-52 lg:border-r lg:border-border lg:pr-4" aria-label={t("Filters")}>
           <FilterGroup title="Input modalities">
             {modalities.map((x) => <FilterOption key={x} active={panel.modality === x} onClick={() => setP("modality", panel.modality === x ? null : x)}>{x.charAt(0).toUpperCase() + x.slice(1)}</FilterOption>)}
           </FilterGroup>

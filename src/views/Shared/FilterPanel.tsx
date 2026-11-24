@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { ChevronDown, LayoutList, Table2 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { t } from "@/i18n";
 
@@ -9,21 +10,23 @@ import { t } from "@/i18n";
 export const FilterGroup = ({ title, children, defaultOpen = true }: { title: string; children: ReactNode; defaultOpen?: boolean }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className="border-b border-border/50 py-2">
-      <CollapsibleTrigger className="flex w-full items-center justify-between py-1 text-xs font-semibold text-foreground">
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" className="h-auto w-full justify-between px-0 py-1.5 text-sm font-medium tracking-normal text-foreground hover:bg-muted hover:text-foreground">
         {t(title)}<ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
+        </Button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-1 pt-1">{children}</CollapsibleContent>
+      <CollapsibleContent>{children}</CollapsibleContent>
     </Collapsible>
   );
 };
 
 /** Single-choice option row; clicking the active one clears it. */
 export const FilterOption = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) => (
-  <button type="button" onClick={onClick}
-    className={cn("block w-full rounded px-2 py-1 text-left text-xs transition-colors", active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent/40 hover:text-foreground")}>
+  <Button type="button" variant="ghost" onClick={onClick} aria-pressed={active}
+    className={cn("h-auto w-full justify-start whitespace-normal px-2 py-1.5 text-left text-sm font-normal tracking-normal hover:bg-muted hover:text-foreground", active ? "bg-primary/10 text-foreground" : "text-muted-foreground")}>
     {children}
-  </button>
+  </Button>
 );
 
 export type ViewMode = "list" | "table";

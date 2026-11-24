@@ -60,9 +60,9 @@ const GaragesListPage = () => {
   const countries = [...new Set(all.map((r) => (r.forwardsTo && r.kind !== "provider" ? "varies" : r.countryCode)).filter((c): c is string => !!c))].sort();
 
   return <div className="p-4 sm:p-6 space-y-5">
-    <div className="flex items-center gap-3"><Warehouse className="w-6 h-6 text-primary" /><h1 className="text-2xl font-bold">{t("Garages & providers")}</h1></div>
+    <div className="flex items-center gap-3"><Warehouse className="w-6 h-6 text-muted-foreground" /><h1 className="text-2xl font-semibold">{t("Garages & providers")}</h1></div>
     <div className="flex flex-col gap-6 lg:flex-row">
-      <aside className="lg:w-52 shrink-0" aria-label={t("Filters")}>
+      <aside className="flex shrink-0 flex-col gap-4 bg-background lg:w-52 lg:border-r lg:border-border lg:pr-4" aria-label={t("Filters")}>
         <FilterGroup title="Kind">
           {(["garage", "provider"] as const).map((k) => <FilterOption key={k} active={f.kind === k} onClick={() => setP("kind", f.kind === k ? null : k)}>{t(k === "garage" ? "Garage" : "Provider")}</FilterOption>)}
         </FilterGroup>

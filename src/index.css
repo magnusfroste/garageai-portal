@@ -24,7 +24,7 @@ All colors MUST be HSL.
     --secondary-foreground: 0 0% 98%;
 
     --muted: 240 5% 15%;
-    --muted-foreground: 240 5% 65%;
+    --muted-foreground: 240 5% 64.9%;
 
     --accent: 193 95% 68%;
     --accent-foreground: 240 10% 3.9%;
@@ -51,8 +51,8 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 5% 20%;
-    --input: 240 5% 20%;
+    --border: 240 4.7% 24.9%;
+    --input: 240 4.7% 24.9%;
     --ring: 193 95% 68%;
 
     --radius: 0.75rem;
@@ -76,12 +76,17 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
+    @apply font-semibold;
+    letter-spacing: 0;
+  }
+
+  code, kbd, samp, pre {
+    @apply font-mono;
   }
 }
 
