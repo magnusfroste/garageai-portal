@@ -14,9 +14,9 @@ export interface AutoSettings {
   cache_read_cost_per_million: number | null;
   enabled: boolean;
 }
-export interface AutoEntry { position: number; curated_model_id: string; enabled: boolean }
+export interface AutoEntry { position: number; curated_model_id: string | null; pool_model?: string | null; enabled: boolean }
 /** The entry's own (normal) deployment, when it is in routing right now. */
-export interface BaseDeployment { id: string; garage: string; inputPerM: number; outputPerM: number; cacheReadPerM: number; maxInput: number | null; supportsTools: boolean | null }
+export interface BaseDeployment { id: string; garage: string; route?: string; tier?: string; weight?: number; inputPerM: number; outputPerM: number; cacheReadPerM: number; maxInput: number | null; supportsTools: boolean | null }
 
 export const DEFAULT_AUTO_PUBLIC_NAME = "garageai/auto";
 
@@ -40,14 +40,24 @@ export interface AutoPlanItem { id: string; curatedId: string; order: number; ba
  */
 export function planAutoDeployments(settings: AutoSettings, entries: AutoEntry[], routed: Map<string, BaseDeployment>, status: Map<string, string>): AutoPlanItem[] {
   if (!settings.enabled) return [];
-  const live = [...entries].filter((e) => e.enabled && routed.has(e.curated_model_id) && status.get(e.curated_model_id) === "healthy")
-    .sort((a, b) => a.position - b.position);
+  const live: Array<{ position: number; base: BaseDeployment }> = [];
+  const seen = new Set<string>();
+  for (const entry of [...entries].filter((e) => e.enabled).sort((a, b) => a.position - b.position)) {
+    const members = entry.pool_model
+      ? [...routed.values()].filter((d) => d.tier === "pool" && d.route === entry.pool_model)
+      : entry.curated_model_id ? [routed.get(entry.curated_model_id)] : [];
+    for (const member of members) {
+      if (!member || seen.has(member.id) || status.get(member.id) !== "healthy") continue;
+      seen.add(member.id);
+      live.push({ position: entry.position, base: member });
+    }
+  }
   if (!live.length) return [];
-  const first = routed.get(live[0].curated_model_id)!;
+  const first = live[0].base;
   const input = settings.input_cost_per_million ?? first.inputPerM;
   const output = settings.output_cost_per_million ?? first.outputPerM;
   const cacheRead = Math.min(Math.max(0, settings.cache_read_cost_per_million ?? (settings.input_cost_per_million == null ? first.cacheReadPerM : input * 0.25)), input);
-  return live.map((e) => ({ id: autoDeploymentId(e.curated_model_id), curatedId: e.curated_model_id, order: e.position, base: routed.get(e.curated_model_id)!, input, output, cacheRead }));
+  return live.map((e) => ({ id: autoDeploymentId(e.base.id), curatedId: e.base.id, order: e.position, base: e.base, input, output, cacheRead }));
 }
 
 /** The catalogue row for auto: smallest window in routing, tools only when every routed entry supports them. */

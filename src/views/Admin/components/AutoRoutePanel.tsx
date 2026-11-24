@@ -11,7 +11,7 @@ import { useAutoRoute } from "@/hooks/useAutoRoute";
 import { useToolSupport } from "@/hooks/useToolSupport";
 import { useModelGarageGrades } from "@/hooks/useGarageReliability";
 import { toast } from "@/hooks/use-toast";
-import { autoErrorMessage, nextAutoPosition, autoPriceError, autoSummary, buildAutoEntries, swapPositions } from "@/models/services/autoRouteService";
+import { autoEntryValue, autoErrorMessage, nextAutoPosition, autoPriceError, autoSummary, buildAutoEntries, swapPositions } from "@/models/services/autoRouteService";
 import { formatContext } from "@/models/services/catalogService";
 import type { AutoSettings, AutoWarning } from "@/models/types/autoRoute.types";
 
@@ -78,8 +78,8 @@ export const AutoRoutePanel = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs text-muted-foreground w-6">{v.entry.position}</span>
                 <span className={`h-2 w-2 rounded-full ${v.status === "healthy" ? "bg-primary" : "bg-destructive"}`} aria-hidden />
-                <AutoModelPicker models={a.models} entries={a.entries} value={v.entry.curated_model_id} currentEntryId={v.entry.id} disabled={a.busy} onSelect={(id) => { if (id !== v.entry.curated_model_id) a.setModel(v.entry.id, id); }} />
-                <span className="text-xs text-muted-foreground">{v.garage} · {v.tier} · {t("runtime")}: {v.runtimeModel}</span>
+                <AutoModelPicker models={a.models} entries={a.entries} value={autoEntryValue(v.entry)} currentEntryId={v.entry.id} disabled={a.busy} onSelect={(id) => { if (id !== autoEntryValue(v.entry)) a.setModel(v.entry.id, id); }} />
+                <span className="text-xs text-muted-foreground">{v.entry.pool_model ? `${v.garage} · ${v.members?.join(", ") || "No members up"}` : `${v.garage} · ${v.tier} · ${t("runtime")}: ${v.runtimeModel}`}</span>
                 <span className="ml-auto flex items-center gap-1">
                   <Switch checked={v.entry.enabled} onCheckedChange={(on) => a.setEnabled(v.entry.id, on)} aria-label={t("Enabled")} />
                   <Button size="icon" variant="ghost" disabled={a.busy || i === 0} onClick={() => { const c = swapPositions(views, i, -1); if (c) a.move(c); }} aria-label={t("Move up")}><ArrowUp className="h-4 w-4" /></Button>
@@ -98,6 +98,7 @@ export const AutoRoutePanel = () => {
             </div>
           ))}
           <p className="text-xs text-muted-foreground">{t("Auto tries entry 1 first; the next entry only when the ones before it are down or busy.")}</p>
+          <p className="text-xs text-muted-foreground">Any garage: all garages in the pool share this position, weighted by their pool price.</p>
           <div className="flex flex-wrap gap-2 pt-2">
             <AutoModelPicker models={a.models} entries={a.entries} value={pick} onSelect={setPick} disabled={a.busy} />
             <Button disabled={!pick || a.busy} onClick={() => { a.add(pick, nextAutoPosition(a.entries)); setPick(""); }}>{t("Add")}</Button>

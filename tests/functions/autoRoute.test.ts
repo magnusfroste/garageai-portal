@@ -75,3 +75,48 @@ test("earnings: an auto request credits the entry's own garage", () => {
   expect(garageOfDeploymentId("dgx-city__qwen3.8-27b__dedicated")).toEqual({ garage: "dgx-city", model: "qwen3.8-27b" });
   expect(garageOfDeploymentId("openrouter-model")).toBeNull();
 });
+
+const poolRouted = () => new Map([
+  ["a__m__pool", { ...base("a__m__pool", "a", 262144, true), route: "deepseek/deepseek-v4.1-flash", tier: "pool", weight: 700 }],
+  ["b__m__pool", { ...base("b__m__pool", "b", 131072, false), route: "deepseek/deepseek-v4.1-flash", tier: "pool", weight: 300 }],
+  ["c__m__dedicated", { ...base("c__m__dedicated", "c", 65536, true), route: "deepseek/deepseek-v4.1-flash", tier: "dedicated" }],
+]);
+const poolStatus = new Map([["a__m__pool", "healthy"], ["b__m__pool", "healthy"], ["c__m__dedicated", "healthy"]]);
+const poolEntry = { position: 4, curated_model_id: null, pool_model: "deepseek/deepseek-v4.1-flash", enabled: true };
+
+test("pool expansion includes healthy routed pool-tier members at the same position, not dedicated", () => {
+  const plan = planAutoDeployments(settings, [poolEntry], poolRouted(), poolStatus);
+  expect(plan.map((p) => [p.id, p.order])).toEqual([["auto__a__m__pool", 4], ["auto__b__m__pool", 4]]);
+  const row = autoCatalogRow(settings, plan, true, "now");
+  expect(row.max_input_tokens).toBe(131072);
+  expect(row.supports_tools).toBe(false);
+});
+
+test("pool members retain their pool weights and Auto prices", () => {
+  const plan = planAutoDeployments(settings, [poolEntry], poolRouted(), poolStatus);
+  expect(plan.map((p) => p.base.weight)).toEqual([700, 300]);
+  expect(plan.map((p) => [p.input, p.output, p.cacheRead])).toEqual([[0.3, 1.2, 0.03], [0.3, 1.2, 0.03]]);
+});
+
+test("overlapping pool and single entries deduplicate at the lowest position in either direction", () => {
+  for (const position of [2, 8]) {
+    const plan = planAutoDeployments(settings, [poolEntry, { position, curated_model_id: "a__m__pool", enabled: true }], poolRouted(), poolStatus);
+    expect(plan.filter((p) => p.curatedId === "a__m__pool").map((p) => p.order)).toEqual([Math.min(position, 4)]);
+    expect(plan).toHaveLength(2);
+  }
+});
+
+test("empty, unhealthy and disabled pools contribute nothing", () => {
+  expect(planAutoDeployments(settings, [{ ...poolEntry, pool_model: "empty/model" }], poolRouted(), poolStatus)).toEqual([]);
+  expect(planAutoDeployments(settings, [poolEntry], poolRouted(), new Map())).toEqual([]);
+  expect(planAutoDeployments(settings, [{ ...poolEntry, enabled: false }], poolRouted(), poolStatus)).toEqual([]);
+});
+
+test("new routed pool members join on the next plan while single entries stay unchanged", () => {
+  const candidates = poolRouted();
+  candidates.set("d__m__pool", { ...base("d__m__pool", "d", 524288, true), route: poolEntry.pool_model, tier: "pool", weight: 100 });
+  const plan = planAutoDeployments(settings, [poolEntry], candidates, new Map([...poolStatus, ["d__m__pool", "healthy"]]));
+  expect(plan.map((p) => p.curatedId)).toEqual(["a__m__pool", "b__m__pool", "d__m__pool"]);
+  const single = planAutoDeployments(settings, [{ position: 9, curated_model_id: "c__m__dedicated", enabled: true }], candidates, poolStatus);
+  expect(single.map((p) => [p.id, p.order, p.input, p.output])).toEqual([["auto__c__m__dedicated", 9, 0.3, 1.2]]);
+});

@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Whole-pool Auto entries: migration 0102 verified, expansion/dedupe/weights and admin picker/member details; 25 focused tests pass, desktop/mobile isolated add/change/readback passes; 17 importing functions deployed; publication requested. Existing saved single entries unchanged.
+- [ ] Whole-pool Auto real-account save/readback — blocked: requester has no matching app account; isolated UI and repository tests passed without altering live entries.
+
 - [x] Keys: get-keys-activity deployed, own-account last-used and 30-day consumption, three-minute cache/no polling; 9 focused tests pass, desktop/mobile isolated details/UTC/one-call checks pass, deployed OPTIONS 200 and anonymous POST 401; full suite 497 pass, 1 skip, 2 existing failures and 1 existing semver error; frontend publication requested.
 - [ ] Keys real-account gateway readback — blocked: requester has no matching app account; sign in to the preview to verify actual usage. No account/key records changed.
 

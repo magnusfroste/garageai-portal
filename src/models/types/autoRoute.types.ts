@@ -1,7 +1,8 @@
 export interface AutoRouteEntry {
   id: string;
   position: number;
-  curated_model_id: string;
+  curated_model_id: string | null;
+  pool_model?: string | null;
   enabled: boolean;
   note: string | null;
   created_at: string;
@@ -30,4 +31,5 @@ export interface AutoEntryView {
   price: { input: number | null; output: number | null; cacheRead: number | null };
   missing: boolean;
   warnings: AutoWarning[];
+  members?: string[];
 }

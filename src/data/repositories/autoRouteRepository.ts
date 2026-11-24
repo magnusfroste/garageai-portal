@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import type { AutoRouteEntry, AutoSettings } from "@/models/types/autoRoute.types";
+import { autoSelection } from "@/models/services/autoRouteService";
 
 export const autoRouteRepository = {
   async entries(): Promise<AutoRouteEntry[]> {
@@ -8,11 +9,11 @@ export const autoRouteRepository = {
     if (error) throw error;
     return (data || []) as AutoRouteEntry[];
   },
-  async add(curated_model_id: string, position: number) {
-    const { error } = await supabase.from("auto_route").insert({ curated_model_id, position });
+  async add(value: string, position: number) {
+    const { error } = await supabase.from("auto_route").insert({ ...autoSelection(value), position });
     if (error) throw error;
   },
-  async update(id: string, patch: Partial<Pick<AutoRouteEntry, "position" | "enabled" | "note" | "curated_model_id">>) {
+  async update(id: string, patch: Partial<Pick<AutoRouteEntry, "position" | "enabled" | "note" | "curated_model_id" | "pool_model">>) {
     const { error } = await supabase.from("auto_route").update(patch).eq("id", id);
     if (error) throw error;
   },

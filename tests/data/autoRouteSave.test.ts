@@ -18,7 +18,7 @@ const { autoErrorMessage, autoPriceError, nextAutoPosition, parseAutoSettings } 
 test("add sends the curated model id at position 1 on an empty list", async () => {
   fail = null; calls.length = 0;
   await autoRouteRepository.add("dgx-city__mimo-v2.6-flash__pool", nextAutoPosition([]));
-  expect(calls[0]).toEqual({ table: "auto_route", op: "insert", row: { curated_model_id: "dgx-city__mimo-v2.6-flash__pool", position: 1 } });
+  expect(calls[0]).toEqual({ table: "auto_route", op: "insert", row: { curated_model_id: "dgx-city__mimo-v2.6-flash__pool", pool_model: null, position: 1 } });
 });
 
 test("a failed insert or save is thrown with a readable message, never silent", async () => {
@@ -38,4 +38,10 @@ test("changing a model updates only the curated id, not position or prices", asy
   fail = null; calls.length = 0;
   await autoRouteRepository.update("entry-1", { curated_model_id: "city__qwen__pool" });
   expect(calls).toEqual([{ table: "auto_route", op: "update:id:entry-1", row: { curated_model_id: "city__qwen__pool" } }]);
+});
+
+test("adding a whole pool saves the canonical name and a null curated id at the requested position", async () => {
+  fail = null; calls.length = 0;
+  await autoRouteRepository.add("pool:deepseek/deepseek-v4.1-flash", 7);
+  expect(calls[0]).toEqual({ table: "auto_route", op: "insert", row: { curated_model_id: null, pool_model: "deepseek/deepseek-v4.1-flash", position: 7 } });
 });

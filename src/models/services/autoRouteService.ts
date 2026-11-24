@@ -38,9 +38,22 @@ const runtimeOf = (row: CuratedModel) => {
 export function buildAutoEntries(entries: AutoRouteEntry[], models: CuratedModel[], tools: GarageToolSupport[], gradeOf: (g: string | null) => string | null): AutoEntryView[] {
   const byId = new Map(models.map((m) => [m.id, m]));
   return [...entries].sort((a, b) => a.position - b.position).map((entry) => {
-    const row = byId.get(entry.curated_model_id);
+    if (entry.pool_model) {
+      const members = poolMembers(models, entry.pool_model).filter((m) => m.enabled && m.status === "healthy");
+      const windows = members.flatMap((m) => m.max_input_tokens != null ? [m.max_input_tokens] : []);
+      const context = windows.length ? Math.min(...windows) : null;
+      const supportsTools = members.length > 0 && members.every((m) => modelSupportsTools(tools, `garage/${m.garage}/${entry.pool_model}`));
+      const warnings: AutoWarning[] = [];
+      if (!supportsTools) warnings.push("no_tools");
+      if (context == null || context < SMALL_CONTEXT) warnings.push("small_context");
+      if (members.some((m) => gradeOf(m.garage) !== "A")) warnings.push("low_grade");
+      const first = members[0];
+      return { entry, label: entry.pool_model, garage: `any garage (${members.length})`, tier: "pool", runtimeModel: "—", status: members.length ? "healthy" : "unhealthy", grade: null, supportsTools, context,
+        price: { input: first?.input_cost_per_million ?? null, output: first?.output_cost_per_million ?? null, cacheRead: first?.cache_read_cost_per_million ?? null }, missing: !members.length, warnings, members: members.map((m) => m.garage || m.provider) };
+    }
+    const row = entry.curated_model_id ? byId.get(entry.curated_model_id) : undefined;
     const grade = row?.garage ? gradeOf(row.garage) : null;
-    const base = row ? (row.garage_tier === "dedicated" && row.garage ? `garage/${row.garage}/${(row.model_name || "").replace(`garage/${row.garage}/`, "")}` : row.model_name || row.id) : entry.curated_model_id;
+    const base = row ? (row.garage_tier === "dedicated" && row.garage ? `garage/${row.garage}/${(row.model_name || "").replace(`garage/${row.garage}/`, "")}` : row.model_name || row.id) : entry.curated_model_id || "—";
     const supportsTools = row ? modelSupportsTools(tools, base) : false;
     const context = row?.max_input_tokens ?? null;
     const warnings: AutoWarning[] = [];
@@ -48,7 +61,7 @@ export function buildAutoEntries(entries: AutoRouteEntry[], models: CuratedModel
     if (context == null || context < SMALL_CONTEXT) warnings.push("small_context");
     if (row?.garage && grade !== "A") warnings.push("low_grade");
     return {
-      entry, label: row?.model_name || entry.curated_model_id, garage: row?.garage ?? row?.provider ?? null, tier: row?.garage_tier ?? null,
+      entry, label: row?.model_name || entry.curated_model_id || "—", garage: row?.garage ?? row?.provider ?? null, tier: row?.garage_tier ?? null,
       runtimeModel: row ? runtimeOf(row) : "—", status: row ? (row.enabled ? row.status : "disabled") : "missing", grade, supportsTools, context,
       price: { input: row?.input_cost_per_million ?? null, output: row?.output_cost_per_million ?? null, cacheRead: row?.cache_read_cost_per_million ?? null },
       missing: !row, warnings,
@@ -78,17 +91,41 @@ export const addableModels = (models: CuratedModel[], entries: AutoRouteEntry[])
 };
 
 /** Picker presentation only; keep the existing enabled/garage eligibility rule. */
+export const poolMembers = (models: CuratedModel[], name: string) => models.filter((m) => !!m.garage && m.garage_tier === "pool" && m.model_name === name);
+export const autoEntryValue = (entry: Pick<AutoRouteEntry, "curated_model_id" | "pool_model">) => entry.pool_model ? `pool:${entry.pool_model}` : entry.curated_model_id || "";
+export const autoSelection = (value: string) => value.startsWith("pool:") ? { curated_model_id: null, pool_model: value.slice(5) } : { curated_model_id: value, pool_model: null };
+
+const priceRange = (members: CuratedModel[], field: "input_cost_per_million" | "output_cost_per_million") => {
+  const values = members.flatMap((m) => m[field] != null ? [m[field]] : []);
+  if (!values.length) return "—";
+  const low = Math.min(...values), high = Math.max(...values);
+  return low === high ? String(low) : `${low}–${high}`;
+};
+
 export function autoModelOptions(models: CuratedModel[], entries: AutoRouteEntry[], currentEntryId?: string) {
   const used = new Set(entries.filter((e) => e.id !== currentEntryId).map((e) => e.curated_model_id));
-  return models.filter((m) => !!m.garage && !isAutoModel(m)).map((model) => ({
+  const singles = models.filter((m) => !!m.garage && !isAutoModel(m)).map((model) => ({
     model,
+    poolModel: null as string | null,
+    inputLabel: String(model.input_cost_per_million ?? "—"),
+    outputLabel: String(model.output_cost_per_million ?? "—"),
     name: model.garage_tier === "dedicated" ? (model.model_name || model.id).replace(`garage/${model.garage}/`, "") : model.model_name || model.id,
     supplier: model.garage || model.provider,
     tier: model.garage_tier || "—",
     alreadyInAuto: used.has(model.id),
     down: !model.enabled || model.status !== "healthy",
     disabled: !model.enabled || used.has(model.id),
-  })).sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }) || a.supplier.localeCompare(b.supplier) || (a.tier === "pool" ? 0 : a.tier === "dedicated" ? 1 : 2) - (b.tier === "pool" ? 0 : b.tier === "dedicated" ? 1 : 2) || a.model.id.localeCompare(b.model.id));
+  }));
+  const pools = [...new Set(models.filter((m) => !!m.garage && !isAutoModel(m) && m.garage_tier === "pool" && m.model_name).map((m) => m.model_name))].flatMap((name) => {
+    if (!name) return [];
+    const members = poolMembers(models, name);
+    const first = members[0];
+    if (!first) return [];
+    const alreadyInAuto = entries.some((e) => e.id !== currentEntryId && e.pool_model === name);
+    const windows = members.flatMap((m) => m.max_input_tokens != null ? [m.max_input_tokens] : []);
+    return [{ model: { ...first, id: `pool:${name}`, max_input_tokens: windows.length ? Math.max(...windows) : null }, poolModel: name, name, supplier: `any garage (${members.length})`, tier: "pool", inputLabel: priceRange(members, "input_cost_per_million"), outputLabel: priceRange(members, "output_cost_per_million"), alreadyInAuto, down: !members.some((m) => m.enabled && m.status === "healthy"), disabled: alreadyInAuto }];
+  });
+  return [...singles, ...pools].sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }) || a.supplier.localeCompare(b.supplier) || (a.tier === "pool" ? 0 : a.tier === "dedicated" ? 1 : 2) - (b.tier === "pool" ? 0 : b.tier === "dedicated" ? 1 : 2) || a.model.id.localeCompare(b.model.id));
 }
 
 export const filterAutoModelOptions = (options: ReturnType<typeof autoModelOptions>, query: string) => {

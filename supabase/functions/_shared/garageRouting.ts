@@ -270,7 +270,7 @@ export async function reconcileGarageRouting(admin: SupabaseClient, garages: Rou
       || !Number.isFinite(cacheCost) || Math.abs(cacheCost - want.cacheRead / 1e6) > 1e-12
       || !deploymentOrderMatches(want.order, d.litellm_params, d.model_info)
       || (want.tier === 'private' && (d.model_info?.garage_tier !== 'private' || (d.model_info as { operator_id?: string; connection_type?: string }).operator_id !== want.garage.operator_id || (d.model_info as { connection_type?: string }).connection_type !== 'mesh'))
-      || (want.tier === "pool" && want.weight != null && Number(d.litellm_params?.weight) !== want.weight)
+      || ((want.tier === "pool" || want.tier === AUTO_TIER) && want.weight != null && Number(d.litellm_params?.weight) !== want.weight)
       || (!!want.limits && (Number(d.model_info?.max_input_tokens) !== want.limits.maxInput || Number(d.model_info?.max_output_tokens) !== want.limits.maxOutput || Number(d.model_info?.max_tokens) !== want.limits.maxInput)));
     if (!want || drift) {
       if (await deleteDeployment(base, masterKey, id)) { removed.push(id); actual.delete(id); }
@@ -300,24 +300,26 @@ export async function reconcilePrivateGarage(admin: SupabaseClient, garage: Rout
 async function loadAutoPlan(admin: SupabaseClient, garages: RoutingGarage[], desired: Map<string, DeploymentSpec>): Promise<{ settings: AutoSettings; plan: AutoPlanItem[]; anyEntryHealthy: boolean }> {
   const [{ data: setRow }, { data: entryRows }] = await Promise.all([
     admin.from("admin_settings").select("value").eq("key", "auto_settings").maybeSingle(),
-    admin.from("auto_route").select("position, curated_model_id, enabled"),
+    admin.from("auto_route").select("position, curated_model_id, pool_model, enabled"),
   ]);
   const settings = parseAutoSettings((setRow as { value?: unknown } | null)?.value);
   const entries = (entryRows || []) as AutoEntry[];
   if (!entries.length) return { settings, plan: [], anyEntryHealthy: false };
-  const { data: cm } = await admin.from("curated_models").select("id, status").in("id", entries.map((e) => e.curated_model_id));
+  const candidateIds = new Set(entries.flatMap((e) => e.curated_model_id ? [e.curated_model_id] : []));
+  for (const d of desired.values()) if (d.tier === "pool" && entries.some((e) => e.pool_model === d.route)) candidateIds.add(d.id);
+  const { data: cm } = await admin.from("curated_models").select("id, status").in("id", [...candidateIds]);
   const status = new Map(((cm || []) as Array<{ id: string; status: string }>).map((r) => [r.id, r.status]));
   const { data: toolRows } = await admin.from("garage_model_tests").select("garage_id, model, supports_tools, tested_at")
     .in("garage_id", garages.map((g) => g.id)).not("supports_tools", "is", null).order("tested_at", { ascending: false }).limit(2000);
   const tools = new Map<string, boolean>();
   for (const t of (toolRows || []) as Array<{ garage_id: string; model: string; supports_tools: boolean }>) { const k = `${t.garage_id}::${t.model}`; if (!tools.has(k)) tools.set(k, t.supports_tools); }
   const routed = new Map<string, BaseDeployment>();
-  for (const e of entries) {
-    const d = desired.get(e.curated_model_id);
+  for (const id of candidateIds) {
+    const d = desired.get(id);
     if (!d) continue;
-    routed.set(e.curated_model_id, { id: d.id, garage: d.garage.name, inputPerM: d.input, outputPerM: d.output, cacheReadPerM: d.cacheRead, maxInput: d.limits?.maxInput ?? null, supportsTools: tools.get(`${d.garage.id}::${d.model}`) ?? null });
+    routed.set(id, { id: d.id, garage: d.garage.name, route: d.route, tier: d.tier, weight: d.weight, inputPerM: d.input, outputPerM: d.output, cacheReadPerM: d.cacheRead, maxInput: d.limits?.maxInput ?? null, supportsTools: tools.get(`${d.garage.id}::${d.model}`) ?? null });
   }
-  const anyEntryHealthy = entries.some((e) => e.enabled && status.get(e.curated_model_id) === "healthy");
+  const anyEntryHealthy = entries.some((e) => e.enabled && (e.curated_model_id ? status.get(e.curated_model_id) === "healthy" : [...routed.values()].some((d) => d.tier === "pool" && d.route === e.pool_model && status.get(d.id) === "healthy")));
   return { settings, plan: planAutoDeployments(settings, entries, routed, status), anyEntryHealthy };
 }
 

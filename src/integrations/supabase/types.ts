@@ -142,26 +142,29 @@ export type Database = {
       auto_route: {
         Row: {
           created_at: string
-          curated_model_id: string
+          curated_model_id: string | null
           enabled: boolean
           id: string
           note: string | null
+          pool_model: string | null
           position: number
         }
         Insert: {
           created_at?: string
-          curated_model_id: string
+          curated_model_id?: string | null
           enabled?: boolean
           id?: string
           note?: string | null
+          pool_model?: string | null
           position: number
         }
         Update: {
           created_at?: string
-          curated_model_id?: string
+          curated_model_id?: string | null
           enabled?: boolean
           id?: string
           note?: string | null
+          pool_model?: string | null
           position?: number
         }
         Relationships: [
