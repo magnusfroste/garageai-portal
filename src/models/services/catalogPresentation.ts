@@ -79,7 +79,7 @@ export const offerPlace = (o: Pick<GarageOffer, "forwardsTo" | "location"> & { p
 export const offerCountries = (m: CatalogModel): string[] =>
   [...new Set(m.offers.map((o) => (o.forwardsTo ? "varies" : o.location?.location_display !== "hidden" ? o.location?.country ?? null : null)).filter((c): c is string => !!c))];
 
-export const countryOptionLabel = (c: string) => (c === "varies" ? "Varies (forwarding)" : `${flagEmoji(c)} ${countryName(c)}`);
+export const countryOptionLabel = (c: string) => (c === "varies" ? "Varies" : `${flagEmoji(c)} ${countryName(c)}`);
 
 export const withForwarding = (models: CatalogModel[], supply: GarageSupplyFact[]): CatalogModel[] => {
   const by = new Map(supply.map((s) => [s.garage_name, s]));

@@ -4,7 +4,7 @@ import { t } from "@/i18n";
 import { cn } from "@/lib/utils";
 import { runtimeLabel } from "@/models/services/garageRuntime";
 import { locationLabel } from "@/models/services/location";
-import { garageStatus, garageStatusTone, type PublicGarage } from "@/models/services/publicGarageService";
+import { garageStatus, garageStatusTone, toSupplyRow, type PublicGarage } from "@/models/services/publicGarageService";
 import { StatusDot } from "@/components/ui/status-badge";
 import { LocationBadge } from "./LocationBadge";
 import { ProviderBadge } from "./ProviderBadge";
@@ -14,7 +14,12 @@ import { ProviderModelBadge } from "@/views/Models/components/ProviderModelBadge
 export const PublicGarageHeader = ({ garage, heading = false }: { garage: PublicGarage; heading?: boolean }) => {
   const { profile: p, location, reliability, providerName } = garage;
   const status = garageStatus(p);
-  const flag = heading ? locationLabel(location)?.flag : null;
+  const supply = toSupplyRow(garage);
+  const isProvider = supply.kind === "provider";
+  const flag = heading ? (isProvider ? supply.place.flag : locationLabel(location)?.flag) : null;
+  const regionBadge = isProvider
+    ? <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground whitespace-nowrap">{supply.place.flag && <span aria-hidden className="text-lg leading-none">{supply.place.flag}</span>}<span>{t(supply.place.text)}</span></span>
+    : <LocationBadge location={location} />;
   const Heading = heading ? "h1" : "h2";
   return <div className="space-y-4 min-w-0">
     <div className="space-y-2">
@@ -23,9 +28,9 @@ export const PublicGarageHeader = ({ garage, heading = false }: { garage: Public
           {flag && <span aria-hidden className="text-2xl leading-none shrink-0">{flag}</span>}
           {heading ? p.display_name : <Link className="after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring after:rounded-lg" to={`/garages/${encodeURIComponent(p.name)}`}>{p.display_name}</Link>}
         </Heading>
-        {!heading && location && <div className="relative z-10 shrink-0"><LocationBadge location={location} /></div>}
+        {!heading && (location || isProvider) && <div className="relative z-10 shrink-0">{regionBadge}</div>}
       </div>
-      <div className="relative z-10 w-fit flex flex-wrap items-center gap-2">{heading && <LocationBadge location={location} />}<ProviderBadge name={location?.is_endpoint ? providerName ?? p.display_name : null} /></div>
+      <div className="relative z-10 w-fit flex flex-wrap items-center gap-2">{heading && regionBadge}<ProviderBadge name={isProvider ? providerName ?? p.display_name : null} /></div>
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5"><StatusDot tone={garageStatusTone(status, garage.models.length > 0)} />{t(status)}</span>
         {p.runtime && <span>{runtimeLabel(p.runtime)}</span>}

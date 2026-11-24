@@ -28,8 +28,7 @@ const SupplyTable = ({ rows }: { rows: SupplyRow[] }) => (
       <tbody className="divide-y divide-border/50">
         {rows.map((r) => (
           <tr key={r.name} className="align-top [&>td]:px-3 [&>td]:py-2">
-            <td><Link to={`/garages/${encodeURIComponent(r.name)}`} className="font-medium text-primary hover:underline">{r.displayName}</Link>
-              {r.forwardsTo && <div className="text-[10px] text-muted-foreground">{t("via {s}", { s: r.forwardsTo })}</div>}</td>
+            <td><Link to={`/garages/${encodeURIComponent(r.name)}`} className="font-medium text-primary hover:underline">{r.displayName}</Link></td>
             <td className="text-xs">{t(r.kind === "provider" ? "Provider" : "Garage")}</td>
             <td className="whitespace-nowrap text-xs">{r.place.flag && <span aria-hidden className="mr-1">{r.place.flag}</span>}{t(r.place.text)}</td>
             <td className="text-xs">{r.termsAccepted ? t("No") : t("Not accepted")}</td>
