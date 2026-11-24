@@ -86,7 +86,7 @@ export async function keyFingerprint(key: string | null | undefined) {
 }
 
 /** Output cap advertised to clients: never the whole window, so "max" requests cannot overflow it. */
-export const MAX_OUTPUT_CAP = 32768;
+export const MAX_OUTPUT_CAP = 65536;
 export interface TokenLimits { maxInput: number; maxOutput: number }
 export const tokenLimits = (context: number | null | undefined): TokenLimits | null =>
   context && context > 0 ? { maxInput: context, maxOutput: Math.min(MAX_OUTPUT_CAP, Math.floor(context / 4)) } : null;
