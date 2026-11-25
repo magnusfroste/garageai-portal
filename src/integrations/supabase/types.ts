@@ -93,11 +93,17 @@ export type Database = {
           key_last4: string | null
           key_value: string
           kind: string
+          limit_reset: string | null
+          limit_usd: number | null
           litellm_alias: string | null
           litellm_token: string | null
+          metadata: Json | null
+          models: string[] | null
           name: string
           revoked_at: string | null
+          rpm: number | null
           trial_credits_usd: number | null
+          updated_at: string | null
           used_credits_usd: number | null
           user_id: string
         }
@@ -111,11 +117,17 @@ export type Database = {
           key_last4?: string | null
           key_value: string
           kind?: string
+          limit_reset?: string | null
+          limit_usd?: number | null
           litellm_alias?: string | null
           litellm_token?: string | null
+          metadata?: Json | null
+          models?: string[] | null
           name: string
           revoked_at?: string | null
+          rpm?: number | null
           trial_credits_usd?: number | null
+          updated_at?: string | null
           used_credits_usd?: number | null
           user_id: string
         }
@@ -129,11 +141,17 @@ export type Database = {
           key_last4?: string | null
           key_value?: string
           kind?: string
+          limit_reset?: string | null
+          limit_usd?: number | null
           litellm_alias?: string | null
           litellm_token?: string | null
+          metadata?: Json | null
+          models?: string[] | null
           name?: string
           revoked_at?: string | null
+          rpm?: number | null
           trial_credits_usd?: number | null
+          updated_at?: string | null
           used_credits_usd?: number | null
           user_id?: string
         }
@@ -647,6 +665,51 @@ export type Database = {
           ttft_ms_p50?: number | null
         }
         Relationships: []
+      }
+      customer_key_events: {
+        Row: {
+          action: string
+          at: string
+          changed_fields: string[]
+          id: string
+          key_hash: string | null
+          management_key_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          at?: string
+          changed_fields?: string[]
+          id?: string
+          key_hash?: string | null
+          management_key_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          at?: string
+          changed_fields?: string[]
+          id?: string
+          key_hash?: string | null
+          management_key_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_key_events_management_key_id_fkey"
+            columns: ["management_key_id"]
+            isOneToOne: false
+            referencedRelation: "management_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_key_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       garage_country_history: {
         Row: {
@@ -1865,6 +1928,56 @@ export type Database = {
         }
         Relationships: []
       }
+      management_keys: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          key_hash: string
+          key_last4: string
+          last_used_at: string | null
+          name: string
+          revoked_at: string | null
+          user_id: string
+          window_count: number
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          key_hash: string
+          key_last4: string
+          last_used_at?: string | null
+          name: string
+          revoked_at?: string | null
+          user_id: string
+          window_count?: number
+          window_start?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          key_hash?: string
+          key_last4?: string
+          last_used_at?: string | null
+          name?: string
+          revoked_at?: string | null
+          user_id?: string
+          window_count?: number
+          window_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "management_keys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_prices: {
         Row: {
           fetched_at: string
@@ -2436,6 +2549,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      management_key_auth: {
+        Args: { _hash: string; _limit?: number }
+        Returns: {
+          allowed: boolean
+          id: string
+          user_id: string
+        }[]
       }
       mark_connect_page_seen: { Args: never; Returns: undefined }
       mark_offer_page_seen: { Args: { _garage_id: string }; Returns: undefined }

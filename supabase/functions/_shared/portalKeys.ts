@@ -7,7 +7,7 @@ import { ensureLiteLLMUser } from "./litellmUsers.ts";
 import { litellmKeyAlias } from "./keyAlias.ts";
 import { keyLimits } from "./keyLimits.ts";
 
-export type KeyKind = "user" | "default" | "chat";
+export type KeyKind = "user" | "default" | "chat" | "managed";
 
 import { chatKeyName, keyLast4, storedKeyValue } from "./keyStorage.ts";
 export { chatKeyName, HIDDEN_PREFIX, keyLast4, storedKeyValue } from "./keyStorage.ts";
@@ -19,9 +19,11 @@ export interface CreateKeyInput {
   showOnce: boolean;
   deviceLabel?: string | null;
   models?: string[];
+  /** Customer keys API only: own key budget/limits, stored on the row too. */
+  managed?: { limit: number | null; limitReset: "daily" | "weekly" | "monthly" | null; budgetDuration: string | null; rpm: number | null; metadata: Record<string, unknown> | null };
 }
 
-export interface CreatedKey { id: string; key: string; name: string; last4: string; kind: KeyKind }
+export interface CreatedKey { id: string; key: string; name: string; last4: string; kind: KeyKind; token: string | null }
 
 async function generate(base: string, master: string, body: Record<string, unknown>) {
   const res = await fetch(`${base}/key/generate`, {
@@ -50,10 +52,15 @@ export async function createPortalKey(admin: any, input: CreateKeyInput): Promis
   const ensured = await ensureLiteLLMUser(admin, profile);
   const internal = internalAlias(input.name);
   let alias = litellmKeyAlias(input.userId, input.name);
-  // No per-key max_budget: the user's budget is the single cap.
+  // Portal keys have no per-key max_budget: the user's budget is the single cap.
+  // Managed (API) keys may add an own limit on top; the user budget still caps them.
+  const m = input.managed;
   const body = () => ({
     key_alias: alias, user_id: ensured.userId, ...keyLimits(input.kind),
-    metadata: { internal, kind: input.kind },
+    ...(m?.rpm ? { rpm_limit: m.rpm } : {}),
+    ...(m?.limit != null ? { max_budget: m.limit } : {}),
+    ...(m?.budgetDuration ? { budget_duration: m.budgetDuration } : {}),
+    metadata: { ...(m?.metadata ?? {}), internal, kind: input.kind },
     ...(input.models?.length ? { models: input.models } : {}),
   });
   let created;
@@ -70,6 +77,7 @@ export async function createPortalKey(admin: any, input: CreateKeyInput): Promis
     key_value: storedKeyValue(created.key, input.showOnce, id),
     key_last4: keyLast4(created.key),
     litellm_token: created.token || null, litellm_alias: alias,
+    ...(m ? { limit_usd: m.limit, limit_reset: m.limitReset, rpm: m.rpm, models: input.models ?? null, metadata: m.metadata, updated_at: new Date().toISOString() } : {}),
     expires_at: null, trial_credits_usd: Number(profile.starting_credit_usd || 0), used_credits_usd: 0, is_active: true,
   });
   if (dbError) {
@@ -77,5 +85,5 @@ export async function createPortalKey(admin: any, input: CreateKeyInput): Promis
     await fetch(`${base}/key/delete`, { method: "POST", headers: { Authorization: `Bearer ${master}`, "Content-Type": "application/json" }, body: JSON.stringify({ keys: [created.token || created.key] }) }).catch(() => {});
     throw new Error("Failed to save API key");
   }
-  return { id, key: created.key, name: input.name, last4: keyLast4(created.key), kind: input.kind };
+  return { id, key: created.key, name: input.name, last4: keyLast4(created.key), kind: input.kind, token: created.token || null };
 }

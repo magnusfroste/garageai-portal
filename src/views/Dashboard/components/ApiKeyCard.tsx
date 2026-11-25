@@ -51,6 +51,8 @@ export const ApiKeyCard = ({ apiKey, thisBrowser, onRevoke, onRotate, onRename, 
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="font-mono">{apiKey.key_last4 ? `…${apiKey.key_last4}` : "…"}</span>
             {isChat && <Badge variant="secondary">{t("chat key")}</Badge>}
+            {apiKey.kind === "managed" && <Badge variant="secondary">{t("API")}</Badge>}
+            {apiKey.kind === "managed" && !apiKey.is_active && <Badge variant="outline">{t("disabled")}</Badge>}
             {thisBrowser && <Badge variant="outline">{t("this browser")}</Badge>}
             <span>{t("Created {date}", { date: new Date(apiKey.created_at).toLocaleDateString() })}</span>
           </div>

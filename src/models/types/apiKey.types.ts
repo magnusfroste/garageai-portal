@@ -1,4 +1,4 @@
-export type ApiKeyKind = "user" | "default" | "chat";
+export type ApiKeyKind = "user" | "default" | "chat" | "managed";
 
 export interface ApiKey {
   id: string;

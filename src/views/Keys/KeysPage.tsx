@@ -20,6 +20,7 @@ import { buyerNeedsFirstAnswer } from "@/models/services/buyerFirstAnswer";
 import { BuyerFirstAnswer } from "@/views/Dashboard/components/BuyerFirstAnswer";
 import { useKeysActivity } from '@/hooks/useKeysActivity';
 import { KeyActivityDetail } from './KeyActivityDetail';
+import { ManagementKeysSection } from './ManagementKeysSection';
 
 export const KeysPage = () => {
   const { models } = useModelCatalog();
@@ -102,7 +103,8 @@ export const KeysPage = () => {
   const canCreateMore = true;
   const remainingKeys = 0;
 
-  const activeKeys = apiKeys.filter((key: ApiKey) => key.is_active && !key.revoked_at);
+  // API-managed keys stay listed while disabled through the keys API.
+  const activeKeys = apiKeys.filter((key: ApiKey) => !key.revoked_at && (key.is_active || key.kind === "managed"));
 
   if (profileLoading || keysLoading) {
     return (
@@ -149,6 +151,7 @@ export const KeysPage = () => {
         activityLoading={activity.isPending}
         onDetails={setDetailKey}
       />
+      <ManagementKeysSection />
       <KeyActivityDetail name={detailKey?.name ?? ''} activity={activity.data?.keys.find(entry => entry.keyId === detailKey?.id)} open={!!detailKey} onOpenChange={(open) => { if (!open) setDetailKey(null); }} />
       <ShowKeyOnceDialog
         title={shown?.title ?? ""}

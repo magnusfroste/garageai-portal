@@ -37,3 +37,6 @@ verify_jwt = false
 
 [functions.check-bridge-release]
 verify_jwt = false
+
+[functions.customer-keys]
+verify_jwt = false
