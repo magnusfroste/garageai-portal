@@ -1,7 +1,9 @@
 # Leaving Lovable: moving the portal to Shipholm
 
-Status 2026-11-26: decided direction, nothing moved yet. Step 0 (the schema in one file) is done:
-[`db/`](../db/README.md).
+Status 2026-11-26: decided direction, nothing moved yet. Done: step 0 (the schema in one file,
+[`db/`](../db/README.md)), step 1 (the gateway calls `portal.garageai.eu`, garageai#277) and the
+platform part of step 2 that could be done off the cluster (database roles, shipholm#94).
+Open in step 2: a tested Postgres restore on Shipholm.
 
 ## Goal
 
@@ -17,7 +19,7 @@ within days. Instead:
 1. **The portal code changes in small PRs to `main`**, each one working on both hosts: on
    Lovable today and on Shipholm later. Anything host-specific is read from configuration
    (`VITE_SUPABASE_URL` already is), never hard-coded.
-2. **The new host is built beside the old one**, as apps in a `garageai` tenant on Shipholm,
+2. **The new host is built beside the old one**, as one app in a `garageai` tenant on Shipholm,
    in the Shipholm repository (generated with `agentbuild`, as every Shipholm app is). It deploys
    the same `main`.
 3. **A rehearsal environment** on Shipholm (`staging`) runs from `main` against a database built
@@ -35,32 +37,43 @@ answers it. Rewrites can come later, one call at a time.
 
 | Today (Lovable Cloud) | On Shipholm | Notes |
 |---|---|---|
-| Hosting of the Vite build | static site app `portal` | `vercel.json` rewrites (robots, sitemap) become routes |
-| Postgres 17.6 | CNPG Postgres of the tenant | needs platform work, below |
-| Auth (GoTrue) | app `auth`: `supabase/gotrue` | carries `auth.users` with password hashes unchanged |
-| PostgREST | app `rest`: `postgrest/postgrest` | RLS works as today: same roles, same `auth.uid()` |
-| Edge functions (62, Deno) | app `functions`: `supabase/edge-runtime` | serves all functions from this repo's `supabase/functions` |
-| Storage (one bucket, 2 calls) | the `functions` app's disk, or S3 | too small to bring Supabase Storage |
-| pg_cron (11 jobs) | Kubernetes CronJobs calling `functions` | the jobs' commands are in `db/schema.sql` |
+| Postgres 17.6 | the app's own CNPG Postgres, `db_roles="supabase"` | roles `anon`, `authenticated`, `service_role` (shipholm#94) |
+| Auth (GoTrue) | `supabase/gotrue`, in the app's image | carries `auth.users` with password hashes unchanged |
+| PostgREST | `postgrest/postgrest`, in the app's image | RLS works as today: same roles, same `auth.uid()` |
+| Edge functions (62, Deno) | `supabase/edge-runtime`, in the app's image | serves this repo's `supabase/functions` |
+| Hosting of the Vite build | static files, in the app's image | `vercel.json` rewrites (robots, sitemap) become routes |
+| Storage (one bucket, 2 calls) | the app's `/data` disk, or S3 | too small to bring Supabase Storage |
+| pg_cron (11 jobs) | a scheduler in the app's image | the jobs' commands are in `db/schema.sql` |
 | Lovable's Google sign-in broker | our own Google OAuth client in GoTrue | see "Sign-in" |
 | `@lovable.dev/cloud-auth-js` | `supabase.auth.signInWithOAuth` | one file, `src/integrations/lovable/index.ts` |
 
-One address in front, as Supabase has: `/auth/v1`, `/rest/v1`, `/functions/v1` routed to the
-three apps, so `VITE_SUPABASE_URL` points at it and the frontend does not notice.
+**One app, not three.** GoTrue, PostgREST, the edge runtime and the frontend run in one image
+behind one small reverse proxy on `$PORT`: `/auth/v1`, `/rest/v1`, `/functions/v1` and the
+static files, as Supabase has it, so `VITE_SUPABASE_URL` points at the app's own address and
+the frontend does not notice. One app means nothing has to share a database and the cron jobs
+need no platform feature. Shipholm runs the pod as uid 10001 with a read-only root file system
+(`/tmp` writable), which the image must be built for.
 
-### What Shipholm lacks today (platform work, in the Shipholm repo)
+### Tried off the cluster (2026-11-26)
 
-- **Database roles.** CNPG creates one owner (`app`) that is not a superuser. PostgREST and
-  GoTrue need `anon`, `authenticated`, `service_role`, `authenticator` and `supabase_auth_admin`,
-  and the `auth` schema. CNPG can manage roles declaratively (`spec.managed.roles`); the app-db
-  template needs an option for it.
-- **Extensions.** pgcrypto and uuid-ossp ship with Postgres. pg_cron and pg_net do not, and are
-  not needed: the cron jobs become CronJobs, and no function uses pg_net (only the cron jobs do).
-- **Several apps sharing one database.** `auth`, `rest` and `functions` must reach the
-  `portal` database; today an app gets only its own `DATABASE_URL`.
-- **Cron.** A scheduled-job type for apps, or the jobs run as a loop inside `functions`.
-- **Tested Postgres restore.** Shipholm's README lists it as a next step. A marketplace with
-  credits and payouts must not move before a restore has been done for real once.
+On `postgres:17` with a non-superuser owner, as CNPG creates it, and only test accounts:
+
+- GoTrue v2.186.0 ran its 67 migrations as the owner, once the `auth` schema existed.
+- `db/schema.sql` restored as the owner (without cron, pg_net and storage): 51 tables,
+  90 functions, 55 policies, 24 triggers, the one on `auth.users` included.
+- [`db/grants.sql`](../db/grants.sql) is needed after it: the dump has no grants.
+- PostgREST v13.0.7 served it. Two signed-up users each saw only their own profile, anon saw
+  none, `service_role` saw all. The sign-up trigger refused an account without accepted terms,
+  as in production.
+- GoTrue needs `GOTRUE_JWT_AUD=authenticated` and `GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated`;
+  without them the token's `role` is empty and PostgREST refuses it.
+
+Not tried yet: the edge runtime with the 62 functions, Google sign-in, the image itself.
+
+### What Shipholm still lacks
+
+- **A tested Postgres restore.** Shipholm's README lists it as a next step. A marketplace with
+  credits and payouts must not move before a restore from S3 has been done for real once.
 
 ## Sign-in: the one thing that touches users
 
@@ -94,10 +107,12 @@ From [`db/README.md`](../db/README.md) and the notes on what an exit must carry:
 ## Order
 
 0. ~~Schema in one restorable file~~ (`db/`, done 2026-11-26).
-1. Gateway: `GARAGEAI_PORTAL_URL` to `portal.garageai.eu`. Check Door versions in the field.
-2. Shipholm platform: database roles, shared database, cron, a tested Postgres restore.
-3. Rehearsal on Shipholm from `db/schema.sql`: Auth, PostgREST, functions, frontend, test
-   accounts; our own Google OAuth client, verified against a real Google account.
+1. ~~Gateway: `GARAGEAI_PORTAL_URL` to `portal.garageai.eu`~~ (done 2026-11-26). Doors: all on
+   v1.7.0 except `tool` (v1.0.3, offline).
+2. Shipholm platform: ~~database roles~~ (shipholm#94), a tested Postgres restore.
+3. The image (GoTrue, PostgREST, edge runtime, frontend, proxy, scheduler) in this repo, and a
+   rehearsal app on Shipholm from `db/schema.sql` + `db/grants.sql` with test accounts; our own
+   Google OAuth client, verified against a real Google account.
 4. Portal PRs to `main` that work on both hosts: the sign-in without Lovable's broker (behind a
    setting), robots/sitemap without `vercel.json`, the storage bucket.
 5. Copy production data into the rehearsal once, to time it and compare row counts.
