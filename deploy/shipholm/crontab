@@ -1,0 +1,13 @@
+# The portal's scheduled jobs (UTC), run by supercronic in the same container. They were pg_cron
+# jobs on Supabase (db/schema.sql, "Cron jobs"); same names, same times. cron-call.sh makes sure
+# a job runs once per time slot even while two pods are up during a deploy.
+7 * * * *     /app/cron-call.sh fn check-bridge-release
+*/15 * * * *  /app/cron-call.sh event-mail
+17 3 * * *    /app/cron-call.sh fn fetch-market-prices
+30 4 * * *    /app/cron-call.sh fn garage-smart-nightly
+15 3 * * *    /app/cron-call.sh fn prune-chat-keys
+*/5 * * * *   /app/cron-call.sh fn sync-models-cron
+40 2 * * *    /app/cron-call.sh sql onboarding-events-retention "SELECT public.prune_onboarding_events()"
+20 3 * * *    /app/cron-call.sh sql prune-closed-support "SELECT public.prune_closed_support()"
+35 3 * * *    /app/cron-call.sh sql prune-garage-energy "SELECT public.prune_garage_energy()"
+27 3 * * *    /app/cron-call.sh sql prune-garage-status-samples "DELETE FROM public.garage_status_samples WHERE sampled_at < now() - interval '30 days'"
