@@ -16,6 +16,7 @@ COPY . .
 ENV VITE_SUPABASE_URL=https://portal-public-url.invalid \
     VITE_SUPABASE_PUBLISHABLE_KEY=PORTAL_ANON_KEY_PLACEHOLDER \
     VITE_SUPABASE_PROJECT_ID=shipholm \
+    VITE_GOOGLE_SIGN_IN=supabase \
     NODE_OPTIONS=--max-old-space-size=1536
 RUN pnpm exec vite build
 RUN node deploy/shipholm/prepare.mjs

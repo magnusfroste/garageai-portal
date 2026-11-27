@@ -73,12 +73,22 @@ locally the way Shipholm runs a pod. Sign-up, sign-in, RLS, all 60 functions and
 jobs work through the one address. Still not tried: Google sign-in, anything with the gateway's
 keys or Stripe, and the image on Shipholm.
 
-### What Shipholm still lacks
+### Restoring Postgres on Shipholm (passed 2026-11-27)
 
-- **A Postgres restore tool, and a tested restore.** There is none for CNPG yet: no app has had
-  a database. The Shipholm session builds "recover an app's database from its S3 backup into a
-  new cluster" with the rehearsal app as its first user. A marketplace with credits and payouts
-  does not move before it has passed.
+Shipholm had no restore for CNPG; the Shipholm session built it (`backup_database`,
+`restore_database`, `database_restore_status`, `finish_database_restore`; Shipholm's README,
+"Restoring Postgres") and tried it on the staging database:
+
+- a copy as of a point in time (three seconds before a marker row): the same accounts,
+  identities and profiles by md5, 71 tables, 90 functions, 55 policies, the roles, no marker;
+- a copy of the latest state: identical including the marker, so the log after the base backup
+  is replayed;
+- the app switched onto the restored cluster and the old one removed.
+
+From outside afterwards: both test accounts sign in with their passwords, RLS as before, a
+session from before the restore is still valid, the functions answer. A copy was ready about
+90 seconds after it was asked for, on a nearly empty database; to be timed again with real
+data.
 
 ## Sign-in: the one thing that touches users
 
@@ -87,7 +97,8 @@ Google OAuth client. That client cannot come along. 21 of 27 accounts sign in th
 (2026-11-26); the other 6 have a password.
 
 - We create our own Google OAuth client (Google Cloud console, owner: GarageAI) with the new
-  callback, and configure it in GoTrue.
+  callback, and configure it in GoTrue. The code for it is in place (2026-11-27,
+  `deploy/shipholm/README.md`, "Google sign-in"); the client itself is Magnus's to create.
 - `auth.identities` holds each of the 21 users' Google subject id (checked: all numeric Google
   `sub` values, not Lovable ids), and Google's `sub` is the same for a user across OAuth
   clients, so GoTrue matches existing accounts on the first sign-in. To be verified in the
@@ -132,6 +143,8 @@ Shipholm's customer portal (the app's Variables tab, secret fields).
   once the GitHub App is on it and the tenant has linked it. Limits: 900 s per build, 2 Gi memory
   for BuildKit, 6 Gi scratch disk; build pods reach the internet on 80/443. A 1.4 GB image has
   never gone through it: the first build is the test.
+- **Postgres**: CNPG runs PostgreSQL 18 (18.7 on 2026-11-27), Lovable 17.6. The schema and
+  GoTrue's migrations went in unchanged on staging.
 - **Pod**: user namespace, uid 10001, read-only root, RuntimeDefault seccomp. `/tmp` is an
   emptyDir in memory, at most half the memory limit, and **counts against the limit**. Exec from
   `/tmp` should work but is not verified in a user-namespaced pod.
@@ -201,19 +214,22 @@ Every session ends at the cutover (the JWT secret is new): users sign in once mo
    the GitHub App installed on `garageai-portal`. Shipholm session: link the repository, backup
    on for the app. Gateway session: ~~the five image items above~~; merge #5 and #6.
    The workspace exists: tenant `wdtg8rw9` ("GarageAI", Pro), repository linked.
+   **Up since 2026-11-27**: https://garageai-portal-staging.shipholm.dev, built on the first
+   attempt within the limits; from outside: sign-up, sign-in, RLS and all 60 functions behave
+   as locally; 109 Mi idle.
 4. **Rehearsal app** `garageai-portal-staging`: `database=true`, `db_roles="supabase"`, 2 Gi,
    always awake, `health_path=/healthz`, `GOTRUE_MAILER_AUTOCONFIRM=true`, `PORTAL_CRON=off`, no
    production keys. The Shipholm session verifies on the cluster (roles created, build limits,
    exec from `/tmp`, memory); the gateway session tests from outside and fixes the image.
 5. In parallel, none waiting for the other:
-   - Shipholm session: the Postgres restore tool (recover an app's database from its S3 backup
-     into a new cluster), with the rehearsal database as its first user.
+   - ~~Shipholm session: the Postgres restore tool (recover an app's database from its S3
+     backup into a new cluster), with the rehearsal database as its first user.~~ Done.
    - Gateway session: portal code that works on both hosts (Google sign-in without Lovable's
      broker behind a setting, robots/sitemap, storage). Magnus: our own Google OAuth client.
    - Data rehearsal: a full copy of production into the staging database through the import,
      row counts compared, timed.
-6. **Gate**: the restore test has passed, the data rehearsal matches, Google sign-in works with
-   an existing account on staging.
+6. **Gate**: ~~the restore test has passed~~ (2026-11-27), the data rehearsal matches, Google
+   sign-in works with an existing account on staging.
 7. **Cutover evening**: Lovable edits frozen; production app created (consider
    `db_instances: 2`, `db_size` with headroom); Magnus enters the production secrets; final
    import; certificate ready (DNS-01 if the zone was added, otherwise right after the switch);
