@@ -173,6 +173,12 @@ databases are not reachable from outside. So the app imports itself:
 3. The image gets a one-shot import (`PORTAL_IMPORT_URL`, `PORTAL_IMPORT_TOKEN`, both secret):
    it runs as the database owner, only into a database without rows, in one transaction, and
    records that it ran. Both variables are removed afterwards and the files deleted.
+   Format: JSON lines per table, loaded with `json_populate_recordset(null::<table>, …)` so
+   Postgres does the typing, streamed table by table into `psql` (`/tmp` is memory). User
+   triggers are disabled per table while loading (`handle_new_user` on `auth.users` would
+   otherwise create the profiles twice). Foreign keys are still checked, so tables load in
+   foreign-key order, a self-referencing or circular key gets a second pass, and every sequence
+   is set to its table's highest id afterwards.
 4. Row counts per table are compared with Lovable before anything is switched.
 
 Data passes through no chat, no git and neither session's conversation. If Lovable's support
@@ -185,8 +191,8 @@ Every session ends at the cutover (the JWT secret is new): users sign in once mo
 0. ~~Schema in one restorable file~~ (`db/`, done 2026-11-26).
 1. ~~Gateway: `GARAGEAI_PORTAL_URL` to `portal.garageai.eu`~~ (done 2026-11-26). Doors: all on
    v1.7.0 except `tool` (v1.0.3, offline).
-2. ~~The image~~ (`deploy/shipholm/`, runs locally, 2026-11-27) and ~~database roles~~
-   (shipholm#94, reviewed and merged by the Shipholm session on Magnus's word).
+2. ~~The image~~ (`deploy/shipholm/`, runs locally, 2026-11-27). Database roles: shipholm#94 is
+   open; the Shipholm session reviews and squash-merges it on Magnus's word.
 3. **Before the rehearsal** – Magnus: which tenant (recommended: a new GarageAI account on Pro),
    the GitHub App installed on `garageai-portal`. Shipholm session: link the repository, backup
    on for the app. Gateway session: the five image items above; merge #5 and #6.
