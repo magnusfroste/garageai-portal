@@ -1,0 +1,27 @@
+# Temporary: serves the portal data export (files/) at https://portal.garageai.eu/_export/ behind
+# a bearer token (.env, PORTAL_EXPORT_TOKEN), only while a Shipholm app imports it.
+# Up: docker compose up -d    Down (always, right after the import): docker compose down
+name: garageai-portal-export
+services:
+  export:
+    image: nginx:1.30.6-alpine
+    restart: "no"
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run, /tmp, /etc/nginx/conf.d]
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./files:/files:ro
+    environment:
+      PORTAL_EXPORT_TOKEN: ${PORTAL_EXPORT_TOKEN:?}
+      NGINX_ENVSUBST_FILTER: ^PORTAL_
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=garageai_proxy
+      - traefik.http.routers.portal-export.rule=Host(`portal.garageai.eu`) && PathPrefix(`/_export/`)
+      - traefik.http.routers.portal-export.entrypoints=websecure
+      - traefik.http.routers.portal-export.tls=true
+      - traefik.http.routers.portal-export.tls.certresolver=letsencrypt
+      - traefik.http.services.portal-export.loadbalancer.server.port=8080
+networks:
+  proxy: {name: garageai_proxy, external: true}
