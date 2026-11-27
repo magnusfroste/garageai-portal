@@ -30,7 +30,7 @@ data import (below). The base is Debian slim with only the edge runtime's binary
 | `PORTAL_PUBLIC_URL` | the address browsers use, e.g. `https://app.garageai.eu` |
 | `PORT` | default 8080 |
 | `PORTAL_IMPORT_URL`, `PORTAL_IMPORT_TOKEN` | secret, only for the import; removed afterwards |
-| `PORTAL_DRAIN_SECONDS` | default 5: how long it keeps answering after the stop signal, so a deploy drops no request |
+| `PORTAL_DRAIN_SECONDS` | default 2: how long it keeps answering after the stop signal. Shipholm waits 5 s before the signal; with the 15 s for running requests that is 22 of the pod's 30 s |
 | `PORTAL_CRON=off` | no scheduled jobs (a rehearsal beside production must not send mail or sync models) |
 | `GOTRUE_*`, `PGRST_*` | override the defaults in `entrypoint.sh`: SMTP, Google sign-in (`GOTRUE_EXTERNAL_GOOGLE_*`), `GOTRUE_MAILER_AUTOCONFIRM=true` for a rehearsal without mail |
 | the functions' secrets | `LITELLM_MASTER_KEY`, `LITELLM_BASE_URL`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `MAIL_LINK_SECRET`, `BREVO_API_KEY`, `LOVABLE_CRON_SECRET` (event-mail's cron token), `SEARXNG_HEADER_NAME/VALUE` – passed to the functions as they are |
@@ -103,7 +103,7 @@ with a non-superuser owner and the three roles, test accounts only:
   Six answer 500 because no LiteLLM key was set; `prune-chat-keys` too, not looked into.
 - Cron: the crontab is valid; `check-bridge-release` ran end to end with the right
   `x-cron-secret`, a wrong one gets 401; the SQL jobs run.
-- Stop signal: answered 200 for 5.5 s more, then refused new requests; a request that takes 8 s
+- Stop signal (measured with a drain of 5 s; the default is now 2): answered 200 for 5.5 s more, then refused new requests; a request that takes 8 s
   and started 3.5 s after the signal finished with 200 at 11.6 s; the container was gone at
   12.4 s (a pod gets 30).
 - In a real browser (Chromium): the home page renders without errors and asks no Lovable host;
