@@ -73,12 +73,22 @@ locally the way Shipholm runs a pod. Sign-up, sign-in, RLS, all 60 functions and
 jobs work through the one address. Still not tried: Google sign-in, anything with the gateway's
 keys or Stripe, and the image on Shipholm.
 
-### What Shipholm still lacks
+### Restoring Postgres on Shipholm (passed 2026-11-27)
 
-- **A Postgres restore tool, and a tested restore.** There is none for CNPG yet: no app has had
-  a database. The Shipholm session builds "recover an app's database from its S3 backup into a
-  new cluster" with the rehearsal app as its first user. A marketplace with credits and payouts
-  does not move before it has passed.
+Shipholm had no restore for CNPG; the Shipholm session built it (`backup_database`,
+`restore_database`, `database_restore_status`, `finish_database_restore`; Shipholm's README,
+"Restoring Postgres") and tried it on the staging database:
+
+- a copy as of a point in time (three seconds before a marker row): the same accounts,
+  identities and profiles by md5, 71 tables, 90 functions, 55 policies, the roles, no marker;
+- a copy of the latest state: identical including the marker, so the log after the base backup
+  is replayed;
+- the app switched onto the restored cluster and the old one removed.
+
+From outside afterwards: both test accounts sign in with their passwords, RLS as before, a
+session from before the restore is still valid, the functions answer. A copy was ready about
+90 seconds after it was asked for, on a nearly empty database; to be timed again with real
+data.
 
 ## Sign-in: the one thing that touches users
 
@@ -212,14 +222,14 @@ Every session ends at the cutover (the JWT secret is new): users sign in once mo
    production keys. The Shipholm session verifies on the cluster (roles created, build limits,
    exec from `/tmp`, memory); the gateway session tests from outside and fixes the image.
 5. In parallel, none waiting for the other:
-   - Shipholm session: the Postgres restore tool (recover an app's database from its S3 backup
-     into a new cluster), with the rehearsal database as its first user.
+   - ~~Shipholm session: the Postgres restore tool (recover an app's database from its S3
+     backup into a new cluster), with the rehearsal database as its first user.~~ Done.
    - Gateway session: portal code that works on both hosts (Google sign-in without Lovable's
      broker behind a setting, robots/sitemap, storage). Magnus: our own Google OAuth client.
    - Data rehearsal: a full copy of production into the staging database through the import,
      row counts compared, timed.
-6. **Gate**: the restore test has passed, the data rehearsal matches, Google sign-in works with
-   an existing account on staging.
+6. **Gate**: ~~the restore test has passed~~ (2026-11-27), the data rehearsal matches, Google
+   sign-in works with an existing account on staging.
 7. **Cutover evening**: Lovable edits frozen; production app created (consider
    `db_instances: 2`, `db_size` with headroom); Magnus enters the production secrets; final
    import; certificate ready (DNS-01 if the zone was added, otherwise right after the switch);
