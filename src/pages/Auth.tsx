@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { onboardingService } from "@/models/services/onboardingService";
-import { lovable } from "@/integrations/lovable/index";
+import { signInWithGoogle } from "@/data/googleSignIn";
 
 import { t } from "@/i18n";
 import { authReturnService } from "@/models/services/authReturnService";
@@ -117,9 +117,7 @@ const Auth = () => {
     setIsLoading(true);
     try {
       if (intent) onboardingService.storeIntent(intent);
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth${authReturnService.query(location.search)}`,
-      });
+      const result = await signInWithGoogle(`${window.location.origin}/auth${authReturnService.query(location.search)}`);
       if (result.error) {
         toast.error(t("Could not sign in with Google. Please try again."));
         setIsLoading(false);

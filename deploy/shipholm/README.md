@@ -51,6 +51,25 @@ traffic, about 22 MB per function that has been called in the last minutes; all 
 read-only), so a start needs no outside host; the functions themselves still call the gateway,
 Stripe, Brevo and GitHub over HTTPS. Ready about 6 seconds after start on a seeded database.
 
+## Google sign-in
+
+This image's frontend is built with `VITE_GOOGLE_SIGN_IN=supabase`: "Continue with Google" asks
+the auth server itself (`/auth/v1/authorize?provider=google`) instead of Lovable's sign-in
+broker, which only exists on Lovable's hosting. A build without that variable (Lovable's) is
+unchanged. Code: `src/models/services/googleSignInService.ts`, `src/data/googleSignIn.ts`.
+
+To switch it on for an app:
+
+1. In Google Cloud console, an OAuth client of type "Web application" owned by GarageAI, with
+   the authorised redirect URI `https://<the app's host>/auth/v1/callback` (one per host:
+   staging and production each need theirs listed).
+2. On the app: `GOTRUE_EXTERNAL_GOOGLE_ENABLED=true`, `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`, and
+   `GOTRUE_EXTERNAL_GOOGLE_SECRET` (secret).
+
+With Google off on the server, the button shows the usual "Could not sign in with Google"
+message and nothing leaves the page. The start refuses to run with `ENABLED=true` and a
+missing id or secret.
+
 ## The data import
 
 Set `PORTAL_IMPORT_URL` (a directory with `manifest.json` and one `<schema>.<table>.jsonl` per
@@ -84,6 +103,12 @@ with a non-superuser owner and the three roles, test accounts only:
 - Cron: the crontab is valid; `check-bridge-release` ran end to end with the right
   `x-cron-secret`, a wrong one gets 401; the SQL jobs run.
 - SIGTERM stops everything in 4 seconds.
+- In a real browser (Chromium): the home page renders without errors and asks no Lovable host;
+  sign-in through the form lands on `/onboarding` with a stored session; with a made-up Google
+  client the button asks `/auth/v1/settings`, then `/auth/v1/authorize`, and the browser ends at
+  `accounts.google.com` with our client id and `redirect_uri=<host>/auth/v1/callback`; with
+  Google off the page stays and shows its message. A build without the variable does what
+  production does today: the click goes to Lovable's `/~oauth/initiate`.
 - On a network without internet: all parts start, functions answer (imports come from the
   image), `/healthz` answers only once the rest is up.
 - Cron: the same job fired twice in a minute runs once ("another pod has this run").
@@ -96,9 +121,9 @@ with a non-superuser owner and the three roles, test accounts only:
 
 ## Known gaps
 
-- **Google sign-in** still goes through Lovable's broker in `src/pages/Auth.tsx`
-  (`@lovable.dev/cloud-auth-js`); here it needs `supabase.auth.signInWithOAuth` and our own
-  Google OAuth client. Password sign-in works.
+- **Google sign-in** is built (below) but has never completed a real sign-in: that needs
+  GarageAI's own Google OAuth client. Whether an account that came from Lovable is recognised
+  on its first Google sign-in here is still to be shown on staging.
 - **`robots` and `sitemap`** build their links from the address the function sees
   (`http://127.0.0.1:8080` here); they need the public address. `vercel.json`'s rewrites are not
   served: `/robots.txt` is the static file, `/sitemap.xml` is a 404.

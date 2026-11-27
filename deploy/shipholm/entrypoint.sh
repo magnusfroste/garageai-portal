@@ -81,6 +81,15 @@ export GOTRUE_DB_DRIVER=postgres GOTRUE_DB_NAMESPACE=auth \
   GOTRUE_EXTERNAL_EMAIL_ENABLED="${GOTRUE_EXTERNAL_EMAIL_ENABLED:-true}" \
   GOTRUE_MAILER_AUTOCONFIRM="${GOTRUE_MAILER_AUTOCONFIRM:-false}" \
   GOTRUE_DISABLE_SIGNUP="${GOTRUE_DISABLE_SIGNUP:-false}"
+# Google sign-in: on when the operator sets GOTRUE_EXTERNAL_GOOGLE_ENABLED=true with
+# GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID and GOTRUE_EXTERNAL_GOOGLE_SECRET (GarageAI's own OAuth client,
+# whose authorised redirect URI must be exactly the address below).
+export GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI="${GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI:-$PORTAL_PUBLIC_URL/auth/v1/callback}"
+if [[ "${GOTRUE_EXTERNAL_GOOGLE_ENABLED:-false}" == true ]]; then
+  [[ -n "${GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID:-}" && -n "${GOTRUE_EXTERNAL_GOOGLE_SECRET:-}" ]] \
+    || { echo "GOTRUE_EXTERNAL_GOOGLE_ENABLED=true needs GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID and GOTRUE_EXTERNAL_GOOGLE_SECRET" >&2; stop_all; exit 1; }
+  log "Google sign-in is on; redirect URI $GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI"
+fi
 PORT=9999 start gotrue auth
 for _ in $(seq 90); do
   [[ "$(sql -c "select to_regclass('auth.users') is not null" 2>/dev/null)" == t ]] \

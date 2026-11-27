@@ -87,7 +87,8 @@ Google OAuth client. That client cannot come along. 21 of 27 accounts sign in th
 (2026-11-26); the other 6 have a password.
 
 - We create our own Google OAuth client (Google Cloud console, owner: GarageAI) with the new
-  callback, and configure it in GoTrue.
+  callback, and configure it in GoTrue. The code for it is in place (2026-11-27,
+  `deploy/shipholm/README.md`, "Google sign-in"); the client itself is Magnus's to create.
 - `auth.identities` holds each of the 21 users' Google subject id (checked: all numeric Google
   `sub` values, not Lovable ids), and Google's `sub` is the same for a user across OAuth
   clients, so GoTrue matches existing accounts on the first sign-in. To be verified in the
@@ -132,6 +133,8 @@ Shipholm's customer portal (the app's Variables tab, secret fields).
   once the GitHub App is on it and the tenant has linked it. Limits: 900 s per build, 2 Gi memory
   for BuildKit, 6 Gi scratch disk; build pods reach the internet on 80/443. A 1.4 GB image has
   never gone through it: the first build is the test.
+- **Postgres**: CNPG runs PostgreSQL 18 (18.7 on 2026-11-27), Lovable 17.6. The schema and
+  GoTrue's migrations went in unchanged on staging.
 - **Pod**: user namespace, uid 10001, read-only root, RuntimeDefault seccomp. `/tmp` is an
   emptyDir in memory, at most half the memory limit, and **counts against the limit**. Exec from
   `/tmp` should work but is not verified in a user-namespaced pod.
@@ -201,6 +204,9 @@ Every session ends at the cutover (the JWT secret is new): users sign in once mo
    the GitHub App installed on `garageai-portal`. Shipholm session: link the repository, backup
    on for the app. Gateway session: ~~the five image items above~~; merge #5 and #6.
    The workspace exists: tenant `wdtg8rw9` ("GarageAI", Pro), repository linked.
+   **Up since 2026-11-27**: https://garageai-portal-staging.shipholm.dev, built on the first
+   attempt within the limits; from outside: sign-up, sign-in, RLS and all 60 functions behave
+   as locally; 109 Mi idle.
 4. **Rehearsal app** `garageai-portal-staging`: `database=true`, `db_roles="supabase"`, 2 Gi,
    always awake, `health_path=/healthz`, `GOTRUE_MAILER_AUTOCONFIRM=true`, `PORTAL_CRON=off`, no
    production keys. The Shipholm session verifies on the cluster (roles created, build limits,
