@@ -92,7 +92,7 @@ remove the two variables.
 
 ## Tried locally (2026-11-27)
 
-Run as Shipholm would run it (`--read-only --user 10001 --cap-drop ALL`), against `postgres:17`
+Run as Shipholm would run it (`--read-only --user 10001 --cap-drop ALL`), against `postgres:17` (the import also against `postgres:18` with the real export, 2026-11-27)
 with a non-superuser owner and the three roles, test accounts only:
 
 - Empty database → schema created; a restart leaves it alone.
