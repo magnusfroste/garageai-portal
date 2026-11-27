@@ -1,0 +1,53 @@
+# One address for everything, as Supabase has it. Written for `caddy run --adapter caddyfile`;
+# {$…} are environment variables set by entrypoint.sh.
+{
+	admin off
+	auto_https off
+	persist_config off
+	log {
+		level WARN
+	}
+}
+
+:{$PORT} {
+	# Shipholm's health check, and the answer while the parts behind are still starting.
+	handle /healthz {
+		respond "ok" 200
+	}
+	handle_path /auth/v1/* {
+		reverse_proxy 127.0.0.1:9999
+	}
+	handle_path /rest/v1/* {
+		reverse_proxy 127.0.0.1:3000
+	}
+	handle_path /functions/v1/* {
+		reverse_proxy 127.0.0.1:9000 {
+			transport http {
+				response_header_timeout 400s   # register-node runs the acceptance test: up to 190 s
+			}
+		}
+	}
+	# Not brought along (docs/leaving-lovable.md): say so instead of answering with the page.
+	handle /storage/v1/* {
+		respond "storage is not available here" 404
+	}
+	handle /realtime/v1/* {
+		respond "realtime is not available here" 404
+	}
+	handle {
+		root * {$WWW_DIR}
+		encode zstd gzip
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		# The single-page app answers every path that is not a file; a missing file with an
+		# extension stays a 404 instead of becoming the page.
+		@file path_regexp \.[a-zA-Z0-9]+$
+		handle @file {
+			file_server
+		}
+		handle {
+			try_files {path} /index.html
+			file_server
+		}
+	}
+}

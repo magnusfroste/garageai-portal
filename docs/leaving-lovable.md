@@ -3,7 +3,8 @@
 Status 2026-11-26: decided direction, nothing moved yet. Done: step 0 (the schema in one file,
 [`db/`](../db/README.md)), step 1 (the gateway calls `portal.garageai.eu`, garageai#277) and the
 platform part of step 2 that could be done off the cluster (database roles, shipholm#94).
-Open in step 2: a tested Postgres restore on Shipholm.
+Step 3's image exists and runs locally (`deploy/shipholm/`). The tested Postgres restore on
+Shipholm (step 2) is parked until the portal runs there; it must be done before real data moves.
 
 ## Goal
 
@@ -68,7 +69,10 @@ On `postgres:17` with a non-superuser owner, as CNPG creates it, and only test a
 - GoTrue needs `GOTRUE_JWT_AUD=authenticated` and `GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated`;
   without them the token's `role` is empty and PostgREST refuses it.
 
-Not tried yet: the edge runtime with the 62 functions, Google sign-in, the image itself.
+The image itself (2026-11-27, [`deploy/shipholm/`](../deploy/shipholm/README.md)): built, and run
+locally the way Shipholm runs a pod. Sign-up, sign-in, RLS, all 60 functions and the scheduled
+jobs work through the one address. Still not tried: Google sign-in, anything with the gateway's
+keys or Stripe, and the image on Shipholm.
 
 ### What Shipholm still lacks
 
@@ -110,8 +114,8 @@ From [`db/README.md`](../db/README.md) and the notes on what an exit must carry:
 1. ~~Gateway: `GARAGEAI_PORTAL_URL` to `portal.garageai.eu`~~ (done 2026-11-26). Doors: all on
    v1.7.0 except `tool` (v1.0.3, offline).
 2. Shipholm platform: ~~database roles~~ (shipholm#94), a tested Postgres restore.
-3. The image (GoTrue, PostgREST, edge runtime, frontend, proxy, scheduler) in this repo, and a
-   rehearsal app on Shipholm from `db/schema.sql` + `db/grants.sql` with test accounts; our own
+3. ~~The image (GoTrue, PostgREST, edge runtime, frontend, proxy, scheduler) in this repo~~
+   (`deploy/shipholm/`, 2026-11-27), and a rehearsal app on Shipholm from `db/schema.sql` + `db/grants.sql` with test accounts; our own
    Google OAuth client, verified against a real Google account.
 4. Portal PRs to `main` that work on both hosts: the sign-in without Lovable's broker (behind a
    setting), robots/sitemap without `vercel.json`, the storage bucket.
