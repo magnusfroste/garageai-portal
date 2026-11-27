@@ -4,7 +4,8 @@
 #                       service_role (Shipholm: db_roles="supabase")
 #   PORTAL_JWT_SECRET   signs sessions and the anon/service keys; at least 32 characters, secret
 #   PORTAL_PUBLIC_URL   the address browsers use, e.g. https://app.garageai.eu (no trailing slash)
-# Optional: any GOTRUE_* or PGRST_* variable overrides the defaults below (SMTP, Google sign-in,
+# Optional: PORTAL_DRAIN_SECONDS (default 2) is how long it keeps serving after being asked
+# to stop; any GOTRUE_* or PGRST_* variable overrides the defaults below (SMTP, Google sign-in,
 # GOTRUE_MAILER_AUTOCONFIRM=true for a rehearsal without mail); PORTAL_CRON=off stops the
 # scheduled jobs; PORTAL_IMPORT_URL + PORTAL_IMPORT_TOKEN fill an empty database once
 # (import.sh); the functions' own secrets (LITELLM_MASTER_KEY, STRIPE_SECRET_KEY, …) are
@@ -45,7 +46,30 @@ done
 pids=()
 start() { log "starting $1"; shift; "$@" & pids+=($!); }
 stop_all() { kill "${pids[@]}" 2>/dev/null || true; wait 2>/dev/null || true; }
-trap 'stop_all; exit 143' TERM INT
+# Asked to stop (a deploy, a node drain): requests can still be on their way to this pod for a
+# moment after the signal, so keep answering for a few seconds before anything is stopped.
+# Without it a rollout answered 502 for a second or two (seen on staging 2026-11-27).
+# Shipholm now also waits 5 s before it sends the signal (preStop), so this is the second
+# guard and short: 5 s platform + 2 s here + up to 15 s for running requests = 22 of the
+# pod's 30 s. Do not raise one without lowering another.
+DRAIN=${PORTAL_DRAIN_SECONDS:-2}
+[[ "$DRAIN" =~ ^[0-9]+$ && "$DRAIN" -le 25 ]] || { echo "PORTAL_DRAIN_SECONDS must be 0-25" >&2; exit 1; }
+# Then Caddy stops taking new requests and lets the running ones finish (grace_period in the
+# Caddyfile, 15 s), and only after that the parts behind it stop.
+caddy_pid=
+drain() {
+  trap '' TERM INT
+  log "asked to stop: serving $DRAIN s more"
+  sleep "$DRAIN"
+  if [[ -n "$caddy_pid" ]]; then
+    log "no new requests; letting running ones finish"
+    kill -TERM "$caddy_pid" 2>/dev/null || true
+    wait "$caddy_pid" 2>/dev/null || true
+  fi
+  stop_all
+  exit 143
+}
+trap drain TERM INT
 
 # --- database ---------------------------------------------------------------------------------
 sql() { psql "$DATABASE_URL" -q -tA -v ON_ERROR_STOP=1 "$@"; }
@@ -134,6 +158,7 @@ fi
 
 # --- the address itself, last ------------------------------------------------------------------
 start caddy caddy run --config /app/Caddyfile --adapter caddyfile
+caddy_pid=${pids[-1]}
 
 log "up on :$PORT for $PORTAL_PUBLIC_URL"
 wait -n "${pids[@]}" || true
