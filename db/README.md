@@ -64,3 +64,6 @@ sed -E '/CREATE EXTENSION IF NOT EXISTS pg_(cron|net)/d' db/schema.sql \
 ```
 
 On a real Supabase, run `schema.sql` as is (pg_cron and pg_net are available there).
+
+`grants.sql` holds the privileges Supabase gives by default (the snapshot has none); run it as the
+database owner after `schema.sql` on a host of our own. See [docs/leaving-lovable.md](../docs/leaving-lovable.md).
