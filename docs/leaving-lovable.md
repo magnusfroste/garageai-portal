@@ -151,7 +151,8 @@ Shipholm's customer portal (the app's Variables tab, secret fields).
 
 ## What the image still owes the platform
 
-Mine (gateway session), before the rehearsal app means anything:
+All five done in the image 2026-11-27 and tried locally (`deploy/shipholm/README.md`); the
+image is 678 MB. What they were:
 
 1. **Cron must not run twice** while two pods overlap in a deploy: each job claims its time
    slot in a table before it runs (one row per job and slot; the pod that inserts it runs).
@@ -194,11 +195,12 @@ Every session ends at the cutover (the JWT secret is new): users sign in once mo
 0. ~~Schema in one restorable file~~ (`db/`, done 2026-11-26).
 1. ~~Gateway: `GARAGEAI_PORTAL_URL` to `portal.garageai.eu`~~ (done 2026-11-26). Doors: all on
    v1.7.0 except `tool` (v1.0.3, offline).
-2. ~~The image~~ (`deploy/shipholm/`, runs locally, 2026-11-27). Database roles: shipholm#94 is
-   open; the Shipholm session reviews and squash-merges it on Magnus's word.
+2. ~~The image~~ (`deploy/shipholm/`, runs locally, 2026-11-27) and ~~database roles~~
+   (shipholm#94, merged 2026-11-27: `db_roles="supabase"` is live on the platform).
 3. **Before the rehearsal** – Magnus: which tenant (recommended: a new GarageAI account on Pro),
    the GitHub App installed on `garageai-portal`. Shipholm session: link the repository, backup
-   on for the app. Gateway session: the five image items above; merge #5 and #6.
+   on for the app. Gateway session: ~~the five image items above~~; merge #5 and #6.
+   The workspace exists: tenant `wdtg8rw9` ("GarageAI", Pro), repository linked.
 4. **Rehearsal app** `garageai-portal-staging`: `database=true`, `db_roles="supabase"`, 2 Gi,
    always awake, `health_path=/healthz`, `GOTRUE_MAILER_AUTOCONFIRM=true`, `PORTAL_CRON=off`, no
    production keys. The Shipholm session verifies on the cluster (roles created, build limits,

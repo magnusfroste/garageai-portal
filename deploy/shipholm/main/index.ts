@@ -5,7 +5,7 @@
 // every function decides for itself who may call it. Not a function itself: "main" is refused.
 
 // What the functions must not see: the database owner's address and the other parts' settings.
-const HIDDEN = /^(DATABASE_URL|PORTAL_JWT_SECRET|GOTRUE_.*|PGRST_.*|API_EXTERNAL_URL)$/;
+const HIDDEN = /^(DATABASE_URL|PORTAL_JWT_SECRET|PORTAL_IMPORT_.*|GOTRUE_.*|PGRST_.*|API_EXTERNAL_URL)$/;
 const ENV = Object.entries(Deno.env.toObject()).filter(([name]) => !HIDDEN.test(name));
 
 const json = (status: number, body: unknown) =>

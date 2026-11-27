@@ -27,11 +27,16 @@ FROM caddy:2.10.2 AS caddy
 # and forbids new privileges refuses to start such a file, so take a plain copy.
 RUN cp /usr/bin/caddy /caddy-plain
 
-FROM supabase/edge-runtime:v1.69.28
+FROM supabase/edge-runtime:v1.69.28 AS edge
+
+# Debian slim with only the runtime's binary: the runtime's own image also carries a debug
+# build and math libraries the portal's functions never load (1.1 GB against 160 MB).
+FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      bash ca-certificates curl openssl postgresql-client \
+      bash ca-certificates curl jq openssl postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 ADD --chmod=755 https://github.com/aptible/supercronic/releases/download/v0.2.51/supercronic-linux-amd64 /usr/local/bin/supercronic
+COPY --from=edge /usr/local/bin/edge-runtime /usr/local/bin/edge-runtime
 COPY --from=gotrue /usr/local/bin/auth /usr/local/bin/auth
 COPY --from=gotrue /usr/local/etc/auth/migrations /usr/local/etc/auth/migrations
 COPY --from=postgrest /bin/postgrest /usr/local/bin/postgrest
@@ -42,10 +47,14 @@ COPY --from=web /src/dist /app/www
 COPY --from=web /src/deploy/shipholm/out/ /app/generated/
 COPY supabase/functions /app/functions
 COPY deploy/shipholm/main /app/functions/main
-COPY deploy/shipholm/entrypoint.sh deploy/shipholm/cron-call.sh deploy/shipholm/Caddyfile deploy/shipholm/crontab /app/
+COPY deploy/shipholm/entrypoint.sh deploy/shipholm/cron-call.sh deploy/shipholm/import.sh \
+     deploy/shipholm/bake-modules.sh deploy/shipholm/Caddyfile deploy/shipholm/crontab /app/
 COPY db/grants.sql /app/generated/grants.sql
-RUN chmod 755 /app/entrypoint.sh /app/cron-call.sh && auth version && postgrest --version && caddy version
+RUN chmod 755 /app/*.sh && auth version && postgrest --version && caddy version && edge-runtime --version
+# The functions' imports (esm.sh, npm, deno.land) are fetched now, into the image, so a start
+# needs none of those hosts and nothing is written at run time.
+RUN /app/bake-modules.sh
 
-ENV PORT=8080 HOME=/tmp
+ENV PORT=8080 HOME=/tmp DENO_DIR=/app/deno-cache
 USER 10001:10001
 ENTRYPOINT ["/app/entrypoint.sh"]

@@ -10,7 +10,8 @@
 }
 
 :{$PORT} {
-	# Shipholm's health check, and the answer while the parts behind are still starting.
+	# Shipholm's health check. Caddy starts last (entrypoint.sh), so an answer here means
+	# sign-in and the data API are up.
 	handle /healthz {
 		respond "ok" 200
 	}
