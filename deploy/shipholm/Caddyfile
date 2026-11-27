@@ -4,6 +4,8 @@
 	admin off
 	auto_https off
 	persist_config off
+	# On stop: no new requests, running ones get this long to finish (entrypoint.sh, drain).
+	grace_period 15s
 	log {
 		level WARN
 	}
