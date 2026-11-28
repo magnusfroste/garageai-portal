@@ -226,10 +226,15 @@ Every session ends at the cutover (the JWT secret is new): users sign in once mo
      backup into a new cluster), with the rehearsal database as its first user.~~ Done.
    - Gateway session: portal code that works on both hosts (Google sign-in without Lovable's
      broker behind a setting, robots/sitemap, storage). Magnus: our own Google OAuth client.
-   - Data rehearsal: a full copy of production into the staging database through the import,
-     row counts compared, timed.
-6. **Gate**: ~~the restore test has passed~~ (2026-11-27), the data rehearsal matches, Google
-   sign-in works with an existing account on staging.
+   - ~~Data rehearsal: a full copy of production through the import, row counts compared,
+     timed.~~ Done 2026-11-27 into a second app, `garageai-portal-rehearsal` (a new app with an
+     empty database, as on the cutover evening): 138 347 rows in 53 tables, every table's count
+     equal to the export's, 52 foreign keys validated, about 12 s on PostgreSQL 18.7 (the start
+     limit is 120 s). Magnus signed in there with his password account. Order of the two
+     settings: `PORTAL_IMPORT_TOKEN` first, `PORTAL_IMPORT_URL` last (the URL alone stops the
+     container). The rehearsal app is deleted before the production app is created.
+6. **Gate**: ~~the restore test has passed~~ (2026-11-27), ~~the data rehearsal matches~~
+   (2026-11-27), Google sign-in works with an existing account (needs our own OAuth client).
 7. **Cutover evening**: Lovable edits frozen; production app created (consider
    `db_instances: 2`, `db_size` with headroom); Magnus enters the production secrets; final
    import; certificate ready (DNS-01 if the zone was added, otherwise right after the switch);
