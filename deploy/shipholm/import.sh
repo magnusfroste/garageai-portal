@@ -63,14 +63,13 @@ DO \$\$ BEGIN IF EXISTS (SELECT 1 FROM $table) THEN
   RAISE EXCEPTION 'import: % already has rows; this import only fills an empty database', '$table'; END IF; END \$\$;
 ALTER TABLE $table DISABLE TRIGGER USER;
 TRUNCATE _in;
-COPY _in FROM STDIN WITH (FORMAT csv, QUOTE E'\x01', DELIMITER E'\x02');
 SQL
-    ok=1
+    # psql runs the download itself and feeds it to COPY: no end-of-data marker in the stream
+    # (a "\\." line is data to a Postgres 18 server in CSV mode when the client is older), and
+    # a failed download fails the statement.
     if [[ "$rows" != 0 ]]; then
-      fetch "$file" | sed -e '$a\' || ok=0
+      printf '%s\n' "\\copy _in from program 'curl -fsS --retry 3 --retry-delay 2 -m 900 -H @$headers $url/$file' with (format csv, quote E'\\x01', delimiter E'\\x02')"
     fi
-    printf '%s\n' '\.'
-    [[ $ok == 1 ]] || echo "DO \$\$ BEGIN RAISE EXCEPTION 'import: the download of % failed', '$file'; END \$\$;"
     cat <<SQL
 DO \$\$ DECLARE n bigint; BEGIN SELECT count(*) INTO n FROM _in; IF n <> $rows THEN
   RAISE EXCEPTION 'import: %: the manifest says % rows, the file has %', '$table', $rows, n; END IF; END \$\$;

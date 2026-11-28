@@ -92,7 +92,7 @@ remove the two variables.
 
 ## Tried locally (2026-11-27)
 
-Run as Shipholm would run it (`--read-only --user 10001 --cap-drop ALL`), against `postgres:17`
+Run as Shipholm would run it (`--read-only --user 10001 --cap-drop ALL`), against `postgres:17` (the import also against `postgres:18` with the real export, 2026-11-27)
 with a non-superuser owner and the three roles, test accounts only:
 
 - Empty database → schema created; a restart leaves it alone.
@@ -133,6 +133,5 @@ with a non-superuser owner and the three roles, test accounts only:
 - **Storage**: the admin's upload of site assets (2 calls) answers 404.
 - **Callers' addresses**: the functions that limit per address (`bridge-link-start`) have not
   been checked behind this proxy.
-- The import has only seen small test data: not production's size, nor rows written by an
-  older GoTrue than this image's.
-- Not run on Shipholm yet, and nothing with the gateway's keys or with Stripe.
+- Nothing has run with the gateway's keys or with Stripe. (The import has taken production's
+  full data on Shipholm, 2026-11-27; a password account from Lovable signs in afterwards.)
