@@ -183,19 +183,19 @@ No tool on either side holds a connection string to Lovable Cloud's database, an
 databases are not reachable from outside. So the app imports itself:
 
 1. The gateway session reads every table of `public`, plus `auth.users` (with
-   `encrypted_password`) and `auth.identities`, out of Lovable with SELECTs and writes one file
-   per table on the gateway VPS. Passwords and Google links survive.
-2. The files are served from the gateway VPS over HTTPS behind a bearer token, only for the
-   import.
-3. The image gets a one-shot import (`PORTAL_IMPORT_URL`, `PORTAL_IMPORT_TOKEN`, both secret):
-   it runs as the database owner, only into a database without rows, in one transaction, and
-   records that it ran. Both variables are removed afterwards and the files deleted.
-   Format: JSON lines per table, loaded with `json_populate_recordset(null::<table>, …)` so
-   Postgres does the typing, streamed table by table into `psql` (`/tmp` is memory). User
-   triggers are disabled per table while loading (`handle_new_user` on `auth.users` would
-   otherwise create the profiles twice). Foreign keys are still checked, so tables load in
-   foreign-key order, a self-referencing or circular key gets a second pass, and every sequence
-   is set to its table's highest id afterwards.
+   `encrypted_password`) and `auth.identities`, out of Lovable with one read-only query
+   (`deploy/shipholm/export/export.sql`). The database itself encrypts each table's rows with a
+   public key (pgcrypto, `pgp_pub_encrypt`); the private key exists only on the gateway VPS. So
+   what passes through the query tool, and the session that runs it, is ciphertext. `unpack.sh`
+   decrypts on the VPS into one file per table plus `manifest.json`, checking each file's line
+   count against the count the query made. Passwords and Google links survive.
+2. The files are served from the gateway VPS at `https://portal.garageai.eu/_export/` behind a
+   bearer token (`deploy/shipholm/export/docker-compose.yml`), up only for the import. Magnus
+   copies the token from the VPS into the app's settings himself.
+3. The image gets a one-shot import (`PORTAL_IMPORT_URL`, `PORTAL_IMPORT_TOKEN`): it runs as the
+   database owner, only into tables without rows, in one transaction, and records that it ran.
+   Both variables are removed afterwards, the files deleted, the server stopped. Details in
+   [deploy/shipholm/README.md](../deploy/shipholm/README.md), "The data import".
 4. Row counts per table are compared with Lovable before anything is switched.
 
 Data passes through no chat, no git and neither session's conversation. If Lovable's support

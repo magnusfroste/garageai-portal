@@ -1,0 +1,10 @@
+map_hash_bucket_size 256;
+map $http_authorization $export_ok { default 0; "Bearer ${PORTAL_EXPORT_TOKEN}" 1; }
+server {
+    listen 8080; server_tokens off; access_log off;
+    location /_export/ {
+        if ($export_ok = 0) { return 401; }
+        alias /files/; autoindex off; default_type application/octet-stream;
+    }
+    location / { return 404; }
+}
